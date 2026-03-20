@@ -1,0 +1,17 @@
+{
+  "name": "meridian-itsm",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "test": "turbo test",
+    "typecheck": "turbo typecheck",
+    "db:migrate": "turbo db:migrate",
+    "db:seed": "turbo db:seed",
+    "db:generate": "turbo db:generate"
+  }
+}
