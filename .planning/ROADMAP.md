@@ -12,7 +12,7 @@ MeridianITSM is built in five broad phases that follow strict dependency orderin
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Monorepo scaffold, full database schema, tenant isolation, and authentication pipeline
+- [x] **Phase 1: Foundation** - Monorepo scaffold, full database schema, tenant isolation, and authentication pipeline
 - [ ] **Phase 2: Billing and Owner Admin** - Stripe subscription lifecycle, plan enforcement, and operator control plane
 - [ ] **Phase 3: Core ITSM** - Incident management, SLA, email-to-ticket, knowledge base, self-service portal, settings, notifications, and reporting
 - [ ] **Phase 4: CMDB, Change Management, and Asset Portfolio** - ITIL expansion with asset tracking, CMDB with relationship mapping, change management with CAB workflows, and application portfolio
@@ -33,12 +33,12 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 6 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Monorepo scaffold: pnpm workspaces, Turborepo, all app/package stubs, Docker Compose
-- [ ] 01-02-PLAN.md — Database schema: Prisma 7 schema for all 61 models, tenant scoping extension, Zod types, seeding
-- [ ] 01-03-PLAN.md — Authentication pipeline: Fastify 5 server wiring, plugins, auth/tenant/RBAC middleware, login/refresh/password-reset routes, org-lookup service
-- [ ] 01-04-PLAN.md — Infrastructure: BullMQ/Redis workers, MinIO storage, AES encryption, core utilities, health check
-- [ ] 01-05-PLAN.md — Owner admin auth: OWNER_JWT_SECRET login, OwnerSession, protected /api/tenants route
-- [ ] 01-06-PLAN.md — Test infrastructure: Vitest setup, cross-tenant isolation tests, encryption/worker/auth test stubs
+- [x] 01-01-PLAN.md — Monorepo scaffold: pnpm workspaces, Turborepo, all app/package stubs, Docker Compose
+- [x] 01-02-PLAN.md — Database schema: Prisma 7 schema for all 61 models, tenant scoping extension, Zod types, seeding
+- [x] 01-03-PLAN.md — Authentication pipeline: Fastify 5 server wiring, plugins, auth/tenant/RBAC middleware, login/refresh/password-reset routes, org-lookup service
+- [x] 01-04-PLAN.md — Infrastructure: BullMQ/Redis workers, MinIO storage, AES encryption, core utilities, health check
+- [x] 01-05-PLAN.md — Owner admin auth: OWNER_JWT_SECRET login, OwnerSession, protected /api/tenants route
+- [x] 01-06-PLAN.md — Test infrastructure: Vitest setup, cross-tenant isolation tests, encryption/worker/auth test stubs
 
 ### Phase 2: Billing and Owner Admin
 **Goal**: A new tenant can sign up, start a trial, subscribe via Stripe, and have plan limits enforced across the API; the owner can manage all tenants and subscriptions from the admin portal.
@@ -121,7 +121,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 5/6 | In Progress|  |
+| 1. Foundation | 6/6 | Complete | 2026-03-20 |
 | 2. Billing and Owner Admin | 0/3 | Not started | - |
 | 3. Core ITSM | 0/6 | Not started | - |
 | 4. CMDB, Change Management, and Asset Portfolio | 0/4 | Not started | - |
