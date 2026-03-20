@@ -786,6 +786,7 @@ model SLA {
   tenant  Tenant   @relation(fields: [tenantId], references: [id])
   tickets Ticket[]
 
+  @@unique([tenantId, name])
   @@index([tenantId])
   @@map("slas")
 }
@@ -808,6 +809,7 @@ model Category {
   userGroup  UserGroup? @relation(fields: [userGroupId], references: [id])
   tickets    Ticket[]
 
+  @@unique([tenantId, name])
   @@index([tenantId])
   @@map("categories")
 }
