@@ -55,12 +55,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### SLA Management
 
-- [ ] **SLA-01**: SLA policies define response and resolution time targets per priority level (P1-P4)
-- [ ] **SLA-02**: SLA timers start on ticket creation and track against configured targets
-- [ ] **SLA-03**: SLA breach detection with warnings at 75% and 90% thresholds
-- [ ] **SLA-04**: SLA timers respect business hours configuration
-- [ ] **SLA-05**: SLA status displayed on ticket detail with countdown visualization
-- [ ] **SLA-06**: Background worker monitors SLA compliance every minute
+- [x] **SLA-01**: SLA policies define response and resolution time targets per priority level (P1-P4)
+- [x] **SLA-02**: SLA timers start on ticket creation and track against configured targets
+- [x] **SLA-03**: SLA breach detection with warnings at 75% and 90% thresholds
+- [x] **SLA-04**: SLA timers respect business hours configuration
+- [x] **SLA-05**: SLA status displayed on ticket detail with countdown visualization
+- [x] **SLA-06**: Background worker monitors SLA compliance every minute
 
 ### Email System
 
@@ -356,12 +356,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TICK-10 | Phase 3 | Pending |
 | TICK-11 | Phase 3 | Pending |
 | TICK-12 | Phase 3 | Pending |
-| SLA-01 | Phase 3 | Pending |
-| SLA-02 | Phase 3 | Pending |
-| SLA-03 | Phase 3 | Pending |
-| SLA-04 | Phase 3 | Pending |
-| SLA-05 | Phase 3 | Pending |
-| SLA-06 | Phase 3 | Pending |
+| SLA-01 | Phase 3 | Complete |
+| SLA-02 | Phase 3 | Complete |
+| SLA-03 | Phase 3 | Complete |
+| SLA-04 | Phase 3 | Complete |
+| SLA-05 | Phase 3 | Complete |
+| SLA-06 | Phase 3 | Complete |
 | EMAL-01 | Phase 3 | Pending |
 | EMAL-02 | Phase 3 | Pending |
 | EMAL-03 | Phase 3 | Complete |

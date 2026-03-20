@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 03-04-PLAN.md
-last_updated: "2026-03-20T23:38:26.918Z"
+stopped_at: Completed 03-06-PLAN.md
+last_updated: "2026-03-20T23:40:04.840Z"
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 23
-  completed_plans: 14
+  completed_plans: 16
 ---
 
 # Project State
@@ -61,6 +61,8 @@ Plan: 1 of 10
 | Phase 02-billing-and-owner-admin P03 | 16 | 3 tasks | 15 files |
 | Phase 03-core-itsm P10 | 2 | 2 tasks | 6 files |
 | Phase 03-core-itsm P04 | 7 | 1 tasks | 3 files |
+| Phase 03-core-itsm P02 | 9 | 2 tasks | 7 files |
+| Phase 03-core-itsm P06 | 8 | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -107,6 +109,11 @@ Recent decisions affecting current work:
 - [Phase 03-core-itsm]: Wave 0 test scaffolds use it.todo() so vitest discovers them without failures — behavioral contract before implementation
 - [Phase 03-core-itsm]: View count increment is async (void) to avoid blocking GET responses; helpfulCount decrement uses Math.max(0, n-1) for floor-zero guarantee without DB constraint
 - [Phase 03-core-itsm]: getPublishedArticles hard-codes status=PUBLISHED and visibility=PUBLIC — portal endpoint cannot be weakened by query params
+- [Phase 03-02]: date-fns + date-fns-tz used for business-hours math via toZonedTime/fromZonedTime for correct timezone offset handling
+- [Phase 03-02]: getElapsedPercentage and getSlaStatus duplicated in worker (not imported from api) to avoid cross-app import, follows mapStripeStatus precedent
+- [Phase 03-02]: SLA monitor is a cross-tenant sentinel (no tenantId scoping) that processes all active tickets in single job
+- [Phase 03-02]: customFields JSON flags (sla_75_notified, sla_90_notified, sla_breached_notified) prevent duplicate notification dispatch on each minute tick
+- [Phase 03-02]: Prisma 7 JSON type requires 'as any' cast for spread-constructed objects in ticket.update() customFields
 
 ### Pending Todos
 
@@ -120,6 +127,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T23:38:26.910Z
-Stopped at: Completed 03-04-PLAN.md
+Last session: 2026-03-20T23:40:04.833Z
+Stopped at: Completed 03-06-PLAN.md
 Resume file: None
