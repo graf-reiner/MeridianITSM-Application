@@ -18,18 +18,57 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
   }
 
-  const tenants = await prisma.tenant.findMany({
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      type: true,
-      status: true,
-      plan: true,
-      createdAt: true,
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+  const url = new URL(request.url);
+  const search = url.searchParams.get('search') ?? '';
+  const plan = url.searchParams.get('plan') ?? '';
+  const status = url.searchParams.get('status') ?? '';
+  const page = Math.max(1, parseInt(url.searchParams.get('page') ?? '1', 10));
+  const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') ?? '20', 10)));
+  const skip = (page - 1) * limit;
 
-  return NextResponse.json({ tenants });
+  const where: Record<string, unknown> = {
+    deletedAt: null,
+  };
+
+  if (search) {
+    where.name = { contains: search, mode: 'insensitive' };
+  }
+
+  if (plan) {
+    where.plan = plan;
+  }
+
+  if (status) {
+    where.status = status;
+  }
+
+  const [tenants, total] = await Promise.all([
+    prisma.tenant.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        type: true,
+        status: true,
+        plan: true,
+        createdAt: true,
+        subscription: {
+          select: {
+            status: true,
+            trialEnd: true,
+            currentPeriodEnd: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.tenant.count({ where }),
+  ]);
+
+  const pageCount = Math.ceil(total / limit);
+
+  return NextResponse.json({ tenants, total, page, pageCount });
 }
