@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Phase 2 context gathered
-last_updated: "2026-03-20T12:58:05.082Z"
+stopped_at: Completed 02-billing-and-owner-admin/02-04-PLAN.md
+last_updated: "2026-03-20T14:15:52.930Z"
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 7
-  completed_plans: 6
+  total_plans: 13
+  completed_plans: 7
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** An MSP can manage multiple customer organizations' IT service desks from a single platform with complete tenant isolation, paying via Stripe subscription, with the full ITSM lifecycle working end-to-end.
-**Current focus:** Phase 01 — foundation COMPLETE
+**Current focus:** Phase 02 — billing-and-owner-admin
 
 ## Current Position
 
-Phase: 01 (foundation) — COMPLETE
-Plan: 6 of 6 (all plans complete)
+Phase: 02 (billing-and-owner-admin) — EXECUTING
+Plan: 1 of 6
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Plan: 6 of 6 (all plans complete)
 | Phase 01-foundation PP03 | 12 min | 3 tasks | 28 files |
 | Phase 01-foundation P05 | 2 | 1 tasks | 6 files |
 | Phase 01-foundation P06 | 6 | 2 tasks | 15 files |
+| Phase 02-billing-and-owner-admin P04 | 10 | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,8 @@ Recent decisions affecting current work:
 - [Phase 01-foundation]: @node-rs/bcrypt used in owner app for Edge-compatible bcrypt verification
 - [Phase 01-06]: BullMQ Queue mock must use class constructor syntax in vi.mock — vi.fn().mockImplementation() is not a valid constructor substitute
 - [Phase 01-06]: Encryption tests use dynamic import inside it() blocks to ensure ENCRYPTION_KEY env var is set before module initialization
+- [Phase 02-billing-and-owner-admin]: IMPERSONATION_JWT_SECRET used (not OWNER_JWT_SECRET) so main API only shares the impersonation key
+- [Phase 02-billing-and-owner-admin]: IP allowlist optional — OWNER_ADMIN_IP_ALLOWLIST unset means no restriction (dev mode)
 
 ### Pending Todos
 
@@ -94,6 +97,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T12:58:05.076Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-billing-and-owner-admin/02-CONTEXT.md
+Last session: 2026-03-20T14:15:52.925Z
+Stopped at: Completed 02-billing-and-owner-admin/02-04-PLAN.md
+Resume file: None

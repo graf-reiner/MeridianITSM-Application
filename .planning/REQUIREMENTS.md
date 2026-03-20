@@ -157,12 +157,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Owner Admin Portal
 
-- [ ] **OADM-01**: Separate Next.js app on port 3800 with completely isolated auth (OwnerUser, bcrypt + TOTP MFA)
-- [ ] **OADM-02**: IP allowlist middleware; never exposed through Cloudflare or public DNS
+- [x] **OADM-01**: Separate Next.js app on port 3800 with completely isolated auth (OwnerUser, bcrypt + TOTP MFA)
+- [x] **OADM-02**: IP allowlist middleware; never exposed through Cloudflare or public DNS
 - [ ] **OADM-03**: Dashboard with MRR/ARR, trial conversions, churn, tenant counts
 - [ ] **OADM-04**: Tenant list with search/filter by plan, status; tenant detail with subscription and usage
 - [ ] **OADM-05**: Tenant lifecycle: suspend, unsuspend, delete (soft with 30-day recovery), extend trial, apply grace period
-- [ ] **OADM-06**: Read-only tenant impersonation with 15-minute signed token and persistent banner
+- [x] **OADM-06**: Read-only tenant impersonation with 15-minute signed token and persistent banner
 - [ ] **OADM-07**: Internal notes on tenants (visible only in admin app)
 - [ ] **OADM-08**: Billing dashboard: Stripe revenue, per-tenant billing detail, retry failed payments
 - [ ] **OADM-09**: Plan management: view/edit subscription plans, archive plans
@@ -332,12 +332,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BILL-05 | Phase 2 | Pending |
 | BILL-06 | Phase 2 | Pending |
 | BILL-07 | Phase 2 | Pending |
-| OADM-01 | Phase 2 | Pending |
-| OADM-02 | Phase 2 | Pending |
+| OADM-01 | Phase 2 | Complete |
+| OADM-02 | Phase 2 | Complete |
 | OADM-03 | Phase 2 | Pending |
 | OADM-04 | Phase 2 | Pending |
 | OADM-05 | Phase 2 | Pending |
-| OADM-06 | Phase 2 | Pending |
+| OADM-06 | Phase 2 | Complete |
 | OADM-07 | Phase 2 | Pending |
 | OADM-08 | Phase 2 | Pending |
 | OADM-09 | Phase 2 | Pending |
