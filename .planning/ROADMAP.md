@@ -70,17 +70,19 @@ Plans:
   3. An end user can log into /portal, submit a service request, track its status, add comments, and browse knowledge articles — with the system automatically redirecting end_user roles to the portal
   4. An admin can configure SLA policies per priority with business hours, set up email accounts, manage users and roles, and view a dashboard with ticket volume, SLA compliance, and agent workload
   5. A notification (in-app, email) fires when a ticket is assigned, commented on, or breaches SLA; users can see and mark notifications in the notification center
-**Plans**: 8 plans
+**Plans**: 10 plans
 
 Plans:
 - [ ] 03-01-PLAN.md — Ticket management: ticket service with create/update/comments/assignment, storage service for MinIO attachments, audit trail, queue routing, KB/CI linking
-- [ ] 03-02-PLAN.md — SLA engine: business-hours-aware timer calculation with timezone support, breach detection worker, SLA CRUD routes, live status endpoint
+- [ ] 03-02-PLAN.md — SLA engine: business-hours-aware timer calculation with timezone support, breach detection worker with auto-escalation, SLA CRUD routes, live status endpoint
 - [ ] 03-03-PLAN.md — Email system: SMTP/IMAP services, inbound polling with reply threading and dedup, outbound notification templates, email account CRUD with connection testing
 - [ ] 03-04-PLAN.md — Knowledge base: article CRUD with lifecycle management, full-text search, voting, view tracking, published endpoint for portal
 - [ ] 03-05-PLAN.md — Self-service portal: end-user layout with simplified sidebar, category-driven service request form, ticket tracking, KB browsing, assets page, role-redirect middleware
 - [ ] 03-06-PLAN.md — Settings and configuration: user/role/group/queue/category/site/vendor/business-unit/contract management, branding with logo upload, SSE log viewer
 - [ ] 03-07-PLAN.md — Notifications: dispatch orchestrator (in-app + email), notification center API, ticket event wiring for create/assign/comment/resolve
 - [ ] 03-08-PLAN.md — Reporting and dashboard: main dashboard stats, ticket/SLA/change CSV/JSON reports, scheduled report worker with email delivery, system health metrics
+- [ ] 03-09-PLAN.md — Staff dashboard frontend: ticket list/detail with SLA countdown (color bands), knowledge base with TipTap editor, settings UI pages, reports dashboard with Recharts
+- [ ] 03-10-PLAN.md — Wave 0 test scaffolds: test stubs for tickets, ticket-service, email-inbound, notification-service, and reports with shared test utilities
 
 ### Phase 4: CMDB, Change Management, and Asset Portfolio
 **Goal**: Technicians can track physical assets, manage a CI relationship map with impact analysis, submit change requests through approval workflows with CAB review, and manage the application portfolio with dependency mapping.
@@ -89,7 +91,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. A technician can create an asset, assign it to a user, and link it to a CMDB configuration item; a CI relationship diagram shows the dependency map visually
   2. Clicking "impact analysis" on a CI traverses the relationship graph and shows all upstream and downstream CIs that would be affected by a change to that CI
-  3. A change request moves through the full approval chain (assessment → approval → CAB review → scheduled → implementing → completed), with each approver receiving a notification and CAB attendees able to RSVP and download an iCal invite
+  3. A change request moves through the full approval chain (assessment -> approval -> CAB review -> scheduled -> implementing -> completed), with each approver receiving a notification and CAB attendees able to RSVP and download an iCal invite
   4. An emergency change bypasses CAB scheduling and routes directly to approval; a standard pre-approved change skips the approval chain
   5. An application can be created with its dependencies mapped to other applications and assets, visible in a visual dependency diagram on the portfolio dashboard
 **Plans**: TBD
@@ -122,12 +124,12 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 6/6 | Complete | 2026-03-20 |
 | 2. Billing and Owner Admin | 6/6 | Complete   | 2026-03-20 |
-| 3. Core ITSM | 0/8 | Not started | - |
+| 3. Core ITSM | 0/10 | Not started | - |
 | 4. CMDB, Change Management, and Asset Portfolio | 0/4 | Not started | - |
 | 5. Agent, Mobile, and Integrations | 0/5 | Not started | - |
