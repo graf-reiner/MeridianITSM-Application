@@ -780,6 +780,9 @@ model SLA {
   businessHoursStart        String?
   businessHoursEnd          String?
   businessDays              Int[]
+  timezone                  String   @default("UTC")
+  autoEscalate              Boolean  @default(false)
+  escalateToQueueId         String?  @db.Uuid
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
 

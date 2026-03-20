@@ -1,0 +1,553 @@
+import { prisma } from '@meridian/db';
+
+// ─── Status Transition Map ────────────────────────────────────────────────────
+
+const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+  NEW: ['OPEN', 'IN_PROGRESS', 'CANCELLED'],
+  OPEN: ['IN_PROGRESS', 'PENDING', 'RESOLVED', 'CANCELLED'],
+  IN_PROGRESS: ['PENDING', 'RESOLVED', 'CANCELLED'],
+  PENDING: ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CANCELLED'],
+  RESOLVED: ['CLOSED', 'OPEN'],
+  CLOSED: [],
+  CANCELLED: [],
+};
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface CreateTicketData {
+  title: string;
+  description?: string;
+  type?: 'INCIDENT' | 'SERVICE_REQUEST' | 'PROBLEM';
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  categoryId?: string;
+  queueId?: string;
+  assignedToId?: string;
+  requestedById?: string;
+  slaId?: string;
+  tags?: string[];
+}
+
+export interface UpdateTicketData {
+  title?: string;
+  description?: string;
+  status?: string;
+  priority?: string;
+  assignedToId?: string;
+  queueId?: string;
+  categoryId?: string;
+  slaId?: string;
+  resolution?: string;
+  tags?: string[];
+}
+
+export interface AddCommentData {
+  content: string;
+  visibility?: 'PUBLIC' | 'INTERNAL';
+  timeSpentMinutes?: number;
+}
+
+export interface TicketListFilters {
+  status?: string;
+  priority?: string;
+  assignedToId?: string;
+  categoryId?: string;
+  queueId?: string;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const TICKET_LIST_INCLUDE = {
+  assignedTo: {
+    select: { id: true, firstName: true, lastName: true, email: true },
+  },
+  category: {
+    select: { id: true, name: true },
+  },
+  queue: {
+    select: { id: true, name: true },
+  },
+} as const;
+
+const TICKET_DETAIL_INCLUDE = {
+  assignedTo: {
+    select: { id: true, firstName: true, lastName: true, email: true },
+  },
+  requestedBy: {
+    select: { id: true, firstName: true, lastName: true, email: true },
+  },
+  queue: {
+    select: { id: true, name: true },
+  },
+  sla: {
+    select: {
+      id: true,
+      name: true,
+      p1ResponseMinutes: true,
+      p1ResolutionMinutes: true,
+      p2ResponseMinutes: true,
+      p2ResolutionMinutes: true,
+      p3ResponseMinutes: true,
+      p3ResolutionMinutes: true,
+      p4ResponseMinutes: true,
+      p4ResolutionMinutes: true,
+    },
+  },
+  category: {
+    select: { id: true, name: true },
+  },
+  comments: {
+    include: {
+      author: { select: { id: true, firstName: true, lastName: true, email: true } },
+    },
+    orderBy: { createdAt: 'asc' as const },
+  },
+  attachments: {
+    include: {
+      uploadedBy: { select: { id: true, firstName: true, lastName: true, email: true } },
+    },
+  },
+  activities: {
+    orderBy: { createdAt: 'desc' as const },
+    take: 50,
+  },
+  knowledgeArticles: {
+    include: {
+      knowledgeArticle: { select: { id: true, title: true, articleNumber: true } },
+    },
+  },
+  cmdbTicketLinks: {
+    include: {
+      ci: { select: { id: true, name: true, ciNumber: true, type: true } },
+    },
+  },
+} as const;
+
+// ─── Exported Service Functions ───────────────────────────────────────────────
+
+/**
+ * Create a new ticket with a sequential, tenant-scoped ticket number.
+ * Uses a FOR UPDATE lock to prevent duplicate ticket numbers under concurrent load.
+ */
+export async function createTicket(
+  tenantId: string,
+  data: CreateTicketData,
+  actorId: string,
+) {
+  return prisma.$transaction(async (tx) => {
+    // Get next ticket number atomically with FOR UPDATE lock
+    const result = await tx.$queryRaw<[{ next: bigint }]>`
+      SELECT COALESCE(MAX("ticketNumber"), 0) + 1 AS next
+      FROM tickets
+      WHERE "tenantId" = ${tenantId}::uuid
+      FOR UPDATE
+    `;
+
+    const ticketNumber = Number(result[0].next);
+
+    // Resolve auto-assignment if queue has defaultAssigneeId
+    let assignedToId = data.assignedToId;
+    if (data.queueId && !assignedToId) {
+      const queue = await tx.queue.findFirst({
+        where: { id: data.queueId, tenantId },
+        select: { autoAssign: true, defaultAssigneeId: true },
+      });
+      if (queue?.autoAssign && queue.defaultAssigneeId) {
+        assignedToId = queue.defaultAssigneeId;
+      }
+    }
+
+    // Create ticket
+    const ticket = await tx.ticket.create({
+      data: {
+        tenantId,
+        ticketNumber,
+        title: data.title,
+        description: data.description,
+        type: data.type ?? 'INCIDENT',
+        priority: data.priority ?? 'MEDIUM',
+        categoryId: data.categoryId,
+        queueId: data.queueId,
+        assignedToId,
+        requestedById: data.requestedById,
+        slaId: data.slaId,
+        tags: data.tags ?? [],
+      },
+      include: TICKET_LIST_INCLUDE,
+    });
+
+    // Create audit activity
+    await tx.ticketActivity.create({
+      data: {
+        tenantId,
+        ticketId: ticket.id,
+        actorId,
+        activityType: 'CREATED',
+        metadata: {
+          title: ticket.title,
+          type: ticket.type,
+          priority: ticket.priority,
+        },
+      },
+    });
+
+    return ticket;
+  });
+}
+
+/**
+ * Update a ticket, enforcing status transition rules and logging every field change.
+ */
+export async function updateTicket(
+  tenantId: string,
+  ticketId: string,
+  data: UpdateTicketData,
+  actorId: string,
+) {
+  const existing = await prisma.ticket.findFirst({
+    where: { id: ticketId, tenantId },
+  });
+
+  if (!existing) {
+    const err = new Error(`Ticket not found`) as Error & { statusCode: number };
+    err.statusCode = 404;
+    throw err;
+  }
+
+  // Validate status transition
+  if (data.status && data.status !== existing.status) {
+    const allowed = ALLOWED_TRANSITIONS[existing.status] ?? [];
+    if (!allowed.includes(data.status)) {
+      const err = new Error(
+        `Invalid status transition from ${existing.status} to ${data.status}`,
+      ) as Error & { statusCode: number };
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+
+  // Build update payload and track changed fields for audit trail
+  const updates: Record<string, unknown> = {};
+  const changedFields: Array<{ fieldName: string; oldValue: string; newValue: string }> = [];
+
+  const trackChange = (field: string, oldVal: unknown, newVal: unknown) => {
+    if (newVal !== undefined && String(newVal) !== String(oldVal ?? '')) {
+      updates[field] = newVal;
+      changedFields.push({
+        fieldName: field,
+        oldValue: String(oldVal ?? ''),
+        newValue: String(newVal),
+      });
+    }
+  };
+
+  trackChange('title', existing.title, data.title);
+  trackChange('description', existing.description, data.description);
+  trackChange('priority', existing.priority, data.priority);
+  trackChange('assignedToId', existing.assignedToId, data.assignedToId);
+  trackChange('queueId', existing.queueId, data.queueId);
+  trackChange('categoryId', existing.categoryId, data.categoryId);
+  trackChange('slaId', existing.slaId, data.slaId);
+  trackChange('resolution', existing.resolution, data.resolution);
+
+  // Handle tags (compare as JSON string)
+  if (data.tags !== undefined) {
+    const oldTags = JSON.stringify(existing.tags ?? []);
+    const newTags = JSON.stringify(data.tags);
+    if (oldTags !== newTags) {
+      updates.tags = data.tags;
+      changedFields.push({
+        fieldName: 'tags',
+        oldValue: oldTags,
+        newValue: newTags,
+      });
+    }
+  }
+
+  // Handle status change with timestamp side-effects
+  if (data.status && data.status !== existing.status) {
+    updates.status = data.status;
+    changedFields.push({
+      fieldName: 'status',
+      oldValue: existing.status,
+      newValue: data.status,
+    });
+
+    if (data.status === 'RESOLVED') {
+      updates.resolvedAt = new Date();
+    }
+    if (data.status === 'CLOSED') {
+      updates.closedAt = new Date();
+    }
+
+    // SLA pause: record pause timestamp in customFields when entering PENDING
+    if (data.status === 'PENDING') {
+      const currentCustomFields =
+        (existing.customFields as Record<string, unknown> | null) ?? {};
+      updates.customFields = {
+        ...currentCustomFields,
+        slaPausedAt: new Date().toISOString(),
+      };
+    }
+
+    // SLA resume: shift slaBreachAt forward by time spent in PENDING
+    if (existing.status === 'PENDING' && data.status !== 'PENDING') {
+      const currentCustomFields =
+        (existing.customFields as Record<string, unknown> | null) ?? {};
+      const slaPausedAt = currentCustomFields.slaPausedAt as string | undefined;
+
+      if (slaPausedAt && existing.slaBreachAt) {
+        const pauseStart = new Date(slaPausedAt);
+        const pauseDurationMs = Date.now() - pauseStart.getTime();
+        const newSlaBreachAt = new Date(existing.slaBreachAt.getTime() + pauseDurationMs);
+        updates.slaBreachAt = newSlaBreachAt;
+
+        // Clear the slaPausedAt marker
+        const { slaPausedAt: _removed, ...restCustomFields } = currentCustomFields;
+        updates.customFields = restCustomFields;
+      }
+    }
+  }
+
+  // Execute update and audit log in a transaction
+  return prisma.$transaction(async (tx) => {
+    const ticket = await tx.ticket.update({
+      where: { id: ticketId },
+      data: updates,
+      include: TICKET_LIST_INCLUDE,
+    });
+
+    // Log each changed field as a separate activity record
+    for (const changed of changedFields) {
+      await tx.ticketActivity.create({
+        data: {
+          tenantId,
+          ticketId,
+          actorId,
+          activityType: 'FIELD_CHANGED',
+          fieldName: changed.fieldName,
+          oldValue: changed.oldValue,
+          newValue: changed.newValue,
+        },
+      });
+    }
+
+    return ticket;
+  });
+}
+
+/**
+ * Add a comment to a ticket.
+ * Tracks first response time when a non-requester agent/admin comments.
+ */
+export async function addComment(
+  tenantId: string,
+  ticketId: string,
+  data: AddCommentData,
+  actorId: string,
+) {
+  return prisma.$transaction(async (tx) => {
+    const ticket = await tx.ticket.findFirst({
+      where: { id: ticketId, tenantId },
+      select: { firstResponseAt: true, requestedById: true },
+    });
+
+    if (!ticket) {
+      const err = new Error('Ticket not found') as Error & { statusCode: number };
+      err.statusCode = 404;
+      throw err;
+    }
+
+    // Create the comment
+    const comment = await tx.ticketComment.create({
+      data: {
+        tenantId,
+        ticketId,
+        authorId: actorId,
+        content: data.content,
+        visibility: data.visibility ?? 'PUBLIC',
+        timeSpentMinutes: data.timeSpentMinutes,
+      },
+      include: {
+        author: { select: { id: true, firstName: true, lastName: true, email: true } },
+      },
+    });
+
+    // Track first response: set firstResponseAt if not yet set and actor is not the requester
+    const isFirstResponse =
+      !ticket.firstResponseAt && ticket.requestedById !== actorId;
+
+    if (isFirstResponse) {
+      await tx.ticket.update({
+        where: { id: ticketId },
+        data: { firstResponseAt: new Date() },
+      });
+    }
+
+    // Log activity
+    await tx.ticketActivity.create({
+      data: {
+        tenantId,
+        ticketId,
+        actorId,
+        activityType: 'COMMENT_ADDED',
+        metadata: {
+          visibility: comment.visibility,
+          commentId: comment.id,
+        },
+      },
+    });
+
+    return comment;
+  });
+}
+
+/**
+ * Get a paginated, filtered list of tickets for a tenant.
+ */
+export async function getTicketList(tenantId: string, filters: TicketListFilters) {
+  const page = Math.max(1, filters.page ?? 1);
+  const pageSize = Math.min(100, Math.max(1, filters.pageSize ?? 25));
+  const skip = (page - 1) * pageSize;
+
+  const where: Record<string, unknown> = { tenantId };
+
+  if (filters.status) where.status = filters.status;
+  if (filters.priority) where.priority = filters.priority;
+  if (filters.assignedToId) where.assignedToId = filters.assignedToId;
+  if (filters.categoryId) where.categoryId = filters.categoryId;
+  if (filters.queueId) where.queueId = filters.queueId;
+
+  if (filters.dateFrom || filters.dateTo) {
+    where.createdAt = {};
+    if (filters.dateFrom) (where.createdAt as Record<string, unknown>).gte = new Date(filters.dateFrom);
+    if (filters.dateTo) (where.createdAt as Record<string, unknown>).lte = new Date(filters.dateTo);
+  }
+
+  if (filters.search) {
+    where.OR = [
+      { title: { contains: filters.search, mode: 'insensitive' } },
+      { description: { contains: filters.search, mode: 'insensitive' } },
+    ];
+  }
+
+  const [tickets, total] = await Promise.all([
+    prisma.ticket.findMany({
+      where,
+      include: TICKET_LIST_INCLUDE,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: pageSize,
+    }),
+    prisma.ticket.count({ where }),
+  ]);
+
+  return { data: tickets, total, page, pageSize };
+}
+
+/**
+ * Get full ticket detail including all relations.
+ */
+export async function getTicketDetail(tenantId: string, ticketId: string) {
+  return prisma.ticket.findFirst({
+    where: { id: ticketId, tenantId },
+    include: TICKET_DETAIL_INCLUDE,
+  });
+}
+
+/**
+ * Assign a ticket to a user, logging the assignment change.
+ */
+export async function assignTicket(
+  tenantId: string,
+  ticketId: string,
+  assignedToId: string,
+  actorId: string,
+) {
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.ticket.findFirst({
+      where: { id: ticketId, tenantId },
+      select: { assignedToId: true },
+    });
+
+    if (!existing) {
+      const err = new Error('Ticket not found') as Error & { statusCode: number };
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const ticket = await tx.ticket.update({
+      where: { id: ticketId },
+      data: { assignedToId },
+      include: TICKET_LIST_INCLUDE,
+    });
+
+    await tx.ticketActivity.create({
+      data: {
+        tenantId,
+        ticketId,
+        actorId,
+        activityType: 'ASSIGNMENT_CHANGED',
+        fieldName: 'assignedToId',
+        oldValue: existing.assignedToId ?? '',
+        newValue: assignedToId,
+      },
+    });
+
+    return ticket;
+  });
+}
+
+/**
+ * Link a knowledge article to a ticket (upsert to handle re-link).
+ */
+export async function linkKnowledgeArticle(
+  tenantId: string,
+  ticketId: string,
+  knowledgeArticleId: string,
+) {
+  return prisma.ticketKnowledgeArticle.upsert({
+    where: {
+      ticketId_knowledgeArticleId: {
+        ticketId,
+        knowledgeArticleId,
+      },
+    },
+    create: {
+      tenantId,
+      ticketId,
+      knowledgeArticleId,
+    },
+    update: {},
+  });
+}
+
+/**
+ * Link a CMDB CI to a ticket (upsert to handle re-link).
+ */
+export async function linkCmdbItem(
+  tenantId: string,
+  ticketId: string,
+  ciId: string,
+  linkType: 'AFFECTED' | 'RELATED' | 'CAUSED_BY' = 'AFFECTED',
+) {
+  return prisma.cmdbTicketLink.upsert({
+    where: {
+      ciId_ticketId: {
+        ciId,
+        ticketId,
+      },
+    },
+    create: {
+      tenantId,
+      ciId,
+      ticketId,
+      linkType,
+    },
+    update: { linkType },
+  });
+}
