@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev --port 3800",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "vitest run",
+    "vitest": "vitest"
   },
   "dependencies": {
     "@meridian/db": "workspace:*",
@@ -13,13 +15,17 @@
     "@node-rs/bcrypt": "^1.10.7",
     "jose": "^6.0.10",
     "next": "^16.2.0",
+    "otpauth": "^9.5.0",
+    "qrcode": "^1.5.4",
     "react": "^19.2.1",
     "react-dom": "^19.2.1"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.0"
   }
 }
