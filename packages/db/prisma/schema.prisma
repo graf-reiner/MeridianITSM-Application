@@ -1862,5 +1862,19 @@ model PasswordResetToken {
   @@map("password_reset_tokens")
 }
 
-// Model 63: TicketKnowledgeArticle relation table already defined above (model 14)
-// Total: 62 models (61 required + UserGroupMember)
+// Model 63: StripeWebhookEvent (GLOBAL — no tenantId, global idempotency)
+model StripeWebhookEvent {
+  id            String    @id @default(uuid()) @db.Uuid
+  stripeEventId String    @unique
+  eventType     String
+  payload       Json?
+  receivedAt    DateTime  @default(now())
+  processedAt   DateTime?
+  errorMessage  String?
+  createdAt     DateTime  @default(now())
+
+  @@index([processedAt])
+  @@map("stripe_webhook_events")
+}
+
+// Total: 63 models (62 required + UserGroupMember + StripeWebhookEvent)

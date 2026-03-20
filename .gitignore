@@ -34,8 +34,5 @@ Thumbs.db
 *.swp
 *.swo
 
-# Prisma migrations (tracked after schema is stable)
-packages/db/prisma/migrations
-
 # Generated files
 packages/db/node_modules/.prisma
