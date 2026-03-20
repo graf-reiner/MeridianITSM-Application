@@ -1,0 +1,313 @@
+/**
+ * Email Inbound Service (worker-side copy)
+ *
+ * Duplicated from apps/api/src/services/email-inbound.service.ts to avoid cross-app imports.
+ * Provides: IMAP mailbox polling, reply threading, deduplication, ticket/comment creation.
+ */
+import { ImapFlow } from 'imapflow';
+import { simpleParser } from 'mailparser';
+import { randomUUID } from 'node:crypto';
+import { prisma, PrismaClient } from '@meridian/db';
+import { decrypt, uploadFile } from '@meridian/core';
+import { Redis } from 'ioredis';
+
+// Derive EmailAccount type from PrismaClient to avoid direct @prisma/client import
+type EmailAccount = Awaited<ReturnType<PrismaClient['emailAccount']['findUniqueOrThrow']>>;
+
+// ─── Redis for deduplication ──────────────────────────────────────────────────
+const redis = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
+  maxRetriesPerRequest: null,
+  enableReadyCheck: false,
+  lazyConnect: true,
+});
+
+redis.on('error', (err: Error) => console.error('[email-inbound] Redis error:', err));
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const DEDUP_TTL_SECONDS = 90 * 24 * 3600; // 90 days
+const DEDUP_KEY_PREFIX = 'email:msgids:';
+const MAX_ATTACHMENT_TOTAL_BYTES = 25 * 1024 * 1024; // 25 MB
+
+// ─── Deduplication ────────────────────────────────────────────────────────────
+
+export async function isDuplicate(tenantId: string, messageId: string): Promise<boolean> {
+  const key = `${DEDUP_KEY_PREFIX}${tenantId}`;
+  const isMember = await redis.sismember(key, messageId);
+  if (isMember === 1) return true;
+  await redis.sadd(key, messageId);
+  await redis.expire(key, DEDUP_TTL_SECONDS);
+  return false;
+}
+
+// ─── Reply Threading ──────────────────────────────────────────────────────────
+
+export async function findTicketByHeaders(
+  tenantId: string,
+  references?: string[],
+  inReplyTo?: string,
+): Promise<{ id: string; ticketNumber: number } | null> {
+  const searchIds: string[] = [];
+  if (inReplyTo) searchIds.push(inReplyTo);
+  if (references) searchIds.push(...references);
+  if (searchIds.length === 0) return null;
+
+  for (const msgId of searchIds) {
+    const ticket = await prisma.ticket.findFirst({
+      where: {
+        tenantId,
+        customFields: { path: ['outboundMessageIds'], array_contains: msgId },
+      },
+      select: { id: true, ticketNumber: true },
+    });
+    if (ticket) return ticket;
+  }
+  return null;
+}
+
+export async function findTicketBySubject(
+  tenantId: string,
+  subject: string,
+): Promise<{ id: string; ticketNumber: number } | null> {
+  const match = /TKT-(\d{5})/i.exec(subject);
+  if (!match) return null;
+  const ticketNumber = parseInt(match[1], 10);
+  return prisma.ticket.findFirst({
+    where: { tenantId, ticketNumber },
+    select: { id: true, ticketNumber: true },
+  });
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+async function lookupUserByEmail(tenantId: string, email?: string): Promise<string | null> {
+  if (!email) return null;
+  const user = await prisma.user.findFirst({
+    where: { tenantId, email: email.toLowerCase() },
+    select: { id: true },
+  });
+  return user?.id ?? null;
+}
+
+async function createTicketFromEmail(
+  tenantId: string,
+  data: {
+    title: string;
+    description: string;
+    queueId?: string;
+    categoryId?: string;
+    requestedById?: string;
+  },
+): Promise<{ id: string; assignedToId: string | null }> {
+  return prisma.$transaction(async (tx) => {
+    const result = await tx.$queryRaw<[{ next: bigint }]>`
+      SELECT COALESCE(MAX("ticketNumber"), 0) + 1 AS next
+      FROM tickets
+      WHERE "tenantId" = ${tenantId}::uuid
+      FOR UPDATE
+    `;
+
+    const ticketNumber = Number(result[0]!.next);
+
+    let assignedToId: string | null = null;
+    if (data.queueId) {
+      const queue = await tx.queue.findFirst({
+        where: { id: data.queueId, tenantId },
+        select: { autoAssign: true, defaultAssigneeId: true },
+      });
+      if (queue?.autoAssign && queue.defaultAssigneeId) {
+        assignedToId = queue.defaultAssigneeId;
+      }
+    }
+
+    return tx.ticket.create({
+      data: {
+        tenantId,
+        ticketNumber,
+        title: data.title,
+        description: data.description,
+        type: 'INCIDENT',
+        priority: 'MEDIUM',
+        queueId: data.queueId,
+        categoryId: data.categoryId,
+        requestedById: data.requestedById,
+        assignedToId,
+      },
+      select: { id: true, assignedToId: true },
+    });
+  });
+}
+
+async function addEmailComment(tenantId: string, ticketId: string, content: string): Promise<void> {
+  await prisma.ticketComment.create({
+    data: {
+      tenantId,
+      ticketId,
+      authorId: null as unknown as string,
+      content,
+      visibility: 'PUBLIC',
+    },
+  });
+}
+
+// ─── Mailbox Polling ──────────────────────────────────────────────────────────
+
+export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: number; comments: number }> {
+  if (!account.imapHost || !account.imapUser || !account.imapPasswordEnc) {
+    console.warn(`[email-inbound] Account ${account.id} missing IMAP config, skipping`);
+    return { newTickets: 0, comments: 0 };
+  }
+
+  const decryptedPassword = decrypt(account.imapPasswordEnc);
+
+  const client = new ImapFlow({
+    host: account.imapHost,
+    port: account.imapPort ?? 993,
+    secure: account.imapSecure,
+    auth: { user: account.imapUser, pass: decryptedPassword },
+    logger: false,
+  });
+
+  let newTickets = 0;
+  let comments = 0;
+
+  try {
+    await client.connect();
+    const lock = await client.getMailboxLock('INBOX');
+
+    try {
+      const messages = client.fetch({ seen: false }, { envelope: true, source: true }, { uid: true });
+
+      for await (const message of messages) {
+        try {
+          if (!message.source) {
+            console.warn(`[email-inbound] No source in message for account ${account.id}, skipping`);
+            continue;
+          }
+
+          const parsed = await simpleParser(message.source);
+          const messageId = parsed.messageId;
+
+          if (!messageId) {
+            console.warn(`[email-inbound] No Message-ID in account ${account.id}, skipping`);
+            continue;
+          }
+
+          if (await isDuplicate(account.tenantId, messageId)) {
+            console.log(`[email-inbound] Duplicate Message-ID ${messageId}, skipping`);
+            await client.messageFlagsAdd({ uid: message.uid }, ['\\Seen'], { uid: true });
+            continue;
+          }
+
+          const inReplyTo = parsed.inReplyTo;
+          const references = Array.isArray(parsed.references)
+            ? parsed.references
+            : parsed.references
+            ? [parsed.references]
+            : undefined;
+
+          const existingTicket =
+            (await findTicketByHeaders(account.tenantId, references, inReplyTo)) ??
+            (await findTicketBySubject(account.tenantId, parsed.subject ?? ''));
+
+          const htmlContent = parsed.html !== false ? (parsed.html ?? '') : '';
+          const textContent: string = parsed.text ?? htmlContent ?? '(No content)';
+
+          if (existingTicket) {
+            await addEmailComment(account.tenantId, existingTicket.id, textContent);
+            comments++;
+          } else {
+            const fromEmail = parsed.from?.value?.[0]?.address;
+            const requestedById = await lookupUserByEmail(account.tenantId, fromEmail);
+
+            const ticket = await createTicketFromEmail(account.tenantId, {
+              title: parsed.subject ?? 'No Subject',
+              description: textContent,
+              queueId: account.defaultQueueId ?? undefined,
+              categoryId: account.defaultCategoryId ?? undefined,
+              requestedById: requestedById ?? undefined,
+            });
+
+            newTickets++;
+
+            await prisma.ticket.update({
+              where: { id: ticket.id },
+              data: {
+                customFields: {
+                  outboundMessageIds: [messageId],
+                  fromEmail: fromEmail ?? null,
+                  originalMessageId: messageId,
+                } as object,
+              },
+            });
+
+            if (parsed.attachments && parsed.attachments.length > 0) {
+              let totalSize = 0;
+
+              for (const attachment of parsed.attachments) {
+                totalSize += attachment.size ?? attachment.content.length;
+                if (totalSize > MAX_ATTACHMENT_TOTAL_BYTES) {
+                  console.warn(`[email-inbound] Attachment size limit reached for ticket ${ticket.id}`);
+                  break;
+                }
+
+                const filename = attachment.filename ?? 'attachment.bin';
+                const ext = filename.includes('.') ? filename.split('.').pop()! : 'bin';
+
+                try {
+                  const storedKey = await uploadFile(
+                    account.tenantId,
+                    `email-attachments/${ticket.id}`,
+                    `${randomUUID()}.${ext}`,
+                    attachment.content,
+                    attachment.contentType,
+                  );
+
+                  if (requestedById) {
+                    await prisma.ticketAttachment.create({
+                      data: {
+                        tenantId: account.tenantId,
+                        ticketId: ticket.id,
+                        uploadedById: requestedById,
+                        filename,
+                        mimeType: attachment.contentType,
+                        fileSize: attachment.size ?? attachment.content.length,
+                        storagePath: storedKey,
+                      },
+                    });
+                  }
+                } catch (attachErr) {
+                  console.error(
+                    `[email-inbound] Attachment upload failed: ${attachErr instanceof Error ? attachErr.message : String(attachErr)}`,
+                  );
+                }
+              }
+            }
+          }
+
+          await client.messageFlagsAdd({ uid: message.uid }, ['\\Seen'], { uid: true });
+        } catch (msgErr) {
+          console.error(
+            `[email-inbound] Error processing message in account ${account.id}: ${msgErr instanceof Error ? msgErr.message : String(msgErr)}`,
+          );
+        }
+      }
+    } finally {
+      lock.release();
+    }
+
+    await client.logout();
+  } catch (err) {
+    console.error(
+      `[email-inbound] Failed to poll mailbox for account ${account.id}: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    throw err;
+  }
+
+  await prisma.emailAccount.update({
+    where: { id: account.id },
+    data: { lastPolledAt: new Date() },
+  });
+
+  return { newTickets, comments };
+}

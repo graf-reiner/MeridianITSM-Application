@@ -6,7 +6,7 @@ import { cmdbReconciliationWorker } from './workers/cmdb-reconciliation.js';
 import { stripeWebhookWorker } from './workers/stripe-webhook.js';
 import { usageSnapshotWorker } from './workers/usage-snapshot.js';
 import { trialExpiryWorker } from './workers/trial-expiry.js';
-import { usageSnapshotQueue, trialExpiryQueue, slaMonitorQueue } from './queues/definitions.js';
+import { usageSnapshotQueue, trialExpiryQueue, slaMonitorQueue, emailPollingQueue } from './queues/definitions.js';
 
 const workers = [
   { name: 'sla-monitor', worker: slaMonitorWorker },
@@ -45,6 +45,16 @@ void trialExpiryQueue.add(
   {
     repeat: { pattern: '0 6 * * *' },
     jobId: 'daily-trial-check-repeatable', // Stable jobId prevents duplicate schedules on restart
+  },
+);
+
+// Schedule email polling every 5 minutes across all tenant mailboxes
+void emailPollingQueue.add(
+  'poll-emails',
+  {},
+  {
+    repeat: { pattern: '*/5 * * * *' },
+    jobId: 'email-polling-repeatable', // Stable jobId prevents duplicate schedules on restart
   },
 );
 
