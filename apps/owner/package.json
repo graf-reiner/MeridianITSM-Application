@@ -8,6 +8,10 @@
     "start": "next start"
   },
   "dependencies": {
+    "@meridian/db": "workspace:*",
+    "@meridian/types": "workspace:*",
+    "@node-rs/bcrypt": "^1.10.7",
+    "jose": "^6.0.10",
     "next": "^16.2.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1"

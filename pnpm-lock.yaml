@@ -105,6 +105,18 @@ importers:
 
   apps/owner:
     dependencies:
+      '@meridian/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@meridian/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+      '@node-rs/bcrypt':
+        specifier: ^1.10.7
+        version: 1.10.7
+      jose:
+        specifier: ^6.0.10
+        version: 6.2.2
       next:
         specifier: ^16.2.0
         version: 16.2.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -1579,6 +1591,9 @@ packages:
   jiti@2.6.1:
     resolution: {integrity: sha512-ekilCSN1jwRvIbgeg/57YFh8qQDNbwDb9xT/qu2DAHbFFZUicIl4ygVaAvzveMhMVr3LnpSKTNnwt8PoOfmKhQ==}
     hasBin: true
+
+  jose@6.2.2:
+    resolution: {integrity: sha512-d7kPDd34KO/YnzaDOlikGpOurfF0ByC2sEV4cANCtdqLlTfBlw2p14O/5d/zv40gJPbIQxfES3nSx1/oYNyuZQ==}
 
   json-schema-ref-resolver@3.0.0:
     resolution: {integrity: sha512-hOrZIVL5jyYFjzk7+y7n5JDzGlU8rfWDuYyHwGa2WA8/pcmMHezp2xsVwxrebD/Q9t8Nc5DboieySDpCp4WG4A==}
@@ -3744,6 +3759,8 @@ snapshots:
   isexe@2.0.0: {}
 
   jiti@2.6.1: {}
+
+  jose@6.2.2: {}
 
   json-schema-ref-resolver@3.0.0:
     dependencies:
