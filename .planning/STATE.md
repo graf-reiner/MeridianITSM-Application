@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-03-20T14:34:09.845Z"
+stopped_at: Completed 02-05-PLAN.md
+last_updated: "2026-03-20T14:38:14.409Z"
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 13
-  completed_plans: 9
+  completed_plans: 10
 ---
 
 # Project State
@@ -56,6 +56,7 @@ Plan: 2 of 6 (02-01 complete)
 | Phase 02-billing-and-owner-admin P04 | 10 | 2 tasks | 13 files |
 | Phase 02-billing-and-owner-admin P01 | 15 | 3 tasks | 13 files |
 | Phase 02-billing-and-owner-admin P02 | 7 | 2 tasks | 7 files |
+| Phase 02-billing-and-owner-admin P05 | 11 | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,8 @@ Recent decisions affecting current work:
 - [Phase 02-01]: vitest class syntax required for Worker/Queue/Redis constructor mocks — vi.fn().mockImplementation() not valid as constructor
 - [Phase 02-02]: @meridian/core must be built (tsc) before apps/api tests resolve isFeatureResource -- workspace symlinks resolve to dist/
 - [Phase 02-02]: billingPlanRoutes registered in v1 protected scope (not billing/ public scope) -- plan data requires JWT auth
+- [Phase 02-billing-and-owner-admin]: SubscriptionPlanTier used as local union type in provisioning.ts — @meridian/db only exports prisma client, not Prisma enums
+- [Phase 02-billing-and-owner-admin]: authHeaders typed as Record<string, string> in owner admin client components — optional Authorization property fails TypeScript HeadersInit constraint
 
 ### Pending Todos
 
@@ -104,6 +107,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T14:34:09.839Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-03-20T14:38:14.404Z
+Stopped at: Completed 02-05-PLAN.md
 Resume file: None

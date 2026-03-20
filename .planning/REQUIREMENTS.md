@@ -159,16 +159,16 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **OADM-01**: Separate Next.js app on port 3800 with completely isolated auth (OwnerUser, bcrypt + TOTP MFA)
 - [x] **OADM-02**: IP allowlist middleware; never exposed through Cloudflare or public DNS
-- [ ] **OADM-03**: Dashboard with MRR/ARR, trial conversions, churn, tenant counts
-- [ ] **OADM-04**: Tenant list with search/filter by plan, status; tenant detail with subscription and usage
-- [ ] **OADM-05**: Tenant lifecycle: suspend, unsuspend, delete (soft with 30-day recovery), extend trial, apply grace period
+- [x] **OADM-03**: Dashboard with MRR/ARR, trial conversions, churn, tenant counts
+- [x] **OADM-04**: Tenant list with search/filter by plan, status; tenant detail with subscription and usage
+- [x] **OADM-05**: Tenant lifecycle: suspend, unsuspend, delete (soft with 30-day recovery), extend trial, apply grace period
 - [x] **OADM-06**: Read-only tenant impersonation with 15-minute signed token and persistent banner
-- [ ] **OADM-07**: Internal notes on tenants (visible only in admin app)
+- [x] **OADM-07**: Internal notes on tenants (visible only in admin app)
 - [ ] **OADM-08**: Billing dashboard: Stripe revenue, per-tenant billing detail, retry failed payments
 - [ ] **OADM-09**: Plan management: view/edit subscription plans, archive plans
 - [ ] **OADM-10**: System operations: worker health, maintenance broadcast, CMDB reconciliation trigger
 - [ ] **OADM-11**: Global cross-tenant audit log viewer
-- [ ] **OADM-12**: Manual tenant provisioning endpoint
+- [x] **OADM-12**: Manual tenant provisioning endpoint
 
 ### Inventory Agent (.NET)
 
@@ -334,16 +334,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BILL-07 | Phase 2 | Complete |
 | OADM-01 | Phase 2 | Complete |
 | OADM-02 | Phase 2 | Complete |
-| OADM-03 | Phase 2 | Pending |
-| OADM-04 | Phase 2 | Pending |
-| OADM-05 | Phase 2 | Pending |
+| OADM-03 | Phase 2 | Complete |
+| OADM-04 | Phase 2 | Complete |
+| OADM-05 | Phase 2 | Complete |
 | OADM-06 | Phase 2 | Complete |
-| OADM-07 | Phase 2 | Pending |
+| OADM-07 | Phase 2 | Complete |
 | OADM-08 | Phase 2 | Pending |
 | OADM-09 | Phase 2 | Pending |
 | OADM-10 | Phase 2 | Pending |
 | OADM-11 | Phase 2 | Pending |
-| OADM-12 | Phase 2 | Pending |
+| OADM-12 | Phase 2 | Complete |
 | TICK-01 | Phase 3 | Pending |
 | TICK-02 | Phase 3 | Pending |
 | TICK-03 | Phase 3 | Pending |
