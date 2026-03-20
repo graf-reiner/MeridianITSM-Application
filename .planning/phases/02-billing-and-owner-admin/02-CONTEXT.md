@@ -18,7 +18,7 @@ Stripe subscription lifecycle (embedded Elements checkout, webhook processing, s
 - POST /billing/sync-checkout endpoint queries Stripe API directly after checkout redirect to handle webhook race condition
 - Stripe webhooks processed asynchronously: endpoint enqueues to BullMQ, returns 200 immediately; worker processes with `stripe_webhook_events` idempotency table (UNIQUE constraint on stripeEventId)
 - Custom billing management UI built in the app (not Stripe Customer Portal redirect) — update card, view invoices, cancel subscription
-- Stripe Node SDK 17.x
+- Stripe Node SDK 20.x (updated from 17.x per research — v20 is current, no breaking changes)
 
 ### Plan Enforcement
 - planGate middleware returns structured 402 JSON: `{ error: 'PLAN_LIMIT_EXCEEDED', limit: 5, current: 5, feature: 'agents', upgradeTier: 'PROFESSIONAL' }`
