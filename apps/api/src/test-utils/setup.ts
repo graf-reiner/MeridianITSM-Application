@@ -9,7 +9,10 @@ import { vi } from 'vitest';
 // Mock Prisma client
 // ---------------------------------------------------------------------------
 
-export const mockPrisma = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyFn = ReturnType<typeof vi.fn>;
+
+export const mockPrisma: Record<string, Record<string, AnyFn> | AnyFn> = {
   ticket: {
     create: vi.fn(),
     findMany: vi.fn(),
@@ -70,7 +73,7 @@ export function createTestContext(overrides: Partial<TestContext> = {}): TestCon
 // Mock Redis client
 // ---------------------------------------------------------------------------
 
-export const mockRedis = {
+export const mockRedis: Record<string, AnyFn> = {
   sismember: vi.fn(),
   sadd: vi.fn(),
   expire: vi.fn(),
