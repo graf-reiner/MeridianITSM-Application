@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: "Completed 01-01-PLAN.md: monorepo scaffold, all app/package stubs, Docker Compose"
-last_updated: "2026-03-20T11:10:06.784Z"
+stopped_at: "Completed 01-02-PLAN.md: 62-model Prisma schema, tenant extension, Zod types, seed script"
+last_updated: "2026-03-20T11:21:28Z"
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 6
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -24,29 +24,30 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 ## Current Position
 
 Phase: 01 (foundation) — EXECUTING
-Plan: 1 of 6
+Plan: 2 of 6
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 0
-- Average duration: -
-- Total execution time: 0 hours
+- Total plans completed: 2
+- Average duration: ~10 min
+- Total execution time: 0.3 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01-foundation | 2/6 | ~20 min | ~10 min |
 
 **Recent Trend:**
 
-- Last 5 plans: -
-- Trend: -
+- Last 5 plans: 01-01 (~11 min), 01-02 (9 min)
+- Trend: Stable
 
 *Updated after each plan completion*
 | Phase 01-foundation P01 | 8 | 3 tasks | 39 files |
+| Phase 01-foundation P02 | 9 | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -62,6 +63,9 @@ Recent decisions affecting current work:
 - [Phase 01-01]: fastify-type-provider-zod (unscoped) used instead of non-existent @fastify/type-provider-zod — plan spec had wrong npm package name
 - [Phase 01-01]: ioredis@5.3.2 used (plan spec had invalid semver 3.1013.0) — ioredis v5 is current stable
 - [Phase 01-01]: turbo added to root devDependencies — omitted from plan but required for pnpm turbo build to resolve
+- [Phase 01-02]: Prisma 7 requires datasource URL in prisma.config.ts via adapter — schema.prisma datasource block has no url field (breaking change from Prisma 6)
+- [Phase 01-02]: @@unique([tenantId, name]) added to SLA and Category models to support seed upsert by name
+- [Phase 01-02]: 62 total models (UserGroupMember explicit join table added; plan listed 61)
 
 ### Pending Todos
 
@@ -75,6 +79,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T11:10:06.778Z
-Stopped at: Completed 01-01-PLAN.md: monorepo scaffold, all app/package stubs, Docker Compose
+Last session: 2026-03-20T11:21:28Z
+Stopped at: Completed 01-02-PLAN.md: 62-model Prisma schema, tenant extension, Zod types, seed script
 Resume file: None

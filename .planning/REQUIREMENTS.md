@@ -10,20 +10,20 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Foundation
 
 - [x] **FNDN-01**: Monorepo initialized with pnpm workspaces and Turborepo build pipeline
-- [ ] **FNDN-02**: Shared database package (`packages/db`) with Prisma 7 schema covering all 50+ models
-- [ ] **FNDN-03**: Shared types package (`packages/types`) with Zod schemas for all API inputs/outputs
+- [x] **FNDN-02**: Shared database package (`packages/db`) with Prisma 7 schema covering all 50+ models
+- [x] **FNDN-03**: Shared types package (`packages/types`) with Zod schemas for all API inputs/outputs
 - [x] **FNDN-04**: Fastify 5 API server (`apps/api`) with plugin architecture and middleware pipeline
 - [x] **FNDN-05**: Next.js 16 frontend (`apps/web`) with App Router and React 19
 - [x] **FNDN-06**: Docker Compose configuration for PostgreSQL, Redis, MinIO, and MailHog
-- [ ] **FNDN-07**: Database seeding with default tenant, roles, categories, SLA policies, and test users
+- [x] **FNDN-07**: Database seeding with default tenant, roles, categories, SLA policies, and test users
 
 ### Multi-Tenancy
 
-- [ ] **TNCY-01**: Every database table has tenantId column; every query is scoped by tenantId
-- [ ] **TNCY-02**: Tenant model with types (MSP, ENTERPRISE, B2C) and subscription plan fields
-- [ ] **TNCY-03**: CustomerOrganization model for MSP customers managing multiple client orgs
+- [x] **TNCY-01**: Every database table has tenantId column; every query is scoped by tenantId
+- [x] **TNCY-02**: Tenant model with types (MSP, ENTERPRISE, B2C) and subscription plan fields
+- [x] **TNCY-03**: CustomerOrganization model for MSP customers managing multiple client orgs
 - [ ] **TNCY-04**: Tenant-scoped middleware on all API routes that injects tenantId from JWT claims
-- [ ] **TNCY-05**: Prisma query extension or middleware that enforces tenantId on every operation
+- [x] **TNCY-05**: Prisma query extension or middleware that enforces tenantId on every operation
 - [ ] **TNCY-06**: Subdomain-based tenant routing via Cloudflare Worker and org-lookup service
 
 ### Authentication & Authorization
@@ -298,17 +298,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | FNDN-01 | Phase 1 | Complete |
-| FNDN-02 | Phase 1 | Pending |
-| FNDN-03 | Phase 1 | Pending |
+| FNDN-02 | Phase 1 | Complete |
+| FNDN-03 | Phase 1 | Complete |
 | FNDN-04 | Phase 1 | Complete |
 | FNDN-05 | Phase 1 | Complete |
 | FNDN-06 | Phase 1 | Complete |
-| FNDN-07 | Phase 1 | Pending |
-| TNCY-01 | Phase 1 | Pending |
-| TNCY-02 | Phase 1 | Pending |
-| TNCY-03 | Phase 1 | Pending |
+| FNDN-07 | Phase 1 | Complete |
+| TNCY-01 | Phase 1 | Complete |
+| TNCY-02 | Phase 1 | Complete |
+| TNCY-03 | Phase 1 | Complete |
 | TNCY-04 | Phase 1 | Pending |
-| TNCY-05 | Phase 1 | Pending |
+| TNCY-05 | Phase 1 | Complete |
 | TNCY-06 | Phase 1 | Pending |
 | AUTH-01 | Phase 1 | Pending |
 | AUTH-02 | Phase 1 | Pending |
