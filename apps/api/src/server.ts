@@ -1,12 +1,59 @@
 import Fastify from 'fastify';
+import fastifyJwt from '@fastify/jwt';
+import { registerCors } from './plugins/cors.js';
+import { registerSwagger } from './plugins/swagger.js';
+import { registerRateLimit } from './plugins/rate-limit.js';
+import { redis } from './lib/redis.js';
+import { authPreHandler } from './plugins/auth.js';
+import { tenantPreHandler } from './plugins/tenant.js';
+import { planGatePreHandler } from './plugins/plan-gate.js';
+import { apiKeyPreHandler } from './plugins/api-key.js';
+import { healthRoutes } from './routes/health/index.js';
+import { authRoutes } from './routes/auth/index.js';
+import { v1Routes } from './routes/v1/index.js';
+import { externalRoutes } from './routes/external/index.js';
 
 export async function buildApp() {
   const app = Fastify({ logger: true });
 
-  app.get('/api/health', async () => ({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-  }));
+  // Layer 1: CORS — must be first for preflight requests
+  await registerCors(app);
+
+  // Layer 2: Swagger / OpenAPI docs
+  await registerSwagger(app);
+
+  // Layer 3: JWT plugin — registers signing/verification; does NOT enforce on all routes
+  await app.register(fastifyJwt, {
+    secret: process.env.JWT_SECRET ?? 'change-me-in-production-jwt-secret-32chars',
+  });
+
+  // Layer 4: Rate limiting with Redis backing
+  await registerRateLimit(app);
+
+  // Public routes — no authentication required
+  await app.register(healthRoutes);
+  await app.register(authRoutes);
+
+  // Protected routes — JWT auth + tenant injection + plan gate
+  await app.register(async (protectedApp) => {
+    protectedApp.addHook('preHandler', authPreHandler);
+    protectedApp.addHook('preHandler', tenantPreHandler);
+    protectedApp.addHook('preHandler', planGatePreHandler);
+
+    await protectedApp.register(v1Routes);
+  });
+
+  // API key routes — separate scope for agent/external endpoints
+  await app.register(async (externalApp) => {
+    externalApp.addHook('preHandler', apiKeyPreHandler);
+
+    await externalApp.register(externalRoutes);
+  });
+
+  // Graceful shutdown: close Redis on app close
+  app.addHook('onClose', async () => {
+    await redis.quit();
+  });
 
   return app;
 }

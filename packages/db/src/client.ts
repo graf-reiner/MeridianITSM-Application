@@ -6,7 +6,8 @@ function createPrismaClient(): PrismaClient {
   const connectionString =
     process.env.DATABASE_URL ?? 'postgresql://meridian:meridian@localhost:5432/meridian';
   const pool = new pg.Pool({ connectionString });
-  const adapter = new PrismaPg(pool);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const adapter = new PrismaPg(pool as any);
   return new PrismaClient({ adapter, log: ['error', 'warn'] });
 }
 
