@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Phase 3 context gathered
-last_updated: "2026-03-20T18:36:11.203Z"
+stopped_at: Completed 03-core-itsm-10-PLAN.md
+last_updated: "2026-03-20T23:32:40.776Z"
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 13
-  completed_plans: 12
+  total_plans: 23
+  completed_plans: 13
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** An MSP can manage multiple customer organizations' IT service desks from a single platform with complete tenant isolation, paying via Stripe subscription, with the full ITSM lifecycle working end-to-end.
-**Current focus:** Phase 02 — billing-and-owner-admin
+**Current focus:** Phase 03 — core-itsm
 
 ## Current Position
 
-Phase: 02 (billing-and-owner-admin) — EXECUTING
-Plan: 2 of 6 (02-01 complete)
+Phase: 03 (core-itsm) — EXECUTING
+Plan: 1 of 10
 
 ## Performance Metrics
 
@@ -59,6 +59,7 @@ Plan: 2 of 6 (02-01 complete)
 | Phase 02-billing-and-owner-admin P05 | 11 | 3 tasks | 14 files |
 | Phase 02-billing-and-owner-admin P06 | 12 | 2 tasks | 13 files |
 | Phase 02-billing-and-owner-admin P03 | 16 | 3 tasks | 15 files |
+| Phase 03-core-itsm P10 | 2 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -102,6 +103,7 @@ Recent decisions affecting current work:
 - [Phase 02-03]: Stripe API 2026-02-25.clover removed current_period_start/end from Subscription type — sync-checkout stores only status and cancelAtPeriodEnd; cancel.ts uses cancel_at
 - [Phase 02-03]: Custom billing UI per CONTEXT.md (not Stripe Customer Portal) despite REQUIREMENTS.md BILL-05 wording — CONTEXT.md wins per plan spec
 - [Phase 02-03]: zod added directly to apps/api (not via fastify-type-provider-zod) for billing route request body validation
+- [Phase 03-core-itsm]: Wave 0 test scaffolds use it.todo() so vitest discovers them without failures — behavioral contract before implementation
 
 ### Pending Todos
 
@@ -115,6 +117,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T18:36:11.195Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-core-itsm/03-CONTEXT.md
+Last session: 2026-03-20T23:32:40.769Z
+Stopped at: Completed 03-core-itsm-10-PLAN.md
+Resume file: None

@@ -40,9 +40,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Incident Management
 
-- [ ] **TICK-01**: User can create ticket with title, description, type (incident/service_request/problem), priority, category
-- [ ] **TICK-02**: Ticket auto-generates sequential ticket number (e.g., TKT-00042) per tenant
-- [ ] **TICK-03**: Ticket status transitions: NEW → OPEN → IN_PROGRESS → PENDING → RESOLVED → CLOSED → CANCELLED
+- [x] **TICK-01**: User can create ticket with title, description, type (incident/service_request/problem), priority, category
+- [x] **TICK-02**: Ticket auto-generates sequential ticket number (e.g., TKT-00042) per tenant
+- [x] **TICK-03**: Ticket status transitions: NEW → OPEN → IN_PROGRESS → PENDING → RESOLVED → CLOSED → CANCELLED
 - [ ] **TICK-04**: User can add comments to tickets with PUBLIC or INTERNAL visibility
 - [ ] **TICK-05**: User can upload file attachments to tickets (stored in MinIO/S3)
 - [ ] **TICK-06**: All ticket field changes are logged in an immutable audit trail (TicketActivity)
@@ -66,8 +66,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **EMAL-01**: Email account configuration for SMTP, IMAP, and POP3 with encrypted credentials
 - [ ] **EMAL-02**: Inbound email polling creates tickets automatically (email-to-ticket)
-- [ ] **EMAL-03**: Email reply threading matches replies to existing tickets
-- [ ] **EMAL-04**: Email deduplication via Message-ID, subject ticket number, and MIME headers
+- [x] **EMAL-03**: Email reply threading matches replies to existing tickets
+- [x] **EMAL-04**: Email deduplication via Message-ID, subject ticket number, and MIME headers
 - [ ] **EMAL-05**: Outbound email notifications for ticket events (created, assigned, updated, resolved, SLA breach)
 - [ ] **EMAL-06**: Customizable HTML email templates with variable substitution
 - [ ] **EMAL-07**: Email connection testing tool for SMTP/IMAP/POP3
@@ -220,7 +220,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Reporting & Analytics
 
 - [ ] **REPT-01**: Main dashboard with ticket stats, recent activity, and notifications
-- [ ] **REPT-02**: Ticket reports (CSV/JSON) with date range and filter parameters
+- [x] **REPT-02**: Ticket reports (CSV/JSON) with date range and filter parameters
 - [ ] **REPT-03**: Change reports and analytics
 - [ ] **REPT-04**: SLA compliance reports
 - [ ] **REPT-05**: CMDB inventory and relationship reports
@@ -247,7 +247,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **NOTF-01**: In-app notification center with read/unread state
 - [ ] **NOTF-02**: Notification types covering tickets, changes, SLA, mentions, system events (12 types)
 - [ ] **NOTF-03**: Mark individual or all notifications as read
-- [ ] **NOTF-04**: Notification dispatch orchestrator coordinating email + push + in-app channels
+- [x] **NOTF-04**: Notification dispatch orchestrator coordinating email + push + in-app channels
 
 ### Infrastructure
 
@@ -344,9 +344,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OADM-10 | Phase 2 | Complete |
 | OADM-11 | Phase 2 | Complete |
 | OADM-12 | Phase 2 | Complete |
-| TICK-01 | Phase 3 | Pending |
-| TICK-02 | Phase 3 | Pending |
-| TICK-03 | Phase 3 | Pending |
+| TICK-01 | Phase 3 | Complete |
+| TICK-02 | Phase 3 | Complete |
+| TICK-03 | Phase 3 | Complete |
 | TICK-04 | Phase 3 | Pending |
 | TICK-05 | Phase 3 | Pending |
 | TICK-06 | Phase 3 | Pending |
@@ -364,8 +364,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SLA-06 | Phase 3 | Pending |
 | EMAL-01 | Phase 3 | Pending |
 | EMAL-02 | Phase 3 | Pending |
-| EMAL-03 | Phase 3 | Pending |
-| EMAL-04 | Phase 3 | Pending |
+| EMAL-03 | Phase 3 | Complete |
+| EMAL-04 | Phase 3 | Complete |
 | EMAL-05 | Phase 3 | Pending |
 | EMAL-06 | Phase 3 | Pending |
 | EMAL-07 | Phase 3 | Pending |
@@ -397,9 +397,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NOTF-01 | Phase 3 | Pending |
 | NOTF-02 | Phase 3 | Pending |
 | NOTF-03 | Phase 3 | Pending |
-| NOTF-04 | Phase 3 | Pending |
+| NOTF-04 | Phase 3 | Complete |
 | REPT-01 | Phase 3 | Pending |
-| REPT-02 | Phase 3 | Pending |
+| REPT-02 | Phase 3 | Complete |
 | REPT-03 | Phase 3 | Pending |
 | REPT-04 | Phase 3 | Pending |
 | REPT-05 | Phase 3 | Pending |
