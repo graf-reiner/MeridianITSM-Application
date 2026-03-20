@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { billingPlanRoutes } from './billing-plan.js';
 
 /**
  * V1 API routes — protected scope (requires JWT + tenant + RBAC).
@@ -10,4 +11,7 @@ export async function v1Routes(app: FastifyInstance): Promise<void> {
     status: 'ok',
     version: 'v1',
   }));
+
+  // Billing plan endpoint — returns tenant's current plan tier, limits, and status
+  await app.register(billingPlanRoutes);
 }
