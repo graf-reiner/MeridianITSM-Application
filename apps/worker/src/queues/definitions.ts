@@ -6,6 +6,9 @@ export const QUEUE_NAMES = {
   EMAIL_NOTIFICATION: 'email-notification',
   EMAIL_POLLING: 'email-polling',
   CMDB_RECONCILIATION: 'cmdb-reconciliation',
+  STRIPE_WEBHOOK: 'stripe-webhook',
+  TRIAL_EXPIRY: 'trial-expiry',
+  USAGE_SNAPSHOT: 'usage-snapshot',
 } as const;
 
 export interface TenantJobData {
@@ -29,3 +32,6 @@ export const slaMonitorQueue = new Queue(QUEUE_NAMES.SLA_MONITOR, { connection: 
 export const emailNotificationQueue = new Queue(QUEUE_NAMES.EMAIL_NOTIFICATION, { connection: bullmqConnection });
 export const emailPollingQueue = new Queue(QUEUE_NAMES.EMAIL_POLLING, { connection: bullmqConnection });
 export const cmdbReconciliationQueue = new Queue(QUEUE_NAMES.CMDB_RECONCILIATION, { connection: bullmqConnection });
+export const stripeWebhookQueue = new Queue(QUEUE_NAMES.STRIPE_WEBHOOK, { connection: bullmqConnection });
+export const trialExpiryQueue = new Queue(QUEUE_NAMES.TRIAL_EXPIRY, { connection: bullmqConnection });
+export const usageSnapshotQueue = new Queue(QUEUE_NAMES.USAGE_SNAPSHOT, { connection: bullmqConnection });

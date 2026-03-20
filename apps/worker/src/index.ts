@@ -3,13 +3,28 @@ import { slaMonitorWorker } from './workers/sla-monitor.js';
 import { emailNotificationWorker } from './workers/email-notification.js';
 import { emailPollingWorker } from './workers/email-polling.js';
 import { cmdbReconciliationWorker } from './workers/cmdb-reconciliation.js';
+import { stripeWebhookWorker } from './workers/stripe-webhook.js';
+import { usageSnapshotWorker } from './workers/usage-snapshot.js';
+import { usageSnapshotQueue } from './queues/definitions.js';
 
 const workers = [
   { name: 'sla-monitor', worker: slaMonitorWorker },
   { name: 'email-notification', worker: emailNotificationWorker },
   { name: 'email-polling', worker: emailPollingWorker },
   { name: 'cmdb-reconciliation', worker: cmdbReconciliationWorker },
+  { name: 'stripe-webhook', worker: stripeWebhookWorker },
+  { name: 'usage-snapshot', worker: usageSnapshotWorker },
 ];
+
+// Schedule daily usage snapshot at 2 AM UTC
+void usageSnapshotQueue.add(
+  'daily-snapshot',
+  {},
+  {
+    repeat: { pattern: '0 2 * * *' },
+    jobId: 'daily-snapshot-repeatable', // Stable jobId prevents duplicate schedules on restart
+  },
+);
 
 console.log('Worker process started — active workers:');
 workers.forEach(({ name }) => console.log(`  - ${name}`));
