@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: unknown
 stopped_at: Completed 03-06-PLAN.md
-last_updated: "2026-03-20T23:40:04.840Z"
+last_updated: "2026-03-20T23:40:15.159Z"
 progress:
   total_phases: 5
   completed_phases: 1
@@ -114,6 +114,9 @@ Recent decisions affecting current work:
 - [Phase 03-02]: SLA monitor is a cross-tenant sentinel (no tenantId scoping) that processes all active tickets in single job
 - [Phase 03-02]: customFields JSON flags (sla_75_notified, sla_90_notified, sla_breached_notified) prevent duplicate notification dispatch on each minute tick
 - [Phase 03-02]: Prisma 7 JSON type requires 'as any' cast for spread-constructed objects in ticket.update() customFields
+- [Phase 03-06]: Category cycle detection uses raw SQL query to avoid TS7022 self-referencing type error in async while loop
+- [Phase 03-06]: SSE log streaming creates a dedicated ioredis subscriber connection per request to avoid blocking the global Redis client
+- [Phase 03-06]: Branding settings stored as JSON blob in tenant.settings field; logo upload stores key under {tenantId}/branding/logo-{ts}.{ext}
 
 ### Pending Todos
 

@@ -229,18 +229,18 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Settings & Configuration
 
-- [ ] **SETT-01**: User management CRUD (create, edit, disable, password reset)
-- [ ] **SETT-02**: Role management with permission editor
-- [ ] **SETT-03**: User group management
-- [ ] **SETT-04**: Queue management with assignment rules
-- [ ] **SETT-05**: SLA policy management
-- [ ] **SETT-06**: Category management (hierarchical with icons and colors)
-- [ ] **SETT-07**: Site management (physical locations)
-- [ ] **SETT-08**: Vendor management
-- [ ] **SETT-09**: Business unit management
-- [ ] **SETT-10**: Contract management with financials and SLA links
-- [ ] **SETT-11**: Tenant branding settings (logo, colors)
-- [ ] **SETT-12**: System/worker log viewer with SSE streaming
+- [x] **SETT-01**: User management CRUD (create, edit, disable, password reset)
+- [x] **SETT-02**: Role management with permission editor
+- [x] **SETT-03**: User group management
+- [x] **SETT-04**: Queue management with assignment rules
+- [x] **SETT-05**: SLA policy management
+- [x] **SETT-06**: Category management (hierarchical with icons and colors)
+- [x] **SETT-07**: Site management (physical locations)
+- [x] **SETT-08**: Vendor management
+- [x] **SETT-09**: Business unit management
+- [x] **SETT-10**: Contract management with financials and SLA links
+- [x] **SETT-11**: Tenant branding settings (logo, colors)
+- [x] **SETT-12**: System/worker log viewer with SSE streaming
 
 ### Notifications
 
@@ -382,18 +382,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PRTL-04 | Phase 3 | Pending |
 | PRTL-05 | Phase 3 | Pending |
 | PRTL-06 | Phase 3 | Pending |
-| SETT-01 | Phase 3 | Pending |
-| SETT-02 | Phase 3 | Pending |
-| SETT-03 | Phase 3 | Pending |
-| SETT-04 | Phase 3 | Pending |
-| SETT-05 | Phase 3 | Pending |
-| SETT-06 | Phase 3 | Pending |
-| SETT-07 | Phase 3 | Pending |
-| SETT-08 | Phase 3 | Pending |
-| SETT-09 | Phase 3 | Pending |
-| SETT-10 | Phase 3 | Pending |
-| SETT-11 | Phase 3 | Pending |
-| SETT-12 | Phase 3 | Pending |
+| SETT-01 | Phase 3 | Complete |
+| SETT-02 | Phase 3 | Complete |
+| SETT-03 | Phase 3 | Complete |
+| SETT-04 | Phase 3 | Complete |
+| SETT-05 | Phase 3 | Complete |
+| SETT-06 | Phase 3 | Complete |
+| SETT-07 | Phase 3 | Complete |
+| SETT-08 | Phase 3 | Complete |
+| SETT-09 | Phase 3 | Complete |
+| SETT-10 | Phase 3 | Complete |
+| SETT-11 | Phase 3 | Complete |
+| SETT-12 | Phase 3 | Complete |
 | NOTF-01 | Phase 3 | Pending |
 | NOTF-02 | Phase 3 | Pending |
 | NOTF-03 | Phase 3 | Pending |
