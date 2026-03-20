@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-03-20T23:40:55.391Z"
+stopped_at: Completed 03-05-PLAN.md
+last_updated: "2026-03-20T23:52:38.142Z"
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 23
-  completed_plans: 17
+  completed_plans: 18
 ---
 
 # Project State
@@ -64,6 +64,7 @@ Plan: 1 of 10
 | Phase 03-core-itsm P02 | 9 | 2 tasks | 7 files |
 | Phase 03-core-itsm P06 | 8 | 2 tasks | 13 files |
 | Phase 03-core-itsm P01 | 10 | 2 tasks | 8 files |
+| Phase 03-core-itsm P05 | 8 | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -121,6 +122,9 @@ Recent decisions affecting current work:
 - [Phase 03-01]: 'tickets' added to PlanResource type; getLimitKey returns null for unlimited resources — planGate skips count check when null
 - [Phase 03-01]: @fastify/multipart registered scoped to ticket plugin only (not globally) to avoid JSON content-type conflicts
 - [Phase 03-01]: SLA pause stored in customFields.slaPausedAt on ticket (lightweight, no extra table)
+- [Phase 03-05]: DOMPurify added for XSS-safe knowledge article HTML rendering via SafeHtml component with explicit allowlist
+- [Phase 03-05]: end_user middleware redirect uses jwtVerify from jose (Edge-compatible) — consistent with Phase 01-foundation pattern
+- [Phase 03-05]: Comment form forces visibility=PUBLIC client-side — belt-and-suspenders alongside server-side enforcement
 
 ### Pending Todos
 
@@ -134,6 +138,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T23:40:55.384Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-03-20T23:52:38.135Z
+Stopped at: Completed 03-05-PLAN.md
 Resume file: None

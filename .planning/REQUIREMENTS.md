@@ -84,12 +84,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Self-Service Portal
 
-- [ ] **PRTL-01**: End-user portal at /portal with simplified sidebar navigation
-- [ ] **PRTL-02**: End users can submit service requests via simplified form
-- [ ] **PRTL-03**: End users can view their ticket status and add comments
-- [ ] **PRTL-04**: End users can browse published knowledge articles
-- [ ] **PRTL-05**: End users can view their assigned assets
-- [ ] **PRTL-06**: Middleware auto-redirects end_user role to /portal
+- [x] **PRTL-01**: End-user portal at /portal with simplified sidebar navigation
+- [x] **PRTL-02**: End users can submit service requests via simplified form
+- [x] **PRTL-03**: End users can view their ticket status and add comments
+- [x] **PRTL-04**: End users can browse published knowledge articles
+- [x] **PRTL-05**: End users can view their assigned assets
+- [x] **PRTL-06**: Middleware auto-redirects end_user role to /portal
 
 ### Asset Management
 
@@ -376,12 +376,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | KB-04 | Phase 3 | Complete |
 | KB-05 | Phase 3 | Complete |
 | KB-06 | Phase 3 | Complete |
-| PRTL-01 | Phase 3 | Pending |
-| PRTL-02 | Phase 3 | Pending |
-| PRTL-03 | Phase 3 | Pending |
-| PRTL-04 | Phase 3 | Pending |
-| PRTL-05 | Phase 3 | Pending |
-| PRTL-06 | Phase 3 | Pending |
+| PRTL-01 | Phase 3 | Complete |
+| PRTL-02 | Phase 3 | Complete |
+| PRTL-03 | Phase 3 | Complete |
+| PRTL-04 | Phase 3 | Complete |
+| PRTL-05 | Phase 3 | Complete |
+| PRTL-06 | Phase 3 | Complete |
 | SETT-01 | Phase 3 | Complete |
 | SETT-02 | Phase 3 | Complete |
 | SETT-03 | Phase 3 | Complete |
