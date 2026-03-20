@@ -3,6 +3,7 @@ import { billingPlanRoutes } from './billing-plan.js';
 import { knowledgeRoutes } from './knowledge/index.js';
 import { settingsRoutes } from './settings/index.js';
 import { slaRoutes } from './sla/index.js';
+import { ticketRoutes } from './tickets/index.js';
 
 /**
  * V1 API routes — protected scope (requires JWT + tenant + RBAC).
@@ -26,4 +27,8 @@ export async function v1Routes(app: FastifyInstance): Promise<void> {
 
   // SLA policies — CRUD management and live ticket SLA status
   await app.register(slaRoutes);
+
+  // Ticket management — full ITSM ticket lifecycle: CRUD, comments, attachments, assignment,
+  // KB/CI linking, audit trail
+  await app.register(ticketRoutes);
 }

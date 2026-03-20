@@ -6,7 +6,7 @@ import { cmdbReconciliationWorker } from './workers/cmdb-reconciliation.js';
 import { stripeWebhookWorker } from './workers/stripe-webhook.js';
 import { usageSnapshotWorker } from './workers/usage-snapshot.js';
 import { trialExpiryWorker } from './workers/trial-expiry.js';
-import { usageSnapshotQueue, trialExpiryQueue } from './queues/definitions.js';
+import { usageSnapshotQueue, trialExpiryQueue, slaMonitorQueue } from './queues/definitions.js';
 
 const workers = [
   { name: 'sla-monitor', worker: slaMonitorWorker },
@@ -17,6 +17,16 @@ const workers = [
   { name: 'usage-snapshot', worker: usageSnapshotWorker },
   { name: 'trial-expiry', worker: trialExpiryWorker },
 ];
+
+// Schedule SLA breach check every minute
+void slaMonitorQueue.add(
+  'check-sla',
+  {},
+  {
+    repeat: { pattern: '* * * * *' },
+    jobId: 'sla-monitor-repeatable', // Stable jobId prevents duplicate schedules on restart
+  },
+);
 
 // Schedule daily usage snapshot at 2 AM UTC
 void usageSnapshotQueue.add(
