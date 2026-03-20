@@ -4,11 +4,30 @@ import { rolesSettingsRoutes } from './roles.js';
 import { groupsSettingsRoutes } from './groups.js';
 import { queuesSettingsRoutes } from './queues.js';
 import { categoriesSettingsRoutes } from './categories.js';
+import { sitesSettingsRoutes } from './sites.js';
+import { vendorsSettingsRoutes } from './vendors.js';
+import { businessUnitsSettingsRoutes } from './business-units.js';
+import { contractsSettingsRoutes } from './contracts.js';
+import { brandingSettingsRoutes } from './branding.js';
+import { logsSettingsRoutes } from './logs.js';
 
 /**
  * Settings routes registrar.
- * Aggregates all settings sub-routes under a single plugin.
+ * Aggregates all 11 settings sub-routes under a single plugin.
  * All sub-routes enforce RBAC via requirePermission().
+ *
+ * Covers:
+ *   SETT-01: User management
+ *   SETT-02: Role management
+ *   SETT-03: Group management
+ *   SETT-04: Queue management
+ *   SETT-06: Category management
+ *   SETT-07: Site management
+ *   SETT-08: Vendor management
+ *   SETT-09: Business unit management
+ *   SETT-10: Contract management
+ *   SETT-11: Branding (logo upload, colors)
+ *   SETT-12: System log viewer (SSE + recent)
  */
 export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
   await fastify.register(usersSettingsRoutes);
@@ -16,4 +35,10 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
   await fastify.register(groupsSettingsRoutes);
   await fastify.register(queuesSettingsRoutes);
   await fastify.register(categoriesSettingsRoutes);
+  await fastify.register(sitesSettingsRoutes);
+  await fastify.register(vendorsSettingsRoutes);
+  await fastify.register(businessUnitsSettingsRoutes);
+  await fastify.register(contractsSettingsRoutes);
+  await fastify.register(brandingSettingsRoutes);
+  await fastify.register(logsSettingsRoutes);
 }
