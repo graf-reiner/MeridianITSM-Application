@@ -12,7 +12,10 @@ An MSP can manage multiple customer organizations' IT service desks from a singl
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] Owner admin portal (tenant management, billing, impersonation) — fully isolated *(Validated in Phase 02: billing-and-owner-admin)*
+- [x] Stripe subscription billing with plan enforcement (planGate middleware) *(Validated in Phase 02: billing-and-owner-admin)*
+- [x] Tenant provisioning automation (signup → provision → welcome email) *(Validated in Phase 02: billing-and-owner-admin)*
+- [x] Trial flow with expiry, dunning emails, and paywall *(Validated in Phase 02: billing-and-owner-admin)*
 
 ### Active
 
@@ -32,10 +35,6 @@ An MSP can manage multiple customer organizations' IT service desks from a singl
 - [ ] End-user self-service portal (simplified UI)
 - [ ] React Native/Expo mobile app (iOS + Android)
 - [ ] .NET cross-platform inventory agent (Windows, Linux, macOS)
-- [ ] Owner admin portal (tenant management, billing, impersonation) — fully isolated
-- [ ] Stripe subscription billing with plan enforcement (planGate middleware)
-- [ ] Tenant provisioning automation (signup → provision → welcome email)
-- [ ] Trial flow with expiry, dunning emails, and paywall
 - [ ] API key management for external integrations
 - [ ] Webhook system with delivery tracking
 - [ ] Scheduled reports (CSV/JSON)
@@ -81,4 +80,4 @@ The full specification is captured in `DOCUMENTATION .md` (1900 lines) covering 
 | Stack open to research | Let research identify best current options rather than locking to original choices | — Pending |
 
 ---
-*Last updated: 2026-03-19 after initialization*
+*Last updated: 2026-03-20 — Phase 02 (billing-and-owner-admin) complete*
