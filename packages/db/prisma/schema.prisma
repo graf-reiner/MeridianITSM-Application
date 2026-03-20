@@ -1,0 +1,1864 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum TenantType {
+  MSP
+  ENTERPRISE
+  B2C
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum SubscriptionPlanTier {
+  STARTER
+  PROFESSIONAL
+  BUSINESS
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  SUSPENDED
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum TicketStatus {
+  NEW
+  OPEN
+  IN_PROGRESS
+  PENDING
+  RESOLVED
+  CLOSED
+  CANCELLED
+}
+
+enum TicketType {
+  INCIDENT
+  SERVICE_REQUEST
+  PROBLEM
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum CommentVisibility {
+  PUBLIC
+  INTERNAL
+}
+
+enum ChangeStatus {
+  NEW
+  ASSESSMENT
+  APPROVAL_PENDING
+  APPROVED
+  REJECTED
+  SCHEDULED
+  IMPLEMENTING
+  REVIEW
+  COMPLETED
+  CANCELLED
+}
+
+enum ChangeType {
+  STANDARD
+  NORMAL
+  EMERGENCY
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AssetStatus {
+  IN_STOCK
+  DEPLOYED
+  IN_REPAIR
+  RETIRED
+  DISPOSED
+}
+
+enum AgentStatus {
+  ENROLLING
+  ACTIVE
+  OFFLINE
+  SUSPENDED
+}
+
+enum AgentPlatform {
+  WINDOWS
+  LINUX
+  MACOS
+}
+
+enum ArticleStatus {
+  DRAFT
+  IN_REVIEW
+  PUBLISHED
+  RETIRED
+}
+
+enum ArticleVisibility {
+  PUBLIC
+  INTERNAL
+}
+
+enum NotificationType {
+  TICKET_ASSIGNED
+  TICKET_UPDATED
+  TICKET_COMMENTED
+  TICKET_RESOLVED
+  TICKET_CREATED
+  SLA_WARNING
+  SLA_BREACH
+  CHANGE_APPROVAL
+  CHANGE_UPDATED
+  MENTION
+  SYSTEM
+  CAB_INVITATION
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  APPROVE
+  REJECT
+  ASSIGN
+  ESCALATE
+}
+
+enum DevicePlatform {
+  IOS
+  ANDROID
+}
+
+enum CmdbCiStatus {
+  ACTIVE
+  INACTIVE
+  DECOMMISSIONED
+  PLANNED
+}
+
+enum CmdbCiType {
+  SERVER
+  WORKSTATION
+  NETWORK_DEVICE
+  SOFTWARE
+  SERVICE
+  DATABASE
+  VIRTUAL_MACHINE
+  CONTAINER
+  OTHER
+}
+
+enum CmdbCiEnvironment {
+  PRODUCTION
+  STAGING
+  DEV
+  DR
+}
+
+enum CmdbRelationshipType {
+  DEPENDS_ON
+  HOSTS
+  CONNECTS_TO
+  RUNS_ON
+  BACKS_UP
+  VIRTUALIZES
+  MEMBER_OF
+}
+
+enum CmdbChangeType {
+  CREATED
+  UPDATED
+  DELETED
+}
+
+enum CmdbChangedBy {
+  USER
+  AGENT
+  IMPORT
+}
+
+enum CmdbTicketLinkType {
+  AFFECTED
+  RELATED
+  CAUSED_BY
+}
+
+enum CABAttendeeRole {
+  CHAIRPERSON
+  MEMBER
+  OBSERVER
+}
+
+enum RSVPStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  TENTATIVE
+}
+
+enum CABOutcome {
+  APPROVED
+  REJECTED
+  DEFERRED
+  NEEDS_MORE_INFO
+}
+
+enum CABMeetingStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ApplicationType {
+  WEB
+  MOBILE
+  DESKTOP
+  API
+  SERVICE
+  DATABASE_APP
+  MIDDLEWARE
+  INFRASTRUCTURE
+  OTHER
+}
+
+enum ApplicationStatus {
+  ACTIVE
+  INACTIVE
+  DECOMMISSIONED
+  PLANNED
+  IN_DEVELOPMENT
+}
+
+enum CriticalityLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum HostingModel {
+  ON_PREMISE
+  CLOUD
+  HYBRID
+  SAAS
+}
+
+enum LifecycleStage {
+  PLANNING
+  DEVELOPMENT
+  PRODUCTION
+  RETIREMENT
+}
+
+enum DependencyType {
+  DATA_FLOW
+  API_CALL
+  SHARED_DATABASE
+  AUTHENTICATION
+  FILE_TRANSFER
+  MESSAGE_QUEUE
+  OTHER
+}
+
+enum DocumentType {
+  ARCHITECTURE
+  API_SPEC
+  RUNBOOK
+  SLA_DOC
+  SECURITY
+  COMPLIANCE
+  USER_GUIDE
+  ADMIN_GUIDE
+  RELEASE_NOTES
+  DEPLOYMENT
+  OTHER
+}
+
+enum AppAssetRelationship {
+  RUNS_ON
+  HOSTED_BY
+  USES
+}
+
+enum WebhookEventType {
+  TICKET_CREATED
+  TICKET_UPDATED
+  TICKET_RESOLVED
+  TICKET_CLOSED
+  COMMENT_ADDED
+  CHANGE_CREATED
+  CHANGE_APPROVED
+  SLA_BREACH
+}
+
+enum AlertChannelType {
+  EMAIL
+  SMS
+  SLACK
+  TEAMS
+}
+
+// ─── Core Tenancy & Identity ──────────────────────────────────────────────────
+
+// Model 1: Tenant (GLOBAL — no tenantId)
+model Tenant {
+  id             String               @id @default(uuid()) @db.Uuid
+  name           String
+  slug           String               @unique
+  type           TenantType           @default(MSP)
+  status         TenantStatus         @default(ACTIVE)
+  subdomain      String?              @unique
+  backendUrl     String?
+  settings       Json?
+  plan           SubscriptionPlanTier @default(STARTER)
+  planLimitsJson Json?
+  maxUsers       Int                  @default(5)
+  maxAgents      Int                  @default(0)
+  maxSites       Int                  @default(1)
+  trialEndsAt    DateTime?
+  suspendedAt    DateTime?
+  deletedAt      DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  // Relations
+  users                 User[]
+  customerOrganizations CustomerOrganization[]
+  userGroups            UserGroup[]
+  roles                 Role[]
+  userRoles             UserRole[]
+  sessions              Session[]
+  apiKeys               ApiKey[]
+  tickets               Ticket[]
+  ticketComments        TicketComment[]
+  ticketAttachments     TicketAttachment[]
+  ticketActivities      TicketActivity[]
+  queues                Queue[]
+  slas                  SLA[]
+  categories            Category[]
+  emailAccounts         EmailAccount[]
+  changes               Change[]
+  changeApprovals       ChangeApproval[]
+  changeActivities      ChangeActivity[]
+  cabMeetings           CABMeeting[]
+  cabMeetingAttendees   CABMeetingAttendee[]
+  cabMeetingChanges     CABMeetingChange[]
+  knowledgeArticles     KnowledgeArticle[]
+  assets                Asset[]
+  sites                 Site[]
+  businessUnits         BusinessUnit[]
+  applications          Application[]
+  applicationActivities     ApplicationActivity[]
+  applicationDependencies   ApplicationDependency[]
+  applicationDocuments      ApplicationDocument[]
+  applicationAssets         ApplicationAsset[]
+  agents                    Agent[]
+  agentEnrollmentTokens AgentEnrollmentToken[]
+  inventorySnapshots    InventorySnapshot[]
+  metricSamples         MetricSample[]
+  cmdbCategories        CmdbCategory[]
+  cmdbConfigItems       CmdbConfigurationItem[]
+  cmdbRelationships     CmdbRelationship[]
+  cmdbChangeRecords     CmdbChangeRecord[]
+  cmdbTicketLinks       CmdbTicketLink[]
+  changeApplications    ChangeApplication[]
+  changeAssets          ChangeAsset[]
+  contractAssets        ContractAsset[]
+  ticketKnowledgeArticles TicketKnowledgeArticle[]
+  vendors               Vendor[]
+  contracts             Contract[]
+  auditLogs             AuditLog[]
+  notifications         Notification[]
+  deviceTokens          DeviceToken[]
+  emailTemplates        EmailTemplate[]
+  alertConfigurations   AlertConfiguration[]
+  scheduledReports      ScheduledReport[]
+  webhooks              Webhook[]
+  webhookDeliveries     WebhookDelivery[]
+  passwordResetTokens   PasswordResetToken[]
+  userGroupMembers      UserGroupMember[]
+  subscription          TenantSubscription?
+  usageSnapshots        TenantUsageSnapshot[]
+  ownerNotes            OwnerNote[]
+
+  @@map("tenants")
+}
+
+// Model 2: CustomerOrganization
+model CustomerOrganization {
+  id                   String   @id @default(uuid()) @db.Uuid
+  tenantId             String   @db.Uuid
+  name                 String
+  slug                 String
+  primaryContactName   String?
+  primaryContactEmail  String?
+  primaryContactPhone  String?
+  address              String?
+  city                 String?
+  state                String?
+  postalCode           String?
+  country              String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  userRoles UserRole[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([tenantId, createdAt])
+  @@map("customer_organizations")
+}
+
+// Model 3: User
+model User {
+  id                      String     @id @default(uuid()) @db.Uuid
+  tenantId                String     @db.Uuid
+  email                   String
+  passwordHash            String
+  firstName               String
+  lastName                String
+  displayName             String?
+  phone                   String?
+  jobTitle                String?
+  department              String?
+  status                  UserStatus @default(ACTIVE)
+  notificationPreferences Json?
+  siteId                  String?    @db.Uuid
+  createdAt               DateTime   @default(now())
+  updatedAt               DateTime   @updatedAt
+
+  tenant              Tenant               @relation(fields: [tenantId], references: [id])
+  site                Site?                @relation(fields: [siteId], references: [id])
+  userRoles           UserRole[]
+  sessions            Session[]
+  assignedTickets     Ticket[]             @relation("AssignedTo")
+  requestedTickets    Ticket[]             @relation("RequestedBy")
+  ticketComments      TicketComment[]
+  ticketAttachments   TicketAttachment[]
+  cabMeetingAttendees CABMeetingAttendee[]
+  changeApprovals     ChangeApproval[]
+  notifications       Notification[]
+  deviceTokens        DeviceToken[]
+  auditLogs           AuditLog[]
+  passwordResetTokens PasswordResetToken[]
+  userGroupMembers    UserGroupMember[]
+  apiKeys             ApiKey[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@map("users")
+}
+
+// Model 4: UserGroup
+model UserGroup {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  name        String
+  email       String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant          Tenant            @relation(fields: [tenantId], references: [id])
+  userGroupMembers UserGroupMember[]
+  categories      Category[]
+
+  @@index([tenantId])
+  @@map("user_groups")
+}
+
+// Model 5: UserGroupMember (extra join table)
+model UserGroupMember {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  userGroupId String   @db.Uuid
+  userId      String   @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  userGroup UserGroup @relation(fields: [userGroupId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@unique([userGroupId, userId])
+  @@index([tenantId])
+  @@map("user_group_members")
+}
+
+// Model 6: Role
+model Role {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @db.Uuid
+  name         String
+  slug         String
+  permissions  Json
+  isSystemRole Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  userRoles UserRole[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("roles")
+}
+
+// Model 7: UserRole
+model UserRole {
+  id                     String   @id @default(uuid()) @db.Uuid
+  tenantId               String   @db.Uuid
+  userId                 String   @db.Uuid
+  roleId                 String   @db.Uuid
+  customerOrganizationId String?  @db.Uuid
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  tenant               Tenant                @relation(fields: [tenantId], references: [id])
+  user                 User                  @relation(fields: [userId], references: [id])
+  role                 Role                  @relation(fields: [roleId], references: [id])
+  customerOrganization CustomerOrganization? @relation(fields: [customerOrganizationId], references: [id])
+
+  @@unique([userId, roleId])
+  @@index([tenantId])
+  @@index([tenantId, userId])
+  @@map("user_roles")
+}
+
+// Model 8: Session
+model Session {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @db.Uuid
+  userId       String   @db.Uuid
+  sessionToken String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, userId])
+  @@map("sessions")
+}
+
+// Model 9: ApiKey
+model ApiKey {
+  id         String    @id @default(uuid()) @db.Uuid
+  tenantId   String    @db.Uuid
+  userId     String    @db.Uuid
+  name       String
+  keyHash    String
+  keyPrefix  String
+  scopes     Json
+  rateLimit  Int       @default(100)
+  isActive   Boolean   @default(true)
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([keyHash])
+  @@map("api_keys")
+}
+
+// ─── Service Desk ─────────────────────────────────────────────────────────────
+
+// Model 10: Ticket
+model Ticket {
+  id             String         @id @default(uuid()) @db.Uuid
+  tenantId       String         @db.Uuid
+  ticketNumber   Int
+  type           TicketType     @default(INCIDENT)
+  title          String
+  description    String?
+  priority       TicketPriority @default(MEDIUM)
+  impact         String?
+  urgency        String?
+  status         TicketStatus   @default(NEW)
+  assignedToId   String?        @db.Uuid
+  requestedById  String?        @db.Uuid
+  queueId        String?        @db.Uuid
+  slaId          String?        @db.Uuid
+  categoryId     String?        @db.Uuid
+  slaBreachAt    DateTime?
+  slaResponseAt  DateTime?
+  firstResponseAt DateTime?
+  resolvedAt     DateTime?
+  closedAt       DateTime?
+  resolution     String?
+  tags           String[]
+  customFields   Json?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  tenant              Tenant                 @relation(fields: [tenantId], references: [id])
+  assignedTo          User?                  @relation("AssignedTo", fields: [assignedToId], references: [id])
+  requestedBy         User?                  @relation("RequestedBy", fields: [requestedById], references: [id])
+  queue               Queue?                 @relation(fields: [queueId], references: [id])
+  sla                 SLA?                   @relation(fields: [slaId], references: [id])
+  category            Category?              @relation(fields: [categoryId], references: [id])
+  comments            TicketComment[]
+  attachments         TicketAttachment[]
+  activities          TicketActivity[]
+  knowledgeArticles   TicketKnowledgeArticle[]
+  cmdbTicketLinks     CmdbTicketLink[]
+
+  @@unique([tenantId, ticketNumber])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, priority])
+  @@index([tenantId, assignedToId])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, slaBreachAt])
+  @@map("tickets")
+}
+
+// Model 11: TicketComment
+model TicketComment {
+  id               String            @id @default(uuid()) @db.Uuid
+  tenantId         String            @db.Uuid
+  ticketId         String            @db.Uuid
+  authorId         String            @db.Uuid
+  content          String
+  visibility       CommentVisibility @default(PUBLIC)
+  timeSpentMinutes Int?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  ticket Ticket @relation(fields: [ticketId], references: [id])
+  author User   @relation(fields: [authorId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, ticketId])
+  @@map("ticket_comments")
+}
+
+// Model 12: TicketAttachment
+model TicketAttachment {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  ticketId    String   @db.Uuid
+  uploadedById String  @db.Uuid
+  filename    String
+  mimeType    String
+  fileSize    Int
+  storagePath String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant     Tenant @relation(fields: [tenantId], references: [id])
+  ticket     Ticket @relation(fields: [ticketId], references: [id])
+  uploadedBy User   @relation(fields: [uploadedById], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, ticketId])
+  @@map("ticket_attachments")
+}
+
+// Model 13: TicketActivity
+model TicketActivity {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @db.Uuid
+  ticketId     String   @db.Uuid
+  actorId      String?  @db.Uuid
+  activityType String
+  fieldName    String?
+  oldValue     String?
+  newValue     String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  ticket Ticket @relation(fields: [ticketId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, ticketId])
+  @@index([tenantId, createdAt])
+  @@map("ticket_activities")
+}
+
+// Model 14: TicketKnowledgeArticle
+model TicketKnowledgeArticle {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @db.Uuid
+  ticketId          String   @db.Uuid
+  knowledgeArticleId String  @db.Uuid
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  tenant           Tenant           @relation(fields: [tenantId], references: [id])
+  ticket           Ticket           @relation(fields: [ticketId], references: [id])
+  knowledgeArticle KnowledgeArticle @relation(fields: [knowledgeArticleId], references: [id])
+
+  @@unique([ticketId, knowledgeArticleId])
+  @@index([tenantId])
+  @@map("ticket_knowledge_articles")
+}
+
+// Model 15: Queue
+model Queue {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @db.Uuid
+  name              String
+  autoAssign        Boolean  @default(false)
+  defaultAssigneeId String?  @db.Uuid
+  assignmentRules   Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id])
+  tickets Ticket[]
+
+  @@index([tenantId])
+  @@map("queues")
+}
+
+// Model 16: SLA
+model SLA {
+  id                        String   @id @default(uuid()) @db.Uuid
+  tenantId                  String   @db.Uuid
+  name                      String
+  p1ResponseMinutes         Int
+  p1ResolutionMinutes       Int
+  p2ResponseMinutes         Int
+  p2ResolutionMinutes       Int
+  p3ResponseMinutes         Int
+  p3ResolutionMinutes       Int
+  p4ResponseMinutes         Int
+  p4ResolutionMinutes       Int
+  businessHours             Boolean  @default(true)
+  businessHoursStart        String?
+  businessHoursEnd          String?
+  businessDays              Int[]
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id])
+  tickets Ticket[]
+
+  @@index([tenantId])
+  @@map("slas")
+}
+
+// Model 17: Category
+model Category {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  name        String
+  icon        String?
+  color       String?
+  parentId    String?  @db.Uuid
+  userGroupId String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  parent     Category?  @relation("CategoryParent", fields: [parentId], references: [id])
+  children   Category[] @relation("CategoryParent")
+  userGroup  UserGroup? @relation(fields: [userGroupId], references: [id])
+  tickets    Ticket[]
+
+  @@index([tenantId])
+  @@map("categories")
+}
+
+// Model 18: EmailAccount
+model EmailAccount {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @db.Uuid
+  name              String
+  emailAddress      String
+  smtpHost          String?
+  smtpPort          Int?
+  smtpUser          String?
+  smtpPasswordEnc   String?
+  smtpSecure        Boolean  @default(true)
+  imapHost          String?
+  imapPort          Int?
+  imapUser          String?
+  imapPasswordEnc   String?
+  imapSecure        Boolean  @default(true)
+  pollInterval      Int      @default(5)
+  isActive          Boolean  @default(true)
+  emailToTicket     Boolean  @default(true)
+  defaultQueueId    String?  @db.Uuid
+  defaultCategoryId String?  @db.Uuid
+  lastPolledAt      DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@map("email_accounts")
+}
+
+// ─── Change Management ────────────────────────────────────────────────────────
+
+// Model 19: Change
+model Change {
+  id                 String       @id @default(uuid()) @db.Uuid
+  tenantId           String       @db.Uuid
+  changeNumber       Int
+  type               ChangeType   @default(NORMAL)
+  title              String
+  description        String?
+  implementationPlan String?
+  backoutPlan        String?
+  testingPlan        String?
+  riskLevel          RiskLevel    @default(MEDIUM)
+  status             ChangeStatus @default(NEW)
+  requestedById      String?      @db.Uuid
+  assignedToId       String?      @db.Uuid
+  scheduledStart     DateTime?
+  scheduledEnd       DateTime?
+  actualStart        DateTime?
+  actualEnd          DateTime?
+  closedAt           DateTime?
+  customFields       Json?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  tenant              Tenant               @relation(fields: [tenantId], references: [id])
+  approvals           ChangeApproval[]
+  activities          ChangeActivity[]
+  changeApplications  ChangeApplication[]
+  changeAssets        ChangeAsset[]
+  cabMeetingChanges   CABMeetingChange[]
+
+  @@unique([tenantId, changeNumber])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, scheduledStart])
+  @@map("changes")
+}
+
+// Model 20: ChangeApproval
+model ChangeApproval {
+  id            String         @id @default(uuid()) @db.Uuid
+  tenantId      String         @db.Uuid
+  changeId      String         @db.Uuid
+  approverId    String         @db.Uuid
+  status        ApprovalStatus @default(PENDING)
+  sequenceOrder Int            @default(0)
+  comments      String?
+  decidedAt     DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  change   Change @relation(fields: [changeId], references: [id])
+  approver User   @relation(fields: [approverId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, changeId])
+  @@index([tenantId, status])
+  @@map("change_approvals")
+}
+
+// Model 21: ChangeActivity
+model ChangeActivity {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @db.Uuid
+  changeId     String   @db.Uuid
+  actorId      String?  @db.Uuid
+  activityType String
+  fieldName    String?
+  oldValue     String?
+  newValue     String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  change Change @relation(fields: [changeId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, changeId])
+  @@map("change_activities")
+}
+
+// Model 22: ChangeApplication
+model ChangeApplication {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @db.Uuid
+  changeId      String   @db.Uuid
+  applicationId String   @db.Uuid
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  change      Change      @relation(fields: [changeId], references: [id])
+  application Application @relation(fields: [applicationId], references: [id])
+
+  @@unique([changeId, applicationId])
+  @@index([tenantId])
+  @@map("change_applications")
+}
+
+// Model 23: ChangeAsset
+model ChangeAsset {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  changeId  String   @db.Uuid
+  assetId   String   @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  change Change @relation(fields: [changeId], references: [id])
+  asset  Asset  @relation(fields: [assetId], references: [id])
+
+  @@unique([changeId, assetId])
+  @@index([tenantId])
+  @@map("change_assets")
+}
+
+// Model 24: CABMeeting
+model CABMeeting {
+  id              String           @id @default(uuid()) @db.Uuid
+  tenantId        String           @db.Uuid
+  title           String
+  scheduledFor    DateTime
+  durationMinutes Int              @default(60)
+  location        String?
+  meetingUrl      String?
+  status          CABMeetingStatus @default(SCHEDULED)
+  notes           String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  tenant     Tenant               @relation(fields: [tenantId], references: [id])
+  attendees  CABMeetingAttendee[]
+  changes    CABMeetingChange[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, scheduledFor])
+  @@map("cab_meetings")
+}
+
+// Model 25: CABMeetingAttendee
+model CABMeetingAttendee {
+  id         String          @id @default(uuid()) @db.Uuid
+  tenantId   String          @db.Uuid
+  meetingId  String          @db.Uuid
+  userId     String          @db.Uuid
+  role       CABAttendeeRole @default(MEMBER)
+  rsvpStatus RSVPStatus      @default(PENDING)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  tenant  Tenant     @relation(fields: [tenantId], references: [id])
+  meeting CABMeeting @relation(fields: [meetingId], references: [id])
+  user    User       @relation(fields: [userId], references: [id])
+
+  @@unique([meetingId, userId])
+  @@index([tenantId])
+  @@map("cab_meeting_attendees")
+}
+
+// Model 26: CABMeetingChange
+model CABMeetingChange {
+  id           String      @id @default(uuid()) @db.Uuid
+  tenantId     String      @db.Uuid
+  meetingId    String      @db.Uuid
+  changeId     String      @db.Uuid
+  agendaOrder  Int         @default(0)
+  outcome      CABOutcome?
+  notes        String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  tenant  Tenant     @relation(fields: [tenantId], references: [id])
+  meeting CABMeeting @relation(fields: [meetingId], references: [id])
+  change  Change     @relation(fields: [changeId], references: [id])
+
+  @@unique([meetingId, changeId])
+  @@index([tenantId])
+  @@map("cab_meeting_changes")
+}
+
+// ─── Knowledge Management ─────────────────────────────────────────────────────
+
+// Model 27: KnowledgeArticle
+model KnowledgeArticle {
+  id            String            @id @default(uuid()) @db.Uuid
+  tenantId      String            @db.Uuid
+  articleNumber Int
+  title         String
+  summary       String?
+  content       String
+  tags          String[]
+  visibility    ArticleVisibility @default(INTERNAL)
+  status        ArticleStatus     @default(DRAFT)
+  authorId      String?           @db.Uuid
+  viewCount     Int               @default(0)
+  helpfulCount  Int               @default(0)
+  publishedAt   DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  tenant          Tenant                   @relation(fields: [tenantId], references: [id])
+  ticketArticles  TicketKnowledgeArticle[]
+
+  @@unique([tenantId, articleNumber])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@map("knowledge_articles")
+}
+
+// ─── Asset & Endpoint Management ─────────────────────────────────────────────
+
+// Model 28: Site
+model Site {
+  id                   String   @id @default(uuid()) @db.Uuid
+  tenantId             String   @db.Uuid
+  name                 String
+  address              String?
+  city                 String?
+  state                String?
+  postalCode           String?
+  country              String?
+  primaryContactName   String?
+  primaryContactEmail  String?
+  primaryContactPhone  String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id])
+  users  User[]
+  assets Asset[]
+
+  @@index([tenantId])
+  @@map("sites")
+}
+
+// Model 29: BusinessUnit
+model BusinessUnit {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @db.Uuid
+  name         String
+  code         String?
+  managerName  String?
+  managerEmail String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@map("business_units")
+}
+
+// Model 30: Asset
+model Asset {
+  id                 String      @id @default(uuid()) @db.Uuid
+  tenantId           String      @db.Uuid
+  assetTag           String?
+  serialNumber       String?
+  manufacturer       String?
+  model              String?
+  status             AssetStatus @default(IN_STOCK)
+  purchaseDate       DateTime?
+  purchaseCost       Float?
+  warrantyExpiry     DateTime?
+  assignedToId       String?     @db.Uuid
+  siteId             String?     @db.Uuid
+  hostname           String?
+  operatingSystem    String?
+  osVersion          String?
+  cpuModel           String?
+  cpuCores           Int?
+  ramGb              Float?
+  disks              Json?
+  networkInterfaces  Json?
+  softwareInventory  Json?
+  lastInventoryAt    DateTime?
+  customFields       Json?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  tenant              Tenant              @relation(fields: [tenantId], references: [id])
+  site                Site?               @relation(fields: [siteId], references: [id])
+  changeAssets        ChangeAsset[]
+  applicationAssets   ApplicationAsset[]
+  cmdbConfigItems     CmdbConfigurationItem[]
+  contractAssets      ContractAsset[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@map("assets")
+}
+
+// ─── Application Portfolio ────────────────────────────────────────────────────
+
+// Model 31: Application
+model Application {
+  id                  String            @id @default(uuid()) @db.Uuid
+  tenantId            String            @db.Uuid
+  name                String
+  type                ApplicationType   @default(OTHER)
+  status              ApplicationStatus @default(ACTIVE)
+  criticality         CriticalityLevel  @default(MEDIUM)
+  hostingModel        HostingModel      @default(ON_PREMISE)
+  techStack           String[]
+  authMethod          String?
+  dataClassification  String?
+  annualCost          Float?
+  rpo                 Int?
+  rto                 Int?
+  lifecycleStage      LifecycleStage    @default(PRODUCTION)
+  strategicRating     Int?
+  description         String?
+  customFields        Json?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  tenant              Tenant              @relation(fields: [tenantId], references: [id])
+  dependencies        ApplicationDependency[] @relation("SourceApp")
+  dependents          ApplicationDependency[] @relation("TargetApp")
+  documents           ApplicationDocument[]
+  activities          ApplicationActivity[]
+  applicationAssets   ApplicationAsset[]
+  changeApplications  ChangeApplication[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@map("applications")
+}
+
+// Model 32: ApplicationDependency
+model ApplicationDependency {
+  id                    String         @id @default(uuid()) @db.Uuid
+  tenantId              String         @db.Uuid
+  sourceApplicationId   String         @db.Uuid
+  targetApplicationId   String         @db.Uuid
+  dependencyType        DependencyType @default(OTHER)
+  description           String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  tenant            Tenant      @relation(fields: [tenantId], references: [id])
+  sourceApplication Application @relation("SourceApp", fields: [sourceApplicationId], references: [id])
+  targetApplication Application @relation("TargetApp", fields: [targetApplicationId], references: [id])
+
+  @@unique([sourceApplicationId, targetApplicationId])
+  @@index([tenantId])
+  @@map("application_dependencies")
+}
+
+// Model 33: ApplicationDocument
+model ApplicationDocument {
+  id            String       @id @default(uuid()) @db.Uuid
+  tenantId      String       @db.Uuid
+  applicationId String       @db.Uuid
+  title         String
+  documentType  DocumentType @default(OTHER)
+  url           String
+  description   String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  application Application @relation(fields: [applicationId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, applicationId])
+  @@map("application_documents")
+}
+
+// Model 34: ApplicationActivity
+model ApplicationActivity {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @db.Uuid
+  applicationId String   @db.Uuid
+  actorId       String?  @db.Uuid
+  activityType  String
+  fieldName     String?
+  oldValue      String?
+  newValue      String?
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  application Application @relation(fields: [applicationId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, applicationId])
+  @@map("application_activities")
+}
+
+// Model 35: ApplicationAsset
+model ApplicationAsset {
+  id               String               @id @default(uuid()) @db.Uuid
+  tenantId         String               @db.Uuid
+  applicationId    String               @db.Uuid
+  assetId          String               @db.Uuid
+  relationshipType AppAssetRelationship @default(RUNS_ON)
+  isPrimary        Boolean              @default(false)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  application Application @relation(fields: [applicationId], references: [id])
+  asset       Asset       @relation(fields: [assetId], references: [id])
+
+  @@unique([applicationId, assetId])
+  @@index([tenantId])
+  @@map("application_assets")
+}
+
+// ─── Agent & Inventory ────────────────────────────────────────────────────────
+
+// Model 36: Agent
+model Agent {
+  id              String        @id @default(uuid()) @db.Uuid
+  tenantId        String        @db.Uuid
+  agentKey        String        @unique
+  hostname        String
+  platform        AgentPlatform
+  platformVersion String?
+  agentVersion    String?
+  status          AgentStatus   @default(ENROLLING)
+  lastHeartbeatAt DateTime?
+  enrolledAt      DateTime?
+  metadata        Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  tenant             Tenant              @relation(fields: [tenantId], references: [id])
+  inventorySnapshots InventorySnapshot[]
+  metricSamples      MetricSample[]
+  cmdbConfigItems    CmdbConfigurationItem[]
+  cmdbChangeRecords  CmdbChangeRecord[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("agents")
+}
+
+// Model 37: AgentEnrollmentToken
+model AgentEnrollmentToken {
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String    @db.Uuid
+  tokenHash      String    @unique
+  scopes         String[]
+  maxEnrollments Int       @default(1)
+  enrollCount    Int       @default(0)
+  expiresAt      DateTime?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@map("agent_enrollment_tokens")
+}
+
+// Model 38: InventorySnapshot
+model InventorySnapshot {
+  id                 String   @id @default(uuid()) @db.Uuid
+  tenantId           String   @db.Uuid
+  agentId            String   @db.Uuid
+  hostname           String?
+  operatingSystem    String?
+  osVersion          String?
+  cpuModel           String?
+  cpuCores           Int?
+  ramGb              Float?
+  disks              Json?
+  networkInterfaces  Json?
+  installedSoftware  Json?
+  localUsers         Json?
+  rawData            Json?
+  collectedAt        DateTime
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  agent  Agent  @relation(fields: [agentId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, agentId])
+  @@index([tenantId, collectedAt])
+  @@map("inventory_snapshots")
+}
+
+// Model 39: MetricSample
+model MetricSample {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  agentId     String   @db.Uuid
+  metricType  String
+  metricName  String
+  value       Float
+  unit        String?
+  tags        Json?
+  timestamp   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  agent  Agent  @relation(fields: [agentId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, agentId])
+  @@index([tenantId, timestamp])
+  @@map("metric_samples")
+}
+
+// ─── CMDB ─────────────────────────────────────────────────────────────────────
+
+// Model 40: CmdbCategory
+model CmdbCategory {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  name        String
+  slug        String
+  icon        String?
+  color       String?
+  parentId    String?  @db.Uuid
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant          Tenant                  @relation(fields: [tenantId], references: [id])
+  parent          CmdbCategory?           @relation("CmdbCategoryParent", fields: [parentId], references: [id])
+  children        CmdbCategory[]          @relation("CmdbCategoryParent")
+  configItems     CmdbConfigurationItem[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("cmdb_categories")
+}
+
+// Model 41: CmdbConfigurationItem
+model CmdbConfigurationItem {
+  id             String            @id @default(uuid()) @db.Uuid
+  tenantId       String            @db.Uuid
+  ciNumber       Int
+  name           String
+  type           CmdbCiType        @default(OTHER)
+  status         CmdbCiStatus      @default(ACTIVE)
+  environment    CmdbCiEnvironment @default(PRODUCTION)
+  categoryId     String?           @db.Uuid
+  assetId        String?           @db.Uuid
+  agentId        String?           @db.Uuid
+  ownerId        String?           @db.Uuid
+  siteId         String?           @db.Uuid
+  attributesJson Json?
+  discoveredAt   DateTime?
+  lastSeenAt     DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  tenant        Tenant             @relation(fields: [tenantId], references: [id])
+  category      CmdbCategory?      @relation(fields: [categoryId], references: [id])
+  asset         Asset?             @relation(fields: [assetId], references: [id])
+  agent         Agent?             @relation(fields: [agentId], references: [id])
+  sourceRels    CmdbRelationship[] @relation("CmdbRelSource")
+  targetRels    CmdbRelationship[] @relation("CmdbRelTarget")
+  changeRecords CmdbChangeRecord[]
+  ticketLinks   CmdbTicketLink[]
+
+  @@unique([tenantId, ciNumber])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, type])
+  @@index([tenantId, createdAt])
+  @@map("cmdb_configuration_items")
+}
+
+// Model 42: CmdbRelationship
+model CmdbRelationship {
+  id               String               @id @default(uuid()) @db.Uuid
+  tenantId         String               @db.Uuid
+  sourceId         String               @db.Uuid
+  targetId         String               @db.Uuid
+  relationshipType CmdbRelationshipType
+  description      String?
+  isDiscovered     Boolean              @default(false)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  tenant Tenant                @relation(fields: [tenantId], references: [id])
+  source CmdbConfigurationItem @relation("CmdbRelSource", fields: [sourceId], references: [id])
+  target CmdbConfigurationItem @relation("CmdbRelTarget", fields: [targetId], references: [id])
+
+  @@unique([sourceId, targetId, relationshipType])
+  @@index([tenantId])
+  @@index([tenantId, sourceId])
+  @@index([tenantId, targetId])
+  @@map("cmdb_relationships")
+}
+
+// Model 43: CmdbChangeRecord
+model CmdbChangeRecord {
+  id         String         @id @default(uuid()) @db.Uuid
+  tenantId   String         @db.Uuid
+  ciId       String         @db.Uuid
+  changeType CmdbChangeType
+  fieldName  String?
+  oldValue   String?
+  newValue   String?
+  changedBy  CmdbChangedBy
+  agentId    String?        @db.Uuid
+  userId     String?        @db.Uuid
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  tenant Tenant                @relation(fields: [tenantId], references: [id])
+  ci     CmdbConfigurationItem @relation(fields: [ciId], references: [id])
+  agent  Agent?                @relation(fields: [agentId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, ciId])
+  @@index([tenantId, createdAt])
+  @@map("cmdb_change_records")
+}
+
+// Model 44: CmdbTicketLink
+model CmdbTicketLink {
+  id       String             @id @default(uuid()) @db.Uuid
+  tenantId String             @db.Uuid
+  ciId     String             @db.Uuid
+  ticketId String             @db.Uuid
+  linkType CmdbTicketLinkType @default(AFFECTED)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  tenant Tenant                @relation(fields: [tenantId], references: [id])
+  ci     CmdbConfigurationItem @relation(fields: [ciId], references: [id])
+  ticket Ticket                @relation(fields: [ticketId], references: [id])
+
+  @@unique([ciId, ticketId])
+  @@index([tenantId])
+  @@map("cmdb_ticket_links")
+}
+
+// ─── Owner Admin & Billing (GLOBAL — no tenantId) ─────────────────────────────
+
+// Model 45: OwnerUser (GLOBAL)
+model OwnerUser {
+  id          String    @id @default(uuid()) @db.Uuid
+  email       String    @unique
+  passwordHash String
+  totpSecret  String?
+  totpEnabled Boolean   @default(false)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  sessions OwnerSession[]
+  notes    OwnerNote[]
+
+  @@map("owner_users")
+}
+
+// Model 46: OwnerSession (GLOBAL)
+model OwnerSession {
+  id           String   @id @default(uuid()) @db.Uuid
+  ownerUserId  String   @db.Uuid
+  sessionToken String   @unique
+  expiresAt    DateTime
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  ownerUser OwnerUser @relation(fields: [ownerUserId], references: [id])
+
+  @@index([ownerUserId])
+  @@map("owner_sessions")
+}
+
+// Model 47: SubscriptionPlan (GLOBAL)
+model SubscriptionPlan {
+  id                   String               @id @default(uuid()) @db.Uuid
+  name                 SubscriptionPlanTier @unique
+  displayName          String
+  monthlyPriceUsd      Float
+  annualPriceUsd       Float
+  limitsJson           Json
+  stripePriceIdMonthly String?
+  stripePriceIdAnnual  String?
+  isPublic             Boolean              @default(true)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  subscriptions TenantSubscription[]
+
+  @@map("subscription_plans")
+}
+
+// Model 48: TenantSubscription (GLOBAL)
+model TenantSubscription {
+  id                   String             @id @default(uuid()) @db.Uuid
+  tenantId             String             @unique @db.Uuid
+  planId               String             @db.Uuid
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  status               SubscriptionStatus @default(TRIALING)
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  trialStart           DateTime?
+  trialEnd             DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  tenant Tenant           @relation(fields: [tenantId], references: [id])
+  plan   SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  @@map("tenant_subscriptions")
+}
+
+// Model 49: TenantUsageSnapshot (GLOBAL)
+model TenantUsageSnapshot {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @db.Uuid
+  snapshotDate DateTime
+  activeUsers  Int      @default(0)
+  activeAgents Int      @default(0)
+  ticketCount  Int      @default(0)
+  storageBytes BigInt   @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, snapshotDate])
+  @@index([tenantId])
+  @@map("tenant_usage_snapshots")
+}
+
+// Model 50: OwnerNote (GLOBAL)
+model OwnerNote {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  ownerUserId String   @db.Uuid
+  content     String
+  isPrivate   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  ownerUser OwnerUser @relation(fields: [ownerUserId], references: [id])
+
+  @@index([tenantId])
+  @@map("owner_notes")
+}
+
+// ─── Supporting ───────────────────────────────────────────────────────────────
+
+// Model 51: Vendor
+model Vendor {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @db.Uuid
+  name           String
+  contactName    String?
+  contactEmail   String?
+  contactPhone   String?
+  website        String?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  contracts Contract[]
+
+  @@index([tenantId])
+  @@map("vendors")
+}
+
+// Model 52: Contract
+model Contract {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @db.Uuid
+  vendorId        String?  @db.Uuid
+  name            String
+  contractNumber  String?
+  startDate       DateTime?
+  endDate         DateTime?
+  value           Float?
+  currency        String?
+  notes           String?
+  customFields    Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id])
+  vendor         Vendor?         @relation(fields: [vendorId], references: [id])
+  contractAssets ContractAsset[]
+
+  @@index([tenantId])
+  @@index([tenantId, endDate])
+  @@map("contracts")
+}
+
+// Model 53: ContractAsset
+model ContractAsset {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @db.Uuid
+  contractId String   @db.Uuid
+  assetId    String   @db.Uuid
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  contract Contract @relation(fields: [contractId], references: [id])
+  asset    Asset    @relation(fields: [assetId], references: [id])
+
+  @@unique([contractId, assetId])
+  @@index([tenantId])
+  @@map("contract_assets")
+}
+
+// Model 54: AuditLog
+model AuditLog {
+  id         String      @id @default(uuid()) @db.Uuid
+  tenantId   String      @db.Uuid
+  userId     String?     @db.Uuid
+  action     AuditAction
+  resource   String
+  resourceId String?
+  oldData    Json?
+  newData    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User?  @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, action])
+  @@index([tenantId, createdAt])
+  @@map("audit_logs")
+}
+
+// Model 55: Notification
+model Notification {
+  id         String           @id @default(uuid()) @db.Uuid
+  tenantId   String           @db.Uuid
+  userId     String           @db.Uuid
+  type       NotificationType
+  title      String
+  body       String?
+  resourceId String?
+  resource   String?
+  isRead     Boolean          @default(false)
+  readAt     DateTime?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, userId])
+  @@index([tenantId, userId, isRead])
+  @@map("notifications")
+}
+
+// Model 56: DeviceToken
+model DeviceToken {
+  id         String         @id @default(uuid()) @db.Uuid
+  tenantId   String         @db.Uuid
+  userId     String         @db.Uuid
+  platform   DevicePlatform
+  token      String
+  deviceId   String
+  appVersion String?
+  isActive   Boolean        @default(true)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([userId, deviceId])
+  @@index([tenantId])
+  @@index([tenantId, userId])
+  @@map("device_tokens")
+}
+
+// Model 57: EmailTemplate
+model EmailTemplate {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  name        String
+  subject     String
+  htmlBody    String
+  textBody    String?
+  variables   Json?
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@map("email_templates")
+}
+
+// Model 58: AlertConfiguration
+model AlertConfiguration {
+  id          String           @id @default(uuid()) @db.Uuid
+  tenantId    String           @db.Uuid
+  name        String
+  channelType AlertChannelType
+  config      Json
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@map("alert_configurations")
+}
+
+// Model 59: ScheduledReport
+model ScheduledReport {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  name        String
+  reportType  String
+  schedule    String
+  recipients  String[]
+  filters     Json?
+  isActive    Boolean  @default(true)
+  lastRunAt   DateTime?
+  nextRunAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@map("scheduled_reports")
+}
+
+// Model 60: Webhook
+model Webhook {
+  id         String           @id @default(uuid()) @db.Uuid
+  tenantId   String           @db.Uuid
+  name       String
+  url        String
+  events     WebhookEventType[]
+  secret     String?
+  isActive   Boolean          @default(true)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  tenant    Tenant            @relation(fields: [tenantId], references: [id])
+  deliveries WebhookDelivery[]
+
+  @@index([tenantId])
+  @@map("webhooks")
+}
+
+// Model 61: WebhookDelivery
+model WebhookDelivery {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @db.Uuid
+  webhookId      String   @db.Uuid
+  event          String
+  payload        Json
+  responseStatus Int?
+  responseBody   String?
+  attemptCount   Int      @default(1)
+  success        Boolean  @default(false)
+  deliveredAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  webhook Webhook @relation(fields: [webhookId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, webhookId])
+  @@index([tenantId, createdAt])
+  @@map("webhook_deliveries")
+}
+
+// Model 62: PasswordResetToken
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  tenantId  String    @db.Uuid
+  userId    String    @db.Uuid
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, userId])
+  @@map("password_reset_tokens")
+}
+
+// Model 63: TicketKnowledgeArticle relation table already defined above (model 14)
+// Total: 62 models (61 required + UserGroupMember)

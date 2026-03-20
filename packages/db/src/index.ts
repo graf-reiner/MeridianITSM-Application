@@ -1,2 +1,1 @@
-// Prisma client will be exported here after schema creation
-export {};
+export { prisma, PrismaClient, withTenantScope } from './client.js';
