@@ -75,12 +75,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Knowledge Base
 
-- [ ] **KB-01**: User can create articles with title, summary, rich text content (TipTap), and tags
-- [ ] **KB-02**: Article lifecycle: DRAFT → IN_REVIEW → PUBLISHED → RETIRED
-- [ ] **KB-03**: Full-text search across articles
-- [ ] **KB-04**: Helpful/not helpful voting on articles
-- [ ] **KB-05**: Articles linkable to tickets for resolution reference
-- [ ] **KB-06**: Article view count tracking
+- [x] **KB-01**: User can create articles with title, summary, rich text content (TipTap), and tags
+- [x] **KB-02**: Article lifecycle: DRAFT → IN_REVIEW → PUBLISHED → RETIRED
+- [x] **KB-03**: Full-text search across articles
+- [x] **KB-04**: Helpful/not helpful voting on articles
+- [x] **KB-05**: Articles linkable to tickets for resolution reference
+- [x] **KB-06**: Article view count tracking
 
 ### Self-Service Portal
 
@@ -370,12 +370,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EMAL-06 | Phase 3 | Pending |
 | EMAL-07 | Phase 3 | Pending |
 | EMAL-08 | Phase 3 | Pending |
-| KB-01 | Phase 3 | Pending |
-| KB-02 | Phase 3 | Pending |
-| KB-03 | Phase 3 | Pending |
-| KB-04 | Phase 3 | Pending |
-| KB-05 | Phase 3 | Pending |
-| KB-06 | Phase 3 | Pending |
+| KB-01 | Phase 3 | Complete |
+| KB-02 | Phase 3 | Complete |
+| KB-03 | Phase 3 | Complete |
+| KB-04 | Phase 3 | Complete |
+| KB-05 | Phase 3 | Complete |
+| KB-06 | Phase 3 | Complete |
 | PRTL-01 | Phase 3 | Pending |
 | PRTL-02 | Phase 3 | Pending |
 | PRTL-03 | Phase 3 | Pending |
