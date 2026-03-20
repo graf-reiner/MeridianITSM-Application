@@ -43,15 +43,15 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **TICK-01**: User can create ticket with title, description, type (incident/service_request/problem), priority, category
 - [x] **TICK-02**: Ticket auto-generates sequential ticket number (e.g., TKT-00042) per tenant
 - [x] **TICK-03**: Ticket status transitions: NEW → OPEN → IN_PROGRESS → PENDING → RESOLVED → CLOSED → CANCELLED
-- [ ] **TICK-04**: User can add comments to tickets with PUBLIC or INTERNAL visibility
-- [ ] **TICK-05**: User can upload file attachments to tickets (stored in MinIO/S3)
-- [ ] **TICK-06**: All ticket field changes are logged in an immutable audit trail (TicketActivity)
-- [ ] **TICK-07**: Ticket list with filtering by status, priority, assignee, category, date range, and full-text search
-- [ ] **TICK-08**: Ticket assignment to individual agents or user groups
-- [ ] **TICK-09**: Queue-based ticket routing with auto-assignment rules
-- [ ] **TICK-10**: Ticket can link to knowledge articles for resolution reference
-- [ ] **TICK-11**: Ticket can link to CMDB Configuration Items (affected CIs)
-- [ ] **TICK-12**: Time tracking on ticket comments (timeSpentMinutes)
+- [x] **TICK-04**: User can add comments to tickets with PUBLIC or INTERNAL visibility
+- [x] **TICK-05**: User can upload file attachments to tickets (stored in MinIO/S3)
+- [x] **TICK-06**: All ticket field changes are logged in an immutable audit trail (TicketActivity)
+- [x] **TICK-07**: Ticket list with filtering by status, priority, assignee, category, date range, and full-text search
+- [x] **TICK-08**: Ticket assignment to individual agents or user groups
+- [x] **TICK-09**: Queue-based ticket routing with auto-assignment rules
+- [x] **TICK-10**: Ticket can link to knowledge articles for resolution reference
+- [x] **TICK-11**: Ticket can link to CMDB Configuration Items (affected CIs)
+- [x] **TICK-12**: Time tracking on ticket comments (timeSpentMinutes)
 
 ### SLA Management
 
@@ -347,15 +347,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TICK-01 | Phase 3 | Complete |
 | TICK-02 | Phase 3 | Complete |
 | TICK-03 | Phase 3 | Complete |
-| TICK-04 | Phase 3 | Pending |
-| TICK-05 | Phase 3 | Pending |
-| TICK-06 | Phase 3 | Pending |
-| TICK-07 | Phase 3 | Pending |
-| TICK-08 | Phase 3 | Pending |
-| TICK-09 | Phase 3 | Pending |
-| TICK-10 | Phase 3 | Pending |
-| TICK-11 | Phase 3 | Pending |
-| TICK-12 | Phase 3 | Pending |
+| TICK-04 | Phase 3 | Complete |
+| TICK-05 | Phase 3 | Complete |
+| TICK-06 | Phase 3 | Complete |
+| TICK-07 | Phase 3 | Complete |
+| TICK-08 | Phase 3 | Complete |
+| TICK-09 | Phase 3 | Complete |
+| TICK-10 | Phase 3 | Complete |
+| TICK-11 | Phase 3 | Complete |
+| TICK-12 | Phase 3 | Complete |
 | SLA-01 | Phase 3 | Complete |
 | SLA-02 | Phase 3 | Complete |
 | SLA-03 | Phase 3 | Complete |
