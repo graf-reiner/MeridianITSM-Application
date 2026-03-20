@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: "Completed 01-04-PLAN.md: BullMQ workers, encryption, storage, health endpoint"
-last_updated: "2026-03-20T11:37:00Z"
+stopped_at: "Completed 01-03-PLAN.md: Fastify auth pipeline, JWT login/refresh, RBAC, API key auth, password reset, org-lookup service"
+last_updated: "2026-03-20T11:42:13.027Z"
 progress:
   total_phases: 5
   completed_phases: 0
@@ -50,6 +50,7 @@ Plan: 4 of 6
 | Phase 01-foundation P02 | 9 | 2 tasks | 11 files |
 | Phase 01-foundation P03 | 10 | 2 tasks | ~15 files |
 | Phase 01-foundation P04 | 10 | 2 tasks | 14 files |
+| Phase 01-foundation PP03 | 12 min | 3 tasks | 28 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,9 @@ Recent decisions affecting current work:
 - [Phase 01-04]: BullMQ connection uses plain host/port options object (not Redis instance) to avoid ioredis@5.10.1 vs @5.9.3 version conflict between worker and bullmq peer dep
 - [Phase 01-04]: @types/pg pinned to 8.11.11 in packages/db to resolve structural type conflict with pg@8.20.0 bundled types
 - [Phase 01-04]: Tenant model type in packages/core derived via PrismaClient return type inference (not direct @prisma/client import)
+- [Phase 01-03]: ioredis v5 uses named export 'Redis' — import { Redis } from 'ioredis'
+- [Phase 01-03]: planGatePreHandler is a no-op stub in Phase 1 — Phase 2 implements plan limit enforcement
+- [Phase 01-03]: Org-lookup Cloudflare Worker routing deferred — dev uses localhost:4000 directly
 
 ### Pending Todos
 
@@ -84,6 +88,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T11:37:00Z
-Stopped at: Completed 01-04-PLAN.md: BullMQ workers, encryption, storage, health endpoint
+Last session: 2026-03-20T11:42:13.021Z
+Stopped at: Completed 01-03-PLAN.md: Fastify auth pipeline, JWT login/refresh, RBAC, API key auth, password reset, org-lookup service
 Resume file: None

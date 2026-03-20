@@ -22,21 +22,21 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **TNCY-01**: Every database table has tenantId column; every query is scoped by tenantId
 - [x] **TNCY-02**: Tenant model with types (MSP, ENTERPRISE, B2C) and subscription plan fields
 - [x] **TNCY-03**: CustomerOrganization model for MSP customers managing multiple client orgs
-- [ ] **TNCY-04**: Tenant-scoped middleware on all API routes that injects tenantId from JWT claims
+- [x] **TNCY-04**: Tenant-scoped middleware on all API routes that injects tenantId from JWT claims
 - [x] **TNCY-05**: Prisma query extension or middleware that enforces tenantId on every operation
-- [ ] **TNCY-06**: Subdomain-based tenant routing via Cloudflare Worker and org-lookup service
+- [x] **TNCY-06**: Subdomain-based tenant routing via Cloudflare Worker and org-lookup service
 
 ### Authentication & Authorization
 
-- [ ] **AUTH-01**: User can log in with email and password (bcrypt hashed)
-- [ ] **AUTH-02**: JWT-based session with tenantId, userId, and roles in claims
-- [ ] **AUTH-03**: System roles: admin, msp_admin, agent, end_user with predefined permissions
-- [ ] **AUTH-04**: Custom roles with JSON permission arrays, assignable per tenant
-- [ ] **AUTH-05**: Permission checking via hasPermission(userId, tenantId, permission)
-- [ ] **AUTH-06**: Role scoping to CustomerOrganization for MSP model
-- [ ] **AUTH-07**: API key authentication for external integrations with scoped permissions
-- [ ] **AUTH-08**: Rate limiting: AUTH 5/15min, API 100/min, API_READ 300/min, API_WRITE 30/min
-- [ ] **AUTH-09**: Password reset flow via email link with time-limited token
+- [x] **AUTH-01**: User can log in with email and password (bcrypt hashed)
+- [x] **AUTH-02**: JWT-based session with tenantId, userId, and roles in claims
+- [x] **AUTH-03**: System roles: admin, msp_admin, agent, end_user with predefined permissions
+- [x] **AUTH-04**: Custom roles with JSON permission arrays, assignable per tenant
+- [x] **AUTH-05**: Permission checking via hasPermission(userId, tenantId, permission)
+- [x] **AUTH-06**: Role scoping to CustomerOrganization for MSP model
+- [x] **AUTH-07**: API key authentication for external integrations with scoped permissions
+- [x] **AUTH-08**: Rate limiting: AUTH 5/15min, API 100/min, API_READ 300/min, API_WRITE 30/min
+- [x] **AUTH-09**: Password reset flow via email link with time-limited token
 
 ### Incident Management
 
@@ -307,18 +307,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TNCY-01 | Phase 1 | Complete |
 | TNCY-02 | Phase 1 | Complete |
 | TNCY-03 | Phase 1 | Complete |
-| TNCY-04 | Phase 1 | Pending |
+| TNCY-04 | Phase 1 | Complete |
 | TNCY-05 | Phase 1 | Complete |
-| TNCY-06 | Phase 1 | Pending |
-| AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
-| AUTH-03 | Phase 1 | Pending |
-| AUTH-04 | Phase 1 | Pending |
-| AUTH-05 | Phase 1 | Pending |
-| AUTH-06 | Phase 1 | Pending |
-| AUTH-07 | Phase 1 | Pending |
-| AUTH-08 | Phase 1 | Pending |
-| AUTH-09 | Phase 1 | Pending |
+| TNCY-06 | Phase 1 | Complete |
+| AUTH-01 | Phase 1 | Complete |
+| AUTH-02 | Phase 1 | Complete |
+| AUTH-03 | Phase 1 | Complete |
+| AUTH-04 | Phase 1 | Complete |
+| AUTH-05 | Phase 1 | Complete |
+| AUTH-06 | Phase 1 | Complete |
+| AUTH-07 | Phase 1 | Complete |
+| AUTH-08 | Phase 1 | Complete |
+| AUTH-09 | Phase 1 | Complete |
 | INFR-01 | Phase 1 | Complete |
 | INFR-02 | Phase 1 | Complete |
 | INFR-03 | Phase 1 | Complete |
