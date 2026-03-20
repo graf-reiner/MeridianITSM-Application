@@ -50,12 +50,15 @@ Plans:
   3. A trial tenant receives dunning emails at trial-3d and is suspended at trial expiry; the owner can extend the trial from the admin portal
   4. The owner admin can view all tenants, see their subscription status, impersonate a tenant with a 15-minute token and visible banner, and suspend or delete a tenant
   5. Duplicate Stripe webhook events are processed exactly once (idempotency table prevents double-processing)
-**Plans**: TBD
+**Plans**: 6 plans
 
 Plans:
-- [ ] 02-01: Stripe billing — subscription plans, checkout, sync-checkout endpoint, webhook handler with idempotency, trial/dunning worker, usage snapshots
-- [ ] 02-02: Plan enforcement — planGate middleware, packages/plan-config, usePlan() hook, billing portal redirect
-- [ ] 02-03: Owner admin portal — tenant CRUD, subscription management, impersonation, system ops, audit log
+- [ ] 02-01-PLAN.md — Stripe billing backend: StripeWebhookEvent schema migration, Stripe SDK service, webhook endpoint with raw body + BullMQ enqueue, webhook worker with idempotency, usage snapshot worker
+- [ ] 02-02-PLAN.md — Plan enforcement: planGate real implementation with Redis cache, plan-config types, GET /billing/plan endpoint, usePlan() frontend hook
+- [ ] 02-03-PLAN.md — Checkout and billing UI: Stripe Elements embedded checkout, sync-checkout race condition resolver, custom billing management UI, trial expiry/dunning worker
+- [ ] 02-04-PLAN.md — Owner admin security: TOTP MFA with otpauth, IP allowlist middleware, impersonation token generation, API write-block guard
+- [ ] 02-05-PLAN.md — Owner admin portal: MRR/ARR dashboard with Recharts, tenant list/detail, lifecycle actions, impersonation trigger, internal notes, manual provisioning
+- [ ] 02-06-PLAN.md — Owner admin operations: billing dashboard with payment retry, plan management CRUD, system health with queue monitoring, cross-tenant audit log
 
 ### Phase 3: Core ITSM
 **Goal**: An MSP technician can manage the full ticket lifecycle with SLA enforcement, receive tickets via email, resolve them with knowledge base assistance, and end users can self-serve; all within a configurable, reportable, notified system.
@@ -122,7 +125,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 6/6 | Complete | 2026-03-20 |
-| 2. Billing and Owner Admin | 0/3 | Not started | - |
+| 2. Billing and Owner Admin | 0/6 | Not started | - |
 | 3. Core ITSM | 0/6 | Not started | - |
 | 4. CMDB, Change Management, and Asset Portfolio | 0/4 | Not started | - |
 | 5. Agent, Mobile, and Integrations | 0/5 | Not started | - |
