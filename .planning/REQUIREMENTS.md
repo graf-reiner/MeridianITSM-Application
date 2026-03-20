@@ -148,12 +148,12 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Billing & Subscription
 
 - [x] **BILL-01**: Stripe subscription integration with 4 tiers (STARTER/PROFESSIONAL/BUSINESS/ENTERPRISE)
-- [ ] **BILL-02**: planGate middleware enforces plan limits (maxUsers, maxAgents, maxSites, features) returning 402
+- [x] **BILL-02**: planGate middleware enforces plan limits (maxUsers, maxAgents, maxSites, features) returning 402
 - [ ] **BILL-03**: Trial flow: 14-day trial → dunning at trial-3d → suspension at expiry
 - [x] **BILL-04**: Stripe webhook handler for subscription lifecycle events (created, updated, deleted, payment_failed, payment_succeeded)
 - [ ] **BILL-05**: Self-service billing portal via Stripe Customer Portal redirect
 - [x] **BILL-06**: Tenant usage snapshots (daily: activeUsers, activeAgents, ticketCount, storageBytes)
-- [ ] **BILL-07**: Plan feature flags (CMDB, mobile, webhooks, etc.) gated by subscription tier
+- [x] **BILL-07**: Plan feature flags (CMDB, mobile, webhooks, etc.) gated by subscription tier
 
 ### Owner Admin Portal
 
@@ -326,12 +326,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INFR-05 | Phase 1 | Complete |
 | INFR-06 | Phase 1 | Complete |
 | BILL-01 | Phase 2 | Complete |
-| BILL-02 | Phase 2 | Pending |
+| BILL-02 | Phase 2 | Complete |
 | BILL-03 | Phase 2 | Pending |
 | BILL-04 | Phase 2 | Complete |
 | BILL-05 | Phase 2 | Pending |
 | BILL-06 | Phase 2 | Complete |
-| BILL-07 | Phase 2 | Pending |
+| BILL-07 | Phase 2 | Complete |
 | OADM-01 | Phase 2 | Complete |
 | OADM-02 | Phase 2 | Complete |
 | OADM-03 | Phase 2 | Pending |

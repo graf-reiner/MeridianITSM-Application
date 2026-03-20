@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-03-20T14:22:08.059Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-03-20T14:34:09.845Z"
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 13
-  completed_plans: 8
+  completed_plans: 9
 ---
 
 # Project State
@@ -55,6 +55,7 @@ Plan: 2 of 6 (02-01 complete)
 | Phase 01-foundation P06 | 6 | 2 tasks | 15 files |
 | Phase 02-billing-and-owner-admin P04 | 10 | 2 tasks | 13 files |
 | Phase 02-billing-and-owner-admin P01 | 15 | 3 tasks | 13 files |
+| Phase 02-billing-and-owner-admin P02 | 7 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,8 @@ Recent decisions affecting current work:
 - [Phase 02-01]: stripe@20.4.1 used with apiVersion 2026-02-25.clover — plan had 17.x/2025-02-24.acacia which caused type errors
 - [Phase 02-01]: preParsing hook captures raw webhook body without disrupting global JSON parser — avoid global addContentTypeParser
 - [Phase 02-01]: vitest class syntax required for Worker/Queue/Redis constructor mocks — vi.fn().mockImplementation() not valid as constructor
+- [Phase 02-02]: @meridian/core must be built (tsc) before apps/api tests resolve isFeatureResource -- workspace symlinks resolve to dist/
+- [Phase 02-02]: billingPlanRoutes registered in v1 protected scope (not billing/ public scope) -- plan data requires JWT auth
 
 ### Pending Todos
 
@@ -101,6 +104,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T14:22:08.051Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-03-20T14:34:09.839Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
