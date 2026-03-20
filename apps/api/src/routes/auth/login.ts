@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { loginWithTenantSchema } from '@meridian/types';
 import { prisma } from '@meridian/db';
 import { validateCredentials, getUserRoles, generateTokens } from '../../services/auth.service.js';
+import { AUTH_RATE_LIMIT } from '../../plugins/rate-limit.js';
 
 /**
  * POST /api/auth/login
@@ -9,7 +10,7 @@ import { validateCredentials, getUserRoles, generateTokens } from '../../service
  * Returns JWT access and refresh tokens on success.
  */
 export async function loginRoute(app: FastifyInstance): Promise<void> {
-  app.post('/api/auth/login', async (request, reply) => {
+  app.post('/api/auth/login', { config: { rateLimit: AUTH_RATE_LIMIT } }, async (request, reply) => {
     const parseResult = loginWithTenantSchema.safeParse(request.body);
     if (!parseResult.success) {
       return reply.code(400).send({

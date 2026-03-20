@@ -5,6 +5,7 @@ import {
   createPasswordResetToken,
   resetPassword,
 } from '../../services/auth.service.js';
+import { AUTH_RATE_LIMIT } from '../../plugins/rate-limit.js';
 
 /**
  * Password reset routes.
@@ -17,7 +18,7 @@ export async function passwordResetRoutes(app: FastifyInstance): Promise<void> {
    * Always returns 200 to avoid leaking whether an email exists.
    * If user exists, creates a reset token and logs it (email sending wired in Phase 3).
    */
-  app.post('/api/auth/password-reset/request', async (request, reply) => {
+  app.post('/api/auth/password-reset/request', { config: { rateLimit: AUTH_RATE_LIMIT } }, async (request, reply) => {
     const parseResult = passwordResetRequestSchema.safeParse(request.body);
     if (!parseResult.success) {
       return reply.code(400).send({
@@ -60,7 +61,7 @@ export async function passwordResetRoutes(app: FastifyInstance): Promise<void> {
    * Reset password using a valid token.
    * Returns 200 on success, 400 on invalid/expired token.
    */
-  app.post('/api/auth/password-reset/reset', async (request, reply) => {
+  app.post('/api/auth/password-reset/reset', { config: { rateLimit: AUTH_RATE_LIMIT } }, async (request, reply) => {
     const parseResult = passwordResetSchema.safeParse(request.body);
     if (!parseResult.success) {
       return reply.code(400).send({
