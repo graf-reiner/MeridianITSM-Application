@@ -30,7 +30,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A cross-tenant isolation test passes: Tenant B's session cannot retrieve Tenant A's records from any API endpoint
   4. The owner admin portal is reachable on port 3800 with its own separate login and JWT, and is unreachable from the public-facing domain
   5. A BullMQ worker job carries tenantId in its payload and the worker asserts that tenantId before any database access
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
 - [ ] 01-01: Monorepo scaffold — pnpm workspaces, Turborepo, all app/package stubs, Docker Compose
