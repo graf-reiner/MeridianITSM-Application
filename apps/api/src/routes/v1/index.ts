@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { billingPlanRoutes } from './billing-plan.js';
+import { emailAccountRoutes } from './email-accounts/index.js';
 import { knowledgeRoutes } from './knowledge/index.js';
 import { settingsRoutes } from './settings/index.js';
 import { slaRoutes } from './sla/index.js';
@@ -18,6 +19,9 @@ export async function v1Routes(app: FastifyInstance): Promise<void> {
 
   // Billing plan endpoint — returns tenant's current plan tier, limits, and status
   await app.register(billingPlanRoutes);
+
+  // Email account management — SMTP/IMAP configuration, connection testing, email-to-ticket
+  await app.register(emailAccountRoutes);
 
   // Knowledge base — article CRUD, lifecycle, search, voting, view tracking
   await app.register(knowledgeRoutes);
