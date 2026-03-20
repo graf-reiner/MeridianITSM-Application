@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: "Completed 01-02-PLAN.md: 62-model Prisma schema, tenant extension, Zod types, seed script"
-last_updated: "2026-03-20T11:21:28Z"
+stopped_at: "Completed 01-04-PLAN.md: BullMQ workers, encryption, storage, health endpoint"
+last_updated: "2026-03-20T11:37:00Z"
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 6
-  completed_plans: 2
+  completed_plans: 4
 ---
 
 # Project State
@@ -24,30 +24,32 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 ## Current Position
 
 Phase: 01 (foundation) — EXECUTING
-Plan: 2 of 6
+Plan: 4 of 6
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 2
+- Total plans completed: 4
 - Average duration: ~10 min
-- Total execution time: 0.3 hours
+- Total execution time: 0.7 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation | 2/6 | ~20 min | ~10 min |
+| 01-foundation | 4/6 | ~40 min | ~10 min |
 
 **Recent Trend:**
 
-- Last 5 plans: 01-01 (~11 min), 01-02 (9 min)
+- Last 5 plans: 01-01 (~11 min), 01-02 (9 min), 01-03 (~10 min), 01-04 (~10 min)
 - Trend: Stable
 
 *Updated after each plan completion*
 | Phase 01-foundation P01 | 8 | 3 tasks | 39 files |
 | Phase 01-foundation P02 | 9 | 2 tasks | 11 files |
+| Phase 01-foundation P03 | 10 | 2 tasks | ~15 files |
+| Phase 01-foundation P04 | 10 | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -66,6 +68,9 @@ Recent decisions affecting current work:
 - [Phase 01-02]: Prisma 7 requires datasource URL in prisma.config.ts via adapter — schema.prisma datasource block has no url field (breaking change from Prisma 6)
 - [Phase 01-02]: @@unique([tenantId, name]) added to SLA and Category models to support seed upsert by name
 - [Phase 01-02]: 62 total models (UserGroupMember explicit join table added; plan listed 61)
+- [Phase 01-04]: BullMQ connection uses plain host/port options object (not Redis instance) to avoid ioredis@5.10.1 vs @5.9.3 version conflict between worker and bullmq peer dep
+- [Phase 01-04]: @types/pg pinned to 8.11.11 in packages/db to resolve structural type conflict with pg@8.20.0 bundled types
+- [Phase 01-04]: Tenant model type in packages/core derived via PrismaClient return type inference (not direct @prisma/client import)
 
 ### Pending Todos
 
@@ -79,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T11:21:28Z
-Stopped at: Completed 01-02-PLAN.md: 62-model Prisma schema, tenant extension, Zod types, seed script
+Last session: 2026-03-20T11:37:00Z
+Stopped at: Completed 01-04-PLAN.md: BullMQ workers, encryption, storage, health endpoint
 Resume file: None

@@ -251,12 +251,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Infrastructure
 
-- [ ] **INFR-01**: Background workers via BullMQ: SLA monitoring, email notifications, email polling, CMDB reconciliation
-- [ ] **INFR-02**: Redis for queue management, caching, and rate limiting
-- [ ] **INFR-03**: MinIO/S3-compatible file storage for attachments
-- [ ] **INFR-04**: AES encryption for stored email passwords
-- [ ] **INFR-05**: Health check endpoint
-- [ ] **INFR-06**: Org lookup service for subdomain-based tenant resolution
+- [x] **INFR-01**: Background workers via BullMQ: SLA monitoring, email notifications, email polling, CMDB reconciliation
+- [x] **INFR-02**: Redis for queue management, caching, and rate limiting
+- [x] **INFR-03**: MinIO/S3-compatible file storage for attachments
+- [x] **INFR-04**: AES encryption for stored email passwords
+- [x] **INFR-05**: Health check endpoint
+- [x] **INFR-06**: Org lookup service for subdomain-based tenant resolution
 
 ## v2 Requirements
 
@@ -319,12 +319,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-07 | Phase 1 | Pending |
 | AUTH-08 | Phase 1 | Pending |
 | AUTH-09 | Phase 1 | Pending |
-| INFR-01 | Phase 1 | Pending |
-| INFR-02 | Phase 1 | Pending |
-| INFR-03 | Phase 1 | Pending |
-| INFR-04 | Phase 1 | Pending |
-| INFR-05 | Phase 1 | Pending |
-| INFR-06 | Phase 1 | Pending |
+| INFR-01 | Phase 1 | Complete |
+| INFR-02 | Phase 1 | Complete |
+| INFR-03 | Phase 1 | Complete |
+| INFR-04 | Phase 1 | Complete |
+| INFR-05 | Phase 1 | Complete |
+| INFR-06 | Phase 1 | Complete |
 | BILL-01 | Phase 2 | Pending |
 | BILL-02 | Phase 2 | Pending |
 | BILL-03 | Phase 2 | Pending |
