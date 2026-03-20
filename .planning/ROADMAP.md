@@ -13,7 +13,7 @@ MeridianITSM is built in five broad phases that follow strict dependency orderin
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Monorepo scaffold, full database schema, tenant isolation, and authentication pipeline
-- [ ] **Phase 2: Billing and Owner Admin** - Stripe subscription lifecycle, plan enforcement, and operator control plane
+- [x] **Phase 2: Billing and Owner Admin** - Stripe subscription lifecycle, plan enforcement, and operator control plane (completed 2026-03-20)
 - [ ] **Phase 3: Core ITSM** - Incident management, SLA, email-to-ticket, knowledge base, self-service portal, settings, notifications, and reporting
 - [ ] **Phase 4: CMDB, Change Management, and Asset Portfolio** - ITIL expansion with asset tracking, CMDB with relationship mapping, change management with CAB workflows, and application portfolio
 - [ ] **Phase 5: Agent, Mobile, and Integrations** - .NET inventory agent with CMDB auto-discovery, React Native mobile app with push notifications, and webhook/API integration layer
@@ -125,7 +125,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 6/6 | Complete | 2026-03-20 |
-| 2. Billing and Owner Admin | 5/6 | In Progress|  |
+| 2. Billing and Owner Admin | 6/6 | Complete   | 2026-03-20 |
 | 3. Core ITSM | 0/6 | Not started | - |
 | 4. CMDB, Change Management, and Asset Portfolio | 0/4 | Not started | - |
 | 5. Agent, Mobile, and Integrations | 0/5 | Not started | - |

@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 02-06-PLAN.md
-last_updated: "2026-03-20T14:40:02.837Z"
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-03-20T14:42:00.000Z"
 progress:
   total_phases: 5
   completed_phases: 0
@@ -58,6 +58,7 @@ Plan: 2 of 6 (02-01 complete)
 | Phase 02-billing-and-owner-admin P02 | 7 | 2 tasks | 7 files |
 | Phase 02-billing-and-owner-admin P05 | 11 | 3 tasks | 14 files |
 | Phase 02-billing-and-owner-admin P06 | 12 | 2 tasks | 13 files |
+| Phase 02-billing-and-owner-admin P03 | 16 | 3 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -98,6 +99,9 @@ Recent decisions affecting current work:
 - [Phase 02-billing-and-owner-admin]: Stripe apiVersion cast as 'any' — stripe@20.4.1 types use 2026-02-25.acacia but TS compiler rejects it without the cast
 - [Phase 02-billing-and-owner-admin]: AuditLog cross-tenant query (no tenantId filter) intentionally owner-only — valid only behind owner JWT auth
 - [Phase 02-billing-and-owner-admin]: BullMQ Queue instances created per-request and closed immediately in owner app — stateless, no persistent Redis connections
+- [Phase 02-03]: Stripe API 2026-02-25.clover removed current_period_start/end from Subscription type — sync-checkout stores only status and cancelAtPeriodEnd; cancel.ts uses cancel_at
+- [Phase 02-03]: Custom billing UI per CONTEXT.md (not Stripe Customer Portal) despite REQUIREMENTS.md BILL-05 wording — CONTEXT.md wins per plan spec
+- [Phase 02-03]: zod added directly to apps/api (not via fastify-type-provider-zod) for billing route request body validation
 
 ### Pending Todos
 
@@ -111,6 +115,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T14:40:02.829Z
-Stopped at: Completed 02-06-PLAN.md
+Last session: 2026-03-20T14:42:00.000Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None
