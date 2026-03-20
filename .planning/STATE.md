@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 02-billing-and-owner-admin/02-04-PLAN.md
-last_updated: "2026-03-20T14:15:52.930Z"
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-03-20T14:22:08.059Z"
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 13
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 ## Current Position
 
 Phase: 02 (billing-and-owner-admin) — EXECUTING
-Plan: 1 of 6
+Plan: 2 of 6 (02-01 complete)
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Plan: 1 of 6
 | Phase 01-foundation P05 | 2 | 1 tasks | 6 files |
 | Phase 01-foundation P06 | 6 | 2 tasks | 15 files |
 | Phase 02-billing-and-owner-admin P04 | 10 | 2 tasks | 13 files |
+| Phase 02-billing-and-owner-admin P01 | 15 | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,9 @@ Recent decisions affecting current work:
 - [Phase 01-06]: Encryption tests use dynamic import inside it() blocks to ensure ENCRYPTION_KEY env var is set before module initialization
 - [Phase 02-billing-and-owner-admin]: IMPERSONATION_JWT_SECRET used (not OWNER_JWT_SECRET) so main API only shares the impersonation key
 - [Phase 02-billing-and-owner-admin]: IP allowlist optional — OWNER_ADMIN_IP_ALLOWLIST unset means no restriction (dev mode)
+- [Phase 02-01]: stripe@20.4.1 used with apiVersion 2026-02-25.clover — plan had 17.x/2025-02-24.acacia which caused type errors
+- [Phase 02-01]: preParsing hook captures raw webhook body without disrupting global JSON parser — avoid global addContentTypeParser
+- [Phase 02-01]: vitest class syntax required for Worker/Queue/Redis constructor mocks — vi.fn().mockImplementation() not valid as constructor
 
 ### Pending Todos
 
@@ -97,6 +101,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T14:15:52.925Z
-Stopped at: Completed 02-billing-and-owner-admin/02-04-PLAN.md
+Last session: 2026-03-20T14:22:08.051Z
+Stopped at: Completed 02-01-PLAN.md
 Resume file: None

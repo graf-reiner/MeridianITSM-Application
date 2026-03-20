@@ -125,7 +125,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 6/6 | Complete | 2026-03-20 |
-| 2. Billing and Owner Admin | 1/6 | In Progress|  |
+| 2. Billing and Owner Admin | 2/6 | In Progress|  |
 | 3. Core ITSM | 0/6 | Not started | - |
 | 4. CMDB, Change Management, and Asset Portfolio | 0/4 | Not started | - |
 | 5. Agent, Mobile, and Integrations | 0/5 | Not started | - |
