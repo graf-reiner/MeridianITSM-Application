@@ -11,7 +11,7 @@ import { blockImpersonationWrites } from './middleware/impersonation-guard.js';
 import { apiKeyPreHandler } from './plugins/api-key.js';
 import { healthRoutes } from './routes/health/index.js';
 import { authRoutes } from './routes/auth/index.js';
-import { billingRoutes } from './routes/billing/index.js';
+import { billingRoutes, authenticatedBillingRoutes } from './routes/billing/index.js';
 import { v1Routes } from './routes/v1/index.js';
 import { externalRoutes } from './routes/external/index.js';
 
@@ -45,6 +45,7 @@ export async function buildApp() {
     protectedApp.addHook('preHandler', blockImpersonationWrites);
 
     await protectedApp.register(v1Routes);
+    await protectedApp.register(authenticatedBillingRoutes);
   });
 
   // API key routes — separate scope for agent/external endpoints
