@@ -9,10 +9,13 @@
     "build": "tsc"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.0.0",
+    "@aws-sdk/s3-request-presigner": "^3.1013.0",
     "@meridian/db": "workspace:*",
     "@meridian/types": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^22.13.10",
     "typescript": "^5.7.3"
   }
 }
