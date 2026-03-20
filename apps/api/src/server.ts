@@ -7,9 +7,11 @@ import { redis } from './lib/redis.js';
 import { authPreHandler } from './plugins/auth.js';
 import { tenantPreHandler } from './plugins/tenant.js';
 import { planGatePreHandler } from './plugins/plan-gate.js';
+import { blockImpersonationWrites } from './middleware/impersonation-guard.js';
 import { apiKeyPreHandler } from './plugins/api-key.js';
 import { healthRoutes } from './routes/health/index.js';
 import { authRoutes } from './routes/auth/index.js';
+import { billingRoutes } from './routes/billing/index.js';
 import { v1Routes } from './routes/v1/index.js';
 import { externalRoutes } from './routes/external/index.js';
 
@@ -33,12 +35,14 @@ export async function buildApp() {
   // Public routes — no authentication required
   await app.register(healthRoutes);
   await app.register(authRoutes);
+  await app.register(billingRoutes); // Stripe webhooks use signature verification, not JWT
 
-  // Protected routes — JWT auth + tenant injection + plan gate
+  // Protected routes — JWT auth + tenant injection + plan gate + impersonation write-block
   await app.register(async (protectedApp) => {
     protectedApp.addHook('preHandler', authPreHandler);
     protectedApp.addHook('preHandler', tenantPreHandler);
     protectedApp.addHook('preHandler', planGatePreHandler);
+    protectedApp.addHook('preHandler', blockImpersonationWrites);
 
     await protectedApp.register(v1Routes);
   });
