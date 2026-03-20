@@ -5,7 +5,8 @@ import { emailPollingWorker } from './workers/email-polling.js';
 import { cmdbReconciliationWorker } from './workers/cmdb-reconciliation.js';
 import { stripeWebhookWorker } from './workers/stripe-webhook.js';
 import { usageSnapshotWorker } from './workers/usage-snapshot.js';
-import { usageSnapshotQueue } from './queues/definitions.js';
+import { trialExpiryWorker } from './workers/trial-expiry.js';
+import { usageSnapshotQueue, trialExpiryQueue } from './queues/definitions.js';
 
 const workers = [
   { name: 'sla-monitor', worker: slaMonitorWorker },
@@ -14,6 +15,7 @@ const workers = [
   { name: 'cmdb-reconciliation', worker: cmdbReconciliationWorker },
   { name: 'stripe-webhook', worker: stripeWebhookWorker },
   { name: 'usage-snapshot', worker: usageSnapshotWorker },
+  { name: 'trial-expiry', worker: trialExpiryWorker },
 ];
 
 // Schedule daily usage snapshot at 2 AM UTC
@@ -23,6 +25,16 @@ void usageSnapshotQueue.add(
   {
     repeat: { pattern: '0 2 * * *' },
     jobId: 'daily-snapshot-repeatable', // Stable jobId prevents duplicate schedules on restart
+  },
+);
+
+// Schedule daily trial expiry check at 6 AM UTC
+void trialExpiryQueue.add(
+  'daily-trial-check',
+  {},
+  {
+    repeat: { pattern: '0 6 * * *' },
+    jobId: 'daily-trial-check-repeatable', // Stable jobId prevents duplicate schedules on restart
   },
 );
 

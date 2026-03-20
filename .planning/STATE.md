@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 02-05-PLAN.md
-last_updated: "2026-03-20T14:38:14.409Z"
+stopped_at: Completed 02-06-PLAN.md
+last_updated: "2026-03-20T14:40:02.837Z"
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 13
-  completed_plans: 10
+  completed_plans: 11
 ---
 
 # Project State
@@ -57,6 +57,7 @@ Plan: 2 of 6 (02-01 complete)
 | Phase 02-billing-and-owner-admin P01 | 15 | 3 tasks | 13 files |
 | Phase 02-billing-and-owner-admin P02 | 7 | 2 tasks | 7 files |
 | Phase 02-billing-and-owner-admin P05 | 11 | 3 tasks | 14 files |
+| Phase 02-billing-and-owner-admin P06 | 12 | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,9 @@ Recent decisions affecting current work:
 - [Phase 02-02]: billingPlanRoutes registered in v1 protected scope (not billing/ public scope) -- plan data requires JWT auth
 - [Phase 02-billing-and-owner-admin]: SubscriptionPlanTier used as local union type in provisioning.ts — @meridian/db only exports prisma client, not Prisma enums
 - [Phase 02-billing-and-owner-admin]: authHeaders typed as Record<string, string> in owner admin client components — optional Authorization property fails TypeScript HeadersInit constraint
+- [Phase 02-billing-and-owner-admin]: Stripe apiVersion cast as 'any' — stripe@20.4.1 types use 2026-02-25.acacia but TS compiler rejects it without the cast
+- [Phase 02-billing-and-owner-admin]: AuditLog cross-tenant query (no tenantId filter) intentionally owner-only — valid only behind owner JWT auth
+- [Phase 02-billing-and-owner-admin]: BullMQ Queue instances created per-request and closed immediately in owner app — stateless, no persistent Redis connections
 
 ### Pending Todos
 
@@ -107,6 +111,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T14:38:14.404Z
-Stopped at: Completed 02-05-PLAN.md
+Last session: 2026-03-20T14:40:02.829Z
+Stopped at: Completed 02-06-PLAN.md
 Resume file: None

@@ -164,10 +164,10 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **OADM-05**: Tenant lifecycle: suspend, unsuspend, delete (soft with 30-day recovery), extend trial, apply grace period
 - [x] **OADM-06**: Read-only tenant impersonation with 15-minute signed token and persistent banner
 - [x] **OADM-07**: Internal notes on tenants (visible only in admin app)
-- [ ] **OADM-08**: Billing dashboard: Stripe revenue, per-tenant billing detail, retry failed payments
-- [ ] **OADM-09**: Plan management: view/edit subscription plans, archive plans
-- [ ] **OADM-10**: System operations: worker health, maintenance broadcast, CMDB reconciliation trigger
-- [ ] **OADM-11**: Global cross-tenant audit log viewer
+- [x] **OADM-08**: Billing dashboard: Stripe revenue, per-tenant billing detail, retry failed payments
+- [x] **OADM-09**: Plan management: view/edit subscription plans, archive plans
+- [x] **OADM-10**: System operations: worker health, maintenance broadcast, CMDB reconciliation trigger
+- [x] **OADM-11**: Global cross-tenant audit log viewer
 - [x] **OADM-12**: Manual tenant provisioning endpoint
 
 ### Inventory Agent (.NET)
@@ -339,10 +339,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OADM-05 | Phase 2 | Complete |
 | OADM-06 | Phase 2 | Complete |
 | OADM-07 | Phase 2 | Complete |
-| OADM-08 | Phase 2 | Pending |
-| OADM-09 | Phase 2 | Pending |
-| OADM-10 | Phase 2 | Pending |
-| OADM-11 | Phase 2 | Pending |
+| OADM-08 | Phase 2 | Complete |
+| OADM-09 | Phase 2 | Complete |
+| OADM-10 | Phase 2 | Complete |
+| OADM-11 | Phase 2 | Complete |
 | OADM-12 | Phase 2 | Complete |
 | TICK-01 | Phase 3 | Pending |
 | TICK-02 | Phase 3 | Pending |
