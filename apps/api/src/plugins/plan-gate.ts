@@ -124,20 +124,25 @@ async function enforce(
   // Numeric limit check
   if (currentCountFn) {
     const limitKey = getLimitKey(resource);
-    const limit = limits[limitKey] as number;
 
-    // -1 means unlimited
-    if (limit !== -1) {
-      const current = await currentCountFn(tenantId);
-      if (current >= limit) {
-        reply.status(402).send({
-          error: 'PLAN_LIMIT_EXCEEDED',
-          limit,
-          current,
-          feature: resource,
-          upgradeTier,
-        });
-        return true;
+    // null limitKey means this resource has no numeric limit in limitsJson — subscription-status
+    // check only (e.g. 'tickets' is unlimited across all plans)
+    if (limitKey !== null) {
+      const limit = limits[limitKey] as number;
+
+      // -1 means unlimited
+      if (limit !== -1) {
+        const current = await currentCountFn(tenantId);
+        if (current >= limit) {
+          reply.status(402).send({
+            error: 'PLAN_LIMIT_EXCEEDED',
+            limit,
+            current,
+            feature: resource,
+            upgradeTier,
+          });
+          return true;
+        }
       }
     }
   }

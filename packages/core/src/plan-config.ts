@@ -8,6 +8,7 @@ export type PlanResource =
   | 'users'
   | 'agents'
   | 'sites'
+  | 'tickets'
   | 'cmdb'
   | 'mobile'
   | 'webhooks'
@@ -47,8 +48,9 @@ export function isFeatureResource(r: PlanResource): boolean {
 /**
  * Maps a numeric resource name to its corresponding key in PlanLimits.
  * 'users' -> 'maxUsers', 'agents' -> 'maxAgents', 'sites' -> 'maxSites'
+ * Returns null for resources with no numeric limit (e.g. 'tickets' — unlimited by design).
  */
-export function getLimitKey(resource: PlanResource): keyof PlanLimits {
+export function getLimitKey(resource: PlanResource): keyof PlanLimits | null {
   switch (resource) {
     case 'users':
       return 'maxUsers';
@@ -57,6 +59,6 @@ export function getLimitKey(resource: PlanResource): keyof PlanLimits {
     case 'sites':
       return 'maxSites';
     default:
-      throw new Error(`getLimitKey called with non-numeric resource: ${resource}`);
+      return null;
   }
 }

@@ -25,8 +25,8 @@ export const slaMonitorWorker = new Worker(
   async (job) => {
     console.log(`[sla-monitor] Running SLA breach check (job ${job.id})`);
 
-    // Cross-tenant sentinel: processes all active tickets across all tenants
-    // No assertTenantId — this is intentionally cross-tenant (see CONTEXT.md locked decision)
+    // Cross-tenant sentinel: processes all active tickets across all tenants.
+    // Intentionally no per-tenant scoping — this is a global SLA check (see CONTEXT.md).
     const activeTickets = await prisma.ticket.findMany({
       where: {
         status: {
