@@ -16,28 +16,28 @@ An MSP can manage multiple customer organizations' IT service desks from a singl
 - [x] Stripe subscription billing with plan enforcement (planGate middleware) *(Validated in Phase 02: billing-and-owner-admin)*
 - [x] Tenant provisioning automation (signup → provision → welcome email) *(Validated in Phase 02: billing-and-owner-admin)*
 - [x] Trial flow with expiry, dunning emails, and paywall *(Validated in Phase 02: billing-and-owner-admin)*
+- [x] Ticket lifecycle: create, assign, SLA tracking, resolve, close *(Validated in Phase 03: core-itsm)*
+- [x] Knowledge base with rich text, search, voting, ticket linking *(Validated in Phase 03: core-itsm)*
+- [x] SLA management with automated monitoring and breach alerts *(Validated in Phase 03: core-itsm)*
+- [x] Email-to-ticket via IMAP/POP3 polling *(Validated in Phase 03: core-itsm)*
+- [x] Background workers (SLA monitoring, email notifications, email polling) *(Validated in Phase 03: core-itsm)*
+- [x] End-user self-service portal (simplified UI) *(Validated in Phase 03: core-itsm)*
+- [x] Scheduled reports (CSV/JSON) *(Validated in Phase 03: core-itsm)*
 
 ### Active
 
 - [ ] Multi-tenant architecture with tenantId scoping on every query
 - [ ] Separate API server (Hono/Fastify) + Next.js frontend (architectural split)
-- [ ] Ticket lifecycle: create, assign, SLA tracking, resolve, close
 - [ ] Change management with approval workflows and CAB meetings
-- [ ] Knowledge base with rich text, search, voting, ticket linking
 - [ ] Asset management with manual entry and agent-collected inventory
 - [ ] CMDB with CI relationships, impact analysis, agent auto-discovery
 - [ ] Application portfolio management with dependency mapping
-- [ ] SLA management with automated monitoring and breach alerts
-- [ ] Email-to-ticket via IMAP/POP3 polling
 - [ ] Push notifications (FCM for Android, APNs for iOS)
-- [ ] Background workers (SLA monitoring, email notifications, email polling, CMDB reconciliation)
 - [ ] RBAC with system roles (admin, msp_admin, agent, end_user) and custom roles
-- [ ] End-user self-service portal (simplified UI)
 - [ ] React Native/Expo mobile app (iOS + Android)
 - [ ] .NET cross-platform inventory agent (Windows, Linux, macOS)
 - [ ] API key management for external integrations
 - [ ] Webhook system with delivery tracking
-- [ ] Scheduled reports (CSV/JSON)
 - [ ] MSP model: managing multiple CustomerOrganizations per tenant
 
 ### Out of Scope
@@ -80,4 +80,4 @@ The full specification is captured in `DOCUMENTATION .md` (1900 lines) covering 
 | Stack open to research | Let research identify best current options rather than locking to original choices | — Pending |
 
 ---
-*Last updated: 2026-03-20 — Phase 02 (billing-and-owner-admin) complete*
+*Last updated: 2026-03-21 — Phase 03 (core-itsm) complete*
