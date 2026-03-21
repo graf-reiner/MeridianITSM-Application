@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Monorepo scaffold, full database schema, tenant isolation, and authentication pipeline
 - [x] **Phase 2: Billing and Owner Admin** - Stripe subscription lifecycle, plan enforcement, and operator control plane (completed 2026-03-20)
-- [x] **Phase 3: Core ITSM** - Incident management, SLA, email-to-ticket, knowledge base, self-service portal, settings, notifications, and reporting (completed 2026-03-21)
+- [ ] **Phase 3: Core ITSM** - Incident management, SLA, email-to-ticket, knowledge base, self-service portal, settings, notifications, and reporting (gap closure in progress)
 - [ ] **Phase 4: CMDB, Change Management, and Asset Portfolio** - ITIL expansion with asset tracking, CMDB with relationship mapping, change management with CAB workflows, and application portfolio
 - [ ] **Phase 5: Agent, Mobile, and Integrations** - .NET inventory agent with CMDB auto-discovery, React Native mobile app with push notifications, and webhook/API integration layer
 
@@ -63,31 +63,33 @@ Plans:
 ### Phase 3: Core ITSM
 **Goal**: An MSP technician can manage the full ticket lifecycle with SLA enforcement, receive tickets via email, resolve them with knowledge base assistance, and end users can self-serve; all within a configurable, reportable, notified system.
 **Depends on**: Phase 2
-**Requirements**: TICK-01, TICK-02, TICK-03, TICK-04, TICK-05, TICK-06, TICK-07, TICK-08, TICK-09, TICK-10, TICK-11, TICK-12, SLA-01, SLA-02, SLA-03, SLA-04, SLA-05, SLA-06, EMAL-01, EMAL-02, EMAL-03, EMAL-04, EMAL-05, EMAL-06, EMAL-07, EMAL-08, KB-01, KB-02, KB-03, KB-04, KB-05, KB-06, PRTL-01, PRTL-02, PRTL-03, PRTL-04, PRTL-05, PRTL-06, SETT-01, SETT-02, SETT-03, SETT-04, SETT-05, SETT-06, SETT-07, SETT-08, SETT-09, SETT-10, SETT-11, SETT-12, NOTF-01, NOTF-02, NOTF-03, NOTF-04, REPT-01, REPT-02, REPT-03, REPT-04, REPT-05, REPT-06, REPT-07
+**Requirements**: TICK-01, TICK-02, TICK-03, TICK-04, TICK-05, TICK-06, TICK-07, TICK-08, TICK-09, TICK-10, TICK-11, TICK-12, SLA-01, SLA-02, SLA-03, SLA-04, SLA-05, SLA-06, EMAL-01, EMAL-02, EMAL-03, EMAL-04, EMAL-05, EMAL-06, EMAL-07, EMAL-08, KB-01, KB-02, KB-03, KB-04, KB-05, KB-06, PRTL-01, PRTL-02, PRTL-03, PRTL-04, PRTL-06, SETT-01, SETT-02, SETT-03, SETT-04, SETT-05, SETT-06, SETT-07, SETT-08, SETT-09, SETT-10, SETT-11, SETT-12, NOTF-01, NOTF-02, NOTF-03, NOTF-04, REPT-01, REPT-02, REPT-03, REPT-04, REPT-06, REPT-07
 **Success Criteria** (what must be TRUE):
   1. An agent can create a ticket, see an SLA countdown with breach warnings at 75% and 90%, assign it to a queue, add internal and public comments, and close it with a knowledge article linked — all tracked in an immutable audit trail
   2. An email sent to the configured mailbox becomes a ticket within 5 minutes; a reply to the notification email threads back onto that ticket; duplicate emails are detected and not re-created
   3. An end user can log into /portal, submit a service request, track its status, add comments, and browse knowledge articles — with the system automatically redirecting end_user roles to the portal
   4. An admin can configure SLA policies per priority with business hours, set up email accounts, manage users and roles, and view a dashboard with ticket volume, SLA compliance, and agent workload
   5. A notification (in-app, email) fires when a ticket is assigned, commented on, or breaches SLA; users can see and mark notifications in the notification center
-**Plans**: 10 plans
+**Plans**: 12 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Ticket management: ticket service with create/update/comments/assignment, storage service for MinIO attachments, audit trail, queue routing, KB/CI linking
-- [ ] 03-02-PLAN.md — SLA engine: business-hours-aware timer calculation with timezone support, breach detection worker with auto-escalation, SLA CRUD routes, live status endpoint
-- [ ] 03-03-PLAN.md — Email system: SMTP/IMAP services, inbound polling with reply threading and dedup, outbound notification templates, email account CRUD with connection testing
-- [ ] 03-04-PLAN.md — Knowledge base: article CRUD with lifecycle management, full-text search, voting, view tracking, published endpoint for portal
-- [ ] 03-05-PLAN.md — Self-service portal: end-user layout with simplified sidebar, category-driven service request form, ticket tracking, KB browsing, assets page, role-redirect middleware
-- [ ] 03-06-PLAN.md — Settings and configuration: user/role/group/queue/category/site/vendor/business-unit/contract management, branding with logo upload, SSE log viewer
-- [ ] 03-07-PLAN.md — Notifications: dispatch orchestrator (in-app + email), notification center API, ticket event wiring for create/assign/comment/resolve
-- [ ] 03-08-PLAN.md — Reporting and dashboard: main dashboard stats, ticket/SLA/change CSV/JSON reports, scheduled report worker with email delivery, system health metrics
-- [ ] 03-09-PLAN.md — Staff dashboard frontend: ticket list/detail with SLA countdown (color bands), knowledge base with TipTap editor, settings UI pages, reports dashboard with Recharts
-- [ ] 03-10-PLAN.md — Wave 0 test scaffolds: test stubs for tickets, ticket-service, email-inbound, notification-service, and reports with shared test utilities
+- [x] 03-01-PLAN.md — Ticket management: ticket service with create/update/comments/assignment, storage service for MinIO attachments, audit trail, queue routing, KB/CI linking
+- [x] 03-02-PLAN.md — SLA engine: business-hours-aware timer calculation with timezone support, breach detection worker with auto-escalation, SLA CRUD routes, live status endpoint
+- [x] 03-03-PLAN.md — Email system: SMTP/IMAP services, inbound polling with reply threading and dedup, outbound notification templates, email account CRUD with connection testing
+- [x] 03-04-PLAN.md — Knowledge base: article CRUD with lifecycle management, full-text search, voting, view tracking, published endpoint for portal
+- [x] 03-05-PLAN.md — Self-service portal: end-user layout with simplified sidebar, category-driven service request form, ticket tracking, KB browsing, assets page, role-redirect middleware
+- [x] 03-06-PLAN.md — Settings and configuration: user/role/group/queue/category/site/vendor/business-unit/contract management, branding with logo upload, SSE log viewer
+- [x] 03-07-PLAN.md — Notifications: dispatch orchestrator (in-app + email), notification center API, ticket event wiring for create/assign/comment/resolve
+- [x] 03-08-PLAN.md — Reporting and dashboard: main dashboard stats, ticket/SLA/change CSV/JSON reports, scheduled report worker with email delivery, system health metrics
+- [x] 03-09-PLAN.md — Staff dashboard frontend: ticket list/detail with SLA countdown (color bands), knowledge base with TipTap editor, settings UI pages, reports dashboard with Recharts
+- [x] 03-10-PLAN.md — Wave 0 test scaffolds: test stubs for tickets, ticket-service, email-inbound, notification-service, and reports with shared test utilities
+- [ ] 03-11-PLAN.md — Gap closure: Wire calculateBreachAt into ticket creation/update (SLA-02 fix), document worker duplication as accepted architecture decision, confirm NOTF-02
+- [ ] 03-12-PLAN.md — Gap closure: Formally defer PRTL-05 and REPT-05 to Phase 4, update REQUIREMENTS.md statuses
 
 ### Phase 4: CMDB, Change Management, and Asset Portfolio
 **Goal**: Technicians can track physical assets, manage a CI relationship map with impact analysis, submit change requests through approval workflows with CAB review, and manage the application portfolio with dependency mapping.
 **Depends on**: Phase 3
-**Requirements**: ASST-01, ASST-02, ASST-03, ASST-04, ASST-05, CMDB-01, CMDB-02, CMDB-03, CMDB-04, CMDB-05, CMDB-06, CMDB-07, CMDB-08, CMDB-09, CMDB-10, CMDB-11, CMDB-12, CMDB-13, CMDB-14, CHNG-01, CHNG-02, CHNG-03, CHNG-04, CHNG-05, CHNG-06, CHNG-07, CHNG-08, CHNG-09, CAB-01, CAB-02, CAB-03, CAB-04, CAB-05, APP-01, APP-02, APP-03, APP-04, APP-05, APP-06
+**Requirements**: ASST-01, ASST-02, ASST-03, ASST-04, ASST-05, CMDB-01, CMDB-02, CMDB-03, CMDB-04, CMDB-05, CMDB-06, CMDB-07, CMDB-08, CMDB-09, CMDB-10, CMDB-11, CMDB-12, CMDB-13, CMDB-14, CHNG-01, CHNG-02, CHNG-03, CHNG-04, CHNG-05, CHNG-06, CHNG-07, CHNG-08, CHNG-09, CAB-01, CAB-02, CAB-03, CAB-04, CAB-05, APP-01, APP-02, APP-03, APP-04, APP-05, APP-06, PRTL-05, REPT-05
 **Success Criteria** (what must be TRUE):
   1. A technician can create an asset, assign it to a user, and link it to a CMDB configuration item; a CI relationship diagram shows the dependency map visually
   2. Clicking "impact analysis" on a CI traverses the relationship graph and shows all upstream and downstream CIs that would be affected by a change to that CI
@@ -130,6 +132,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 |-------|----------------|--------|-----------|
 | 1. Foundation | 6/6 | Complete | 2026-03-20 |
 | 2. Billing and Owner Admin | 6/6 | Complete   | 2026-03-20 |
-| 3. Core ITSM | 10/10 | Complete   | 2026-03-21 |
+| 3. Core ITSM | 10/12 | Gap closure | - |
 | 4. CMDB, Change Management, and Asset Portfolio | 0/4 | Not started | - |
 | 5. Agent, Mobile, and Integrations | 0/5 | Not started | - |
