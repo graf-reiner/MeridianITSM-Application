@@ -219,13 +219,13 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Reporting & Analytics
 
-- [ ] **REPT-01**: Main dashboard with ticket stats, recent activity, and notifications
+- [x] **REPT-01**: Main dashboard with ticket stats, recent activity, and notifications
 - [x] **REPT-02**: Ticket reports (CSV/JSON) with date range and filter parameters
-- [ ] **REPT-03**: Change reports and analytics
-- [ ] **REPT-04**: SLA compliance reports
-- [ ] **REPT-05**: CMDB inventory and relationship reports
-- [ ] **REPT-06**: Scheduled report generation with email delivery
-- [ ] **REPT-07**: System health analytics
+- [x] **REPT-03**: Change reports and analytics
+- [x] **REPT-04**: SLA compliance reports
+- [x] **REPT-05**: CMDB inventory and relationship reports
+- [x] **REPT-06**: Scheduled report generation with email delivery
+- [x] **REPT-07**: System health analytics
 
 ### Settings & Configuration
 
@@ -398,13 +398,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NOTF-02 | Phase 3 | Complete |
 | NOTF-03 | Phase 3 | Complete |
 | NOTF-04 | Phase 3 | Complete |
-| REPT-01 | Phase 3 | Pending |
+| REPT-01 | Phase 3 | Complete |
 | REPT-02 | Phase 3 | Complete |
-| REPT-03 | Phase 3 | Pending |
-| REPT-04 | Phase 3 | Pending |
-| REPT-05 | Phase 3 | Pending |
-| REPT-06 | Phase 3 | Pending |
-| REPT-07 | Phase 3 | Pending |
+| REPT-03 | Phase 3 | Complete |
+| REPT-04 | Phase 3 | Complete |
+| REPT-05 | Phase 3 | Complete |
+| REPT-06 | Phase 3 | Complete |
+| REPT-07 | Phase 3 | Complete |
 | ASST-01 | Phase 4 | Pending |
 | ASST-02 | Phase 4 | Pending |
 | ASST-03 | Phase 4 | Pending |
