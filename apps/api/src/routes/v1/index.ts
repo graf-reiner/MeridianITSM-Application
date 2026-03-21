@@ -1,8 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 import { billingPlanRoutes } from './billing-plan.js';
+import { dashboardRoutes } from './dashboard/index.js';
 import { emailAccountRoutes } from './email-accounts/index.js';
 import { knowledgeRoutes } from './knowledge/index.js';
 import { notificationRoutes } from './notifications/index.js';
+import { reportRoutes } from './reports/index.js';
 import { settingsRoutes } from './settings/index.js';
 import { slaRoutes } from './sla/index.js';
 import { ticketRoutes } from './tickets/index.js';
@@ -20,6 +22,12 @@ export async function v1Routes(app: FastifyInstance): Promise<void> {
 
   // Billing plan endpoint — returns tenant's current plan tier, limits, and status
   await app.register(billingPlanRoutes);
+
+  // Dashboard stats — ticket counts, volume charts, recent activity, SLA overdue
+  await app.register(dashboardRoutes);
+
+  // Reports — ticket/SLA/change CSV+JSON export, system health, scheduled reports
+  await app.register(reportRoutes);
 
   // Email account management — SMTP/IMAP configuration, connection testing, email-to-ticket
   await app.register(emailAccountRoutes);
