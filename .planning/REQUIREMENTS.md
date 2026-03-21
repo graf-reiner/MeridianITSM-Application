@@ -64,14 +64,14 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Email System
 
-- [ ] **EMAL-01**: Email account configuration for SMTP, IMAP, and POP3 with encrypted credentials
-- [ ] **EMAL-02**: Inbound email polling creates tickets automatically (email-to-ticket)
+- [x] **EMAL-01**: Email account configuration for SMTP, IMAP, and POP3 with encrypted credentials
+- [x] **EMAL-02**: Inbound email polling creates tickets automatically (email-to-ticket)
 - [x] **EMAL-03**: Email reply threading matches replies to existing tickets
 - [x] **EMAL-04**: Email deduplication via Message-ID, subject ticket number, and MIME headers
-- [ ] **EMAL-05**: Outbound email notifications for ticket events (created, assigned, updated, resolved, SLA breach)
-- [ ] **EMAL-06**: Customizable HTML email templates with variable substitution
-- [ ] **EMAL-07**: Email connection testing tool for SMTP/IMAP/POP3
-- [ ] **EMAL-08**: Background worker polls email accounts every 5 minutes
+- [x] **EMAL-05**: Outbound email notifications for ticket events (created, assigned, updated, resolved, SLA breach)
+- [x] **EMAL-06**: Customizable HTML email templates with variable substitution
+- [x] **EMAL-07**: Email connection testing tool for SMTP/IMAP/POP3
+- [x] **EMAL-08**: Background worker polls email accounts every 5 minutes
 
 ### Knowledge Base
 
@@ -362,14 +362,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SLA-04 | Phase 3 | Complete |
 | SLA-05 | Phase 3 | Complete |
 | SLA-06 | Phase 3 | Complete |
-| EMAL-01 | Phase 3 | Pending |
-| EMAL-02 | Phase 3 | Pending |
+| EMAL-01 | Phase 3 | Complete |
+| EMAL-02 | Phase 3 | Complete |
 | EMAL-03 | Phase 3 | Complete |
 | EMAL-04 | Phase 3 | Complete |
-| EMAL-05 | Phase 3 | Pending |
-| EMAL-06 | Phase 3 | Pending |
-| EMAL-07 | Phase 3 | Pending |
-| EMAL-08 | Phase 3 | Pending |
+| EMAL-05 | Phase 3 | Complete |
+| EMAL-06 | Phase 3 | Complete |
+| EMAL-07 | Phase 3 | Complete |
+| EMAL-08 | Phase 3 | Complete |
 | KB-01 | Phase 3 | Complete |
 | KB-02 | Phase 3 | Complete |
 | KB-03 | Phase 3 | Complete |
