@@ -90,8 +90,11 @@ export async function reportRoutes(fastify: FastifyInstance): Promise<void> {
 
   // ─── GET /api/v1/reports/cmdb ─────────────────────────────────────────────
 
+  // DEFERRED TO PHASE 4: CMDB inventory and relationship reports require
+  // CmdbConfigurationItem and CmdbRelationship data populated by Phase 4 CMDB CRUD.
+  // Requirement: REPT-05
   fastify.get('/api/v1/reports/cmdb', async () => {
-    return { message: 'CMDB reports available after Phase 4' };
+    return { message: 'CMDB reports deferred to Phase 4 (REPT-05) — requires CMDB data from CMDB-01', status: 'deferred' };
   });
 
   // ─── GET /api/v1/reports/system-health ────────────────────────────────────

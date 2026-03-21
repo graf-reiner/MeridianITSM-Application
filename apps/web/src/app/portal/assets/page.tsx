@@ -6,11 +6,15 @@ import { mdiLaptop, mdiCalendarClock } from '@mdi/js';
 // ─── My Assets Page ───────────────────────────────────────────────────────────
 
 /**
- * Portal assets page — satisfies PRTL-05 structurally.
+ * Portal assets page — placeholder for PRTL-05.
  *
- * The asset inventory API endpoint (GET /api/v1/assets?assignedToId=me) will be
- * wired when the asset CRUD phase implements it. For now, we render a clear
- * placeholder so end users land on a page that communicates the feature roadmap.
+ * DEFERRED TO PHASE 4: This page requires GET /api/v1/assets?assignedToId=me
+ * which depends on asset CRUD (ASST-01) implemented in Phase 4.
+ * Requirement: PRTL-05
+ *
+ * The asset inventory API endpoint will be wired when Phase 4 implements it.
+ * For now, we render a clear placeholder so end users land on a page that
+ * communicates the feature roadmap.
  */
 export default function PortalAssetsPage() {
   return (
