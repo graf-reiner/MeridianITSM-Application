@@ -6,6 +6,7 @@ import {
   notifyTicketResolved,
   notifyTicketUpdated,
 } from './notification.service.js';
+import { calculateBreachAt, getResolutionMinutes, type Priority as SlaPriority } from './sla.service.js';
 
 // ─── Status Transition Map ────────────────────────────────────────────────────
 
@@ -187,6 +188,24 @@ export async function createTicket(
       include: TICKET_LIST_INCLUDE,
     });
 
+    // Calculate and store SLA breach time if an SLA policy is assigned
+    if (data.slaId) {
+      const sla = await tx.sLA.findFirst({
+        where: { id: data.slaId, tenantId },
+      });
+      if (sla) {
+        const priority = (data.priority ?? 'MEDIUM') as SlaPriority;
+        const targetMinutes = getResolutionMinutes(sla as any, priority);
+        const slaBreachAt = calculateBreachAt(ticket.createdAt, targetMinutes, sla as any);
+        await tx.ticket.update({
+          where: { id: ticket.id },
+          data: { slaBreachAt },
+        });
+        // Update the ticket object for the return value
+        (ticket as any).slaBreachAt = slaBreachAt;
+      }
+    }
+
     // Create audit activity
     await tx.ticketActivity.create({
       data: {
@@ -282,6 +301,31 @@ export async function updateTicket(
         oldValue: oldTags,
         newValue: newTags,
       });
+    }
+  }
+
+  // Recalculate SLA breach time when slaId changes
+  if (data.slaId && data.slaId !== existing.slaId) {
+    const sla = await prisma.sLA.findFirst({
+      where: { id: data.slaId, tenantId },
+    });
+    if (sla) {
+      const priority = (data.priority ?? existing.priority ?? 'MEDIUM') as SlaPriority;
+      const targetMinutes = getResolutionMinutes(sla as any, priority);
+      const slaBreachAt = calculateBreachAt(existing.createdAt, targetMinutes, sla as any);
+      updates.slaBreachAt = slaBreachAt;
+    }
+  }
+
+  // Recalculate SLA breach time when priority changes on a ticket that already has an SLA
+  if (data.priority && data.priority !== existing.priority && existing.slaId && !data.slaId) {
+    const sla = await prisma.sLA.findFirst({
+      where: { id: existing.slaId, tenantId },
+    });
+    if (sla) {
+      const targetMinutes = getResolutionMinutes(sla as any, data.priority as SlaPriority);
+      const slaBreachAt = calculateBreachAt(existing.createdAt, targetMinutes, sla as any);
+      updates.slaBreachAt = slaBreachAt;
     }
   }
 
