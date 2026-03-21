@@ -1,4 +1,11 @@
 import { prisma } from '@meridian/db';
+import {
+  notifyTicketCreated,
+  notifyTicketAssigned,
+  notifyTicketCommented,
+  notifyTicketResolved,
+  notifyTicketUpdated,
+} from './notification.service.js';
 
 // ─── Status Transition Map ────────────────────────────────────────────────────
 
@@ -196,6 +203,16 @@ export async function createTicket(
     });
 
     return ticket;
+  }).then((createdTicket) => {
+    // Fire-and-forget notification — must not block ticket creation
+    void (async () => {
+      try {
+        await notifyTicketCreated(tenantId, createdTicket, actorId);
+      } catch (err) {
+        console.error('[ticket.service] notifyTicketCreated failed:', err);
+      }
+    })();
+    return createdTicket;
   });
 }
 
@@ -337,6 +354,29 @@ export async function updateTicket(
     }
 
     return ticket;
+  }).then((updatedTicket) => {
+    // Fire-and-forget notifications — must not block ticket update
+    const newStatus = data.status;
+    const newAssignedToId = data.assignedToId;
+    const otherChangedFields = changedFields
+      .map((c) => c.fieldName)
+      .filter((f) => f !== 'status' && f !== 'assignedToId');
+
+    void (async () => {
+      try {
+        if (newStatus === 'RESOLVED') {
+          await notifyTicketResolved(tenantId, updatedTicket, actorId);
+        } else if (newAssignedToId && newAssignedToId !== existing.assignedToId) {
+          await notifyTicketAssigned(tenantId, updatedTicket, newAssignedToId, actorId);
+        } else if (otherChangedFields.length > 0) {
+          await notifyTicketUpdated(tenantId, updatedTicket, otherChangedFields, actorId);
+        }
+      } catch (err) {
+        console.error('[ticket.service] update notification failed:', err);
+      }
+    })();
+
+    return updatedTicket;
   });
 }
 
@@ -353,7 +393,7 @@ export async function addComment(
   return prisma.$transaction(async (tx) => {
     const ticket = await tx.ticket.findFirst({
       where: { id: ticketId, tenantId },
-      select: { firstResponseAt: true, requestedById: true },
+      select: { firstResponseAt: true, requestedById: true, assignedToId: true, ticketNumber: true, title: true },
     });
 
     if (!ticket) {
@@ -401,6 +441,25 @@ export async function addComment(
         },
       },
     });
+
+    return { comment, ticket };
+  }).then(({ comment, ticket }) => {
+    // Fire-and-forget notification — must not block comment creation
+    const ticketForNotify = {
+      id: ticketId,
+      ticketNumber: ticket.ticketNumber,
+      title: ticket.title,
+      assignedToId: ticket.assignedToId,
+      requestedById: ticket.requestedById,
+    };
+
+    void (async () => {
+      try {
+        await notifyTicketCommented(tenantId, ticketForNotify, comment, actorId);
+      } catch (err) {
+        console.error('[ticket.service] notifyTicketCommented failed:', err);
+      }
+    })();
 
     return comment;
   });
@@ -499,6 +558,16 @@ export async function assignTicket(
     });
 
     return ticket;
+  }).then((assignedTicket) => {
+    // Fire-and-forget notification — must not block ticket assignment
+    void (async () => {
+      try {
+        await notifyTicketAssigned(tenantId, assignedTicket, assignedToId, actorId);
+      } catch (err) {
+        console.error('[ticket.service] notifyTicketAssigned failed:', err);
+      }
+    })();
+    return assignedTicket;
   });
 }
 
