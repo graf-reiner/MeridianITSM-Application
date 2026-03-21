@@ -6,7 +6,14 @@ import { cmdbReconciliationWorker } from './workers/cmdb-reconciliation.js';
 import { stripeWebhookWorker } from './workers/stripe-webhook.js';
 import { usageSnapshotWorker } from './workers/usage-snapshot.js';
 import { trialExpiryWorker } from './workers/trial-expiry.js';
-import { usageSnapshotQueue, trialExpiryQueue, slaMonitorQueue, emailPollingQueue } from './queues/definitions.js';
+import { scheduledReportWorker } from './workers/scheduled-report.js';
+import {
+  usageSnapshotQueue,
+  trialExpiryQueue,
+  slaMonitorQueue,
+  emailPollingQueue,
+  scheduledReportQueue,
+} from './queues/definitions.js';
 
 const workers = [
   { name: 'sla-monitor', worker: slaMonitorWorker },
@@ -16,6 +23,7 @@ const workers = [
   { name: 'stripe-webhook', worker: stripeWebhookWorker },
   { name: 'usage-snapshot', worker: usageSnapshotWorker },
   { name: 'trial-expiry', worker: trialExpiryWorker },
+  { name: 'scheduled-report', worker: scheduledReportWorker },
 ];
 
 // Schedule SLA breach check every minute
@@ -55,6 +63,16 @@ void emailPollingQueue.add(
   {
     repeat: { pattern: '*/5 * * * *' },
     jobId: 'email-polling-repeatable', // Stable jobId prevents duplicate schedules on restart
+  },
+);
+
+// Schedule scheduled report check every hour
+void scheduledReportQueue.add(
+  'check-scheduled',
+  {},
+  {
+    repeat: { pattern: '0 * * * *' },
+    jobId: 'scheduled-report-repeatable', // Stable jobId prevents duplicate schedules on restart
   },
 );
 
