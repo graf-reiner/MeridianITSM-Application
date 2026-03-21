@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Monorepo scaffold, full database schema, tenant isolation, and authentication pipeline
 - [x] **Phase 2: Billing and Owner Admin** - Stripe subscription lifecycle, plan enforcement, and operator control plane (completed 2026-03-20)
-- [ ] **Phase 3: Core ITSM** - Incident management, SLA, email-to-ticket, knowledge base, self-service portal, settings, notifications, and reporting (gap closure in progress)
+- [x] **Phase 3: Core ITSM** - Incident management, SLA, email-to-ticket, knowledge base, self-service portal, settings, notifications, and reporting (gap closure in progress) (completed 2026-03-21)
 - [ ] **Phase 4: CMDB, Change Management, and Asset Portfolio** - ITIL expansion with asset tracking, CMDB with relationship mapping, change management with CAB workflows, and application portfolio
 - [ ] **Phase 5: Agent, Mobile, and Integrations** - .NET inventory agent with CMDB auto-discovery, React Native mobile app with push notifications, and webhook/API integration layer
 
@@ -132,6 +132,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 |-------|----------------|--------|-----------|
 | 1. Foundation | 6/6 | Complete | 2026-03-20 |
 | 2. Billing and Owner Admin | 6/6 | Complete   | 2026-03-20 |
-| 3. Core ITSM | 10/12 | Gap closure | - |
+| 3. Core ITSM | 12/12 | Complete   | 2026-03-21 |
 | 4. CMDB, Change Management, and Asset Portfolio | 0/4 | Not started | - |
 | 5. Agent, Mobile, and Integrations | 0/5 | Not started | - |

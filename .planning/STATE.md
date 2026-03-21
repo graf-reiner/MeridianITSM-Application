@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: "Completed 03-09-PLAN.md"
-last_updated: "2026-03-21T01:20:00Z"
+status: unknown
+stopped_at: Completed 03-11-PLAN.md
+last_updated: "2026-03-21T18:07:09.732Z"
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 23
-  completed_plans: 23
+  total_plans: 25
+  completed_plans: 24
 ---
 
 # Project State
@@ -69,6 +69,8 @@ Plan: 10 of 10
 | Phase 03-core-itsm P07 | 8 | 2 tasks | 4 files |
 | Phase 03-core-itsm P08 | 9 | 2 tasks | 7 files |
 | Phase 03-core-itsm P09 | 35 | 2 tasks | 20 files |
+| Phase 03-core-itsm P12 | 1 | 2 tasks | 3 files |
+| Phase 03-core-itsm P11 | 5 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -145,6 +147,9 @@ Recent decisions affecting current work:
 - [Phase 03-09]: Stripe service made lazy-init (getStripe()) to avoid startup crash without STRIPE_SECRET_KEY in dev environments
 - [Phase 03-core-itsm]: Worker code duplication (sla-monitor, email-notification, scheduled-report duplicating logic from their API service counterparts) is an accepted architecture pattern — workers cannot import from apps/api/src/services/ due to cross-app boundary; follows mapStripeStatus precedent from Phase 02. Moving to shared packages/ deferred to future refactor.
 - [Phase 03-core-itsm]: NOTF-02 satisfied — NotificationType enum has 12 values (initial verification miscounted; CAB_INVITATION was present but not counted): TICKET_ASSIGNED, TICKET_UPDATED, TICKET_COMMENTED, TICKET_RESOLVED, TICKET_CREATED, SLA_WARNING, SLA_BREACH, CHANGE_APPROVAL, CHANGE_UPDATED, MENTION, SYSTEM, CAB_INVITATION
+- [Phase 03-12]: PRTL-05 and REPT-05 formally deferred to Phase 4 — incorrectly marked Complete despite depending on Phase 4 asset CRUD (ASST-01) and CMDB data (CMDB-01)
+- [Phase 03-core-itsm]: Worker code duplication (sla-monitor, email-notification, scheduled-report) accepted as architecture pattern — cross-app import boundary prevents sharing; follows mapStripeStatus precedent; deferred to future packages/ refactor
+- [Phase 03-core-itsm]: NOTF-02 confirmed satisfied — NotificationType enum has 12 values including CAB_INVITATION
 
 ### Pending Todos
 
@@ -158,6 +163,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T01:20:00Z
-Stopped at: Completed 03-09-PLAN.md
+Last session: 2026-03-21T18:07:09.725Z
+Stopped at: Completed 03-11-PLAN.md
 Resume file: None
