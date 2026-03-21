@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-stopped_at: "Checkpoint 03-09-PLAN.md Task 3: human visual verification"
-last_updated: "2026-03-21T00:41:11.159Z"
+status: executing
+stopped_at: "Completed 03-09-PLAN.md"
+last_updated: "2026-03-21T01:20:00Z"
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 23
-  completed_plans: 22
+  completed_plans: 23
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 ## Current Position
 
 Phase: 03 (core-itsm) — EXECUTING
-Plan: 1 of 10
+Plan: 10 of 10
 
 ## Performance Metrics
 
@@ -139,6 +139,10 @@ Recent decisions affecting current work:
 - [Phase 03-09]: SlaCountdown color bands locked per CONTEXT.md: green <75%, yellow 75-89%, red 90-99%, BREACHED 100%+
 - [Phase 03-09]: ArticleEditor uses DOMPurify + DOMParser document fragment for safe HTML rendering in read-only mode
 - [Phase 03-09]: Dashboard layout injects QueryClientProvider so all dashboard pages share a single TanStack Query client
+- [Phase 03-09]: Next.js rewrite proxy in next.config.ts routes /api/* to Fastify at API_URL — eliminates CORS, enables browser fetch calls
+- [Phase 03-09]: Middleware JWT secret aligned to JWT_SECRET env var (same as API signing key); roles field supports array format
+- [Phase 03-09]: Fastify auth plugin falls back to meridian_session cookie after bearer header failure for proxied browser requests
+- [Phase 03-09]: Stripe service made lazy-init (getStripe()) to avoid startup crash without STRIPE_SECRET_KEY in dev environments
 
 ### Pending Todos
 
@@ -152,6 +156,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T00:41:11.153Z
-Stopped at: Checkpoint 03-09-PLAN.md Task 3: human visual verification
+Last session: 2026-03-21T01:20:00Z
+Stopped at: Completed 03-09-PLAN.md
 Resume file: None

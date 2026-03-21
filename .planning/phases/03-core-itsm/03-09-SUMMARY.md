@@ -33,18 +33,27 @@ key_files:
   modified:
     - apps/web/package.json
     - pnpm-lock.yaml
+    - apps/web/next.config.ts
+    - apps/web/src/middleware.ts
+    - apps/api/src/plugins/auth.ts
+    - apps/api/src/services/stripe.service.ts
 decisions:
   - "SlaCountdown uses setInterval 1s ticks cleared on unmount; color bands exactly per CONTEXT.md locked decision (green <75%, yellow 75-89%, red 90-99%, BREACHED 100%+)"
   - "ArticleEditor uses DOMPurify sanitize + DOMParser/document fragment to mount safe HTML in read-only mode without using unsafe innerHTML patterns"
   - "Dashboard layout injects QueryClientProvider at layout level so all dashboard pages share a single QueryClient"
   - "Recharts labelFormatter typed as (v: unknown) and PieLabelRenderProps uses optional properties to satisfy strict TypeScript"
   - "setContent() called without second arg (emitUpdate) to fix TipTap API type error"
+  - "Next.js rewrite proxy in next.config.ts routes /api/* to Fastify — eliminates CORS and enables browser fetch calls"
+  - "Middleware JWT secret aligned to JWT_SECRET env var (same key API signs tokens with); roles supports array format"
+  - "Fastify auth plugin falls back to meridian_session cookie after bearer header failure for proxied browser requests"
+  - "Stripe service made lazy-init (getStripe()) to avoid startup crash without STRIPE_SECRET_KEY in dev"
+requirements-completed: [SLA-05, REPT-01, KB-01, SETT-01, SETT-02, SETT-03, SETT-04, SETT-05, SETT-06]
 metrics:
   duration: ~35 min
   completed: 2026-03-21
-  tasks_completed: 2
-  files_created: 18
-  files_modified: 2
+  tasks_completed: 3
+  files_created: 20
+  files_modified: 6
 ---
 
 # Phase 03 Plan 09: Staff Dashboard UI Summary
@@ -123,9 +132,19 @@ TipTap editor with: Bold, Italic, H1-H3, Bullet/Ordered lists, Code block (via l
 - **Files modified:** apps/web/src/components/ArticleEditor.tsx
 - **Commit:** 4103735
 
-## Checkpoint Status
+## Verification Fixes (Task 3 — Human-Verify Checkpoint)
 
-Plan paused at Task 3 (human visual verification checkpoint). Two tasks are fully committed and TypeScript passes cleanly. Dev server must be started for visual verification.
+Human verification via Playwright revealed several integration issues between the Next.js frontend and Fastify API. All were fixed as deviation Rule 1/3 auto-fixes:
+
+1. **Login page missing** — Created `apps/web/src/app/login/page.tsx`
+2. **Wrong JWT secret in middleware** — `NEXTAUTH_SECRET` changed to `JWT_SECRET` to match API token signing
+3. **Middleware roles incompatible** — Added `roles: string[]` array support alongside legacy `role: string`
+4. **No API proxy** — Added Next.js rewrites in `next.config.ts` to proxy `/api/*` to Fastify
+5. **Fastify auth refused cookies** — Added cookie fallback in `authPreHandler`
+6. **Reports interface mismatch** — Fixed `DashboardStats` field names to match actual API response
+7. **Stripe crashed on startup** — Made `stripe.service.ts` lazy-init
+
+All fixes committed in `a83805a`.
 
 ## Self-Check: PASSED
 
@@ -135,7 +154,11 @@ Key files confirmed present in git:
 - apps/web/src/app/dashboard/tickets/[id]/page.tsx
 - apps/web/src/app/dashboard/reports/page.tsx
 - apps/web/src/app/dashboard/settings/sla/page.tsx
+- apps/web/src/app/login/page.tsx
+- apps/web/next.config.ts (proxy rewrite)
+- apps/api/src/plugins/auth.ts (cookie fallback)
 
 Commits confirmed:
 - 4103735: feat(03-09): ticket and knowledge base dashboard pages
 - ca83378: feat(03-09): settings hub pages and reports dashboard
+- a83805a: fix(03-09): apply verification fixes from human-verify checkpoint
