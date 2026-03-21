@@ -33,14 +33,15 @@ interface DashboardStats {
   openTickets: number;
   resolvedToday: number;
   overdueTickets: number;
-  ticketVolumeByDay: Array<{ date: string; count: number }>;
-  ticketsByPriority: Array<{ priority: string; count: number }>;
-  topCategories: Array<{ name: string; count: number }>;
+  volumeByDay: Array<{ day: string; count: number }>;
+  volumeByPriority: Array<{ priority: string; count: number }>;
+  topCategories: Array<{ categoryName: string; count: number }>;
   recentActivity: Array<{
     id: string;
-    action: string;
-    ticketNumber: string | null;
-    actor: { firstName: string; lastName: string } | null;
+    activityType: string;
+    ticketId: string | null;
+    actorId: string | null;
+    fieldName: string | null;
     createdAt: string;
   }>;
 }
@@ -173,12 +174,12 @@ export default function ReportsPage() {
         {/* Ticket volume line chart */}
         <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '20px 24px' }}>
           <h2 style={{ margin: '0 0 20px', fontSize: 15, fontWeight: 600, color: '#111827' }}>Ticket Volume (last 30 days)</h2>
-          {stats.ticketVolumeByDay.length > 0 ? (
+          {stats.volumeByDay.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={stats.ticketVolumeByDay} margin={{ top: 4, right: 12, bottom: 0, left: -20 }}>
+              <LineChart data={stats.volumeByDay} margin={{ top: 4, right: 12, bottom: 0, left: -20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
                 <XAxis
-                  dataKey="date"
+                  dataKey="day"
                   tick={{ fontSize: 11, fill: '#9ca3af' }}
                   tickFormatter={(v: string) => {
                     const d = new Date(v);
@@ -206,15 +207,15 @@ export default function ReportsPage() {
         {/* Priority bar chart */}
         <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '20px 24px' }}>
           <h2 style={{ margin: '0 0 20px', fontSize: 15, fontWeight: 600, color: '#111827' }}>Tickets by Priority</h2>
-          {stats.ticketsByPriority.length > 0 ? (
+          {stats.volumeByPriority.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={stats.ticketsByPriority} margin={{ top: 4, right: 8, bottom: 0, left: -20 }}>
+              <BarChart data={stats.volumeByPriority} margin={{ top: 4, right: 8, bottom: 0, left: -20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
                 <XAxis dataKey="priority" tick={{ fontSize: 11, fill: '#9ca3af' }} />
                 <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} allowDecimals={false} />
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 6 }} />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                  {stats.ticketsByPriority.map((entry) => (
+                  {stats.volumeByPriority.map((entry) => (
                     <Cell key={entry.priority} fill={PRIORITY_COLORS[entry.priority] ?? '#6b7280'} />
                   ))}
                 </Bar>
@@ -240,7 +241,7 @@ export default function ReportsPage() {
                 <Pie
                   data={stats.topCategories}
                   dataKey="count"
-                  nameKey="name"
+                  nameKey="categoryName"
                   cx="50%"
                   cy="50%"
                   outerRadius={80}
@@ -276,9 +277,9 @@ export default function ReportsPage() {
                   <Icon path={mdiClockOutline} size={0.7} color="#d1d5db" style={{ flexShrink: 0, marginTop: 2 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ margin: 0, fontSize: 13, color: '#374151', lineHeight: 1.4 }}>
-                      <strong>{act.actor ? `${act.actor.firstName} ${act.actor.lastName}` : 'System'}</strong>
-                      {' '}{act.action.replace(/_/g, ' ').toLowerCase()}
-                      {act.ticketNumber && <span style={{ color: '#4f46e5' }}> {act.ticketNumber}</span>}
+                      <strong>{act.actorId ? 'User' : 'System'}</strong>
+                      {' '}{act.activityType.replace(/_/g, ' ').toLowerCase()}
+                      {act.fieldName && <span style={{ color: '#6b7280' }}> ({act.fieldName})</span>}
                     </p>
                     <p style={{ margin: '2px 0 0', fontSize: 11, color: '#9ca3af' }}>
                       {new Date(act.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}

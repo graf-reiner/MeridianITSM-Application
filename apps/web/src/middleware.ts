@@ -5,6 +5,7 @@ import { jwtVerify } from 'jose';
 // ─── JWT Token Payload ────────────────────────────────────────────────────────
 
 interface JwtPayload {
+  roles?: string[];
   role?: string;
   sub?: string;
   tenantId?: string;
@@ -13,7 +14,7 @@ interface JwtPayload {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const AUTH_COOKIE_NAME = 'meridian_session';
-const JWT_SECRET = process.env.NEXTAUTH_SECRET ?? 'dev-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET ?? process.env.NEXTAUTH_SECRET ?? 'change-me-in-production-jwt-secret-32chars';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -64,10 +65,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  const role = payload.role;
+  // Support both `roles` (array from API JWT) and `role` (legacy single string)
+  const roles = payload.roles ?? (payload.role ? [payload.role] : []);
 
   // ── end_user accessing /dashboard → redirect to /portal ──────────────────
-  if (role === 'end_user' && pathname.startsWith('/dashboard')) {
+  if (roles.includes('end_user') && pathname.startsWith('/dashboard')) {
     return NextResponse.redirect(new URL('/portal', request.url));
   }
 

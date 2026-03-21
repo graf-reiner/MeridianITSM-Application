@@ -1,9 +1,23 @@
 import Stripe from 'stripe';
 
-// Singleton Stripe SDK client
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', {
-  apiVersion: '2026-02-25.clover',
-});
+// Lazy-initialized Stripe SDK client — avoids crash when STRIPE_SECRET_KEY is not set (dev mode)
+let _stripe: Stripe | null = null;
+
+export function getStripe(): Stripe {
+  if (!_stripe) {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) {
+      throw new Error('STRIPE_SECRET_KEY is not set — Stripe operations are unavailable');
+    }
+    _stripe = new Stripe(key, { apiVersion: '2026-02-25.clover' as any });
+  }
+  return _stripe;
+}
+
+/** @deprecated Use getStripe() for lazy init. Kept for backward compatibility. */
+export const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-02-25.clover' as any })
+  : (null as unknown as Stripe);
 
 // SubscriptionStatus enum values (mirrors Prisma enum)
 export type SubscriptionStatusValue = 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'SUSPENDED';
