@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 03-03-PLAN.md
-last_updated: "2026-03-21T00:02:26.482Z"
+stopped_at: Completed 03-07-PLAN.md
+last_updated: "2026-03-21T00:10:15.108Z"
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 23
-  completed_plans: 19
+  completed_plans: 20
 ---
 
 # Project State
@@ -66,6 +66,7 @@ Plan: 1 of 10
 | Phase 03-core-itsm P01 | 10 | 2 tasks | 8 files |
 | Phase 03-core-itsm P05 | 8 | 2 tasks | 10 files |
 | Phase 03-core-itsm P03 | 17 | 2 tasks | 10 files |
+| Phase 03-core-itsm P07 | 8 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -129,6 +130,8 @@ Recent decisions affecting current work:
 - [Phase 03-core-itsm]: EmailAccount type derived via PrismaClient inference (not direct @prisma/client import) — @prisma/client not a declared dep of apps/api
 - [Phase 03-core-itsm]: email-inbound service duplicated in worker/src/services/ to avoid cross-app imports — follows mapStripeStatus precedent
 - [Phase 03-core-itsm]: Email polling worker concurrency 1 (cross-tenant sentinel) — all tenant mailboxes polled sequentially per job run
+- [Phase 03-07]: Notification route uses userId (not id) from JWT — consistent with all other v1 routes
+- [Phase 03-07]: Fire-and-forget notification pattern: void (async () => try/catch)() in ticket.service — notification failure never blocks ticket operations
 
 ### Pending Todos
 
@@ -142,6 +145,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T00:02:26.472Z
-Stopped at: Completed 03-03-PLAN.md
+Last session: 2026-03-21T00:10:15.101Z
+Stopped at: Completed 03-07-PLAN.md
 Resume file: None

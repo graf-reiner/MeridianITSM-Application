@@ -244,9 +244,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Notifications
 
-- [ ] **NOTF-01**: In-app notification center with read/unread state
-- [ ] **NOTF-02**: Notification types covering tickets, changes, SLA, mentions, system events (12 types)
-- [ ] **NOTF-03**: Mark individual or all notifications as read
+- [x] **NOTF-01**: In-app notification center with read/unread state
+- [x] **NOTF-02**: Notification types covering tickets, changes, SLA, mentions, system events (12 types)
+- [x] **NOTF-03**: Mark individual or all notifications as read
 - [x] **NOTF-04**: Notification dispatch orchestrator coordinating email + push + in-app channels
 
 ### Infrastructure
@@ -394,9 +394,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SETT-10 | Phase 3 | Complete |
 | SETT-11 | Phase 3 | Complete |
 | SETT-12 | Phase 3 | Complete |
-| NOTF-01 | Phase 3 | Pending |
-| NOTF-02 | Phase 3 | Pending |
-| NOTF-03 | Phase 3 | Pending |
+| NOTF-01 | Phase 3 | Complete |
+| NOTF-02 | Phase 3 | Complete |
+| NOTF-03 | Phase 3 | Complete |
 | NOTF-04 | Phase 3 | Complete |
 | REPT-01 | Phase 3 | Pending |
 | REPT-02 | Phase 3 | Complete |
