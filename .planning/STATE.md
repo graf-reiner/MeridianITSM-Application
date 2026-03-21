@@ -143,6 +143,8 @@ Recent decisions affecting current work:
 - [Phase 03-09]: Middleware JWT secret aligned to JWT_SECRET env var (same as API signing key); roles field supports array format
 - [Phase 03-09]: Fastify auth plugin falls back to meridian_session cookie after bearer header failure for proxied browser requests
 - [Phase 03-09]: Stripe service made lazy-init (getStripe()) to avoid startup crash without STRIPE_SECRET_KEY in dev environments
+- [Phase 03-core-itsm]: Worker code duplication (sla-monitor, email-notification, scheduled-report duplicating logic from their API service counterparts) is an accepted architecture pattern — workers cannot import from apps/api/src/services/ due to cross-app boundary; follows mapStripeStatus precedent from Phase 02. Moving to shared packages/ deferred to future refactor.
+- [Phase 03-core-itsm]: NOTF-02 satisfied — NotificationType enum has 12 values (initial verification miscounted; CAB_INVITATION was present but not counted): TICKET_ASSIGNED, TICKET_UPDATED, TICKET_COMMENTED, TICKET_RESOLVED, TICKET_CREATED, SLA_WARNING, SLA_BREACH, CHANGE_APPROVAL, CHANGE_UPDATED, MENTION, SYSTEM, CAB_INVITATION
 
 ### Pending Todos
 
