@@ -90,12 +90,12 @@ export async function createAsset(
   _actorId: string,
 ) {
   return prisma.$transaction(async (tx) => {
-    // Get next asset number atomically with FOR UPDATE lock
+    // Get next asset number atomically with advisory lock
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${tenantId} || '_asset_seq'))`;
     const result = await tx.$queryRaw<[{ next: bigint }]>`
       SELECT COALESCE(MAX(CAST(SUBSTRING("assetTag" FROM 'AST-([0-9]+)') AS INTEGER)), 0) + 1 AS next
       FROM assets
       WHERE "tenantId" = ${tenantId}::uuid
-      FOR UPDATE
     `;
 
     const nextNum = Number(result[0].next);

@@ -51,15 +51,16 @@ const ARTICLE_TRANSITIONS: Record<string, string[]> = {
 
 /**
  * Generates the next sequential article number for a tenant.
- * Uses FOR UPDATE to prevent race conditions under concurrent creation.
+ * Uses advisory lock to prevent race conditions under concurrent creation.
  */
 async function getNextArticleNumber(
   tenantId: string,
   tx: PrismaTransaction,
 ): Promise<number> {
+  await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${tenantId} || '_kb_seq'))`;
   const result = await tx.$queryRaw<[{ next: number }]>`
     SELECT COALESCE(MAX("articleNumber"), 0) + 1 AS next
-    FROM knowledge_articles WHERE "tenantId" = ${tenantId}::uuid FOR UPDATE`;
+    FROM knowledge_articles WHERE "tenantId" = ${tenantId}::uuid`;
   return Number(result[0].next);
 }
 

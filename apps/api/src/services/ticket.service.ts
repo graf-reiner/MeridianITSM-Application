@@ -147,12 +147,13 @@ export async function createTicket(
   actorId: string,
 ) {
   return prisma.$transaction(async (tx) => {
-    // Get next ticket number atomically with FOR UPDATE lock
+    // Get next ticket number atomically — use advisory lock to prevent race conditions
+    // (FOR UPDATE cannot be used with aggregate functions in PostgreSQL)
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${tenantId} || '_ticket_seq'))`;
     const result = await tx.$queryRaw<[{ next: bigint }]>`
       SELECT COALESCE(MAX("ticketNumber"), 0) + 1 AS next
       FROM tickets
       WHERE "tenantId" = ${tenantId}::uuid
-      FOR UPDATE
     `;
 
     const ticketNumber = Number(result[0].next);

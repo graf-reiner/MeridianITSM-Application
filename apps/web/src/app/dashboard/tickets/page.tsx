@@ -99,7 +99,8 @@ export default function DashboardTicketsPage() {
     },
   });
 
-  const tickets = data?.tickets ?? [];
+  // API returns { data: [...], total?, page?, pageSize? }
+  const tickets = (data as any)?.data ?? (data as any)?.tickets ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE);
 

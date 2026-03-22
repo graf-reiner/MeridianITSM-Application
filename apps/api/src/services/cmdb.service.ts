@@ -72,12 +72,12 @@ export interface ImpactedCI {
  */
 export async function createCI(tenantId: string, data: CreateCIData, userId: string) {
   return prisma.$transaction(async (tx) => {
-    // Get next ciNumber atomically
+    // Get next ciNumber atomically with advisory lock
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${tenantId} || '_ci_seq'))`;
     const result = await tx.$queryRaw<[{ next: bigint }]>`
       SELECT COALESCE(MAX("ciNumber"), 0) + 1 AS next
       FROM cmdb_configuration_items
       WHERE "tenantId" = ${tenantId}::uuid
-      FOR UPDATE
     `;
 
     const ciNumber = Number(result[0].next);

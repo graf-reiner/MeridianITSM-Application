@@ -100,12 +100,12 @@ export async function importCIs(
       }
     }
 
-    // Get starting ciNumber for the batch — single atomic lock covers the entire batch
+    // Get starting ciNumber for the batch — single advisory lock covers the entire batch
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${tenantId} || '_ci_seq'))`;
     const result = await tx.$queryRaw<[{ next: bigint }]>`
       SELECT COALESCE(MAX("ciNumber"), 0) + 1 AS next
       FROM cmdb_configuration_items
       WHERE "tenantId" = ${tenantId}::uuid
-      FOR UPDATE
     `;
     let nextCiNumber = Number(result[0].next);
 

@@ -125,12 +125,12 @@ export async function createChange(
   const initialStatus = getInitialStatus(changeType);
 
   return prisma.$transaction(async (tx) => {
-    // Get next changeNumber atomically with FOR UPDATE lock
+    // Get next changeNumber atomically with advisory lock
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${tenantId} || '_change_seq'))`;
     const result = await tx.$queryRaw<[{ next: bigint }]>`
       SELECT COALESCE(MAX("changeNumber"), 0) + 1 AS next
       FROM changes
       WHERE "tenantId" = ${tenantId}::uuid
-      FOR UPDATE
     `;
 
     const changeNumber = Number(result[0].next);
