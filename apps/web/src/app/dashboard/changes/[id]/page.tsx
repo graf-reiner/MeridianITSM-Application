@@ -1,0 +1,614 @@
+'use client';
+
+import { useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import Icon from '@mdi/react';
+import {
+  mdiSwapHorizontal,
+  mdiArrowLeft,
+  mdiCheck,
+  mdiClose,
+  mdiAlertCircle,
+  mdiClockOutline,
+  mdiCheckCircle,
+  mdiCloseCircle,
+} from '@mdi/js';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface Approver {
+  id: string;
+  sequenceOrder: number;
+  status: string;
+  decision: string | null;
+  comments: string | null;
+  approver: { id: string; firstName: string; lastName: string; email: string } | null;
+  decidedAt: string | null;
+}
+
+interface Activity {
+  id: string;
+  activityType: string;
+  description: string | null;
+  performedBy: { firstName: string; lastName: string } | null;
+  createdAt: string;
+}
+
+interface LinkedAsset {
+  id: string;
+  asset: { id: string; assetTag: string; model: string | null };
+}
+
+interface LinkedApp {
+  id: string;
+  application: { id: string; name: string };
+}
+
+interface ChangeDetail {
+  id: string;
+  changeNumber: string;
+  title: string;
+  type: string;
+  status: string;
+  riskLevel: string;
+  description: string;
+  implementationPlan: string | null;
+  backoutPlan: string | null;
+  testingPlan: string | null;
+  scheduledStart: string | null;
+  scheduledEnd: string | null;
+  requestedBy: { id: string; firstName: string; lastName: string } | null;
+  approvals: Approver[];
+  activities: Activity[];
+  assets: LinkedAsset[];
+  applications: LinkedApp[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Status Transitions ───────────────────────────────────────────────────────
+
+const TRANSITIONS: Record<string, string[]> = {
+  DRAFT:            ['SUBMITTED', 'CANCELLED'],
+  SUBMITTED:        ['PENDING_APPROVAL', 'CANCELLED'],
+  PENDING_APPROVAL: ['CANCELLED'],
+  APPROVED:         ['SCHEDULED', 'CANCELLED'],
+  SCHEDULED:        ['IN_PROGRESS', 'CANCELLED'],
+  IN_PROGRESS:      ['COMPLETED', 'FAILED'],
+  REJECTED:         [],
+  COMPLETED:        [],
+  FAILED:           [],
+  CANCELLED:        [],
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getStatusStyle(status: string): { bg: string; text: string } {
+  switch (status) {
+    case 'DRAFT':              return { bg: '#f3f4f6', text: '#6b7280' };
+    case 'SUBMITTED':          return { bg: '#dbeafe', text: '#1e40af' };
+    case 'PENDING_APPROVAL':   return { bg: '#fef3c7', text: '#92400e' };
+    case 'APPROVED':           return { bg: '#d1fae5', text: '#065f46' };
+    case 'REJECTED':           return { bg: '#fee2e2', text: '#991b1b' };
+    case 'SCHEDULED':          return { bg: '#e0e7ff', text: '#3730a3' };
+    case 'IN_PROGRESS':        return { bg: '#fef9c3', text: '#854d0e' };
+    case 'COMPLETED':          return { bg: '#d1fae5', text: '#065f46' };
+    case 'FAILED':             return { bg: '#fee2e2', text: '#991b1b' };
+    case 'CANCELLED':          return { bg: '#f3f4f6', text: '#9ca3af' };
+    default:                   return { bg: '#f3f4f6', text: '#374151' };
+  }
+}
+
+function getRiskStyle(risk: string): { bg: string; text: string } {
+  switch (risk) {
+    case 'LOW':      return { bg: '#d1fae5', text: '#065f46' };
+    case 'MEDIUM':   return { bg: '#fef3c7', text: '#92400e' };
+    case 'HIGH':     return { bg: '#fee2e2', text: '#991b1b' };
+    case 'CRITICAL': return { bg: '#450a0a', text: '#fca5a5' };
+    default:         return { bg: '#f3f4f6', text: '#374151' };
+  }
+}
+
+function formatDateTime(dateStr: string | null): string {
+  if (!dateStr) return '—';
+  return new Date(dateStr).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+// ─── Approval Panel ───────────────────────────────────────────────────────────
+
+function ApprovalPanel({
+  changeId,
+  approvals,
+  currentUserId,
+  onApproved,
+}: {
+  changeId: string;
+  approvals: Approver[];
+  currentUserId: string | null;
+  onApproved: () => void;
+}) {
+  const [decision, setDecision] = useState<'APPROVED' | 'REJECTED' | null>(null);
+  const [comments, setComments] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  // Find the next pending approver
+  const pendingApprovals = approvals
+    .filter((a) => a.status === 'PENDING')
+    .sort((a, b) => a.sequenceOrder - b.sequenceOrder);
+
+  const nextApproval = pendingApprovals[0];
+  const isCurrentUserApprover = nextApproval && nextApproval.approver?.id === currentUserId;
+
+  const handleDecision = async () => {
+    if (!decision) return;
+    if (decision === 'REJECTED' && !comments.trim()) {
+      setError('Comments required when rejecting');
+      return;
+    }
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/v1/changes/${changeId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ decision, comments: comments || undefined }),
+      });
+      if (!res.ok) {
+        const err = await res.json() as { error?: string };
+        throw new Error(err.error ?? `Failed: ${res.status}`);
+      }
+      onApproved();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Action failed');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (approvals.length === 0) return null;
+
+  return (
+    <div style={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 10, padding: 20, marginBottom: 20 }}>
+      <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: '#111827' }}>Approval Chain</h2>
+
+      {/* Approval chain list */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: isCurrentUserApprover ? 16 : 0 }}>
+        {approvals
+          .slice()
+          .sort((a, b) => a.sequenceOrder - b.sequenceOrder)
+          .map((approval) => {
+            const isPending = approval.status === 'PENDING';
+            const isApproved = approval.decision === 'APPROVED';
+            const isRejected = approval.decision === 'REJECTED';
+
+            return (
+              <div
+                key={approval.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '8px 12px',
+                  backgroundColor: '#fff',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 6,
+                }}
+              >
+                <span style={{ width: 20, height: 20, flexShrink: 0 }}>
+                  {isPending && <Icon path={mdiClockOutline} size={0.85} color="#d97706" />}
+                  {isApproved && <Icon path={mdiCheckCircle} size={0.85} color="#16a34a" />}
+                  {isRejected && <Icon path={mdiCloseCircle} size={0.85} color="#dc2626" />}
+                </span>
+                <span style={{ flex: 1, fontSize: 14, color: '#374151' }}>
+                  {approval.approver
+                    ? `${approval.approver.firstName} ${approval.approver.lastName}`
+                    : 'Unknown approver'}
+                </span>
+                <span style={{
+                  padding: '2px 8px',
+                  borderRadius: 10,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  backgroundColor: isPending ? '#fef3c7' : isApproved ? '#d1fae5' : '#fee2e2',
+                  color: isPending ? '#92400e' : isApproved ? '#065f46' : '#991b1b',
+                }}>
+                  {isPending ? 'Pending' : (approval.decision ?? approval.status)}
+                </span>
+                {approval.comments && (
+                  <span style={{ fontSize: 12, color: '#6b7280', fontStyle: 'italic', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    &quot;{approval.comments}&quot;
+                  </span>
+                )}
+              </div>
+            );
+          })}
+      </div>
+
+      {/* Approve/Reject buttons for current user */}
+      {isCurrentUserApprover && (
+        <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 16, marginTop: 8 }}>
+          <p style={{ margin: '0 0 12px', fontSize: 13, color: '#374151', fontWeight: 500 }}>
+            Your action is required:
+          </p>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+            <button
+              onClick={() => setDecision('APPROVED')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 16px',
+                backgroundColor: decision === 'APPROVED' ? '#16a34a' : '#fff',
+                color: decision === 'APPROVED' ? '#fff' : '#16a34a',
+                border: '2px solid #16a34a',
+                borderRadius: 6,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              <Icon path={mdiCheck} size={0.8} color="currentColor" />
+              Approve
+            </button>
+            <button
+              onClick={() => setDecision('REJECTED')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 16px',
+                backgroundColor: decision === 'REJECTED' ? '#dc2626' : '#fff',
+                color: decision === 'REJECTED' ? '#fff' : '#dc2626',
+                border: '2px solid #dc2626',
+                borderRadius: 6,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              <Icon path={mdiClose} size={0.8} color="currentColor" />
+              Reject
+            </button>
+          </div>
+
+          {decision && (
+            <>
+              <div style={{ marginBottom: 10 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#374151', marginBottom: 4 }}>
+                  Comments {decision === 'REJECTED' ? '(required)' : '(optional)'}
+                </label>
+                <textarea
+                  value={comments}
+                  onChange={(e) => setComments(e.target.value)}
+                  rows={2}
+                  placeholder="Add comments..."
+                  style={{ width: '100%', padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 14, boxSizing: 'border-box', resize: 'vertical' }}
+                />
+              </div>
+              {error && <p style={{ color: '#dc2626', fontSize: 13, margin: '0 0 8px' }}>{error}</p>}
+              <button
+                onClick={() => void handleDecision()}
+                disabled={submitting}
+                style={{
+                  padding: '8px 20px',
+                  backgroundColor: decision === 'APPROVED' ? '#16a34a' : '#dc2626',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 6,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: submitting ? 'not-allowed' : 'pointer',
+                  opacity: submitting ? 0.6 : 1,
+                }}
+              >
+                {submitting ? 'Submitting...' : `Confirm ${decision === 'APPROVED' ? 'Approval' : 'Rejection'}`}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Change Detail Page ───────────────────────────────────────────────────────
+
+export default function ChangeDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const id = params.id as string;
+  const [transitioning, setTransitioning] = useState(false);
+
+  // In a real app, you'd get this from the auth session. Using a placeholder.
+  const currentUserId: string | null = null;
+
+  const { data: change, isLoading, error } = useQuery<ChangeDetail>({
+    queryKey: ['change', id],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/changes/${id}`, { credentials: 'include' });
+      if (!res.ok) throw new Error(`Failed to load change: ${res.status}`);
+      return res.json() as Promise<ChangeDetail>;
+    },
+  });
+
+  const handleTransition = async (newStatus: string) => {
+    setTransitioning(true);
+    try {
+      const res = await fetch(`/api/v1/changes/${id}/transition`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error(`Transition failed: ${res.status}`);
+      await queryClient.invalidateQueries({ queryKey: ['change', id] });
+    } catch {
+      // silently fail — could add toast here
+    } finally {
+      setTransitioning(false);
+    }
+  };
+
+  const handleApproved = () => {
+    void queryClient.invalidateQueries({ queryKey: ['change', id] });
+  };
+
+  if (isLoading) {
+    return <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>Loading change...</div>;
+  }
+  if (error || !change) {
+    return <div style={{ padding: 40, textAlign: 'center', color: '#dc2626' }}>
+      {error instanceof Error ? error.message : 'Change not found'}
+    </div>;
+  }
+
+  const statusStyle = getStatusStyle(change.status);
+  const riskStyle = getRiskStyle(change.riskLevel);
+  const isEmergency = change.type === 'EMERGENCY';
+  const allowedTransitions = TRANSITIONS[change.status] ?? [];
+
+  return (
+    <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+
+      {/* ── Back + Header ─────────────────────────────────────────────────────── */}
+      <div style={{ marginBottom: 20 }}>
+        <button
+          onClick={() => router.back()}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 14, padding: 0, marginBottom: 12 }}
+        >
+          <Icon path={mdiArrowLeft} size={0.8} color="currentColor" />
+          Back to Changes
+        </button>
+
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Icon path={mdiSwapHorizontal} size={1} color="#4f46e5" />
+              {change.title}
+            </h1>
+            <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>CHG-{change.changeNumber}</span>
+              {isEmergency && (
+                <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 13, fontWeight: 700, backgroundColor: '#fee2e2', color: '#991b1b' }}>
+                  EMERGENCY
+                </span>
+              )}
+              {!isEmergency && (
+                <span style={{ padding: '3px 8px', borderRadius: 12, fontSize: 12, fontWeight: 500, backgroundColor: '#f3f4f6', color: '#374151' }}>
+                  {change.type}
+                </span>
+              )}
+              <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 13, fontWeight: 600, backgroundColor: statusStyle.bg, color: statusStyle.text }}>
+                {change.status.replace(/_/g, ' ')}
+              </span>
+              <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 13, fontWeight: 500, backgroundColor: riskStyle.bg, color: riskStyle.text }}>
+                {change.riskLevel} RISK
+              </span>
+            </div>
+          </div>
+
+          {/* Status transition buttons */}
+          {allowedTransitions.length > 0 && (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {allowedTransitions.map((nextStatus) => {
+                const isDanger = nextStatus === 'CANCELLED' || nextStatus === 'FAILED';
+                return (
+                  <button
+                    key={nextStatus}
+                    onClick={() => void handleTransition(nextStatus)}
+                    disabled={transitioning}
+                    style={{
+                      padding: '7px 14px',
+                      backgroundColor: isDanger ? '#fff' : '#4f46e5',
+                      color: isDanger ? '#dc2626' : '#fff',
+                      border: isDanger ? '1px solid #dc2626' : 'none',
+                      borderRadius: 6,
+                      fontSize: 13,
+                      fontWeight: 500,
+                      cursor: transitioning ? 'not-allowed' : 'pointer',
+                      opacity: transitioning ? 0.6 : 1,
+                    }}
+                  >
+                    {nextStatus.replace(/_/g, ' ')}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Inline Approval Panel (CONTEXT.md: shown at top) ──────────────────── */}
+      {change.approvals.length > 0 && (
+        <ApprovalPanel
+          changeId={id}
+          approvals={change.approvals}
+          currentUserId={currentUserId}
+          onApproved={handleApproved}
+        />
+      )}
+
+      {/* ── Main Content ──────────────────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+
+        {/* Left: Description + Plans */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 20 }}>
+            <h2 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600 }}>Description</h2>
+            <p style={{ margin: 0, fontSize: 14, color: '#374151', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{change.description}</p>
+          </div>
+
+          {change.implementationPlan && (
+            <details open style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10 }}>
+              <summary style={{ padding: '14px 20px', fontSize: 15, fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}>
+                Implementation Plan
+              </summary>
+              <div style={{ padding: '0 20px 20px' }}>
+                <p style={{ margin: 0, fontSize: 14, color: '#374151', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{change.implementationPlan}</p>
+              </div>
+            </details>
+          )}
+
+          {change.backoutPlan && (
+            <details style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10 }}>
+              <summary style={{ padding: '14px 20px', fontSize: 15, fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}>
+                Backout Plan
+              </summary>
+              <div style={{ padding: '0 20px 20px' }}>
+                <p style={{ margin: 0, fontSize: 14, color: '#374151', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{change.backoutPlan}</p>
+              </div>
+            </details>
+          )}
+
+          {change.testingPlan && (
+            <details style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10 }}>
+              <summary style={{ padding: '14px 20px', fontSize: 15, fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}>
+                Testing Plan
+              </summary>
+              <div style={{ padding: '0 20px 20px' }}>
+                <p style={{ margin: 0, fontSize: 14, color: '#374151', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{change.testingPlan}</p>
+              </div>
+            </details>
+          )}
+        </div>
+
+        {/* Right: Info + Schedule + Links */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+          {/* Info */}
+          <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 20 }}>
+            <h2 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600 }}>Details</h2>
+            {[
+              ['Requested By', change.requestedBy ? `${change.requestedBy.firstName} ${change.requestedBy.lastName}` : null],
+              ['Created', formatDateTime(change.createdAt)],
+              ['Updated', formatDateTime(change.updatedAt)],
+            ].map(([label, value]) => (
+              <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #f3f4f6', fontSize: 14 }}>
+                <span style={{ color: '#6b7280' }}>{label}</span>
+                <span style={{ color: '#111827' }}>{(value as string | null) ?? '—'}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Schedule */}
+          {(change.scheduledStart || change.scheduledEnd) && (
+            <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 20 }}>
+              <h2 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600 }}>Schedule</h2>
+              <div style={{ fontSize: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #f3f4f6' }}>
+                  <span style={{ color: '#6b7280' }}>Start</span>
+                  <span style={{ color: '#111827' }}>{formatDateTime(change.scheduledStart)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0' }}>
+                  <span style={{ color: '#6b7280' }}>End</span>
+                  <span style={{ color: '#111827' }}>{formatDateTime(change.scheduledEnd)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Linked Assets */}
+          <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 20 }}>
+            <h2 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600 }}>Linked Assets ({change.assets.length})</h2>
+            {change.assets.length === 0 ? (
+              <p style={{ margin: 0, fontSize: 13, color: '#9ca3af' }}>No assets linked</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {change.assets.map((la) => (
+                  <Link
+                    key={la.id}
+                    href={`/dashboard/assets/${la.asset.id}`}
+                    style={{ fontSize: 13, color: '#4f46e5', textDecoration: 'none' }}
+                  >
+                    {la.asset.assetTag} {la.asset.model ? `— ${la.asset.model}` : ''}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Linked Applications */}
+          <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 20 }}>
+            <h2 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600 }}>Linked Applications ({change.applications.length})</h2>
+            {change.applications.length === 0 ? (
+              <p style={{ margin: 0, fontSize: 13, color: '#9ca3af' }}>No applications linked</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {change.applications.map((la) => (
+                  <span key={la.id} style={{ fontSize: 13, color: '#374151' }}>
+                    {la.application.name}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Activity Trail ─────────────────────────────────────────────────────── */}
+      {change.activities.length > 0 && (
+        <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 20, marginTop: 16 }}>
+          <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600 }}>Activity Trail</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {change.activities.map((activity, idx) => (
+              <div
+                key={activity.id}
+                style={{
+                  display: 'flex',
+                  gap: 12,
+                  padding: '10px 0',
+                  borderBottom: idx < change.activities.length - 1 ? '1px solid #f3f4f6' : 'none',
+                }}
+              >
+                <div style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', backgroundColor: '#4f46e5', marginTop: 5 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 14, color: '#374151', fontWeight: 500 }}>
+                      {activity.activityType.replace(/_/g, ' ')}
+                    </span>
+                    <span style={{ fontSize: 12, color: '#9ca3af', whiteSpace: 'nowrap' }}>
+                      {formatDateTime(activity.createdAt)}
+                    </span>
+                  </div>
+                  {activity.description && (
+                    <p style={{ margin: '2px 0 0', fontSize: 13, color: '#6b7280' }}>{activity.description}</p>
+                  )}
+                  {activity.performedBy && (
+                    <p style={{ margin: '2px 0 0', fontSize: 12, color: '#9ca3af' }}>
+                      by {activity.performedBy.firstName} {activity.performedBy.lastName}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
