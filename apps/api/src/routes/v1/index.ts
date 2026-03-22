@@ -1,6 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import { assetRoutes } from './assets/index.js';
 import { billingPlanRoutes } from './billing-plan.js';
+import { cabRoutes } from './cab/index.js';
+import { changeRoutes } from './changes/index.js';
 import { cmdbRoutes } from './cmdb/index.js';
 import { dashboardRoutes } from './dashboard/index.js';
 import { emailAccountRoutes } from './email-accounts/index.js';
@@ -55,4 +57,10 @@ export async function v1Routes(app: FastifyInstance): Promise<void> {
 
   // CMDB — CI CRUD, relationships, impact analysis, categories
   await app.register(cmdbRoutes);
+
+  // Change management — lifecycle, approvals, scheduling, risk scoring, asset/app linking
+  await app.register(changeRoutes);
+
+  // CAB meetings — agenda, RSVP, iCal downloads, per-change outcomes
+  await app.register(cabRoutes);
 }
