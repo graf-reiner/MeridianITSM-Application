@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-03-22T15:09:36.895Z"
+stopped_at: Completed 04-02-PLAN.md
+last_updated: "2026-03-22T15:10:51.239Z"
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 33
-  completed_plans: 26
+  completed_plans: 27
 ---
 
 # Project State
@@ -73,6 +73,7 @@ Plan: 1 of 8
 | Phase 03-core-itsm P11 | 5 | 2 tasks | 2 files |
 | Phase 04-cmdb-change-management-and-asset-portfolio P04 | 5 | 1 tasks | 6 files |
 | Phase 04-cmdb-change-management-and-asset-portfolio P01 | 4 | 2 tasks | 4 files |
+| Phase 04-cmdb-change-management-and-asset-portfolio P02 | 12 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -155,6 +156,9 @@ Recent decisions affecting current work:
 - [Phase 04-cmdb-change-management-and-asset-portfolio]: Wave 0 scaffold pattern continued from Phase 3: it.todo() stubs ensure vitest discovers all test files without failures while documenting expected behaviors before implementation
 - [Phase 04-cmdb-change-management-and-asset-portfolio]: Sequential assetTag uses FOR UPDATE lock in \ — same pattern as ticketNumber
 - [Phase 04-cmdb-change-management-and-asset-portfolio]: 'me' shorthand in assignedToId resolved server-side to JWT userId — no special portal route needed
+- [Phase 04-cmdb-change-management-and-asset-portfolio]: deleteCI soft-deletes (status=DECOMMISSIONED) — preserves relationship history
+- [Phase 04-cmdb-change-management-and-asset-portfolio]: Impact analysis uses two separate CTEs (downstream + upstream) for clean directional semantics
+- [Phase 04-cmdb-change-management-and-asset-portfolio]: cmdb.service.ts uses global prisma singleton (not passed-in tx) — consistent with ticket.service.ts pattern
 
 ### Pending Todos
 
@@ -168,6 +172,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-22T15:09:36.884Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-03-22T15:10:51.230Z
+Stopped at: Completed 04-02-PLAN.md
 Resume file: None

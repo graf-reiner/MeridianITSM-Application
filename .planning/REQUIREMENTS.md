@@ -101,20 +101,20 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### CMDB
 
-- [ ] **CMDB-01**: Configuration Item CRUD with ciNumber, type, status, environment, flexible attributesJson
+- [x] **CMDB-01**: Configuration Item CRUD with ciNumber, type, status, environment, flexible attributesJson
 - [x] **CMDB-02**: CI types: SERVER, WORKSTATION, NETWORK_DEVICE, SOFTWARE, SERVICE, DATABASE, VIRTUAL_MACHINE, CONTAINER, OTHER
 - [x] **CMDB-03**: CI relationships: DEPENDS_ON, HOSTS, CONNECTS_TO, RUNS_ON, BACKS_UP, VIRTUALIZES, MEMBER_OF
 - [x] **CMDB-04**: Impact analysis: traverse CI relationship graph to identify affected upstream/downstream CIs
-- [ ] **CMDB-05**: CI change history: every attribute change logged with who/what made the change
-- [ ] **CMDB-06**: CI linkable to tickets (affected CIs on incidents)
-- [ ] **CMDB-07**: CI linkable to assets (bridge physical inventory to logical CMDB)
-- [ ] **CMDB-08**: CI linkable to agents (agent-discovered CIs)
+- [x] **CMDB-05**: CI change history: every attribute change logged with who/what made the change
+- [x] **CMDB-06**: CI linkable to tickets (affected CIs on incidents)
+- [x] **CMDB-07**: CI linkable to assets (bridge physical inventory to logical CMDB)
+- [x] **CMDB-08**: CI linkable to agents (agent-discovered CIs)
 - [ ] **CMDB-09**: CMDB relationship map visualization (ReactFlow)
 - [x] **CMDB-10**: Bulk import CIs from CSV/JSON via import wizard
-- [ ] **CMDB-11**: CMDB categories with hierarchical taxonomy
+- [x] **CMDB-11**: CMDB categories with hierarchical taxonomy
 - [x] **CMDB-12**: Agent auto-discovery reconciliation: diff agent data vs CMDB, upsert CIs, log changes
 - [x] **CMDB-13**: Background worker reconciles agent discoveries every 15 minutes, marks stale CIs inactive
-- [ ] **CMDB-14**: CMDB permissions: CMDB_VIEW, CMDB_EDIT, CMDB_DELETE, CMDB_IMPORT
+- [x] **CMDB-14**: CMDB permissions: CMDB_VIEW, CMDB_EDIT, CMDB_DELETE, CMDB_IMPORT
 
 ### Change Management
 
@@ -410,20 +410,20 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ASST-03 | Phase 4 | Complete |
 | ASST-04 | Phase 4 | Complete |
 | ASST-05 | Phase 4 | Complete |
-| CMDB-01 | Phase 4 | Pending |
+| CMDB-01 | Phase 4 | Complete |
 | CMDB-02 | Phase 4 | Complete |
 | CMDB-03 | Phase 4 | Complete |
 | CMDB-04 | Phase 4 | Complete |
-| CMDB-05 | Phase 4 | Pending |
-| CMDB-06 | Phase 4 | Pending |
-| CMDB-07 | Phase 4 | Pending |
-| CMDB-08 | Phase 4 | Pending |
+| CMDB-05 | Phase 4 | Complete |
+| CMDB-06 | Phase 4 | Complete |
+| CMDB-07 | Phase 4 | Complete |
+| CMDB-08 | Phase 4 | Complete |
 | CMDB-09 | Phase 4 | Pending |
 | CMDB-10 | Phase 4 | Complete |
-| CMDB-11 | Phase 4 | Pending |
+| CMDB-11 | Phase 4 | Complete |
 | CMDB-12 | Phase 4 | Complete |
 | CMDB-13 | Phase 4 | Complete |
-| CMDB-14 | Phase 4 | Pending |
+| CMDB-14 | Phase 4 | Complete |
 | CHNG-01 | Phase 4 | Pending |
 | CHNG-02 | Phase 4 | Complete |
 | CHNG-03 | Phase 4 | Complete |
