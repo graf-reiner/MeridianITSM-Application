@@ -223,7 +223,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **REPT-02**: Ticket reports (CSV/JSON) with date range and filter parameters
 - [x] **REPT-03**: Change reports and analytics
 - [x] **REPT-04**: SLA compliance reports
-- [ ] **REPT-05**: CMDB inventory and relationship reports *(deferred to Phase 4 — requires CMDB data from CMDB-01)*
+- [x] **REPT-05**: CMDB inventory and relationship reports *(deferred to Phase 4 — requires CMDB data from CMDB-01)*
 - [x] **REPT-06**: Scheduled report generation with email delivery
 - [x] **REPT-07**: System health analytics
 
