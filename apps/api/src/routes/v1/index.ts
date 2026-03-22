@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { applicationRoutes } from './applications/index.js';
 import { assetRoutes } from './assets/index.js';
 import { billingPlanRoutes } from './billing-plan.js';
 import { cabRoutes } from './cab/index.js';
@@ -63,4 +64,7 @@ export async function v1Routes(app: FastifyInstance): Promise<void> {
 
   // CAB meetings — agenda, RSVP, iCal downloads, per-change outcomes
   await app.register(cabRoutes);
+
+  // Application portfolio — CRUD, dependencies, documents, asset relationships
+  await app.register(applicationRoutes);
 }
