@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { assetRoutes } from './assets/index.js';
 import { billingPlanRoutes } from './billing-plan.js';
+import { cmdbRoutes } from './cmdb/index.js';
 import { dashboardRoutes } from './dashboard/index.js';
 import { emailAccountRoutes } from './email-accounts/index.js';
 import { knowledgeRoutes } from './knowledge/index.js';
@@ -51,4 +52,7 @@ export async function v1Routes(app: FastifyInstance): Promise<void> {
 
   // Asset management — CRUD, status lifecycle, assignment to users and sites
   await app.register(assetRoutes);
+
+  // CMDB — CI CRUD, relationships, impact analysis, categories
+  await app.register(cmdbRoutes);
 }
