@@ -109,7 +109,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **CMDB-06**: CI linkable to tickets (affected CIs on incidents)
 - [x] **CMDB-07**: CI linkable to assets (bridge physical inventory to logical CMDB)
 - [x] **CMDB-08**: CI linkable to agents (agent-discovered CIs)
-- [ ] **CMDB-09**: CMDB relationship map visualization (ReactFlow)
+- [x] **CMDB-09**: CMDB relationship map visualization (ReactFlow)
 - [x] **CMDB-10**: Bulk import CIs from CSV/JSON via import wizard
 - [x] **CMDB-11**: CMDB categories with hierarchical taxonomy
 - [x] **CMDB-12**: Agent auto-discovery reconciliation: diff agent data vs CMDB, upsert CIs, log changes
@@ -418,7 +418,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CMDB-06 | Phase 4 | Complete |
 | CMDB-07 | Phase 4 | Complete |
 | CMDB-08 | Phase 4 | Complete |
-| CMDB-09 | Phase 4 | Pending |
+| CMDB-09 | Phase 4 | Complete |
 | CMDB-10 | Phase 4 | Complete |
 | CMDB-11 | Phase 4 | Complete |
 | CMDB-12 | Phase 4 | Complete |
