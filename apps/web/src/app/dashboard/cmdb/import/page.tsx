@@ -181,7 +181,7 @@ export default function CmdbImportPage() {
           if (rows.length === 0) { setParseError('No records found in JSON file'); return; }
           const headers = Object.keys(rows[0]);
           setParsedHeaders(headers);
-          setPreviewRows(rows.slice(0, 15).map((r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, String(v ?? '')])));
+          setPreviewRows(rows.slice(0, 15).map((r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, String(v ?? '')]))));
           setFullData(rows.map((r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, String(v ?? '')]))));
           const autoMap: Record<string, string> = {};
           headers.forEach((h) => { autoMap[h] = autoMapColumn(h); });
