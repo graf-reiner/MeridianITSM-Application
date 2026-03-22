@@ -94,7 +94,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Asset Management
 
 - [ ] **ASST-01**: Asset CRUD with assetTag, serialNumber, manufacturer, model, status lifecycle
-- [ ] **ASST-02**: Asset status: IN_STOCK → DEPLOYED → IN_REPAIR → RETIRED → DISPOSED
+- [x] **ASST-02**: Asset status: IN_STOCK → DEPLOYED → IN_REPAIR → RETIRED → DISPOSED
 - [ ] **ASST-03**: Asset assignment to users and sites
 - [ ] **ASST-04**: Asset fields populated from inventory agent data (hostname, OS, CPU, memory, disks, network, software)
 - [ ] **ASST-05**: Asset purchase tracking (date, cost, warranty)
@@ -102,27 +102,27 @@ Requirements for initial release. Each maps to roadmap phases.
 ### CMDB
 
 - [ ] **CMDB-01**: Configuration Item CRUD with ciNumber, type, status, environment, flexible attributesJson
-- [ ] **CMDB-02**: CI types: SERVER, WORKSTATION, NETWORK_DEVICE, SOFTWARE, SERVICE, DATABASE, VIRTUAL_MACHINE, CONTAINER, OTHER
-- [ ] **CMDB-03**: CI relationships: DEPENDS_ON, HOSTS, CONNECTS_TO, RUNS_ON, BACKS_UP, VIRTUALIZES, MEMBER_OF
-- [ ] **CMDB-04**: Impact analysis: traverse CI relationship graph to identify affected upstream/downstream CIs
+- [x] **CMDB-02**: CI types: SERVER, WORKSTATION, NETWORK_DEVICE, SOFTWARE, SERVICE, DATABASE, VIRTUAL_MACHINE, CONTAINER, OTHER
+- [x] **CMDB-03**: CI relationships: DEPENDS_ON, HOSTS, CONNECTS_TO, RUNS_ON, BACKS_UP, VIRTUALIZES, MEMBER_OF
+- [x] **CMDB-04**: Impact analysis: traverse CI relationship graph to identify affected upstream/downstream CIs
 - [ ] **CMDB-05**: CI change history: every attribute change logged with who/what made the change
 - [ ] **CMDB-06**: CI linkable to tickets (affected CIs on incidents)
 - [ ] **CMDB-07**: CI linkable to assets (bridge physical inventory to logical CMDB)
 - [ ] **CMDB-08**: CI linkable to agents (agent-discovered CIs)
 - [ ] **CMDB-09**: CMDB relationship map visualization (ReactFlow)
-- [ ] **CMDB-10**: Bulk import CIs from CSV/JSON via import wizard
+- [x] **CMDB-10**: Bulk import CIs from CSV/JSON via import wizard
 - [ ] **CMDB-11**: CMDB categories with hierarchical taxonomy
-- [ ] **CMDB-12**: Agent auto-discovery reconciliation: diff agent data vs CMDB, upsert CIs, log changes
-- [ ] **CMDB-13**: Background worker reconciles agent discoveries every 15 minutes, marks stale CIs inactive
+- [x] **CMDB-12**: Agent auto-discovery reconciliation: diff agent data vs CMDB, upsert CIs, log changes
+- [x] **CMDB-13**: Background worker reconciles agent discoveries every 15 minutes, marks stale CIs inactive
 - [ ] **CMDB-14**: CMDB permissions: CMDB_VIEW, CMDB_EDIT, CMDB_DELETE, CMDB_IMPORT
 
 ### Change Management
 
 - [ ] **CHNG-01**: Change request CRUD with changeNumber, type (STANDARD/NORMAL/EMERGENCY), risk level
-- [ ] **CHNG-02**: Change status machine: NEW → ASSESSMENT → APPROVAL_PENDING → APPROVED → REJECTED → SCHEDULED → IMPLEMENTING → REVIEW → COMPLETED → CANCELLED
-- [ ] **CHNG-03**: Change approval workflow with sequenced approvers and PENDING/APPROVED/REJECTED/CANCELLED states
+- [x] **CHNG-02**: Change status machine: NEW → ASSESSMENT → APPROVAL_PENDING → APPROVED → REJECTED → SCHEDULED → IMPLEMENTING → REVIEW → COMPLETED → CANCELLED
+- [x] **CHNG-03**: Change approval workflow with sequenced approvers and PENDING/APPROVED/REJECTED/CANCELLED states
 - [ ] **CHNG-04**: Implementation plan, backout plan, and testing plan fields on change requests
-- [ ] **CHNG-05**: Change scheduling with start/end dates and collision detection
+- [x] **CHNG-05**: Change scheduling with start/end dates and collision detection
 - [ ] **CHNG-06**: Automated risk assessment scoring
 - [ ] **CHNG-07**: Change linkable to assets and applications (impact scope)
 - [ ] **CHNG-08**: Change activity audit trail
@@ -133,7 +133,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **CAB-01**: CAB meeting CRUD with scheduling, location, meeting URL, duration
 - [ ] **CAB-02**: CAB attendees with roles (CHAIRPERSON/MEMBER/OBSERVER) and RSVP status
 - [ ] **CAB-03**: Link changes to meetings with agenda order and outcome recording
-- [ ] **CAB-04**: iCal download and email invitation sending
+- [x] **CAB-04**: iCal download and email invitation sending
 - [ ] **CAB-05**: Meeting outcome: APPROVED/REJECTED/DEFERRED/NEEDS_MORE_INFO per change
 
 ### Application Portfolio
@@ -406,29 +406,29 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REPT-06 | Phase 3 | Complete |
 | REPT-07 | Phase 3 | Complete |
 | ASST-01 | Phase 4 | Pending |
-| ASST-02 | Phase 4 | Pending |
+| ASST-02 | Phase 4 | Complete |
 | ASST-03 | Phase 4 | Pending |
 | ASST-04 | Phase 4 | Pending |
 | ASST-05 | Phase 4 | Pending |
 | CMDB-01 | Phase 4 | Pending |
-| CMDB-02 | Phase 4 | Pending |
-| CMDB-03 | Phase 4 | Pending |
-| CMDB-04 | Phase 4 | Pending |
+| CMDB-02 | Phase 4 | Complete |
+| CMDB-03 | Phase 4 | Complete |
+| CMDB-04 | Phase 4 | Complete |
 | CMDB-05 | Phase 4 | Pending |
 | CMDB-06 | Phase 4 | Pending |
 | CMDB-07 | Phase 4 | Pending |
 | CMDB-08 | Phase 4 | Pending |
 | CMDB-09 | Phase 4 | Pending |
-| CMDB-10 | Phase 4 | Pending |
+| CMDB-10 | Phase 4 | Complete |
 | CMDB-11 | Phase 4 | Pending |
-| CMDB-12 | Phase 4 | Pending |
-| CMDB-13 | Phase 4 | Pending |
+| CMDB-12 | Phase 4 | Complete |
+| CMDB-13 | Phase 4 | Complete |
 | CMDB-14 | Phase 4 | Pending |
 | CHNG-01 | Phase 4 | Pending |
-| CHNG-02 | Phase 4 | Pending |
-| CHNG-03 | Phase 4 | Pending |
+| CHNG-02 | Phase 4 | Complete |
+| CHNG-03 | Phase 4 | Complete |
 | CHNG-04 | Phase 4 | Pending |
-| CHNG-05 | Phase 4 | Pending |
+| CHNG-05 | Phase 4 | Complete |
 | CHNG-06 | Phase 4 | Pending |
 | CHNG-07 | Phase 4 | Pending |
 | CHNG-08 | Phase 4 | Pending |
@@ -436,7 +436,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CAB-01 | Phase 4 | Pending |
 | CAB-02 | Phase 4 | Pending |
 | CAB-03 | Phase 4 | Pending |
-| CAB-04 | Phase 4 | Pending |
+| CAB-04 | Phase 4 | Complete |
 | CAB-05 | Phase 4 | Pending |
 | APP-01 | Phase 4 | Pending |
 | APP-02 | Phase 4 | Pending |
