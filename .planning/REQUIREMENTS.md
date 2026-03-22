@@ -138,12 +138,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Application Portfolio
 
-- [ ] **APP-01**: Application CRUD with type (9 types), status, criticality, hosting model, tech stack
-- [ ] **APP-02**: Application dependency mapping (source → target with dependency type)
-- [ ] **APP-03**: Application document management (11 document types with URLs)
-- [ ] **APP-04**: Application-to-asset relationships with relationship types
-- [ ] **APP-05**: Application portfolio dashboard with summary statistics
-- [ ] **APP-06**: Visual dependency diagram
+- [x] **APP-01**: Application CRUD with type (9 types), status, criticality, hosting model, tech stack
+- [x] **APP-02**: Application dependency mapping (source → target with dependency type)
+- [x] **APP-03**: Application document management (11 document types with URLs)
+- [x] **APP-04**: Application-to-asset relationships with relationship types
+- [x] **APP-05**: Application portfolio dashboard with summary statistics
+- [x] **APP-06**: Visual dependency diagram
 
 ### Billing & Subscription
 
@@ -438,12 +438,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CAB-03 | Phase 4 | Complete |
 | CAB-04 | Phase 4 | Complete |
 | CAB-05 | Phase 4 | Complete |
-| APP-01 | Phase 4 | Pending |
-| APP-02 | Phase 4 | Pending |
-| APP-03 | Phase 4 | Pending |
-| APP-04 | Phase 4 | Pending |
-| APP-05 | Phase 4 | Pending |
-| APP-06 | Phase 4 | Pending |
+| APP-01 | Phase 4 | Complete |
+| APP-02 | Phase 4 | Complete |
+| APP-03 | Phase 4 | Complete |
+| APP-04 | Phase 4 | Complete |
+| APP-05 | Phase 4 | Complete |
+| APP-06 | Phase 4 | Complete |
 | AGNT-01 | Phase 5 | Pending |
 | AGNT-02 | Phase 5 | Pending |
 | AGNT-03 | Phase 5 | Pending |
