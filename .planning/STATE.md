@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 04-02-PLAN.md
-last_updated: "2026-03-22T15:10:51.239Z"
+stopped_at: Completed 04-03-PLAN.md
+last_updated: "2026-03-22T15:12:10.477Z"
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 33
-  completed_plans: 27
+  completed_plans: 28
 ---
 
 # Project State
@@ -74,6 +74,7 @@ Plan: 1 of 8
 | Phase 04-cmdb-change-management-and-asset-portfolio P04 | 5 | 1 tasks | 6 files |
 | Phase 04-cmdb-change-management-and-asset-portfolio P01 | 4 | 2 tasks | 4 files |
 | Phase 04-cmdb-change-management-and-asset-portfolio P02 | 12 | 2 tasks | 3 files |
+| Phase 04-cmdb-change-management-and-asset-portfolio P03 | 12 | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -159,6 +160,9 @@ Recent decisions affecting current work:
 - [Phase 04-cmdb-change-management-and-asset-portfolio]: deleteCI soft-deletes (status=DECOMMISSIONED) — preserves relationship history
 - [Phase 04-cmdb-change-management-and-asset-portfolio]: Impact analysis uses two separate CTEs (downstream + upstream) for clean directional semantics
 - [Phase 04-cmdb-change-management-and-asset-portfolio]: cmdb.service.ts uses global prisma singleton (not passed-in tx) — consistent with ticket.service.ts pattern
+- [Phase 04]: [04-03]: Asset model uses assetTag/hostname/model — no 'name' field; change service select updated accordingly
+- [Phase 04]: [04-03]: /calendar route defined before /:id in Fastify changeRoutes to prevent parameterized route conflict
+- [Phase 04]: [04-03]: CAB outcome APPROVED/REJECTED transition wrapped in try/catch — outcome saved regardless of whether change transition succeeds
 
 ### Pending Todos
 
@@ -172,6 +176,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-22T15:10:51.230Z
-Stopped at: Completed 04-02-PLAN.md
+Last session: 2026-03-22T15:12:10.471Z
+Stopped at: Completed 04-03-PLAN.md
 Resume file: None

@@ -118,23 +118,23 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Change Management
 
-- [ ] **CHNG-01**: Change request CRUD with changeNumber, type (STANDARD/NORMAL/EMERGENCY), risk level
+- [x] **CHNG-01**: Change request CRUD with changeNumber, type (STANDARD/NORMAL/EMERGENCY), risk level
 - [x] **CHNG-02**: Change status machine: NEW → ASSESSMENT → APPROVAL_PENDING → APPROVED → REJECTED → SCHEDULED → IMPLEMENTING → REVIEW → COMPLETED → CANCELLED
 - [x] **CHNG-03**: Change approval workflow with sequenced approvers and PENDING/APPROVED/REJECTED/CANCELLED states
-- [ ] **CHNG-04**: Implementation plan, backout plan, and testing plan fields on change requests
+- [x] **CHNG-04**: Implementation plan, backout plan, and testing plan fields on change requests
 - [x] **CHNG-05**: Change scheduling with start/end dates and collision detection
-- [ ] **CHNG-06**: Automated risk assessment scoring
-- [ ] **CHNG-07**: Change linkable to assets and applications (impact scope)
-- [ ] **CHNG-08**: Change activity audit trail
-- [ ] **CHNG-09**: Change calendar view
+- [x] **CHNG-06**: Automated risk assessment scoring
+- [x] **CHNG-07**: Change linkable to assets and applications (impact scope)
+- [x] **CHNG-08**: Change activity audit trail
+- [x] **CHNG-09**: Change calendar view
 
 ### CAB Meetings
 
-- [ ] **CAB-01**: CAB meeting CRUD with scheduling, location, meeting URL, duration
-- [ ] **CAB-02**: CAB attendees with roles (CHAIRPERSON/MEMBER/OBSERVER) and RSVP status
-- [ ] **CAB-03**: Link changes to meetings with agenda order and outcome recording
+- [x] **CAB-01**: CAB meeting CRUD with scheduling, location, meeting URL, duration
+- [x] **CAB-02**: CAB attendees with roles (CHAIRPERSON/MEMBER/OBSERVER) and RSVP status
+- [x] **CAB-03**: Link changes to meetings with agenda order and outcome recording
 - [x] **CAB-04**: iCal download and email invitation sending
-- [ ] **CAB-05**: Meeting outcome: APPROVED/REJECTED/DEFERRED/NEEDS_MORE_INFO per change
+- [x] **CAB-05**: Meeting outcome: APPROVED/REJECTED/DEFERRED/NEEDS_MORE_INFO per change
 
 ### Application Portfolio
 
@@ -424,20 +424,20 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CMDB-12 | Phase 4 | Complete |
 | CMDB-13 | Phase 4 | Complete |
 | CMDB-14 | Phase 4 | Complete |
-| CHNG-01 | Phase 4 | Pending |
+| CHNG-01 | Phase 4 | Complete |
 | CHNG-02 | Phase 4 | Complete |
 | CHNG-03 | Phase 4 | Complete |
-| CHNG-04 | Phase 4 | Pending |
+| CHNG-04 | Phase 4 | Complete |
 | CHNG-05 | Phase 4 | Complete |
-| CHNG-06 | Phase 4 | Pending |
-| CHNG-07 | Phase 4 | Pending |
-| CHNG-08 | Phase 4 | Pending |
-| CHNG-09 | Phase 4 | Pending |
-| CAB-01 | Phase 4 | Pending |
-| CAB-02 | Phase 4 | Pending |
-| CAB-03 | Phase 4 | Pending |
+| CHNG-06 | Phase 4 | Complete |
+| CHNG-07 | Phase 4 | Complete |
+| CHNG-08 | Phase 4 | Complete |
+| CHNG-09 | Phase 4 | Complete |
+| CAB-01 | Phase 4 | Complete |
+| CAB-02 | Phase 4 | Complete |
+| CAB-03 | Phase 4 | Complete |
 | CAB-04 | Phase 4 | Complete |
-| CAB-05 | Phase 4 | Pending |
+| CAB-05 | Phase 4 | Complete |
 | APP-01 | Phase 4 | Pending |
 | APP-02 | Phase 4 | Pending |
 | APP-03 | Phase 4 | Pending |
