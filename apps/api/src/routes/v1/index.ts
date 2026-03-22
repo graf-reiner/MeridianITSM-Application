@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { assetRoutes } from './assets/index.js';
 import { billingPlanRoutes } from './billing-plan.js';
 import { dashboardRoutes } from './dashboard/index.js';
 import { emailAccountRoutes } from './email-accounts/index.js';
@@ -47,4 +48,7 @@ export async function v1Routes(app: FastifyInstance): Promise<void> {
   // Ticket management — full ITSM ticket lifecycle: CRUD, comments, attachments, assignment,
   // KB/CI linking, audit trail
   await app.register(ticketRoutes);
+
+  // Asset management — CRUD, status lifecycle, assignment to users and sites
+  await app.register(assetRoutes);
 }
