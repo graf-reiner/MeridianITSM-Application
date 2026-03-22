@@ -23,15 +23,15 @@ An MSP can manage multiple customer organizations' IT service desks from a singl
 - [x] Background workers (SLA monitoring, email notifications, email polling) *(Validated in Phase 03: core-itsm)*
 - [x] End-user self-service portal (simplified UI) *(Validated in Phase 03: core-itsm)*
 - [x] Scheduled reports (CSV/JSON) *(Validated in Phase 03: core-itsm)*
+- [x] Change management with approval workflows and CAB meetings *(Validated in Phase 04: cmdb-change-management-and-asset-portfolio)*
+- [x] Asset management with manual entry and agent-collected inventory *(Validated in Phase 04: cmdb-change-management-and-asset-portfolio)*
+- [x] CMDB with CI relationships, impact analysis, agent auto-discovery *(Validated in Phase 04: cmdb-change-management-and-asset-portfolio)*
+- [x] Application portfolio management with dependency mapping *(Validated in Phase 04: cmdb-change-management-and-asset-portfolio)*
 
 ### Active
 
 - [ ] Multi-tenant architecture with tenantId scoping on every query
 - [ ] Separate API server (Hono/Fastify) + Next.js frontend (architectural split)
-- [ ] Change management with approval workflows and CAB meetings
-- [ ] Asset management with manual entry and agent-collected inventory
-- [ ] CMDB with CI relationships, impact analysis, agent auto-discovery
-- [ ] Application portfolio management with dependency mapping
 - [ ] Push notifications (FCM for Android, APNs for iOS)
 - [ ] RBAC with system roles (admin, msp_admin, agent, end_user) and custom roles
 - [ ] React Native/Expo mobile app (iOS + Android)
@@ -80,4 +80,4 @@ The full specification is captured in `DOCUMENTATION .md` (1900 lines) covering 
 | Stack open to research | Let research identify best current options rather than locking to original choices | — Pending |
 
 ---
-*Last updated: 2026-03-21 — Phase 03 (core-itsm) complete*
+*Last updated: 2026-03-22 — Phase 04 (cmdb-change-management-and-asset-portfolio) complete*
