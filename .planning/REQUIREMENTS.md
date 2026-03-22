@@ -88,16 +88,16 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **PRTL-02**: End users can submit service requests via simplified form
 - [x] **PRTL-03**: End users can view their ticket status and add comments
 - [x] **PRTL-04**: End users can browse published knowledge articles
-- [ ] **PRTL-05**: End users can view their assigned assets *(deferred to Phase 4 — requires asset CRUD from ASST-01)*
+- [x] **PRTL-05**: End users can view their assigned assets *(deferred to Phase 4 — requires asset CRUD from ASST-01)*
 - [x] **PRTL-06**: Middleware auto-redirects end_user role to /portal
 
 ### Asset Management
 
-- [ ] **ASST-01**: Asset CRUD with assetTag, serialNumber, manufacturer, model, status lifecycle
+- [x] **ASST-01**: Asset CRUD with assetTag, serialNumber, manufacturer, model, status lifecycle
 - [x] **ASST-02**: Asset status: IN_STOCK → DEPLOYED → IN_REPAIR → RETIRED → DISPOSED
-- [ ] **ASST-03**: Asset assignment to users and sites
-- [ ] **ASST-04**: Asset fields populated from inventory agent data (hostname, OS, CPU, memory, disks, network, software)
-- [ ] **ASST-05**: Asset purchase tracking (date, cost, warranty)
+- [x] **ASST-03**: Asset assignment to users and sites
+- [x] **ASST-04**: Asset fields populated from inventory agent data (hostname, OS, CPU, memory, disks, network, software)
+- [x] **ASST-05**: Asset purchase tracking (date, cost, warranty)
 
 ### CMDB
 
@@ -405,11 +405,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REPT-05 | Phase 4 | Deferred |
 | REPT-06 | Phase 3 | Complete |
 | REPT-07 | Phase 3 | Complete |
-| ASST-01 | Phase 4 | Pending |
+| ASST-01 | Phase 4 | Complete |
 | ASST-02 | Phase 4 | Complete |
-| ASST-03 | Phase 4 | Pending |
-| ASST-04 | Phase 4 | Pending |
-| ASST-05 | Phase 4 | Pending |
+| ASST-03 | Phase 4 | Complete |
+| ASST-04 | Phase 4 | Complete |
+| ASST-05 | Phase 4 | Complete |
 | CMDB-01 | Phase 4 | Pending |
 | CMDB-02 | Phase 4 | Complete |
 | CMDB-03 | Phase 4 | Complete |
