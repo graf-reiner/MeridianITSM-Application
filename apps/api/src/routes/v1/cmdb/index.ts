@@ -16,6 +16,7 @@ import {
   updateCategory,
   deleteCategory,
 } from '../../../services/cmdb.service.js';
+import { importCIs } from '../../../services/cmdb-import.service.js';
 
 /**
  * CMDB REST API routes.
@@ -496,6 +497,56 @@ export async function cmdbRoutes(fastify: FastifyInstance): Promise<void> {
       }
 
       return reply.status(204).send();
+    },
+  );
+
+  // ─── POST /api/v1/cmdb/import — Bulk import CIs ────────────────────────────
+
+  fastify.post(
+    '/api/v1/cmdb/import',
+    { preHandler: [requirePermission('cmdb.import')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string; userId: string };
+      const tenantId = user.tenantId;
+      const userId = user.userId;
+
+      const body = request.body as {
+        rows?: unknown;
+        columnMap?: Record<string, string>;
+      };
+
+      if (!Array.isArray(body.rows)) {
+        return reply.status(400).send({ error: 'rows must be an array' });
+      }
+
+      // If columnMap provided, remap row keys before validation
+      let rows: unknown[] = body.rows;
+      if (body.columnMap && typeof body.columnMap === 'object') {
+        const colMap = body.columnMap;
+        rows = (body.rows as Array<Record<string, unknown>>).map((row) => {
+          const remapped: Record<string, unknown> = {};
+          for (const [srcKey, destKey] of Object.entries(colMap)) {
+            if (srcKey in row) {
+              remapped[destKey] = row[srcKey];
+            }
+          }
+          // Also include any keys not in the column map (pass-through)
+          for (const key of Object.keys(row)) {
+            if (!(key in remapped)) {
+              remapped[key] = row[key];
+            }
+          }
+          return remapped;
+        });
+      }
+
+      try {
+        const result = await importCIs(tenantId, rows, userId);
+        return reply.status(200).send(result);
+      } catch (err) {
+        const error = err as Error;
+        return reply.status(500).send({ error: error.message });
+      }
     },
   );
 }

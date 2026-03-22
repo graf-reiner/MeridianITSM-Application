@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { Cron } from 'croner';
 import { prisma } from '@meridian/db';
+import { stringify } from 'csv-stringify/sync';
 import { requirePermission } from '../../../plugins/rbac.js';
 import {
   getTicketReport,
@@ -88,14 +89,80 @@ export async function reportRoutes(fastify: FastifyInstance): Promise<void> {
     });
   });
 
-  // ─── GET /api/v1/reports/cmdb ─────────────────────────────────────────────
+  // ─── GET /api/v1/reports/cmdb — CMDB inventory report (REPT-05) ───────────
 
-  // DEFERRED TO PHASE 4: CMDB inventory and relationship reports require
-  // CmdbConfigurationItem and CmdbRelationship data populated by Phase 4 CMDB CRUD.
-  // Requirement: REPT-05
-  fastify.get('/api/v1/reports/cmdb', async () => {
-    return { message: 'CMDB reports deferred to Phase 4 (REPT-05) — requires CMDB data from CMDB-01', status: 'deferred' };
-  });
+  fastify.get(
+    '/api/v1/reports/cmdb',
+    { preHandler: [requirePermission('reports.read'), requirePermission('cmdb.view')] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const user = request.user as { tenantId: string };
+      const { tenantId } = user;
+
+      const query = request.query as {
+        format?: string;
+        type?: string;
+        status?: string;
+        includeRelationships?: string;
+      };
+
+      const format = query.format === 'csv' ? 'csv' : 'json';
+      const includeRelationships = query.includeRelationships === 'true';
+
+      // Build filter where clause
+      const where = {
+        tenantId,
+        ...(query.type ? { type: query.type as never } : {}),
+        ...(query.status ? { status: query.status as never } : {}),
+      };
+
+      const cis = await prisma.cmdbConfigurationItem.findMany({
+        where,
+        orderBy: { ciNumber: 'asc' },
+      });
+
+      const generatedAt = new Date().toISOString();
+
+      if (format === 'csv') {
+        const csvData = stringify(
+          cis.map((ci) => ({
+            ciNumber: ci.ciNumber,
+            name: ci.name,
+            type: ci.type,
+            status: ci.status,
+            environment: ci.environment,
+            createdAt: ci.createdAt.toISOString(),
+          })),
+          { header: true },
+        );
+
+        const dateStr = new Date().toISOString().slice(0, 10);
+        void reply.header('Content-Type', 'text/csv');
+        void reply.header(
+          'Content-Disposition',
+          `attachment; filename="cmdb-inventory-${dateStr}.csv"`,
+        );
+        return reply.send(csvData);
+      }
+
+      // JSON format — optionally include relationships
+      if (includeRelationships) {
+        const ciIds = cis.map((ci) => ci.id);
+        const relationships =
+          ciIds.length > 0
+            ? await prisma.cmdbRelationship.findMany({
+                where: {
+                  tenantId,
+                  OR: [{ sourceId: { in: ciIds } }, { targetId: { in: ciIds } }],
+                },
+              })
+            : [];
+
+        return { cis, relationships, total: cis.length, generatedAt };
+      }
+
+      return { cis, total: cis.length, generatedAt };
+    },
+  );
 
   // ─── GET /api/v1/reports/system-health ────────────────────────────────────
 
