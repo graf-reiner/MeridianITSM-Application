@@ -96,13 +96,17 @@ Plans:
   3. A change request moves through the full approval chain (assessment -> approval -> CAB review -> scheduled -> implementing -> completed), with each approver receiving a notification and CAB attendees able to RSVP and download an iCal invite
   4. An emergency change bypasses CAB scheduling and routes directly to approval; a standard pre-approved change skips the approval chain
   5. An application can be created with its dependencies mapped to other applications and assets, visible in a visual dependency diagram on the portfolio dashboard
-**Plans**: TBD
+**Plans**: 8 plans
 
 Plans:
-- [ ] 04-01: Asset management — CRUD, status lifecycle, user/site assignment, purchase tracking
-- [ ] 04-02: CMDB — CI types, relationships, impact analysis, change history, bulk import, visualization, reconciliation infrastructure, permissions
-- [ ] 04-03: Change management and CAB — change lifecycle, approval chains, risk assessment, scheduling, CAB meetings with RSVP and iCal
-- [ ] 04-04: Application portfolio — CRUD, dependency mapping, document management, asset relationships, portfolio dashboard
+- [ ] 04-01-PLAN.md — Asset management: asset service with CRUD, status lifecycle guard, sequential assetTag, user/site assignment, purchase tracking, portal assets page (PRTL-05)
+- [ ] 04-02-PLAN.md — CMDB backend: CI CRUD with sequential ciNumber, relationship management, recursive CTE impact analysis, per-field change history, categories with cycle detection, CMDB permissions
+- [ ] 04-03-PLAN.md — Change management and CAB: 10-state machine with type-dependent workflows, approval chains, collision detection, risk scoring, CAB meetings with RSVP, iCal generation, agenda ordering
+- [ ] 04-04-PLAN.md — Wave 0 test scaffolds: it.todo() stubs for asset, CMDB, change, reconciliation, CAB, and import services
+- [ ] 04-05-PLAN.md — CMDB reconciliation and import: real reconciliation worker replacing stub, bulk import service with Zod validation, CMDB reports endpoint (REPT-05)
+- [ ] 04-06-PLAN.md — Application portfolio: app CRUD with dependencies, documents, asset relationships, portfolio stats, dependency graph data
+- [ ] 04-07-PLAN.md — Staff dashboard frontend (assets/CMDB/changes/CAB): asset list+detail, CI list+detail with ReactFlow relationship map and impact analysis overlay, change list+detail with inline approval, change calendar, CAB meeting detail
+- [ ] 04-08-PLAN.md — CMDB import wizard and app portfolio frontend: 3-step import wizard with papaparse, portfolio dashboard with stat cards + ReactFlow dependency graph + matrix table, app detail page
 
 ### Phase 5: Agent, Mobile, and Integrations
 **Goal**: The .NET inventory agent auto-discovers and reconciles hardware into the CMDB, the mobile app gives field technicians ticket access with push notifications, and webhooks and API keys let external tools integrate with the platform.
@@ -133,5 +137,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 1. Foundation | 6/6 | Complete | 2026-03-20 |
 | 2. Billing and Owner Admin | 6/6 | Complete   | 2026-03-20 |
 | 3. Core ITSM | 12/12 | Complete   | 2026-03-21 |
-| 4. CMDB, Change Management, and Asset Portfolio | 0/4 | Not started | - |
+| 4. CMDB, Change Management, and Asset Portfolio | 0/8 | Planning complete | - |
 | 5. Agent, Mobile, and Integrations | 0/5 | Not started | - |
