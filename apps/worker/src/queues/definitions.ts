@@ -10,6 +10,8 @@ export const QUEUE_NAMES = {
   TRIAL_EXPIRY: 'trial-expiry',
   USAGE_SNAPSHOT: 'usage-snapshot',
   SCHEDULED_REPORT: 'scheduled-report',
+  WEBHOOK_DELIVERY: 'webhook-delivery',
+  PUSH_NOTIFICATION: 'push-notification',
 } as const;
 
 export interface TenantJobData {
@@ -37,3 +39,5 @@ export const stripeWebhookQueue = new Queue(QUEUE_NAMES.STRIPE_WEBHOOK, { connec
 export const trialExpiryQueue = new Queue(QUEUE_NAMES.TRIAL_EXPIRY, { connection: bullmqConnection });
 export const usageSnapshotQueue = new Queue(QUEUE_NAMES.USAGE_SNAPSHOT, { connection: bullmqConnection });
 export const scheduledReportQueue = new Queue(QUEUE_NAMES.SCHEDULED_REPORT, { connection: bullmqConnection });
+export const webhookDeliveryQueue = new Queue(QUEUE_NAMES.WEBHOOK_DELIVERY, { connection: bullmqConnection });
+export const pushNotificationQueue = new Queue(QUEUE_NAMES.PUSH_NOTIFICATION, { connection: bullmqConnection });

@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "MeridianITSM",
+    "slug": "meridian-itsm",
+    "version": "1.0.0",
+    "scheme": "servicedesk",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#4f46e5"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.meridian.itsm",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Camera is used to scan QR codes and take ticket photos",
+        "NSPhotoLibraryUsageDescription": "Photo library is used to attach images to tickets"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#4f46e5"
+      },
+      "package": "com.meridian.itsm",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.POST_NOTIFICATIONS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-notifications",
+      "expo-secure-store",
+      "expo-image-picker",
+      "expo-barcode-scanner",
+      "expo-linking"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    }
+  }
+}

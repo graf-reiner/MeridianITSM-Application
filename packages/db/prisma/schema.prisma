@@ -463,6 +463,7 @@ model User {
   department              String?
   status                  UserStatus @default(ACTIVE)
   notificationPreferences Json?
+  pushPreferences         Json?
   siteId                  String?    @db.Uuid
   createdAt               DateTime   @default(now())
   updatedAt               DateTime   @updatedAt
@@ -1805,15 +1806,16 @@ model ScheduledReport {
 
 // Model 60: Webhook
 model Webhook {
-  id         String           @id @default(uuid()) @db.Uuid
-  tenantId   String           @db.Uuid
-  name       String
-  url        String
-  events     WebhookEventType[]
-  secret     String?
-  isActive   Boolean          @default(true)
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
+  id                  String           @id @default(uuid()) @db.Uuid
+  tenantId            String           @db.Uuid
+  name                String
+  url                 String
+  events              WebhookEventType[]
+  secret              String?
+  isActive            Boolean          @default(true)
+  consecutiveFailures Int              @default(0)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
 
   tenant    Tenant            @relation(fields: [tenantId], references: [id])
   deliveries WebhookDelivery[]
