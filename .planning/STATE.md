@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 05-04-PLAN.md (Inventory agent solution + collectors + privacy)
-last_updated: "2026-03-23T17:47:03.811Z"
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-03-23T17:49:03.264Z"
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 42
-  completed_plans: 34
+  completed_plans: 35
 ---
 
 # Project State
@@ -81,6 +81,7 @@ Plan: 7 of 9
 | Phase 04-cmdb-change-management-and-asset-portfolio P07 | 35 | 2 tasks | 14 files |
 | Phase 05-agent-mobile-and-integrations P06 | 5 | 2 tasks | 25 files |
 | Phase 05-agent-mobile-and-integrations P04 | 8 | 2 tasks | 24 files |
+| Phase 05-agent-mobile-and-integrations P01 | 22 | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -186,6 +187,9 @@ Recent decisions affecting current work:
 - [Phase 05-04]: [05-04]: Microsoft.Extensions.Configuration.Json/EnvironmentVariables/CommandLine added explicitly to InvAgent.CLI.csproj — Microsoft.Extensions.Hosting does not pull these extension methods into scope by default
 - [Phase 05-04]: [05-04]: WmiCollector uses #if WINDOWS conditional compilation guards around System.Management calls — allows cross-platform dotnet build without runtime guard failures while keeping WMI code colocated
 - [Phase 05-04]: [05-04]: PrivacyFilter.Apply uses SHA256.HashData returning first 12 hex chars for pseudonymization of hostname/MAC/IP in anonymized tier
+- [Phase 05-01]: Agent routes registered in dedicated server.ts scope (not external ApiKey scope) — AgentKey header is a different auth scheme from ApiKey
+- [Phase 05-01]: Queue instances created locally in agent route using REDIS_URL env var — follows billing/webhook.ts precedent, avoids cross-app imports from apps/worker
+- [Phase 05-01]: CMDB merge guard queries CmdbChangeRecord per field before overwrite — changedBy=USER means skip agent update for that field (manual edits win)
 
 ### Pending Todos
 
@@ -199,6 +203,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-23T17:46:53.802Z
-Stopped at: Completed 05-04-PLAN.md (Inventory agent solution + collectors + privacy)
+Last session: 2026-03-23T17:49:03.257Z
+Stopped at: Completed 05-01-PLAN.md
 Resume file: None

@@ -174,12 +174,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **AGNT-01**: .NET 8/9 cross-platform agent with modular collector architecture
 - [x] **AGNT-02**: Platform-specific data collection: Windows (WMI), Linux (/proc, dpkg/rpm), macOS (IOKit, system_profiler)
-- [ ] **AGNT-03**: Agent enrollment via token authentication
-- [ ] **AGNT-04**: Periodic heartbeat to server
-- [ ] **AGNT-05**: Inventory snapshot submission (OS, hardware, network, software, services)
-- [ ] **AGNT-06**: CMDB CI payload submission for auto-discovery reconciliation
+- [x] **AGNT-03**: Agent enrollment via token authentication
+- [x] **AGNT-04**: Periodic heartbeat to server
+- [x] **AGNT-05**: Inventory snapshot submission (OS, hardware, network, software, services)
+- [x] **AGNT-06**: CMDB CI payload submission for auto-discovery reconciliation
 - [ ] **AGNT-07**: Runs as Windows Service, Linux systemd daemon, or macOS launchd daemon
-- [ ] **AGNT-08**: Local web UI at 127.0.0.1:8787 (loopback only)
+- [x] **AGNT-08**: Local web UI at 127.0.0.1:8787 (loopback only)
 - [x] **AGNT-09**: Privacy tiers: full, restricted (no PII), anonymized (hashed)
 - [ ] **AGNT-10**: Export plugins: HTTP(S) with retry/backoff, AWS S3, Azure Blob Storage
 - [x] **AGNT-11**: Configuration via TOML/YAML/JSON + env vars + CLI flags
@@ -203,14 +203,14 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Push Notifications
 
 - [ ] **PUSH-01**: Push notification service supporting FCM (Android) and APNs (iOS)
-- [ ] **PUSH-02**: Device token registration endpoint with platform identification
+- [x] **PUSH-02**: Device token registration endpoint with platform identification
 - [ ] **PUSH-03**: Push events: ticket assigned, status changed, new comment, SLA breach/warning, change approval, CAB invitation, @mention
 - [ ] **PUSH-04**: Per-user push notification preferences (configurable which events trigger push)
 - [ ] **PUSH-05**: Notification payload includes screen and entityId for deep linking
 
 ### Integrations
 
-- [ ] **INTG-01**: API key CRUD with hashed keys, prefix identification, scoped permissions, rate limiting
+- [x] **INTG-01**: API key CRUD with hashed keys, prefix identification, scoped permissions, rate limiting
 - [ ] **INTG-02**: External API endpoints (/api/v1/external/) for ticket access via API key
 - [ ] **INTG-03**: Webhook CRUD with event subscription, signed payloads, retry with backoff
 - [ ] **INTG-04**: Webhook delivery tracking with history viewer
@@ -446,12 +446,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | APP-06 | Phase 4 | Complete |
 | AGNT-01 | Phase 5 | Complete |
 | AGNT-02 | Phase 5 | Complete |
-| AGNT-03 | Phase 5 | Pending |
-| AGNT-04 | Phase 5 | Pending |
-| AGNT-05 | Phase 5 | Pending |
-| AGNT-06 | Phase 5 | Pending |
+| AGNT-03 | Phase 5 | Complete |
+| AGNT-04 | Phase 5 | Complete |
+| AGNT-05 | Phase 5 | Complete |
+| AGNT-06 | Phase 5 | Complete |
 | AGNT-07 | Phase 5 | Pending |
-| AGNT-08 | Phase 5 | Pending |
+| AGNT-08 | Phase 5 | Complete |
 | AGNT-09 | Phase 5 | Complete |
 | AGNT-10 | Phase 5 | Pending |
 | AGNT-11 | Phase 5 | Complete |
@@ -469,11 +469,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MOBL-11 | Phase 5 | Pending |
 | MOBL-12 | Phase 5 | Complete |
 | PUSH-01 | Phase 5 | Pending |
-| PUSH-02 | Phase 5 | Pending |
+| PUSH-02 | Phase 5 | Complete |
 | PUSH-03 | Phase 5 | Pending |
 | PUSH-04 | Phase 5 | Pending |
 | PUSH-05 | Phase 5 | Pending |
-| INTG-01 | Phase 5 | Pending |
+| INTG-01 | Phase 5 | Complete |
 | INTG-02 | Phase 5 | Pending |
 | INTG-03 | Phase 5 | Pending |
 | INTG-04 | Phase 5 | Pending |
