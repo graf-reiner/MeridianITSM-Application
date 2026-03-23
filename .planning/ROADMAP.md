@@ -118,14 +118,18 @@ Plans:
   3. A deep-link from a push notification opens the mobile app directly to the relevant ticket screen
   4. An external system can create and query tickets via API key authentication with rate limiting enforced
   5. A configured webhook fires within 30 seconds of a ticket event, uses HMAC-signed payloads, retries on failure with exponential backoff, and shows delivery history in the UI
-**Plans**: TBD
+**Plans**: 9 plans
 
 Plans:
-- [ ] 05-01: .NET inventory agent — cross-platform collectors, enrollment, heartbeat, inventory/CMDB payload submission, installers, local web UI
-- [ ] 05-02: CMDB agent reconciliation — precedence policy worker, conflict review queue, CMDB auto-discovery from agent data
-- [ ] 05-03: Mobile app — Expo SDK 55 React Native, navigation, ticket screens, KB browsing, camera attachments, offline caching, EAS Build
-- [ ] 05-04: Push notifications — FCM/APNs service, device token lifecycle, per-user preferences, deep link payloads, receipt processing job
-- [ ] 05-05: Integrations — API key CRUD, external REST endpoints, webhook CRUD with signed delivery and retry, delivery history, alert channels, scheduled exports
+- [ ] 05-01-PLAN.md — Backend foundation: schema migration (Webhook consecutiveFailures, User pushPreferences), queue definitions, agent/push/API-key API routes, test scaffolds
+- [ ] 05-02-PLAN.md — Webhook system: webhook CRUD with HMAC-signed delivery worker, custom backoff (1m/5m/30m/2h/12h), auto-disable at 50 failures, external API endpoints (tickets/assets/CIs)
+- [ ] 05-03-PLAN.md — Push notifications and alerts: Expo Push API worker via expo-server-sdk, notification dispatch extension with push channel, per-user preferences, alert channel CRUD (email/Slack/Teams)
+- [ ] 05-04-PLAN.md — .NET agent core: solution structure (10 projects), platform collectors (WMI/proc/system_profiler), models, config system, privacy filter, unit tests
+- [ ] 05-05-PLAN.md — .NET agent networking and deployment: HTTP client with Polly resilience, SQLite offline queue, background worker daemon, local web UI at 8787, installer files (MSI/deb/pkg)
+- [ ] 05-06-PLAN.md — Mobile scaffold: Expo SDK 55 project, React Navigation 5-tab bottom bar, auth flow (QR scan + manual entry + login), Zustand store, Axios client, EAS Build profiles
+- [ ] 05-07-PLAN.md — Mobile feature screens: dashboard (my work), ticket list/detail/create with photo comments, KB browsing with HTML rendering, asset list/detail, profile
+- [ ] 05-08-PLAN.md — Mobile push and offline: push notification registration with deep linking, offline write queue with optimistic updates, TanStack Query persistence, push preferences UI
+- [ ] 05-09-PLAN.md — Web settings pages: agent management with enrollment tokens, API key management, webhook management with delivery history, alert channel configuration
 
 ## Progress
 
@@ -138,4 +142,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 2. Billing and Owner Admin | 6/6 | Complete   | 2026-03-20 |
 | 3. Core ITSM | 12/12 | Complete   | 2026-03-21 |
 | 4. CMDB, Change Management, and Asset Portfolio | 8/8 | Complete   | 2026-03-22 |
-| 5. Agent, Mobile, and Integrations | 0/5 | Not started | - |
+| 5. Agent, Mobile, and Integrations | 0/9 | Not started | - |
