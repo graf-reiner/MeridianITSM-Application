@@ -178,12 +178,12 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **AGNT-04**: Periodic heartbeat to server
 - [x] **AGNT-05**: Inventory snapshot submission (OS, hardware, network, software, services)
 - [x] **AGNT-06**: CMDB CI payload submission for auto-discovery reconciliation
-- [ ] **AGNT-07**: Runs as Windows Service, Linux systemd daemon, or macOS launchd daemon
+- [x] **AGNT-07**: Runs as Windows Service, Linux systemd daemon, or macOS launchd daemon
 - [x] **AGNT-08**: Local web UI at 127.0.0.1:8787 (loopback only)
 - [x] **AGNT-09**: Privacy tiers: full, restricted (no PII), anonymized (hashed)
-- [ ] **AGNT-10**: Export plugins: HTTP(S) with retry/backoff, AWS S3, Azure Blob Storage
+- [x] **AGNT-10**: Export plugins: HTTP(S) with retry/backoff, AWS S3, Azure Blob Storage
 - [x] **AGNT-11**: Configuration via TOML/YAML/JSON + env vars + CLI flags
-- [ ] **AGNT-12**: Cross-platform installers: MSI/NSIS (Windows), .deb/.rpm (Linux), .pkg (macOS)
+- [x] **AGNT-12**: Cross-platform installers: MSI/NSIS (Windows), .deb/.rpm (Linux), .pkg (macOS)
 
 ### Mobile App
 
@@ -450,12 +450,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AGNT-04 | Phase 5 | Complete |
 | AGNT-05 | Phase 5 | Complete |
 | AGNT-06 | Phase 5 | Complete |
-| AGNT-07 | Phase 5 | Pending |
+| AGNT-07 | Phase 5 | Complete |
 | AGNT-08 | Phase 5 | Complete |
 | AGNT-09 | Phase 5 | Complete |
-| AGNT-10 | Phase 5 | Pending |
+| AGNT-10 | Phase 5 | Complete |
 | AGNT-11 | Phase 5 | Complete |
-| AGNT-12 | Phase 5 | Pending |
+| AGNT-12 | Phase 5 | Complete |
 | MOBL-01 | Phase 5 | Complete |
 | MOBL-02 | Phase 5 | Complete |
 | MOBL-03 | Phase 5 | Complete |
