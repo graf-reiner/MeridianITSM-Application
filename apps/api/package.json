@@ -26,6 +26,7 @@
     "@types/mailparser": "^3.4.6",
     "@types/nodemailer": "^7.0.11",
     "bullmq": "^5.71.0",
+    "expo-server-sdk": "^3.14.1",
     "croner": "^10.0.1",
     "csv-stringify": "^6.7.0",
     "date-fns": "^4.1.0",

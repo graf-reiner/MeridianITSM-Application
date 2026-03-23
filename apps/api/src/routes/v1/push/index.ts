@@ -83,4 +83,48 @@ export async function pushRoutes(app: FastifyInstance): Promise<void> {
 
     return reply.send({ ok: true });
   });
+
+  // ─── GET /api/v1/push/preferences ─────────────────────────────────────────────
+  // Returns user's push preferences. null means all notification types are enabled.
+  // { "TICKET_ASSIGNED": false, ... } means that specific type is disabled.
+
+  app.get('/api/v1/push/preferences', async (request, reply) => {
+    const user = request.user as { tenantId: string; userId: string };
+    const { tenantId, userId } = user;
+
+    const record = await prisma.user.findFirst({
+      where: { id: userId, tenantId },
+      select: { pushPreferences: true },
+    });
+
+    return reply.send({ preferences: record?.pushPreferences ?? null });
+  });
+
+  // ─── PATCH /api/v1/push/preferences ───────────────────────────────────────────
+  // Updates user's push preferences. Accepts partial map of type -> enabled boolean.
+  // e.g. { preferences: { "TICKET_ASSIGNED": true, "SLA_WARNING": false } }
+
+  app.patch('/api/v1/push/preferences', async (request, reply) => {
+    const user = request.user as { tenantId: string; userId: string };
+    const { tenantId, userId } = user;
+
+    const body = request.body as {
+      preferences?: Record<string, boolean>;
+    };
+
+    if (!body.preferences || typeof body.preferences !== 'object') {
+      return reply.code(400).send({ error: 'preferences must be an object' });
+    }
+
+    const updated = await prisma.user.updateMany({
+      where: { id: userId, tenantId },
+      data: { pushPreferences: body.preferences as never },
+    });
+
+    if (updated.count === 0) {
+      return reply.code(404).send({ error: 'User not found' });
+    }
+
+    return reply.send({ preferences: body.preferences });
+  });
 }

@@ -1,11 +1,9 @@
 import { Queue } from 'bullmq';
 import { prisma } from '@meridian/db';
 
-// ─── BullMQ Queue (email-notification) ───────────────────────────────────────
-// Uses the same host/port extraction pattern as apps/worker/src/queues/connection.ts
-
-const emailNotificationQueue = new Queue('email-notification', {
-  connection: {
+// ─── BullMQ Connection helper ─────────────────────────────────────────────────
+function makeRedisConnection() {
+  return {
     host: (() => {
       try {
         return new URL(process.env.REDIS_URL ?? 'redis://localhost:6379').hostname;
@@ -22,7 +20,22 @@ const emailNotificationQueue = new Queue('email-notification', {
     })(),
     maxRetriesPerRequest: null as null,
     enableReadyCheck: false,
-  },
+  };
+}
+
+// ─── BullMQ Queue (email-notification) ───────────────────────────────────────
+// Uses the same host/port extraction pattern as apps/worker/src/queues/connection.ts
+
+const emailNotificationQueue = new Queue('email-notification', {
+  connection: makeRedisConnection(),
+});
+
+// ─── BullMQ Queue (push-notification) ────────────────────────────────────────
+// Uses jobId-based deduplication (entityId) to collapse rapid-fire events on
+// the same ticket into a single push within a 60-second window.
+
+const pushNotificationQueue = new Queue('push-notification', {
+  connection: makeRedisConnection(),
 });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -39,6 +52,10 @@ export interface NotifyPayload {
     to: string;
     templateName: string;
     variables: Record<string, string>;
+  };
+  pushData?: {
+    screen: string; // 'ticket', 'change', etc.
+    entityId: string;
   };
 }
 
@@ -87,6 +104,35 @@ export async function notifyUser(payload: NotifyPayload): Promise<void> {
         variables: payload.emailData.variables,
       });
     }
+
+    // Enqueue push notification job if push data is provided
+    // Uses entityId-based jobId for deduplication within 60s window:
+    // rapid-fire events on the same entity collapse into a single push
+    if (payload.pushData) {
+      void (async () => {
+        try {
+          const jobId = `push:${payload.userId}:${payload.pushData!.entityId}`;
+          await pushNotificationQueue.add(
+            'send-push',
+            {
+              tenantId: payload.tenantId,
+              userId: payload.userId,
+              notificationType: payload.type,
+              title: payload.title,
+              body: payload.body,
+              screen: payload.pushData!.screen,
+              entityId: payload.pushData!.entityId,
+            },
+            {
+              jobId,
+              removeOnComplete: { age: 60 },
+            },
+          );
+        } catch (err) {
+          console.error('[notification.service] push enqueue failed:', err);
+        }
+      })();
+    }
   } catch (err) {
     console.error('[notification.service] notifyUser failed:', err);
   }
@@ -131,6 +177,7 @@ export async function notifyTicketCreated(
             },
           }
         : undefined,
+      pushData: { screen: 'ticket', entityId: ticket.id },
     });
   } catch (err) {
     console.error('[notification.service] notifyTicketCreated failed:', err);
@@ -174,6 +221,7 @@ export async function notifyTicketAssigned(
             },
           }
         : undefined,
+      pushData: { screen: 'ticket', entityId: ticket.id },
     });
   } catch (err) {
     console.error('[notification.service] notifyTicketAssigned failed:', err);
@@ -235,6 +283,7 @@ export async function notifyTicketCommented(
               },
             }
           : undefined,
+        pushData: { screen: 'ticket', entityId: ticket.id },
       });
     }
   } catch (err) {
@@ -278,6 +327,7 @@ export async function notifyTicketResolved(
             },
           }
         : undefined,
+      pushData: { screen: 'ticket', entityId: ticket.id },
     });
   } catch (err) {
     console.error('[notification.service] notifyTicketResolved failed:', err);
@@ -305,6 +355,7 @@ export async function notifyTicketUpdated(
       body: `Changed: ${changes.join(', ')}`,
       resourceId: ticket.id,
       resource: 'ticket',
+      pushData: { screen: 'ticket', entityId: ticket.id },
     });
   } catch (err) {
     console.error('[notification.service] notifyTicketUpdated failed:', err);
