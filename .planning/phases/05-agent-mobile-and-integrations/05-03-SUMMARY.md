@@ -82,7 +82,7 @@ Each task was committed atomically:
 1. **Task 1: Push notification worker with grouping + notification service extension** - `c04aaeb` (feat)
 2. **Task 2: Alert channel CRUD routes** - `8d07ca1` (feat)
 
-**Plan metadata:** `[tbd after docs commit]` (docs: complete plan)
+**Plan metadata:** `fd44343` (docs: complete plan)
 
 ## Files Created/Modified
 - `apps/worker/src/workers/push-notification.ts` - BullMQ worker via expo-server-sdk: preference check, grouping, stale token cleanup
