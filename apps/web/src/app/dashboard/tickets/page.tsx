@@ -218,7 +218,7 @@ export default function DashboardTicketsPage() {
               </tr>
             </thead>
             <tbody>
-              {tickets.map((ticket) => {
+              {tickets.map((ticket: any) => {
                 const statusStyle = getStatusStyle(ticket.status);
                 const priorityStyle = getPriorityStyle(ticket.priority);
                 return (

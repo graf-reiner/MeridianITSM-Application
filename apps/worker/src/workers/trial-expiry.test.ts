@@ -85,7 +85,7 @@ function makeSub(tenantId: string, trialEnd: Date) {
     tenantId,
     trialEnd,
     tenant: { name: `Tenant ${tenantId}` },
-  };
+  } as any;
 }
 
 // ─── Tests ───────────────────────────────────────────────────────────────────

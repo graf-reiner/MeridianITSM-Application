@@ -100,7 +100,7 @@ export function CreateTicketScreen({ navigation }: Props) {
     formState: { errors },
     watch,
   } = useForm<CreateTicketForm>({
-    resolver: zodResolver(createTicketSchema),
+    resolver: zodResolver(createTicketSchema as any),
     defaultValues: {
       title: '',
       description: '',

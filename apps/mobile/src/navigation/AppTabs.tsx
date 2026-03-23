@@ -1,6 +1,13 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialCommunityIconsRaw from 'react-native-vector-icons/MaterialCommunityIcons';
+
+// React 19 JSX component type workaround for react-native-vector-icons
+const MaterialCommunityIcons = MaterialCommunityIconsRaw as unknown as React.ComponentType<{
+  name: string;
+  size: number;
+  color: string;
+}>;
 import { AppTabsParamList } from './types';
 import { DashboardScreen } from '../screens/dashboard/DashboardScreen';
 import { TicketsStack } from './stacks/TicketsStack';

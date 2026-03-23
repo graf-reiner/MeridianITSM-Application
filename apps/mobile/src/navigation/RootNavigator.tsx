@@ -17,7 +17,7 @@ function AuthNavigator() {
         headerStyle: { backgroundColor: '#ffffff' },
         headerTintColor: '#111827',
         headerTitleStyle: { fontWeight: '600' },
-        headerBackTitleVisible: false,
+        headerBackButtonDisplayMode: 'minimal',
       }}
     >
       <AuthStack.Screen
