@@ -12,10 +12,11 @@ import { brandingSettingsRoutes } from './branding.js';
 import { logsSettingsRoutes } from './logs.js';
 import { agentSettingsRoutes } from './agents.js';
 import { apiKeySettingsRoutes } from './api-keys.js';
+import { alertChannelRoutes } from './alerts.js';
 
 /**
  * Settings routes registrar.
- * Aggregates all 11 settings sub-routes under a single plugin.
+ * Aggregates all settings sub-routes under a single plugin.
  * All sub-routes enforce RBAC via requirePermission().
  *
  * Covers:
@@ -32,6 +33,7 @@ import { apiKeySettingsRoutes } from './api-keys.js';
  *   SETT-12: System log viewer (SSE + recent)
  *   AGNT-08: Agent management (list agents, generate/revoke tokens, delete agents)
  *   INTG-01: API key management (create, list, revoke)
+ *   INTG-06: Alert channel management (email, Slack, Teams)
  */
 export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
   await fastify.register(usersSettingsRoutes);
@@ -47,4 +49,5 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
   await fastify.register(logsSettingsRoutes);
   await fastify.register(agentSettingsRoutes);
   await fastify.register(apiKeySettingsRoutes);
+  await fastify.register(alertChannelRoutes);
 }
