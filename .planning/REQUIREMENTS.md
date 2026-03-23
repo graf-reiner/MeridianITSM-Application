@@ -181,7 +181,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **AGNT-07**: Runs as Windows Service, Linux systemd daemon, or macOS launchd daemon
 - [x] **AGNT-08**: Local web UI at 127.0.0.1:8787 (loopback only)
 - [x] **AGNT-09**: Privacy tiers: full, restricted (no PII), anonymized (hashed)
-- [x] **AGNT-10**: Export plugins: HTTP(S) with retry/backoff, AWS S3, Azure Blob Storage
+- [x] **AGNT-10**: Export plugins: HTTP(S) with retry/backoff *(S3 and Azure Blob deferred to v2 per CONTEXT.md decision)*
 - [x] **AGNT-11**: Configuration via TOML/YAML/JSON + env vars + CLI flags
 - [x] **AGNT-12**: Cross-platform installers: MSI/NSIS (Windows), .deb/.rpm (Linux), .pkg (macOS)
 
