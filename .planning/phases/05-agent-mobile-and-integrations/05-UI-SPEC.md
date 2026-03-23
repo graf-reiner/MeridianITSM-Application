@@ -40,6 +40,20 @@ Phase 5 has three distinct surface areas, each with its own UI scope:
 
 ---
 
+## Focal Points
+
+One primary focal point per screen. The executor must ensure this element is visually dominant and receives the highest contrast treatment on the page.
+
+| Screen | Focal Point |
+|--------|-------------|
+| Agents page (`/dashboard/settings/agents`) | The agents table — specifically the ONLINE/OFFLINE/STALE status badge column — is the primary scan target; the "Generate Enrollment Token" CTA is the primary action anchor. |
+| API Keys page (`/dashboard/settings/api-keys`) | The "Create API Key" CTA button in the page header is the primary focal point; the table's prefix + scopes columns are the primary data-reading target. |
+| Webhooks page (`/dashboard/settings/webhooks`) | The webhook name + endpoint URL column in the table is the primary reading target; the enabled/disabled status badge per row is the primary status focal point. |
+| Alert Channels page (`/dashboard/settings/alerts`) | The channel card grid is the primary content focal point; each card's channel type icon (Slack/Teams/email) is the immediate visual identifier. |
+| Mobile DashboardScreen | The "My Work" summary card showing open ticket count is the primary focal point; it must render above the fold on all target device sizes (375px width minimum). |
+
+---
+
 ## Spacing Scale
 
 Declared values (all multiples of 4). Source: detected from existing pages (assets/page.tsx, settings/page.tsx, dashboard/layout.tsx).
@@ -66,25 +80,29 @@ Exceptions:
 
 ### Web App (new settings pages — must match existing dashboard pages)
 
+Two weights only: 400 (regular) and 600 (semibold). Weight 700 is not used on web — both heading roles use 600.
+
 | Role | Size | Weight | Line Height | Color | Source |
 |------|------|--------|-------------|-------|--------|
 | Body | 14px | 400 (regular) | 1.5 | `#374151` | Detected from assets/page.tsx, settings/page.tsx |
 | Label / small | 13px | 400 (regular) | 1.4 | `#6b7280` | Detected from table cells, muted text patterns |
-| Heading (page) | 22px | 700 (bold) | 1.2 | `#111827` | Detected from all page h1 elements |
+| Heading (page) | 22px | 600 (semibold) | 1.2 | `#111827` | Collapsed from 700 to 600 — 2-weight max rule |
 | Subheading / section title | 16px | 600 (semibold) | 1.3 | `#374151` | Detected from card section headings |
 
-Weights in use: **400 and 600/700 only** (regular + bold/semibold — two weights max).
+Weights in use: **400 and 600 only** (regular + semibold — two weights, no exceptions).
 
 ### Mobile App
+
+Two weights only: 400 (regular) and 700 (bold). React Native renders intermediate weights inconsistently across platforms.
 
 | Role | Size | Weight | Line Height | Notes |
 |------|------|--------|-------------|-------|
 | Body | 16px (sp) | 400 (regular) | 1.5 | Base reading size — larger than web for thumb ergonomics |
 | Label / meta | 13px (sp) | 400 (regular) | 1.4 | Ticket status, timestamps, secondary info |
 | Heading (screen) | 20px (sp) | 700 (bold) | 1.2 | Screen titles in stack headers |
-| Section header | 14px (sp) | 600 (semibold) | 1.3 | List section headers, card group titles |
+| Section header | 14px (sp) | 700 (bold) | 1.3 | List section headers, card group titles — collapsed from 600 to 700 for 2-weight max rule |
 
-Weights in use: **400 and 700 only** on mobile (React Native renders intermediate weights inconsistently across platforms).
+Weights in use: **400 and 700 only** on mobile (two weights, no exceptions).
 
 ### Agent Local Web UI (127.0.0.1:8787)
 
