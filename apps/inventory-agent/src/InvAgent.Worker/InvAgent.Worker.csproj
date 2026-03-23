@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\InvAgent.Models\InvAgent.Models.csproj" />
+    <ProjectReference Include="..\InvAgent.Config\InvAgent.Config.csproj" />
+    <ProjectReference Include="..\InvAgent.Collectors\InvAgent.Collectors.csproj" />
+    <ProjectReference Include="..\InvAgent.Http\InvAgent.Http.csproj" />
+    <ProjectReference Include="..\InvAgent.Queue\InvAgent.Queue.csproj" />
+    <ProjectReference Include="..\InvAgent.Privacy\InvAgent.Privacy.csproj" />
+  </ItemGroup>
+</Project>

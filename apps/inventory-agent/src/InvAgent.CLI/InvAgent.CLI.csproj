@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>InvAgent</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="9.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\InvAgent.Worker\InvAgent.Worker.csproj" />
+    <ProjectReference Include="..\InvAgent.Collectors\InvAgent.Collectors.csproj" />
+    <ProjectReference Include="..\InvAgent.Config\InvAgent.Config.csproj" />
+    <ProjectReference Include="..\InvAgent.Models\InvAgent.Models.csproj" />
+    <ProjectReference Include="..\InvAgent.Http\InvAgent.Http.csproj" />
+    <ProjectReference Include="..\InvAgent.Queue\InvAgent.Queue.csproj" />
+    <ProjectReference Include="..\InvAgent.Api\InvAgent.Api.csproj" />
+    <ProjectReference Include="..\InvAgent.Privacy\InvAgent.Privacy.csproj" />
+  </ItemGroup>
+</Project>

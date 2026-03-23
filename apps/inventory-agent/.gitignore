@@ -1,0 +1,22 @@
+# .NET build outputs
+**/bin/
+**/obj/
+
+# NuGet packages
+*.nupkg
+*.nuspec
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# VS / Rider project files
+.vs/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
