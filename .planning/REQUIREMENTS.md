@@ -172,17 +172,17 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Inventory Agent (.NET)
 
-- [ ] **AGNT-01**: .NET 8/9 cross-platform agent with modular collector architecture
-- [ ] **AGNT-02**: Platform-specific data collection: Windows (WMI), Linux (/proc, dpkg/rpm), macOS (IOKit, system_profiler)
+- [x] **AGNT-01**: .NET 8/9 cross-platform agent with modular collector architecture
+- [x] **AGNT-02**: Platform-specific data collection: Windows (WMI), Linux (/proc, dpkg/rpm), macOS (IOKit, system_profiler)
 - [ ] **AGNT-03**: Agent enrollment via token authentication
 - [ ] **AGNT-04**: Periodic heartbeat to server
 - [ ] **AGNT-05**: Inventory snapshot submission (OS, hardware, network, software, services)
 - [ ] **AGNT-06**: CMDB CI payload submission for auto-discovery reconciliation
 - [ ] **AGNT-07**: Runs as Windows Service, Linux systemd daemon, or macOS launchd daemon
 - [ ] **AGNT-08**: Local web UI at 127.0.0.1:8787 (loopback only)
-- [ ] **AGNT-09**: Privacy tiers: full, restricted (no PII), anonymized (hashed)
+- [x] **AGNT-09**: Privacy tiers: full, restricted (no PII), anonymized (hashed)
 - [ ] **AGNT-10**: Export plugins: HTTP(S) with retry/backoff, AWS S3, Azure Blob Storage
-- [ ] **AGNT-11**: Configuration via TOML/YAML/JSON + env vars + CLI flags
+- [x] **AGNT-11**: Configuration via TOML/YAML/JSON + env vars + CLI flags
 - [ ] **AGNT-12**: Cross-platform installers: MSI/NSIS (Windows), .deb/.rpm (Linux), .pkg (macOS)
 
 ### Mobile App
@@ -444,17 +444,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | APP-04 | Phase 4 | Complete |
 | APP-05 | Phase 4 | Complete |
 | APP-06 | Phase 4 | Complete |
-| AGNT-01 | Phase 5 | Pending |
-| AGNT-02 | Phase 5 | Pending |
+| AGNT-01 | Phase 5 | Complete |
+| AGNT-02 | Phase 5 | Complete |
 | AGNT-03 | Phase 5 | Pending |
 | AGNT-04 | Phase 5 | Pending |
 | AGNT-05 | Phase 5 | Pending |
 | AGNT-06 | Phase 5 | Pending |
 | AGNT-07 | Phase 5 | Pending |
 | AGNT-08 | Phase 5 | Pending |
-| AGNT-09 | Phase 5 | Pending |
+| AGNT-09 | Phase 5 | Complete |
 | AGNT-10 | Phase 5 | Pending |
-| AGNT-11 | Phase 5 | Pending |
+| AGNT-11 | Phase 5 | Complete |
 | AGNT-12 | Phase 5 | Pending |
 | MOBL-01 | Phase 5 | Complete |
 | MOBL-02 | Phase 5 | Complete |
