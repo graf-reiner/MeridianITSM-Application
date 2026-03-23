@@ -1,10 +1,19 @@
 using System.CommandLine;
+using System.Net;
 using System.Runtime.InteropServices;
+using InvAgent.Api;
 using InvAgent.Collectors;
 using InvAgent.Config;
+using InvAgent.Http;
+using InvAgent.Queue;
+using InvAgent.Worker;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Http.Resilience;
+using Polly;
+using Polly.Retry;
+using Polly.CircuitBreaker;
 
 var rootCommand = new RootCommand("Meridian Inventory Agent — endpoint discovery daemon");
 
@@ -66,18 +75,88 @@ rootCommand.SetHandler(async (context) =>
     else
         builder.Services.AddSingleton<ICollector, InvAgent.Collectors.MacOs.MacOsCollector>();
 
-    var host = builder.Build();
+    // Register HTTP client with Polly resilience (retry + circuit breaker)
+    var agentConfigSection = builder.Configuration.GetSection("AgentConfig");
+    var proxyUrl = agentConfigSection["HttpProxy"];
+
+    builder.Services.AddHttpClient<MeridianApiClient>(client =>
+    {
+        // Base address + auth header set in MeridianApiClient constructor via AgentConfig
+    })
+    .ConfigurePrimaryHttpMessageHandler(() =>
+    {
+        var handler = new HttpClientHandler();
+        if (!string.IsNullOrEmpty(proxyUrl))
+        {
+            handler.Proxy = new WebProxy(proxyUrl);
+            handler.UseProxy = true;
+        }
+        return handler;
+    })
+    .AddResilienceHandler("meridian-retry", pipeline =>
+    {
+        pipeline.AddRetry(new HttpRetryStrategyOptions
+        {
+            MaxRetryAttempts = 10,
+            Delay = TimeSpan.FromSeconds(30),
+            BackoffType = DelayBackoffType.Exponential,
+            UseJitter = true,
+        });
+        pipeline.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
+        {
+            SamplingDuration = TimeSpan.FromMinutes(2),
+            FailureRatio = 0.5,
+            MinimumThroughput = 3,
+        });
+    });
+
+    // Register offline queue
+    builder.Services.AddSingleton<LocalQueue>();
+
+    // Register daemon lifecycle support
+    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        builder.Services.AddWindowsService(options => options.ServiceName = "MeridianAgent");
+    builder.Services.AddSystemd();
 
     if (runOnce)
     {
-        // Run a single collection and exit
+        // Run a single collection and submit, then exit
+        var host = builder.Build();
         var collector = host.Services.GetRequiredService<ICollector>();
+        var api = host.Services.GetRequiredService<MeridianApiClient>();
+
         var payload = await collector.CollectAsync();
         Console.WriteLine($"Collection complete. Hostname: {payload.Hostname}, OS: {payload.Os.Name}, Software count: {payload.Software.Count}");
+
+        try
+        {
+            var snapshotId = await api.SubmitInventoryAsync(payload);
+            Console.WriteLine($"Inventory submitted. SnapshotId: {snapshotId}");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Submission failed: {ex.Message}");
+        }
+
+        host.Dispose();
         return;
     }
 
-    await host.RunAsync();
+    // Register background worker
+    builder.Services.AddHostedService<AgentWorker>();
+
+    var fullHost = builder.Build();
+
+    // Start local diagnostic web UI on a background thread (minimal API on 127.0.0.1:8787)
+    var agentConfig = fullHost.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<AgentConfig>>().Value;
+    _ = Task.Run(() => LocalWebApi.StartAsync(
+        agentConfig,
+        fullHost.Services,
+        fullHost.Services.GetRequiredService<LocalQueue>(),
+        fullHost.Services.GetRequiredService<ICollector>(),
+        fullHost.Services.GetRequiredService<MeridianApiClient>()));
+
+    await fullHost.RunAsync();
 });
 
 return await rootCommand.InvokeAsync(args);
