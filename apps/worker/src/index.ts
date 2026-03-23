@@ -7,12 +7,16 @@ import { stripeWebhookWorker } from './workers/stripe-webhook.js';
 import { usageSnapshotWorker } from './workers/usage-snapshot.js';
 import { trialExpiryWorker } from './workers/trial-expiry.js';
 import { scheduledReportWorker } from './workers/scheduled-report.js';
+import { webhookDeliveryWorker } from './workers/webhook-delivery.js';
+import { webhookCleanupWorker } from './workers/webhook-cleanup.js';
+import { pushNotificationWorker } from './workers/push-notification.js';
 import {
   usageSnapshotQueue,
   trialExpiryQueue,
   slaMonitorQueue,
   emailPollingQueue,
   scheduledReportQueue,
+  webhookCleanupQueue,
 } from './queues/definitions.js';
 
 const workers = [
@@ -24,6 +28,9 @@ const workers = [
   { name: 'usage-snapshot', worker: usageSnapshotWorker },
   { name: 'trial-expiry', worker: trialExpiryWorker },
   { name: 'scheduled-report', worker: scheduledReportWorker },
+  { name: 'webhook-delivery', worker: webhookDeliveryWorker },
+  { name: 'webhook-cleanup', worker: webhookCleanupWorker },
+  { name: 'push-notification', worker: pushNotificationWorker },
 ];
 
 // Schedule SLA breach check every minute
@@ -73,6 +80,16 @@ void scheduledReportQueue.add(
   {
     repeat: { pattern: '0 * * * *' },
     jobId: 'scheduled-report-repeatable', // Stable jobId prevents duplicate schedules on restart
+  },
+);
+
+// Schedule webhook delivery history cleanup daily at 3:00 AM UTC
+void webhookCleanupQueue.add(
+  'cleanup',
+  {},
+  {
+    repeat: { pattern: '0 3 * * *' },
+    jobId: 'webhook-cleanup-repeatable', // Stable jobId prevents duplicate schedules on restart
   },
 );
 

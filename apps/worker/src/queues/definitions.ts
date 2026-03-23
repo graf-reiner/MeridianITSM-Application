@@ -11,6 +11,7 @@ export const QUEUE_NAMES = {
   USAGE_SNAPSHOT: 'usage-snapshot',
   SCHEDULED_REPORT: 'scheduled-report',
   WEBHOOK_DELIVERY: 'webhook-delivery',
+  WEBHOOK_CLEANUP: 'webhook-cleanup',
   PUSH_NOTIFICATION: 'push-notification',
 } as const;
 
@@ -40,4 +41,5 @@ export const trialExpiryQueue = new Queue(QUEUE_NAMES.TRIAL_EXPIRY, { connection
 export const usageSnapshotQueue = new Queue(QUEUE_NAMES.USAGE_SNAPSHOT, { connection: bullmqConnection });
 export const scheduledReportQueue = new Queue(QUEUE_NAMES.SCHEDULED_REPORT, { connection: bullmqConnection });
 export const webhookDeliveryQueue = new Queue(QUEUE_NAMES.WEBHOOK_DELIVERY, { connection: bullmqConnection });
+export const webhookCleanupQueue = new Queue(QUEUE_NAMES.WEBHOOK_CLEANUP, { connection: bullmqConnection });
 export const pushNotificationQueue = new Queue(QUEUE_NAMES.PUSH_NOTIFICATION, { connection: bullmqConnection });
