@@ -9,6 +9,10 @@ import {
   mdiTag,
   mdiClockAlert,
   mdiEmail,
+  mdiDesktopClassic,
+  mdiKeyVariant,
+  mdiWebhook,
+  mdiBellRing,
 } from '@mdi/js';
 
 // ─── Settings Hub ─────────────────────────────────────────────────────────────
@@ -55,6 +59,34 @@ const SETTINGS_SECTIONS = [
     description: 'Configure inbound and outbound email',
     icon: mdiEmail,
     color: '#dc2626',
+  },
+  {
+    href: '/dashboard/settings/agents',
+    label: 'Agents',
+    description: 'Manage enrolled inventory agents and enrollment tokens',
+    icon: mdiDesktopClassic,
+    color: '#0891b2',
+  },
+  {
+    href: '/dashboard/settings/api-keys',
+    label: 'API Keys',
+    description: 'Create API keys for external integrations',
+    icon: mdiKeyVariant,
+    color: '#7c3aed',
+  },
+  {
+    href: '/dashboard/settings/webhooks',
+    label: 'Webhooks',
+    description: 'Receive real-time event notifications via webhooks',
+    icon: mdiWebhook,
+    color: '#059669',
+  },
+  {
+    href: '/dashboard/settings/alerts',
+    label: 'Alert Channels',
+    description: 'Send alerts to Slack, Teams, or email',
+    icon: mdiBellRing,
+    color: '#d97706',
   },
 ];
 
