@@ -20,7 +20,7 @@ created: 2026-03-23
 | **Framework** | vitest (API/worker), dotnet test (.NET agent), jest (mobile/Expo) |
 | **Config file** | `apps/api/vitest.config.ts`, `apps/inventory-agent/tests/`, `apps/mobile/jest.config.js` |
 | **Quick run command** | `pnpm --filter api vitest run --reporter=verbose` |
-| **Full suite command** | `pnpm --filter api vitest run && cd apps/inventory-agent && dotnet test && cd ../../apps/mobile && npx jest` |
+| **Full suite command** | `pnpm --filter api vitest run && pnpm --filter worker vitest run && cd apps/inventory-agent && dotnet test && cd ../../apps/mobile && npx jest` |
 | **Estimated runtime** | ~45 seconds |
 
 ---
@@ -38,29 +38,27 @@ created: 2026-03-23
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 05-01-01 | 01 | 1 | AGNT-01 | unit | `cd apps/inventory-agent && dotnet test --filter "Collectors"` | ❌ W0 | ⬜ pending |
-| 05-01-02 | 01 | 1 | AGNT-03 | integration | `cd apps/inventory-agent && dotnet test --filter "Enrollment"` | ❌ W0 | ⬜ pending |
-| 05-01-03 | 01 | 1 | AGNT-04,05 | unit | `cd apps/inventory-agent && dotnet test --filter "Heartbeat"` | ❌ W0 | ⬜ pending |
-| 05-02-01 | 02 | 1 | AGNT-06,CMDB-12 | unit | `pnpm --filter api vitest run tests/cmdb-reconciliation` | ❌ W0 | ⬜ pending |
-| 05-03-01 | 03 | 2 | MOBL-01,04 | unit | `cd apps/mobile && npx jest --testPathPattern="navigation"` | ❌ W0 | ⬜ pending |
-| 05-03-02 | 03 | 2 | MOBL-05 | unit | `cd apps/mobile && npx jest --testPathPattern="ticket"` | ❌ W0 | ⬜ pending |
-| 05-04-01 | 04 | 2 | PUSH-01,02 | unit | `pnpm --filter api vitest run tests/push-notification` | ❌ W0 | ⬜ pending |
-| 05-04-02 | 04 | 2 | PUSH-03,05 | unit | `pnpm --filter api vitest run tests/push-dispatch` | ❌ W0 | ⬜ pending |
-| 05-05-01 | 05 | 1 | INTG-01,02 | unit | `pnpm --filter api vitest run tests/external-api` | ❌ W0 | ⬜ pending |
-| 05-05-02 | 05 | 1 | INTG-03,04 | unit | `pnpm --filter api vitest run tests/webhook` | ❌ W0 | ⬜ pending |
+| 05-01-01 | 01 | 1 | AGNT-03,04,05,06 | unit | `pnpm --filter api vitest run src/routes/v1/agents/agents.test.ts --reporter=verbose` | W0 (Plan 01 Task 1) | pending |
+| 05-01-02 | 01 | 1 | AGNT-08 | unit | `pnpm --filter api vitest run src/routes/v1/agents/agents.test.ts --reporter=verbose` | W0 (Plan 01 Task 1) | pending |
+| 05-02-01 | 02 | 2 | INTG-02,03,04,05 | unit | `pnpm --filter worker vitest run src/workers/webhook-delivery.test.ts --reporter=verbose` | W0 (Plan 02 Task 2) | pending |
+| 05-02-02 | 02 | 2 | INTG-02 | unit | `pnpm --filter api vitest run src/routes/external/external.test.ts --reporter=verbose` | W0 (Plan 02 Task 2) | pending |
+| 05-03-01 | 03 | 2 | PUSH-01,03 | integration | `pnpm --filter worker vitest run src/workers/push-notification.test.ts --reporter=verbose` | W0 needed | pending |
+| 05-07-01 | 07 | 2 | MOBL-05 | type-check | `cd apps/mobile && npx tsc --noEmit` | N/A (type check) | pending |
+| 05-09-01 | 09 | 2 | AGNT-08,INTG-01 | type-check | `pnpm --filter web tsc --noEmit` | N/A (type check) | pending |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+*Status: pending / green / red / flaky*
 
 ---
 
 ## Wave 0 Requirements
 
-- [ ] `apps/api/src/services/__tests__/webhook.service.test.ts` — stubs for INTG-03, INTG-04, INTG-05
-- [ ] `apps/api/src/services/__tests__/push-notification.service.test.ts` — stubs for PUSH-01, PUSH-02, PUSH-03
-- [ ] `apps/api/src/routes/__tests__/external-api.test.ts` — stubs for INTG-01, INTG-02
-- [ ] `apps/api/src/services/__tests__/cmdb-reconciliation-agent.test.ts` — stubs for AGNT-06, CMDB-12
-- [ ] `apps/mobile/jest.config.js` — Jest config for mobile app
-- [ ] `apps/inventory-agent/tests/` — .NET test project scaffold
+- [x] `apps/api/src/routes/v1/agents/agents.test.ts` — stubs for AGNT-03, AGNT-04, AGNT-05, AGNT-06, AGNT-08 (created by Plan 01 Task 1)
+- [x] `apps/api/src/routes/v1/push/push.test.ts` — stubs for PUSH-02 (created by Plan 01 Task 1)
+- [x] `apps/api/src/routes/v1/settings/api-keys.test.ts` — stubs for INTG-01 (created by Plan 01 Task 1)
+- [x] `apps/worker/src/workers/webhook-delivery.test.ts` — stubs for INTG-03, INTG-04, INTG-05 (created by Plan 02 Task 2)
+- [x] `apps/api/src/routes/external/external.test.ts` — stubs for INTG-01, INTG-02 (created by Plan 02 Task 2)
+- [ ] `apps/mobile/jest.config.js` — Jest config for mobile app (created by Plan 06)
+- [ ] `apps/inventory-agent/tests/` — .NET test project scaffold (created by Plan 04/05)
 
 *If none: "Existing infrastructure covers all phase requirements."*
 
@@ -76,6 +74,7 @@ created: 2026-03-23
 | Agent enrollment on real OS | AGNT-03 | Requires cross-platform testing | Install agent on Windows/Linux/macOS, verify enrollment completes |
 | Agent runs as system daemon | AGNT-07 | Requires OS service manager | Install service, reboot, verify agent starts automatically |
 | MSI/deb/pkg installers | AGNT-12 | Requires platform-specific installer tools | Build each installer, install on target OS, verify agent runs |
+| Push grouping by ticket | PUSH-04 | Requires real push delivery to observe grouping | Trigger multiple events on same ticket, verify single push with count |
 
 ---
 
