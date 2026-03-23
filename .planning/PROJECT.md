@@ -32,12 +32,12 @@ An MSP can manage multiple customer organizations' IT service desks from a singl
 
 - [ ] Multi-tenant architecture with tenantId scoping on every query
 - [ ] Separate API server (Hono/Fastify) + Next.js frontend (architectural split)
-- [ ] Push notifications (FCM for Android, APNs for iOS)
+- [x] Push notifications (FCM for Android, APNs for iOS) *(Validated in Phase 05: agent-mobile-and-integrations)*
 - [ ] RBAC with system roles (admin, msp_admin, agent, end_user) and custom roles
-- [ ] React Native/Expo mobile app (iOS + Android)
-- [ ] .NET cross-platform inventory agent (Windows, Linux, macOS)
-- [ ] API key management for external integrations
-- [ ] Webhook system with delivery tracking
+- [x] React Native/Expo mobile app (iOS + Android) *(Validated in Phase 05: agent-mobile-and-integrations)*
+- [x] .NET cross-platform inventory agent (Windows, Linux, macOS) *(Validated in Phase 05: agent-mobile-and-integrations)*
+- [x] API key management for external integrations *(Validated in Phase 05: agent-mobile-and-integrations)*
+- [x] Webhook system with delivery tracking *(Validated in Phase 05: agent-mobile-and-integrations)*
 - [ ] MSP model: managing multiple CustomerOrganizations per tenant
 
 ### Out of Scope
@@ -80,4 +80,4 @@ The full specification is captured in `DOCUMENTATION .md` (1900 lines) covering 
 | Stack open to research | Let research identify best current options rather than locking to original choices | — Pending |
 
 ---
-*Last updated: 2026-03-22 — Phase 04 (cmdb-change-management-and-asset-portfolio) complete*
+*Last updated: 2026-03-23 — Phase 05 (agent-mobile-and-integrations) complete — all v1 phases done*
