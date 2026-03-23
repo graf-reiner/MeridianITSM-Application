@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 05-05-PLAN.md
-last_updated: "2026-03-23T21:19:06.341Z"
+stopped_at: Completed 05-07-PLAN.md
+last_updated: "2026-03-23T21:19:41.122Z"
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 42
-  completed_plans: 38
+  completed_plans: 39
 ---
 
 # Project State
@@ -84,6 +84,8 @@ Plan: 7 of 9
 | Phase 05-agent-mobile-and-integrations P01 | 22 | 2 tasks | 13 files |
 | Phase 05-agent-mobile-and-integrations P02 | 8 | 2 tasks | 10 files |
 | Phase 05-agent-mobile-and-integrations P05 | 9 | 2 tasks | 19 files |
+| Phase 05-agent-mobile-and-integrations PP07 | 10 | 2 tasks | 18 files |
+| Phase 05-agent-mobile-and-integrations P03 | 12 | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -197,6 +199,10 @@ Recent decisions affecting current work:
 - [Phase 05-05]: Microsoft.Extensions.Http.Resilience 9.3.0 requires all extension packages at 9.0.3 — pin transitive deps to resolve NU1605
 - [Phase 05-05]: InvAgent.Api uses Microsoft.NET.Sdk.Web with OutputType=Library — class library with ASP.NET Core types; wwwroot included automatically by SDK
 - [Phase 05-05]: LocalWebApi.StartAsync runs as background Task from Program.cs — web UI failure cannot crash the daemon
+- [Phase 05-07]: @hookform/resolvers added to apps/mobile/package.json — CreateTicketScreen zodResolver requires this package omitted from 05-06 scaffold
+- [Phase 05-07]: useAddComment uses FormData multipart/form-data for photo upload (not JSON) — binary blob attachment support
+- [Phase 05-07]: expo-image-manipulator compresses to 1920px JPEG 0.7, retries at 1280px/0.5 if still >2MB — enforces 2MB upload limit
+- [Phase 05-03]: BullMQ jobId dedup (push:userId:entityId) with 60s removeOnComplete chosen over Redis TTL key for push grouping
 
 ### Pending Todos
 
@@ -210,6 +216,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-23T21:18:53.820Z
-Stopped at: Completed 05-05-PLAN.md
+Last session: 2026-03-23T21:19:24.476Z
+Stopped at: Completed 05-07-PLAN.md
 Resume file: None
