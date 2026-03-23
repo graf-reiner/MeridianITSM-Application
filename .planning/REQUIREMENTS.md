@@ -193,11 +193,11 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **MOBL-04**: Bottom tab navigation: Dashboard, Tickets, Knowledge, Assets, Profile
 - [x] **MOBL-05**: Ticket list, detail, and create screens
 - [x] **MOBL-06**: Knowledge article browsing and viewing
-- [ ] **MOBL-07**: Push notifications via expo-notifications (FCM for Android, APNs for iOS)
-- [ ] **MOBL-08**: Device token registration and cleanup lifecycle
-- [ ] **MOBL-09**: Deep linking from push notifications to relevant entity screens
+- [x] **MOBL-07**: Push notifications via expo-notifications (FCM for Android, APNs for iOS)
+- [x] **MOBL-08**: Device token registration and cleanup lifecycle
+- [x] **MOBL-09**: Deep linking from push notifications to relevant entity screens
 - [x] **MOBL-10**: Camera/gallery access for ticket photo attachments
-- [ ] **MOBL-11**: Offline-friendly cached ticket list and KB articles via TanStack Query
+- [x] **MOBL-11**: Offline-friendly cached ticket list and KB articles via TanStack Query
 - [x] **MOBL-12**: EAS Build profiles for development, preview, and production
 
 ### Push Notifications
@@ -462,11 +462,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MOBL-04 | Phase 5 | Complete |
 | MOBL-05 | Phase 5 | Complete |
 | MOBL-06 | Phase 5 | Complete |
-| MOBL-07 | Phase 5 | Pending |
-| MOBL-08 | Phase 5 | Pending |
-| MOBL-09 | Phase 5 | Pending |
+| MOBL-07 | Phase 5 | Complete |
+| MOBL-08 | Phase 5 | Complete |
+| MOBL-09 | Phase 5 | Complete |
 | MOBL-10 | Phase 5 | Complete |
-| MOBL-11 | Phase 5 | Pending |
+| MOBL-11 | Phase 5 | Complete |
 | MOBL-12 | Phase 5 | Complete |
 | PUSH-01 | Phase 5 | Complete |
 | PUSH-02 | Phase 5 | Complete |

@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 05-09-PLAN.md
-last_updated: "2026-03-23T21:22:59.100Z"
+stopped_at: Completed 05-08-PLAN.md
+last_updated: "2026-03-23T21:40:29.476Z"
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 42
-  completed_plans: 40
+  completed_plans: 41
 ---
 
 # Project State
@@ -87,6 +87,7 @@ Plan: 7 of 9
 | Phase 05-agent-mobile-and-integrations PP07 | 10 | 2 tasks | 18 files |
 | Phase 05-agent-mobile-and-integrations P03 | 12 | 2 tasks | 8 files |
 | Phase 05-agent-mobile-and-integrations P09 | 13 | 2 tasks | 7 files |
+| Phase 05-agent-mobile-and-integrations P08 | 15 | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -207,6 +208,9 @@ Recent decisions affecting current work:
 - [Phase 05-03]: AlertConfiguration schema has no events field — plan context listed it but actual schema does not; implemented without events
 - [Phase 05-09]: qrcode package copied manually to apps/web/node_modules due to mobile app react@18.3.2 blocking pnpm workspace install; dijkstrajs/pngjs deps also copied from pnpm store
 - [Phase 05-09]: Alert channel form uses URL blur validation (not submit-only) for immediate Slack hooks.slack.com / Teams https:// feedback
+- [Phase 05-08]: expo-device added as explicit dependency — not installed by default despite being expo-notifications peer
+- [Phase 05-08]: Offline photos not queued in useAddComment offline path — FormData binary blobs not serializable to AsyncStorage JSON
+- [Phase 05-08]: useOfflineSync passes dequeue as argument to replayQueue to avoid stale Zustand closure in async for-loop
 
 ### Pending Todos
 
@@ -220,6 +224,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-23T21:22:59.087Z
-Stopped at: Completed 05-09-PLAN.md
+Last session: 2026-03-23T21:40:29.468Z
+Stopped at: Completed 05-08-PLAN.md
 Resume file: None
