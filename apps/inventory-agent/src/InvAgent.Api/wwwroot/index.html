@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meridian Agent — Diagnostics</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Meridian Inventory Agent</h1>
+    <span id="version-badge" class="badge"></span>
+  </header>
+
+  <main>
+    <!-- Connection Status -->
+    <section class="card" id="section-status">
+      <h2>Connection Status</h2>
+      <div class="status-row">
+        <span class="indicator" id="indicator-enrolled"></span>
+        <span id="status-enrolled">Checking enrollment...</span>
+      </div>
+      <div class="status-row">
+        <span class="indicator" id="indicator-connected"></span>
+        <span id="status-connected">Checking connectivity...</span>
+      </div>
+      <div class="status-detail">
+        <span id="status-server-url"></span>
+        <span id="status-latency"></span>
+      </div>
+      <div class="status-detail">
+        <span id="status-privacy-tier"></span>
+        <span id="status-platform"></span>
+      </div>
+      <div class="actions">
+        <button id="btn-network-test">Test Network</button>
+        <span id="network-test-result"></span>
+      </div>
+    </section>
+
+    <!-- Hardware Summary -->
+    <section class="card" id="section-hardware">
+      <h2>Hardware Summary</h2>
+      <div id="hardware-loading" class="loading-text">Loading hardware info...</div>
+      <table id="hardware-table" style="display:none">
+        <tbody id="hardware-tbody"></tbody>
+      </table>
+    </section>
+
+    <!-- Raw Collected Data -->
+    <section class="card" id="section-raw">
+      <h2>Raw Collected Data</h2>
+      <div class="actions">
+        <button id="btn-collect">Collect Now</button>
+        <span id="collect-result"></span>
+        <button id="btn-toggle-raw">Show Raw JSON</button>
+      </div>
+      <pre id="raw-json" style="display:none" class="raw-json"></pre>
+    </section>
+
+    <!-- Queue Status -->
+    <section class="card" id="section-queue">
+      <h2>Offline Queue</h2>
+      <div id="queue-info"></div>
+      <div id="queue-items-container" style="display:none">
+        <h3>Queued Items</h3>
+        <table>
+          <thead><tr><th>ID</th><th>Type</th><th>Created</th><th>Retries</th></tr></thead>
+          <tbody id="queue-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Configuration -->
+    <section class="card" id="section-config">
+      <h2>Configuration</h2>
+      <div id="config-display"></div>
+    </section>
+
+    <!-- Log Viewer -->
+    <section class="card" id="section-logs">
+      <h2>Agent Logs</h2>
+      <div id="log-path" class="status-detail"></div>
+      <div id="log-viewer" class="log-viewer">
+        <pre id="log-content">Loading logs...</pre>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

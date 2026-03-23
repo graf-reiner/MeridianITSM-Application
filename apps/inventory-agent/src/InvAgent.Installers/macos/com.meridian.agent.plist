@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd daemon plist for Meridian Inventory Agent
+  Installed to: /Library/LaunchDaemons/com.meridian.agent.plist
+  Loaded by postinstall script via launchctl load
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.meridian.agent</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/meridian-agent/meridian-agent</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/usr/local/meridian-agent</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>DOTNET_CLI_TELEMETRY_OPTOUT</key>
+    <string>1</string>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>ThrottleInterval</key>
+  <integer>30</integer>
+
+  <key>StandardOutPath</key>
+  <string>/var/log/meridian-agent/agent-stdout.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/var/log/meridian-agent/agent-stderr.log</string>
+</dict>
+</plist>

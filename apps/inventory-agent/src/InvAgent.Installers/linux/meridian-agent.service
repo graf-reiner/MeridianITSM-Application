@@ -1,0 +1,28 @@
+[Unit]
+Description=Meridian Inventory Agent
+Documentation=https://docs.meridianitesm.com/agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+ExecStart=/opt/meridian-agent/meridian-agent
+Restart=always
+RestartSec=30
+TimeoutStartSec=60
+TimeoutStopSec=30
+User=meridian-agent
+Group=meridian-agent
+WorkingDirectory=/opt/meridian-agent
+Environment=DOTNET_CLI_TELEMETRY_OPTOUT=1
+EnvironmentFile=-/etc/meridian-agent/environment
+
+# Harden the service
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/etc/meridian-agent /var/log/meridian-agent /var/lib/meridian-agent
+
+[Install]
+WantedBy=multi-user.target

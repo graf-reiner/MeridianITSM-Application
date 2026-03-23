@@ -1,0 +1,59 @@
+#!/bin/bash
+# postinstall script for Meridian Inventory Agent (.pkg)
+set -e
+
+INSTALL_DIR="/usr/local/meridian-agent"
+CONFIG_DIR="/etc/meridian-agent"
+CONFIG_FILE="${CONFIG_DIR}/config.json"
+PLIST_SRC="/Library/Application Support/Meridian/com.meridian.agent.plist"
+PLIST_DEST="/Library/LaunchDaemons/com.meridian.agent.plist"
+LOG_DIR="/var/log/meridian-agent"
+
+# Create directories
+mkdir -p "${INSTALL_DIR}"
+mkdir -p "${CONFIG_DIR}"
+mkdir -p "${LOG_DIR}"
+
+# The .pkg payload installer places the binary under the package payload directory.
+# Copy to final install location if needed.
+if [ -d "/tmp/meridian-agent-payload" ]; then
+    cp -r /tmp/meridian-agent-payload/. "${INSTALL_DIR}/"
+fi
+
+# Make binary executable
+chmod +x "${INSTALL_DIR}/meridian-agent" 2>/dev/null || true
+
+# Create default config if it doesn't exist
+if [ ! -f "${CONFIG_FILE}" ]; then
+    cat > "${CONFIG_FILE}" << 'DEFAULTCONFIG'
+{
+  "AgentConfig": {
+    "ServerUrl": "https://your-meridian-server.com",
+    "EnrollmentToken": "",
+    "PrivacyTier": "full",
+    "HeartbeatIntervalSeconds": 300,
+    "InventoryIntervalSeconds": 14400,
+    "LocalWebUiPort": 8787,
+    "LocalQueueMaxSizeMb": 100,
+    "LogLevel": "Information"
+  }
+}
+DEFAULTCONFIG
+fi
+
+# Set permissions
+chmod 640 "${CONFIG_FILE}"
+
+# Install launchd plist
+if [ -f "${PLIST_SRC}" ]; then
+    cp "${PLIST_SRC}" "${PLIST_DEST}"
+fi
+
+# Load the daemon
+if [ -f "${PLIST_DEST}" ]; then
+    chmod 644 "${PLIST_DEST}"
+    chown root:wheel "${PLIST_DEST}"
+    launchctl load "${PLIST_DEST}" 2>/dev/null || launchctl bootstrap system "${PLIST_DEST}" 2>/dev/null || true
+fi
+
+exit 0

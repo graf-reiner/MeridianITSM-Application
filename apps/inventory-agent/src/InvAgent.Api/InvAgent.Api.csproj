@@ -1,11 +1,16 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Library project — provides LocalWebApi class to InvAgent.CLI -->
+    <OutputType>Library</OutputType>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\InvAgent.Models\InvAgent.Models.csproj" />
     <ProjectReference Include="..\InvAgent.Config\InvAgent.Config.csproj" />
+    <ProjectReference Include="..\InvAgent.Http\InvAgent.Http.csproj" />
+    <ProjectReference Include="..\InvAgent.Queue\InvAgent.Queue.csproj" />
+    <ProjectReference Include="..\InvAgent.Collectors\InvAgent.Collectors.csproj" />
   </ItemGroup>
 </Project>
