@@ -211,10 +211,10 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Integrations
 
 - [x] **INTG-01**: API key CRUD with hashed keys, prefix identification, scoped permissions, rate limiting
-- [ ] **INTG-02**: External API endpoints (/api/v1/external/) for ticket access via API key
-- [ ] **INTG-03**: Webhook CRUD with event subscription, signed payloads, retry with backoff
-- [ ] **INTG-04**: Webhook delivery tracking with history viewer
-- [ ] **INTG-05**: Webhook test delivery endpoint
+- [x] **INTG-02**: External API endpoints (/api/v1/external/) for ticket access via API key
+- [x] **INTG-03**: Webhook CRUD with event subscription, signed payloads, retry with backoff
+- [x] **INTG-04**: Webhook delivery tracking with history viewer
+- [x] **INTG-05**: Webhook test delivery endpoint
 - [ ] **INTG-06**: Alert configuration (email, SMS, Slack, Teams channels)
 
 ### Reporting & Analytics
@@ -474,10 +474,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PUSH-04 | Phase 5 | Pending |
 | PUSH-05 | Phase 5 | Pending |
 | INTG-01 | Phase 5 | Complete |
-| INTG-02 | Phase 5 | Pending |
-| INTG-03 | Phase 5 | Pending |
-| INTG-04 | Phase 5 | Pending |
-| INTG-05 | Phase 5 | Pending |
+| INTG-02 | Phase 5 | Complete |
+| INTG-03 | Phase 5 | Complete |
+| INTG-04 | Phase 5 | Complete |
+| INTG-05 | Phase 5 | Complete |
 | INTG-06 | Phase 5 | Pending |
 
 **Coverage:**
