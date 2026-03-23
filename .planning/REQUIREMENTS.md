@@ -202,11 +202,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Push Notifications
 
-- [ ] **PUSH-01**: Push notification service supporting FCM (Android) and APNs (iOS)
+- [x] **PUSH-01**: Push notification service supporting FCM (Android) and APNs (iOS)
 - [x] **PUSH-02**: Device token registration endpoint with platform identification
-- [ ] **PUSH-03**: Push events: ticket assigned, status changed, new comment, SLA breach/warning, change approval, CAB invitation, @mention
-- [ ] **PUSH-04**: Per-user push notification preferences (configurable which events trigger push)
-- [ ] **PUSH-05**: Notification payload includes screen and entityId for deep linking
+- [x] **PUSH-03**: Push events: ticket assigned, status changed, new comment, SLA breach/warning, change approval, CAB invitation, @mention
+- [x] **PUSH-04**: Per-user push notification preferences (configurable which events trigger push)
+- [x] **PUSH-05**: Notification payload includes screen and entityId for deep linking
 
 ### Integrations
 
@@ -215,7 +215,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **INTG-03**: Webhook CRUD with event subscription, signed payloads, retry with backoff
 - [x] **INTG-04**: Webhook delivery tracking with history viewer
 - [x] **INTG-05**: Webhook test delivery endpoint
-- [ ] **INTG-06**: Alert configuration (email, SMS, Slack, Teams channels)
+- [x] **INTG-06**: Alert configuration (email, SMS, Slack, Teams channels)
 
 ### Reporting & Analytics
 
@@ -468,17 +468,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MOBL-10 | Phase 5 | Complete |
 | MOBL-11 | Phase 5 | Pending |
 | MOBL-12 | Phase 5 | Complete |
-| PUSH-01 | Phase 5 | Pending |
+| PUSH-01 | Phase 5 | Complete |
 | PUSH-02 | Phase 5 | Complete |
-| PUSH-03 | Phase 5 | Pending |
-| PUSH-04 | Phase 5 | Pending |
-| PUSH-05 | Phase 5 | Pending |
+| PUSH-03 | Phase 5 | Complete |
+| PUSH-04 | Phase 5 | Complete |
+| PUSH-05 | Phase 5 | Complete |
 | INTG-01 | Phase 5 | Complete |
 | INTG-02 | Phase 5 | Complete |
 | INTG-03 | Phase 5 | Complete |
 | INTG-04 | Phase 5 | Complete |
 | INTG-05 | Phase 5 | Complete |
-| INTG-06 | Phase 5 | Pending |
+| INTG-06 | Phase 5 | Complete |
 
 **Coverage:**
 - v1 requirements: 182 total (note: original header said 148; actual count from requirement definitions is 182)
