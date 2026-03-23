@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Phase 5 UI-SPEC approved
-last_updated: "2026-03-23T16:30:08.255Z"
+stopped_at: "Completed 05-06-PLAN.md (Mobile scaffold + auth)"
+last_updated: "2026-03-23T17:43:00Z"
 progress:
   total_phases: 5
   completed_phases: 3
-  total_plans: 33
-  completed_plans: 32
+  total_plans: 42
+  completed_plans: 33
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** An MSP can manage multiple customer organizations' IT service desks from a single platform with complete tenant isolation, paying via Stripe subscription, with the full ITSM lifecycle working end-to-end.
-**Current focus:** Phase 04 — cmdb-change-management-and-asset-portfolio
+**Current focus:** Phase 05 — agent-mobile-and-integrations
 
 ## Current Position
 
-Phase: 04 (cmdb-change-management-and-asset-portfolio) — EXECUTING
-Plan: 1 of 8
+Phase: 05 (agent-mobile-and-integrations) — EXECUTING
+Plan: 7 of 9
 
 ## Performance Metrics
 
@@ -79,6 +79,7 @@ Plan: 1 of 8
 | Phase 04-cmdb-change-management-and-asset-portfolio P05 | 5 | 2 tasks | 4 files |
 | Phase 04-cmdb-change-management-and-asset-portfolio P08 | 7 | 2 tasks | 4 files |
 | Phase 04-cmdb-change-management-and-asset-portfolio P07 | 35 | 2 tasks | 14 files |
+| Phase 05-agent-mobile-and-integrations P06 | 5 | 2 tasks | 25 files |
 
 ## Accumulated Context
 
@@ -177,6 +178,10 @@ Recent decisions affecting current work:
 - [Phase 04-07]: ReactFlow component separated to RelationshipMap.tsx with dynamic ssr:false -- ReactFlow uses browser APIs unavailable during SSR
 - [Phase 04-07]: mdiList does not exist in @mdi/js 7.x -- use mdiViewList for list-view toggle buttons
 - [Phase 04-07]: Impact analysis overlay rendered on same relationship map (not separate view) per CONTEXT.md locked decision -- colored border/glow on affected nodes, opacity 0.3 on unaffected
+- [Phase 05-06]: expo-barcode-scanner used for QR scanning; BarCodeScanner.requestPermissionsAsync() pattern for cross-platform camera permissions
+- [Phase 05-06]: Zustand Axios interceptor uses getState() not React hooks — interceptors run outside React component tree
+- [Phase 05-06]: Tab accent color from auth store tenantBranding.accentColor with #4f46e5 fallback — dynamic branding without re-mounting navigator
+- [Phase 05-06]: QR payload parsed as JSON {serverUrl, tenantId?} with raw URL string fallback — backward compatible with simple URL QR codes
 
 ### Pending Todos
 
@@ -190,6 +195,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-23T16:30:08.247Z
-Stopped at: Phase 5 UI-SPEC approved
-Resume file: .planning/phases/05-agent-mobile-and-integrations/05-UI-SPEC.md
+Last session: 2026-03-23T17:43:00Z
+Stopped at: Completed 05-06-PLAN.md (Mobile scaffold + auth)
+Resume file: .planning/phases/05-agent-mobile-and-integrations/05-07-PLAN.md

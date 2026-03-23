@@ -187,10 +187,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Mobile App
 
-- [ ] **MOBL-01**: React Native + Expo app targeting iOS 16+ and Android 10+
-- [ ] **MOBL-02**: QR code or manual FQDN entry for server URL configuration
-- [ ] **MOBL-03**: Secure token storage via expo-secure-store
-- [ ] **MOBL-04**: Bottom tab navigation: Dashboard, Tickets, Knowledge, Assets, Profile
+- [x] **MOBL-01**: React Native + Expo app targeting iOS 16+ and Android 10+
+- [x] **MOBL-02**: QR code or manual FQDN entry for server URL configuration
+- [x] **MOBL-03**: Secure token storage via expo-secure-store
+- [x] **MOBL-04**: Bottom tab navigation: Dashboard, Tickets, Knowledge, Assets, Profile
 - [ ] **MOBL-05**: Ticket list, detail, and create screens
 - [ ] **MOBL-06**: Knowledge article browsing and viewing
 - [ ] **MOBL-07**: Push notifications via expo-notifications (FCM for Android, APNs for iOS)
@@ -198,7 +198,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **MOBL-09**: Deep linking from push notifications to relevant entity screens
 - [ ] **MOBL-10**: Camera/gallery access for ticket photo attachments
 - [ ] **MOBL-11**: Offline-friendly cached ticket list and KB articles via TanStack Query
-- [ ] **MOBL-12**: EAS Build profiles for development, preview, and production
+- [x] **MOBL-12**: EAS Build profiles for development, preview, and production
 
 ### Push Notifications
 
@@ -456,10 +456,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AGNT-10 | Phase 5 | Pending |
 | AGNT-11 | Phase 5 | Pending |
 | AGNT-12 | Phase 5 | Pending |
-| MOBL-01 | Phase 5 | Pending |
-| MOBL-02 | Phase 5 | Pending |
-| MOBL-03 | Phase 5 | Pending |
-| MOBL-04 | Phase 5 | Pending |
+| MOBL-01 | Phase 5 | Complete |
+| MOBL-02 | Phase 5 | Complete |
+| MOBL-03 | Phase 5 | Complete |
+| MOBL-04 | Phase 5 | Complete |
 | MOBL-05 | Phase 5 | Pending |
 | MOBL-06 | Phase 5 | Pending |
 | MOBL-07 | Phase 5 | Pending |
@@ -467,7 +467,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MOBL-09 | Phase 5 | Pending |
 | MOBL-10 | Phase 5 | Pending |
 | MOBL-11 | Phase 5 | Pending |
-| MOBL-12 | Phase 5 | Pending |
+| MOBL-12 | Phase 5 | Complete |
 | PUSH-01 | Phase 5 | Pending |
 | PUSH-02 | Phase 5 | Pending |
 | PUSH-03 | Phase 5 | Pending |
