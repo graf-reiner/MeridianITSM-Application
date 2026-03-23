@@ -10,6 +10,8 @@ import { businessUnitsSettingsRoutes } from './business-units.js';
 import { contractsSettingsRoutes } from './contracts.js';
 import { brandingSettingsRoutes } from './branding.js';
 import { logsSettingsRoutes } from './logs.js';
+import { agentSettingsRoutes } from './agents.js';
+import { apiKeySettingsRoutes } from './api-keys.js';
 
 /**
  * Settings routes registrar.
@@ -28,6 +30,8 @@ import { logsSettingsRoutes } from './logs.js';
  *   SETT-10: Contract management
  *   SETT-11: Branding (logo upload, colors)
  *   SETT-12: System log viewer (SSE + recent)
+ *   AGNT-08: Agent management (list agents, generate/revoke tokens, delete agents)
+ *   INTG-01: API key management (create, list, revoke)
  */
 export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
   await fastify.register(usersSettingsRoutes);
@@ -41,4 +45,6 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
   await fastify.register(contractsSettingsRoutes);
   await fastify.register(brandingSettingsRoutes);
   await fastify.register(logsSettingsRoutes);
+  await fastify.register(agentSettingsRoutes);
+  await fastify.register(apiKeySettingsRoutes);
 }

@@ -135,6 +135,13 @@ export const cmdbReconciliationWorker = new Worker(
           console.log(`[cmdb-reconciliation] Created CI for agent ${agent.id} (host: ${hostname})`);
         } else {
           // ─── Diff and update existing CI ─────────────────────────────────
+          //
+          // Manual CMDB edits win — per user decision, agent data only fills empty fields
+          // or updates agent-sourced fields. If a field was last edited by a USER, skip
+          // the agent update for that field.
+          //
+          // Check changedBy = 'USER' on the most recent CmdbChangeRecord per field.
+          // If found, that field is "locked" by the human edit and agent data is ignored.
 
           const changedFields: Array<{
             fieldName: string;
@@ -142,23 +149,44 @@ export const cmdbReconciliationWorker = new Worker(
             newValue: string;
           }> = [];
 
-          const trackChange = (field: string, oldVal: unknown, newVal: unknown) => {
+          /**
+           * Track a candidate field change only if the field was not last modified by a user.
+           * Queries the most recent change record for this field on this CI.
+           */
+          const trackChangeIfNotUserLocked = async (
+            field: string,
+            oldVal: unknown,
+            newVal: unknown,
+          ) => {
             const oldStr = oldVal == null ? '' : String(oldVal);
             const newStr = newVal == null ? '' : String(newVal);
-            if (oldStr !== newStr) {
-              changedFields.push({ fieldName: field, oldValue: oldStr, newValue: newStr });
+            if (oldStr === newStr) return; // No change — nothing to do
+
+            // Check if the most recent change to this field was by a USER (manual edit)
+            const lastChange = await prisma.cmdbChangeRecord.findFirst({
+              where: { ciId: existingCi.id, fieldName: field },
+              orderBy: { createdAt: 'desc' },
+              select: { changedBy: true },
+            });
+
+            if (lastChange?.changedBy === 'USER') {
+              // Manual CMDB edits win — skip agent update for this field
+              console.log(
+                `[cmdb-reconciliation] Skipping field '${field}' on CI ${existingCi.id} — last changed by USER (manual edit wins)`,
+              );
+              return;
             }
+
+            changedFields.push({ fieldName: field, oldValue: oldStr, newValue: newStr });
           };
 
-          // Compare fields
-          if (existingCi.name !== hostname) trackChange('name', existingCi.name, hostname);
+          // Compare fields — each check respects the manual-edit-wins rule
+          await trackChangeIfNotUserLocked('name', existingCi.name, hostname);
 
           const existingAttrs = (existingCi.attributesJson ?? {}) as Record<string, unknown>;
           const newAttrsStr = JSON.stringify(newAttributesJson);
           const oldAttrsStr = JSON.stringify(existingAttrs);
-          if (oldAttrsStr !== newAttrsStr) {
-            trackChange('attributesJson', oldAttrsStr, newAttrsStr);
-          }
+          await trackChangeIfNotUserLocked('attributesJson', oldAttrsStr, newAttrsStr);
 
           if (changedFields.length > 0) {
             await prisma.$transaction(async (tx) => {
@@ -176,12 +204,16 @@ export const cmdbReconciliationWorker = new Worker(
                 })),
               });
 
-              // Build update object
+              // Build update object — only fields that passed the manual-edit-wins check
               const updateData: Record<string, unknown> = {
                 lastSeenAt: new Date(),
-                attributesJson: newAttributesJson as never,
               };
-              if (existingCi.name !== hostname) updateData['name'] = hostname;
+              if (changedFields.some((f) => f.fieldName === 'name')) {
+                updateData['name'] = hostname;
+              }
+              if (changedFields.some((f) => f.fieldName === 'attributesJson')) {
+                updateData['attributesJson'] = newAttributesJson as never;
+              }
 
               await tx.cmdbConfigurationItem.update({
                 where: { id: existingCi.id },
@@ -194,7 +226,7 @@ export const cmdbReconciliationWorker = new Worker(
               `[cmdb-reconciliation] Updated CI ${existingCi.id} with ${changedFields.length} field changes`,
             );
           } else {
-            // No field changes — just bump lastSeenAt
+            // No field changes (or all changes blocked by manual-edit-wins) — just bump lastSeenAt
             await prisma.cmdbConfigurationItem.update({
               where: { id: existingCi.id },
               data: { lastSeenAt: new Date() },

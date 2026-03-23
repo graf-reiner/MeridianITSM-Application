@@ -14,6 +14,7 @@ import { authRoutes } from './routes/auth/index.js';
 import { billingRoutes, authenticatedBillingRoutes } from './routes/billing/index.js';
 import { v1Routes } from './routes/v1/index.js';
 import { externalRoutes } from './routes/external/index.js';
+import { agentRoutes } from './routes/v1/agents/index.js';
 
 export async function buildApp() {
   const app = Fastify({ logger: true });
@@ -54,6 +55,11 @@ export async function buildApp() {
 
     await externalApp.register(externalRoutes);
   });
+
+  // Agent routes — separate scope using AgentKey auth (not ApiKey or JWT).
+  // Enrollment uses token-based auth; heartbeat/inventory/cmdb-sync use AgentKey header.
+  // Each route handler calls resolveAgent() to authenticate.
+  await app.register(agentRoutes);
 
   // Graceful shutdown: close Redis on app close
   app.addHook('onClose', async () => {

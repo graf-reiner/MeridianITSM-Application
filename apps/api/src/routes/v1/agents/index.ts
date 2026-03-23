@@ -1,0 +1,269 @@
+import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { createHash, randomBytes } from 'node:crypto';
+import { prisma } from '@meridian/db';
+import { Queue } from 'bullmq';
+
+// Queue names mirrored locally to avoid cross-app imports from apps/worker — follows mapStripeStatus precedent
+const CMDB_RECONCILIATION_QUEUE = 'cmdb-reconciliation';
+
+// BullMQ connection config — same pattern as apps/api/src/routes/billing/webhook.ts
+const bullmqConnection = {
+  host: (() => {
+    try {
+      return new URL(process.env.REDIS_URL ?? 'redis://localhost:6379').hostname;
+    } catch {
+      return 'localhost';
+    }
+  })(),
+  port: (() => {
+    try {
+      return Number(new URL(process.env.REDIS_URL ?? 'redis://localhost:6379').port) || 6379;
+    } catch {
+      return 6379;
+    }
+  })(),
+  maxRetriesPerRequest: null as null,
+};
+
+// Create queue instance for enqueuing CMDB reconciliation jobs
+const cmdbReconciliationQueue = new Queue(CMDB_RECONCILIATION_QUEUE, {
+  connection: bullmqConnection,
+});
+
+/**
+ * Agent External Routes (AGNT-03, AGNT-04, AGNT-05, AGNT-06)
+ *
+ * These routes are mounted in the external scope (agent key authentication).
+ * Enrollment uses a token-based flow; heartbeat/inventory/cmdb-sync use AgentKey auth.
+ *
+ * POST /api/v1/agents/enroll      — Token enrollment, returns agentKey
+ * POST /api/v1/agents/heartbeat   — Heartbeat + optional metrics (AgentKey auth)
+ * POST /api/v1/agents/inventory   — Inventory snapshot submission (AgentKey auth)
+ * POST /api/v1/agents/cmdb-sync   — CMDB CI payload, enqueues reconciliation (AgentKey auth)
+ */
+
+/**
+ * Resolve agent from Authorization: AgentKey <key> header.
+ * Returns the agent record or sends 401 and returns null.
+ * Agent must not be DEREGISTERED (suspended/offline agents can still heartbeat).
+ */
+async function resolveAgent(request: FastifyRequest, reply: FastifyReply) {
+  const authHeader = request.headers['authorization'];
+  const headerStr = Array.isArray(authHeader) ? authHeader[0] : authHeader;
+
+  if (!headerStr?.startsWith('AgentKey ')) {
+    await reply.code(401).send({ error: 'AgentKey required' });
+    return null;
+  }
+
+  const agentKey = headerStr.slice(9).trim();
+  if (!agentKey) {
+    await reply.code(401).send({ error: 'AgentKey required' });
+    return null;
+  }
+
+  const agent = await prisma.agent.findFirst({
+    where: { agentKey },
+  });
+
+  if (!agent || agent.status === ('DEREGISTERED' as never)) {
+    await reply.code(401).send({ error: 'Invalid or inactive agent key' });
+    return null;
+  }
+
+  return agent;
+}
+
+export async function agentRoutes(app: FastifyInstance): Promise<void> {
+  // ─── POST /api/v1/agents/enroll ───────────────────────────────────────────────
+  // Public within external scope — validates enrollment token, creates Agent record.
+
+  app.post('/api/v1/agents/enroll', async (request, reply) => {
+    const body = request.body as {
+      token?: string;
+      hostname?: string;
+      platform?: string;
+      agentVersion?: string;
+    };
+
+    const { token, hostname, platform, agentVersion } = body;
+
+    if (!token || !hostname || !platform) {
+      return reply.code(400).send({ error: 'token, hostname, and platform are required' });
+    }
+
+    // Hash the submitted token for lookup
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const now = new Date();
+
+    // Find an active, non-expired enrollment token
+    const enrollmentToken = await prisma.agentEnrollmentToken.findFirst({
+      where: {
+        tokenHash,
+        isActive: true,
+        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+      },
+    });
+
+    if (!enrollmentToken) {
+      return reply.code(401).send({ error: 'Invalid or expired enrollment token' });
+    }
+
+    // Check enrollment limit
+    if (enrollmentToken.enrollCount >= enrollmentToken.maxEnrollments) {
+      return reply.code(409).send({ error: 'Enrollment token max usage reached' });
+    }
+
+    // Validate platform enum
+    const validPlatforms = ['WINDOWS', 'LINUX', 'MACOS'] as const;
+    const platformUpper = platform.toUpperCase() as (typeof validPlatforms)[number];
+    if (!validPlatforms.includes(platformUpper)) {
+      return reply.code(400).send({
+        error: `Invalid platform. Must be one of: ${validPlatforms.join(', ')}`,
+      });
+    }
+
+    // Generate a unique agent key
+    const agentKey = randomBytes(32).toString('hex');
+
+    // Transactionally create the agent and increment enrollCount
+    const agent = await prisma.$transaction(async (tx) => {
+      const newAgent = await tx.agent.create({
+        data: {
+          tenantId: enrollmentToken.tenantId,
+          agentKey,
+          hostname,
+          platform: platformUpper,
+          agentVersion: agentVersion ?? null,
+          status: 'ACTIVE',
+          enrolledAt: now,
+          lastHeartbeatAt: now,
+        },
+      });
+
+      await tx.agentEnrollmentToken.update({
+        where: { id: enrollmentToken.id },
+        data: { enrollCount: { increment: 1 } },
+      });
+
+      return newAgent;
+    });
+
+    return reply.code(201).send({ agentKey, agentId: agent.id });
+  });
+
+  // ─── POST /api/v1/agents/heartbeat ────────────────────────────────────────────
+  // AgentKey auth — updates lastHeartbeatAt and optionally records metrics.
+
+  app.post('/api/v1/agents/heartbeat', async (request, reply) => {
+    const agent = await resolveAgent(request, reply);
+    if (!agent) return;
+
+    const body = (request.body ?? {}) as {
+      agentVersion?: string;
+      metrics?: Record<string, unknown>;
+    };
+
+    // Update lastHeartbeatAt and optionally agentVersion
+    await prisma.agent.update({
+      where: { id: agent.id },
+      data: {
+        lastHeartbeatAt: new Date(),
+        status: 'ACTIVE',
+        ...(body.agentVersion ? { agentVersion: body.agentVersion } : {}),
+      },
+    });
+
+    // If metrics provided, create a MetricSample for each metric
+    if (body.metrics && typeof body.metrics === 'object') {
+      const metricEntries = Object.entries(body.metrics);
+      if (metricEntries.length > 0) {
+        await prisma.metricSample.createMany({
+          data: metricEntries.map(([key, value]) => ({
+            tenantId: agent.tenantId,
+            agentId: agent.id,
+            metricType: 'heartbeat',
+            metricName: key,
+            value: typeof value === 'number' ? value : 0,
+            timestamp: new Date(),
+          })),
+        });
+      }
+    }
+
+    return reply.code(200).send({ ok: true });
+  });
+
+  // ─── POST /api/v1/agents/inventory ────────────────────────────────────────────
+  // AgentKey auth — stores inventory snapshot tenant-scoped.
+
+  app.post('/api/v1/agents/inventory', async (request, reply) => {
+    const agent = await resolveAgent(request, reply);
+    if (!agent) return;
+
+    const body = request.body as {
+      os?: string;
+      hostname?: string;
+      hardware?: Record<string, unknown>;
+      software?: unknown[];
+      services?: unknown[];
+      processes?: unknown[];
+      network?: unknown[];
+      localUsers?: unknown[];
+      [key: string]: unknown;
+    };
+
+    // Create the InventorySnapshot with the full raw payload
+    const snapshot = await prisma.inventorySnapshot.create({
+      data: {
+        tenantId: agent.tenantId,
+        agentId: agent.id,
+        hostname: body.hostname ?? agent.hostname,
+        operatingSystem: body.os ?? null,
+        osVersion: (body.hardware as Record<string, unknown> | undefined)?.['osVersion'] as
+          | string
+          | null
+          | undefined,
+        cpuModel: (body.hardware as Record<string, unknown> | undefined)?.['cpuModel'] as
+          | string
+          | null
+          | undefined,
+        cpuCores: (body.hardware as Record<string, unknown> | undefined)?.['cpuCores'] as
+          | number
+          | null
+          | undefined,
+        ramGb: (body.hardware as Record<string, unknown> | undefined)?.['ramGb'] as
+          | number
+          | null
+          | undefined,
+        disks: (body.hardware as Record<string, unknown> | undefined)?.['disks'] as never,
+        networkInterfaces: body.network as never,
+        installedSoftware: body.software as never,
+        localUsers: body.localUsers as never,
+        rawData: body as never,
+        collectedAt: new Date(),
+      },
+    });
+
+    return reply.code(201).send({ snapshotId: snapshot.id });
+  });
+
+  // ─── POST /api/v1/agents/cmdb-sync ────────────────────────────────────────────
+  // AgentKey auth — accepts CI payload and enqueues reconciliation job.
+
+  app.post('/api/v1/agents/cmdb-sync', async (request, reply) => {
+    const agent = await resolveAgent(request, reply);
+    if (!agent) return;
+
+    const body = request.body as Record<string, unknown>;
+
+    // Enqueue CMDB reconciliation job with agent context
+    await cmdbReconciliationQueue.add('agent-sync', {
+      tenantId: agent.tenantId,
+      agentId: agent.id,
+      payload: body,
+    });
+
+    return reply.code(202).send({ status: 'queued' });
+  });
+}

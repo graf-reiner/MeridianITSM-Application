@@ -9,6 +9,7 @@ import { dashboardRoutes } from './dashboard/index.js';
 import { emailAccountRoutes } from './email-accounts/index.js';
 import { knowledgeRoutes } from './knowledge/index.js';
 import { notificationRoutes } from './notifications/index.js';
+import { pushRoutes } from './push/index.js';
 import { reportRoutes } from './reports/index.js';
 import { settingsRoutes } from './settings/index.js';
 import { slaRoutes } from './sla/index.js';
@@ -67,4 +68,7 @@ export async function v1Routes(app: FastifyInstance): Promise<void> {
 
   // Application portfolio — CRUD, dependencies, documents, asset relationships
   await app.register(applicationRoutes);
+
+  // Push notification device token registration (PUSH-02)
+  await app.register(pushRoutes);
 }
