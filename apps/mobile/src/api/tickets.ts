@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
+import { useOfflineStore } from '../stores/offline.store';
 
 export interface Ticket {
   id: string;
@@ -26,6 +27,7 @@ export interface TicketComment {
   author: { id: string; name: string; email: string };
   attachments?: Array<{ id: string; url: string; filename: string }>;
   createdAt: string;
+  _optimistic?: boolean;
 }
 
 export interface TicketsResponse {
@@ -53,6 +55,7 @@ export function useTicket(id: string) {
 
 export function useCreateTicket() {
   const qc = useQueryClient();
+  const { isOnline, enqueue } = useOfflineStore();
   return useMutation({
     mutationFn: (data: {
       title: string;
@@ -60,7 +63,14 @@ export function useCreateTicket() {
       type: string;
       priority: string;
       categoryId?: string;
-    }) => apiClient.post<Ticket>('/api/v1/tickets', data).then((r) => r.data),
+    }) => {
+      if (!isOnline) {
+        // Queue for offline replay
+        enqueue({ type: 'create_ticket', payload: data });
+        return Promise.resolve({} as Ticket);
+      }
+      return apiClient.post<Ticket>('/api/v1/tickets', data).then((r) => r.data);
+    },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['tickets'] });
     },
@@ -69,6 +79,7 @@ export function useCreateTicket() {
 
 export function useUpdateTicket() {
   const qc = useQueryClient();
+  const { isOnline, enqueue } = useOfflineStore();
   return useMutation({
     mutationFn: ({
       id,
@@ -76,7 +87,31 @@ export function useUpdateTicket() {
     }: {
       id: string;
       data: Partial<{ status: string; priority: string; assignedToId: string }>;
-    }) => apiClient.patch<Ticket>(`/api/v1/tickets/${id}`, data).then((r) => r.data),
+    }) => {
+      if (!isOnline) {
+        // Queue for offline replay
+        enqueue({ type: 'update_status', ticketId: id, payload: data });
+        return Promise.resolve({} as Ticket);
+      }
+      return apiClient.patch<Ticket>(`/api/v1/tickets/${id}`, data).then((r) => r.data);
+    },
+    onMutate: async ({ id, data }) => {
+      // Optimistic update: cancel outgoing queries and snapshot
+      await qc.cancelQueries({ queryKey: ['ticket', id] });
+      const previousTicket = qc.getQueryData<Ticket>(['ticket', id]);
+      // Apply optimistic update
+      qc.setQueryData<Ticket>(['ticket', id], (old) => {
+        if (!old) return old;
+        return { ...old, ...data, updatedAt: new Date().toISOString() };
+      });
+      return { previousTicket };
+    },
+    onError: (_err, variables, context) => {
+      // Revert on error if not offline (offline path already queued)
+      if (context?.previousTicket) {
+        qc.setQueryData(['ticket', variables.id], context.previousTicket);
+      }
+    },
     onSuccess: (_data, variables) => {
       void qc.invalidateQueries({ queryKey: ['ticket', variables.id] });
       void qc.invalidateQueries({ queryKey: ['tickets'] });
@@ -86,6 +121,7 @@ export function useUpdateTicket() {
 
 export function useAddComment() {
   const qc = useQueryClient();
+  const { isOnline, enqueue } = useOfflineStore();
   return useMutation({
     mutationFn: async ({
       ticketId,
@@ -98,6 +134,12 @@ export function useAddComment() {
       visibility: 'PUBLIC' | 'INTERNAL';
       photos?: Array<{ uri: string; type: string; name: string }>;
     }) => {
+      if (!isOnline) {
+        // Queue for offline replay (photos not supported in offline mode)
+        enqueue({ type: 'add_comment', ticketId, payload: { body, visibility } });
+        return {} as TicketComment;
+      }
+
       // Use FormData for multipart/form-data to support photo attachments
       const formData = new FormData();
       formData.append('body', body);
@@ -116,6 +158,36 @@ export function useAddComment() {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
         .then((r) => r.data);
+    },
+    onMutate: async ({ ticketId, body, visibility }) => {
+      // Optimistic update: add comment to cache immediately
+      await qc.cancelQueries({ queryKey: ['ticket', ticketId] });
+      const previousTicket = qc.getQueryData<Ticket>(['ticket', ticketId]);
+
+      const optimisticComment: TicketComment = {
+        id: `optimistic-${Date.now()}`,
+        body,
+        visibility,
+        author: { id: 'me', name: 'You', email: '' },
+        createdAt: new Date().toISOString(),
+        _optimistic: true,
+      };
+
+      qc.setQueryData<Ticket>(['ticket', ticketId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          comments: [...(old.comments ?? []), optimisticComment],
+        };
+      });
+
+      return { previousTicket };
+    },
+    onError: (_err, variables, context) => {
+      // Revert optimistic update on error
+      if (context?.previousTicket) {
+        qc.setQueryData(['ticket', variables.ticketId], context.previousTicket);
+      }
     },
     onSuccess: (_data, variables) => {
       void qc.invalidateQueries({ queryKey: ['ticket', variables.ticketId] });
