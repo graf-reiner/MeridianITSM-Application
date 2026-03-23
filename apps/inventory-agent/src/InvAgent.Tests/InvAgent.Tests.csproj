@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="FluentAssertions" Version="6.12.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\InvAgent.Models\InvAgent.Models.csproj" />
+    <ProjectReference Include="..\InvAgent.Collectors\InvAgent.Collectors.csproj" />
+    <ProjectReference Include="..\InvAgent.Privacy\InvAgent.Privacy.csproj" />
+    <ProjectReference Include="..\InvAgent.Config\InvAgent.Config.csproj" />
+  </ItemGroup>
+</Project>
