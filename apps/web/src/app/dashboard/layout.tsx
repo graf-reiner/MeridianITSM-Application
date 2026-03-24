@@ -16,6 +16,11 @@ import {
   mdiCog,
   mdiMenu,
   mdiClose,
+  mdiPackageVariantClosed,
+  mdiServerNetwork,
+  mdiSwapHorizontal,
+  mdiAccountGroup,
+  mdiApplicationBracketsOutline,
 } from '@mdi/js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -37,6 +42,11 @@ const queryClient = new QueryClient({
 const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: mdiViewDashboard },
   { href: '/dashboard/tickets', label: 'Tickets', icon: mdiTicketOutline },
+  { href: '/dashboard/assets', label: 'Assets', icon: mdiPackageVariantClosed },
+  { href: '/dashboard/cmdb', label: 'CMDB', icon: mdiServerNetwork },
+  { href: '/dashboard/changes', label: 'Changes', icon: mdiSwapHorizontal },
+  { href: '/dashboard/cab', label: 'CAB Meetings', icon: mdiAccountGroup },
+  { href: '/dashboard/applications', label: 'Applications', icon: mdiApplicationBracketsOutline },
   { href: '/dashboard/knowledge', label: 'Knowledge Base', icon: mdiBookOpenVariant },
   { href: '/dashboard/reports', label: 'Reports', icon: mdiChartBar },
   { href: '/dashboard/settings', label: 'Settings', icon: mdiCog },

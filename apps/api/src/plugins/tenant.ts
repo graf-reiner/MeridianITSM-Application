@@ -42,10 +42,14 @@ export async function tenantPreHandler(
     return reply.code(401).send({ error: 'User not found' });
   }
 
-  // Extract role slugs from the user's assigned roles
-  const roles = user.userRoles.map((ur) => ur.role.slug);
+  // Extract role slugs and flatten all permission arrays from assigned roles
+  const roleSlugs = user.userRoles.map((ur) => ur.role.slug);
+  const permissions = user.userRoles.flatMap((ur) => {
+    const perms = ur.role.permissions;
+    return Array.isArray(perms) ? (perms as string[]) : [];
+  });
 
   request.tenant = tenant;
   request.tenantId = tenantId;
-  request.currentUser = { ...user, roles };
+  request.currentUser = { ...user, roles: permissions, roleSlugs };
 }

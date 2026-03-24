@@ -4,7 +4,7 @@ declare module 'fastify' {
   interface FastifyRequest {
     tenant: Tenant;
     tenantId: string;
-    currentUser: User & { roles: string[] };
+    currentUser: User & { roles: string[]; roleSlugs: string[] };
     apiKey?: { id: string; scopes: string[]; tenantId: string };
   }
 }
