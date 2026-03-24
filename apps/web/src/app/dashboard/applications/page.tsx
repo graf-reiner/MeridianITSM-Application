@@ -30,20 +30,21 @@ interface AppStats {
   totalAnnualCost: number;
 }
 
-interface AppNode {
+interface AppNodeApi {
   id: string;
-  data: {
-    name: string;
-    criticality: string;
-    status: string;
-    type: string;
-  };
+  name: string;
+  criticality: string;
+  status: string;
+  type: string;
 }
 
-interface AppEdge {
+interface AppEdgeApi {
   id: string;
-  source: string;
-  target: string;
+  sourceId?: string;
+  targetId?: string;
+  source?: string;
+  target?: string;
+  dependencyType?: string;
   label?: string;
 }
 
@@ -155,7 +156,7 @@ const nodeTypes = { appNode: AppFlowNode };
 
 // ─── Dependency Graph ─────────────────────────────────────────────────────────
 
-function DependencyGraph({ appGraphData }: { appGraphData: { nodes: AppNode[]; edges: AppEdge[] } | undefined }) {
+function DependencyGraph({ appGraphData }: { appGraphData: { nodes: AppNodeApi[]; edges: AppEdgeApi[] } | undefined }) {
   const router = useRouter();
 
   const rawNodes = useMemo((): Node[] =>
@@ -163,7 +164,7 @@ function DependencyGraph({ appGraphData }: { appGraphData: { nodes: AppNode[]; e
       id: n.id,
       type: 'appNode',
       position: { x: 0, y: 0 },
-      data: n.data,
+      data: { name: n.name, criticality: n.criticality, status: n.status, type: n.type },
     })),
     [appGraphData]
   );
@@ -171,9 +172,9 @@ function DependencyGraph({ appGraphData }: { appGraphData: { nodes: AppNode[]; e
   const rawEdges = useMemo((): Edge[] =>
     (appGraphData?.edges ?? []).map((e) => ({
       id: e.id,
-      source: e.source,
-      target: e.target,
-      label: e.label,
+      source: e.sourceId ?? e.source ?? '',
+      target: e.targetId ?? e.target ?? '',
+      label: e.label ?? e.dependencyType?.replace(/_/g, ' ') ?? '',
       style: { stroke: '#9ca3af', strokeWidth: 1.5 },
       labelStyle: { fontSize: 10, fill: '#6b7280' },
     })),
@@ -266,12 +267,12 @@ export default function ApplicationsPage() {
     },
   });
 
-  const { data: graphData, isLoading: graphLoading } = useQuery<{ nodes: AppNode[]; edges: AppEdge[] }>({
+  const { data: graphData, isLoading: graphLoading } = useQuery<{ nodes: AppNodeApi[]; edges: AppEdgeApi[] }>({
     queryKey: ['app-graph'],
     queryFn: async () => {
       const res = await fetch('/api/v1/applications/graph', { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to load graph');
-      return res.json() as Promise<{ nodes: AppNode[]; edges: AppEdge[] }>;
+      return res.json() as Promise<{ nodes: AppNodeApi[]; edges: AppEdgeApi[] }>;
     },
   });
 
