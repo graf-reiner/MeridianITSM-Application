@@ -90,17 +90,22 @@ export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
  * @returns true if user has the required permission (directly or via wildcard)
  */
 export function hasPermission(userPermissions: string[], required: string): boolean {
+  // Normalize colon-separated permissions to dot-separated (settings:write -> settings.write)
+  const normalizedRequired = required.replace(/:/g, '.');
+
   for (const perm of userPermissions) {
+    const normalizedPerm = perm.replace(/:/g, '.');
+
     // Exact match
-    if (perm === required) return true;
+    if (normalizedPerm === normalizedRequired) return true;
 
     // Global wildcard
-    if (perm === '*') return true;
+    if (normalizedPerm === '*') return true;
 
-    // Namespace wildcard: e.g., 'tickets.*' matches 'tickets.read'
-    if (perm.endsWith('.*')) {
-      const namespace = perm.slice(0, -2); // Remove '.*'
-      if (required.startsWith(namespace + '.')) return true;
+    // Namespace wildcard: e.g., 'settings.*' matches 'settings.write' and 'settings.update'
+    if (normalizedPerm.endsWith('.*')) {
+      const namespace = normalizedPerm.slice(0, -2); // Remove '.*'
+      if (normalizedRequired.startsWith(namespace + '.')) return true;
     }
   }
 

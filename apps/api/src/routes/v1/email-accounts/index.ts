@@ -18,7 +18,7 @@ export async function emailAccountRoutes(fastify: FastifyInstance): Promise<void
   // GET /api/v1/email-accounts — List email accounts
   fastify.get(
     '/api/v1/email-accounts',
-    { preHandler: [requirePermission('settings:read')] },
+    { preHandler: [requirePermission('settings.read')] },
     async (request, reply) => {
       const user = request.user as { tenantId: string };
       const tenantId = user.tenantId;
@@ -42,7 +42,7 @@ export async function emailAccountRoutes(fastify: FastifyInstance): Promise<void
   // POST /api/v1/email-accounts — Create email account
   fastify.post(
     '/api/v1/email-accounts',
-    { preHandler: [requirePermission('settings:write')] },
+    { preHandler: [requirePermission('settings.update')] },
     async (request, reply) => {
       const user = request.user as { tenantId: string };
       const tenantId = user.tenantId;
@@ -109,7 +109,7 @@ export async function emailAccountRoutes(fastify: FastifyInstance): Promise<void
   // PATCH /api/v1/email-accounts/:id — Update email account
   fastify.patch(
     '/api/v1/email-accounts/:id',
-    { preHandler: [requirePermission('settings:write')] },
+    { preHandler: [requirePermission('settings.update')] },
     async (request, reply) => {
       const user = request.user as { tenantId: string };
       const tenantId = user.tenantId;
@@ -179,7 +179,7 @@ export async function emailAccountRoutes(fastify: FastifyInstance): Promise<void
   // DELETE /api/v1/email-accounts/:id — Delete email account
   fastify.delete(
     '/api/v1/email-accounts/:id',
-    { preHandler: [requirePermission('settings:write')] },
+    { preHandler: [requirePermission('settings.update')] },
     async (request, reply) => {
       const user = request.user as { tenantId: string };
       const tenantId = user.tenantId;
@@ -201,7 +201,7 @@ export async function emailAccountRoutes(fastify: FastifyInstance): Promise<void
   // POST /api/v1/email-accounts/test-smtp — Test SMTP connection + optional send
   fastify.post(
     '/api/v1/email-accounts/test-smtp',
-    { preHandler: [requirePermission('settings:write')] },
+    { preHandler: [requirePermission('settings.update')] },
     async (request, reply) => {
       const body = request.body as {
         host: string;
@@ -225,7 +225,7 @@ export async function emailAccountRoutes(fastify: FastifyInstance): Promise<void
   // POST /api/v1/email-accounts/test-imap — Test IMAP connection
   fastify.post(
     '/api/v1/email-accounts/test-imap',
-    { preHandler: [requirePermission('settings:write')] },
+    { preHandler: [requirePermission('settings.update')] },
     async (request, reply) => {
       const body = request.body as {
         host: string;
