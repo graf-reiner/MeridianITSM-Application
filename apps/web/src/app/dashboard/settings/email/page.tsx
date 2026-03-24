@@ -105,6 +105,7 @@ function EmailModal({
   const [imapSecure, setImapSecure] = useState(true);
   const [defaultQueueId, setDefaultQueueId] = useState(account?.defaultQueue?.id ?? '');
   const [defaultCategoryId, setDefaultCategoryId] = useState(account?.defaultCategory?.id ?? '');
+  const [smtpSendTo, setSmtpSendTo] = useState('');
   const [testResult, setTestResult] = useState<{ type: 'SMTP' | 'IMAP'; result: TestResult } | null>(null);
   const [isTesting, setIsTesting] = useState<'smtp' | 'imap' | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -114,7 +115,7 @@ function EmailModal({
     setIsTesting(type);
     try {
       const body = type === 'smtp'
-        ? { host: smtpHost, port: Number(smtpPort), user: smtpUser, password: smtpPass, secure: smtpSecure }
+        ? { host: smtpHost, port: Number(smtpPort), user: smtpUser, password: smtpPass, secure: smtpSecure, sendTo: smtpSendTo.trim() || undefined, fromAddress: email.trim() || undefined }
         : { host: imapHost, port: Number(imapPort), user: imapUser, password: imapPass, secure: imapSecure };
       const res = await fetch(`/api/v1/email-accounts/test-${type}`, {
         method: 'POST',
@@ -199,11 +200,15 @@ function EmailModal({
               <div><label style={labelStyle}>Username</label><input type="text" value={smtpUser} onChange={(e) => setSmtpUser(e.target.value)} placeholder={account?.smtpConfigured ? '(configured)' : ''} style={inputStyle} /></div>
               <div><label style={labelStyle}>Password</label><input type="password" value={smtpPass} onChange={(e) => setSmtpPass(e.target.value)} placeholder={account?.smtpConfigured ? '(configured)' : ''} style={inputStyle} /></div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
                 <input type="checkbox" checked={smtpSecure} onChange={(e) => setSmtpSecure(e.target.checked)} />SSL/TLS
               </label>
-              <button type="button" onClick={() => void handleTest('smtp')} disabled={isTesting === 'smtp'} style={{ padding: '5px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: '#fff', color: '#374151' }}>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', whiteSpace: 'nowrap' }}>Send To</label>
+              <input type="email" value={smtpSendTo} onChange={(e) => setSmtpSendTo(e.target.value)} placeholder="test@example.com" style={{ ...inputStyle, flex: 1 }} />
+              <button type="button" onClick={() => void handleTest('smtp')} disabled={isTesting === 'smtp' || !smtpHost} style={{ padding: '6px 14px', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: isTesting === 'smtp' || !smtpHost ? 'not-allowed' : 'pointer', backgroundColor: isTesting === 'smtp' || !smtpHost ? '#d1d5db' : '#4f46e5', color: '#fff', whiteSpace: 'nowrap' }}>
                 {isTesting === 'smtp' ? 'Testing...' : 'Test SMTP'}
               </button>
             </div>

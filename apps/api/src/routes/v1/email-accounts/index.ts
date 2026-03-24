@@ -198,7 +198,7 @@ export async function emailAccountRoutes(fastify: FastifyInstance): Promise<void
     },
   );
 
-  // POST /api/v1/email-accounts/test-smtp — Test SMTP connection
+  // POST /api/v1/email-accounts/test-smtp — Test SMTP connection + optional send
   fastify.post(
     '/api/v1/email-accounts/test-smtp',
     { preHandler: [requirePermission('settings:write')] },
@@ -209,13 +209,15 @@ export async function emailAccountRoutes(fastify: FastifyInstance): Promise<void
         user: string;
         password: string;
         secure: boolean;
+        sendTo?: string;
+        fromAddress?: string;
       };
 
       if (!body.host) {
         return reply.status(400).send({ error: 'host is required' });
       }
 
-      const result = await testSmtpConnection(body);
+      const result = await testSmtpConnection(body, body.sendTo, body.fromAddress);
       return reply.status(200).send(result);
     },
   );
