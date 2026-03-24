@@ -191,7 +191,9 @@ function DependencyGraph({ appGraphData }: { appGraphData: { nodes: AppNodeApi[]
 
   useEffect(() => {
     setNodes(layoutNodes);
-    setEdges(layoutEdges);
+    // Delay edges slightly so ReactFlow registers nodes first
+    const timer = setTimeout(() => setEdges(layoutEdges), 50);
+    return () => clearTimeout(timer);
   }, [layoutNodes, layoutEdges, setNodes, setEdges]);
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
