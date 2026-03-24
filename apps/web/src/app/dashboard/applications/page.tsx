@@ -186,12 +186,13 @@ function DependencyGraph({ appGraphData }: { appGraphData: { nodes: AppNodeApi[]
     return applyDagreLayout(rawNodes, rawEdges);
   }, [rawNodes, rawEdges]);
 
-  const [nodes, , onNodesChange] = useNodesState(layoutNodes);
-  const [edges, , onEdgesChange] = useEdgesState(layoutEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState(layoutNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(layoutEdges);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    setNodes(layoutNodes);
+    setEdges(layoutEdges);
+  }, [layoutNodes, layoutEdges, setNodes, setEdges]);
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     void router.push(`/dashboard/applications/${node.id}`);
@@ -281,17 +282,17 @@ export default function ApplicationsPage() {
   if (filterStatus) params.set('status', filterStatus);
   if (filterCriticality) params.set('criticality', filterCriticality);
 
-  const { data: listData, isLoading: listLoading, refetch } = useQuery<{ applications: AppListItem[]; total: number }>({
+  const { data: listData, isLoading: listLoading, refetch } = useQuery<{ data: AppListItem[]; total: number }>({
     queryKey: ['applications-list', filterType, filterStatus, filterCriticality],
     queryFn: async () => {
       const res = await fetch(`/api/v1/applications?${params.toString()}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to load applications');
-      return res.json() as Promise<{ applications: AppListItem[]; total: number }>;
+      return res.json() as Promise<{ data: AppListItem[]; total: number }>;
     },
   });
 
   const applications = useMemo(() => {
-    const apps = listData?.applications ?? [];
+    const apps = listData?.data ?? [];
     const critOrder: Record<string, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
     const statOrder: Record<string, number> = { ACTIVE: 0, IN_DEVELOPMENT: 1, INACTIVE: 2, DEPRECATED: 3, DECOMMISSIONED: 4 };
     return [...apps].sort((a, b) => {
@@ -401,7 +402,7 @@ export default function ApplicationsPage() {
               style={{ padding: '5px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, outline: 'none' }}
             >
               <option value="">All Types</option>
-              {['BUSINESS', 'INFRASTRUCTURE', 'UTILITY', 'MIDDLEWARE', 'DATABASE', 'DEVELOPMENT', 'SECURITY', 'ANALYTICS', 'INTEGRATION'].map((t) => (
+              {['WEB', 'MOBILE', 'DESKTOP', 'API', 'SERVICE', 'DATABASE_APP', 'MIDDLEWARE', 'INFRASTRUCTURE', 'OTHER'].map((t) => (
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>
