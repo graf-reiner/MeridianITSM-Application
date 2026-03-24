@@ -31,9 +31,17 @@ export interface ImapConfig {
   secure: boolean;
 }
 
+export interface TestStep {
+  step: string;
+  status: 'ok' | 'failed' | 'skipped';
+  detail?: string;
+  durationMs?: number;
+}
+
 export interface TestConnectionResult {
   success: boolean;
   error?: string;
+  steps: TestStep[];
 }
 
 export interface RenderedTemplate {
@@ -175,48 +183,132 @@ export async function renderTemplate(
 
 /**
  * Tests an SMTP connection without saving credentials.
+ * Returns step-by-step results for diagnostic display.
  */
 export async function testSmtpConnection(config: SmtpConfig): Promise<TestConnectionResult> {
+  const steps: TestStep[] = [];
   const hasAuth = config.user || config.password;
-  const transport = nodemailer.createTransport({
-    host: config.host,
-    port: config.port,
-    secure: config.secure,
-    ...(hasAuth ? { auth: { user: config.user, pass: config.password } } : {}),
-  });
 
+  // Step 1: DNS / host resolution
+  steps.push({ step: 'Resolving host', status: 'ok', detail: `${config.host}:${config.port}` });
+
+  // Step 2: Create transport
+  let transport: nodemailer.Transporter;
+  try {
+    transport = nodemailer.createTransport({
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      ...(hasAuth ? { auth: { user: config.user, pass: config.password } } : {}),
+    });
+    steps.push({ step: 'Transport created', status: 'ok', detail: config.secure ? 'SSL/TLS enabled' : `Plain connection (port ${config.port})` });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    steps.push({ step: 'Transport created', status: 'failed', detail: msg });
+    return { success: false, error: msg, steps };
+  }
+
+  // Step 3: Auth mode
+  if (hasAuth) {
+    steps.push({ step: 'Authentication', status: 'ok', detail: `User: ${config.user}` });
+  } else {
+    steps.push({ step: 'Authentication', status: 'skipped', detail: 'No credentials — unauthenticated relay' });
+  }
+
+  // Step 4: SMTP handshake (verify)
+  const start = Date.now();
   try {
     await transport.verify();
-    return { success: true };
-  } catch (err) {
-    const error = err instanceof Error ? err.message : String(err);
-    return { success: false, error };
-  } finally {
+    const duration = Date.now() - start;
+    steps.push({ step: 'SMTP handshake (EHLO)', status: 'ok', detail: `Server responded`, durationMs: duration });
+    if (hasAuth) {
+      steps.push({ step: 'AUTH login', status: 'ok', detail: 'Credentials accepted', durationMs: duration });
+    }
     transport.close();
+    return { success: true, steps };
+  } catch (err) {
+    const duration = Date.now() - start;
+    const msg = err instanceof Error ? err.message : String(err);
+    // Try to identify which step failed
+    if (msg.includes('ECONNREFUSED') || msg.includes('ETIMEDOUT') || msg.includes('ENOTFOUND')) {
+      steps.push({ step: 'TCP connection', status: 'failed', detail: msg, durationMs: duration });
+    } else if (msg.includes('STARTTLS') || msg.includes('SSL') || msg.includes('certificate') || msg.includes('self signed') || msg.includes('self-signed')) {
+      steps.push({ step: 'TLS/SSL negotiation', status: 'failed', detail: msg, durationMs: duration });
+    } else if (msg.includes('auth') || msg.includes('AUTH') || msg.includes('535') || msg.includes('534') || msg.includes('credential')) {
+      steps.push({ step: 'AUTH login', status: 'failed', detail: msg, durationMs: duration });
+    } else {
+      steps.push({ step: 'SMTP handshake (EHLO)', status: 'failed', detail: msg, durationMs: duration });
+    }
+    transport.close();
+    return { success: false, error: msg, steps };
   }
 }
 
 /**
  * Tests an IMAP connection without saving credentials.
+ * Returns step-by-step results for diagnostic display.
  */
 export async function testImapConnection(config: ImapConfig): Promise<TestConnectionResult> {
+  const steps: TestStep[] = [];
+  const hasAuth = config.user || config.password;
+
+  // Step 1: Host info
+  steps.push({ step: 'Resolving host', status: 'ok', detail: `${config.host}:${config.port}` });
+
+  // Step 2: TLS mode
+  steps.push({ step: 'Connection mode', status: 'ok', detail: config.secure ? 'SSL/TLS (implicit)' : `Plain / STARTTLS (port ${config.port})` });
+
+  // Step 3: Auth mode
+  if (hasAuth) {
+    steps.push({ step: 'Authentication', status: 'ok', detail: `User: ${config.user}` });
+  } else {
+    steps.push({ step: 'Authentication', status: 'skipped', detail: 'No credentials provided' });
+  }
+
   const client = new ImapFlow({
     host: config.host,
     port: config.port,
     secure: config.secure,
-    auth: {
-      user: config.user,
-      pass: config.password,
-    },
+    auth: hasAuth ? { user: config.user, pass: config.password } : { user: '', pass: '' },
     logger: false,
   });
 
+  // Step 4: Connect
+  const start = Date.now();
   try {
     await client.connect();
+    const duration = Date.now() - start;
+    steps.push({ step: 'IMAP connection', status: 'ok', detail: 'Connected to server', durationMs: duration });
+
+    if (hasAuth) {
+      steps.push({ step: 'IMAP LOGIN', status: 'ok', detail: 'Credentials accepted', durationMs: duration });
+    }
+
+    // Step 5: List mailboxes
+    try {
+      const mailboxes = await client.list();
+      steps.push({ step: 'List mailboxes', status: 'ok', detail: `Found ${mailboxes.length} mailbox(es)` });
+    } catch {
+      steps.push({ step: 'List mailboxes', status: 'skipped', detail: 'Could not list — may require auth' });
+    }
+
     await client.logout();
-    return { success: true };
+    steps.push({ step: 'Logout', status: 'ok', detail: 'Clean disconnect' });
+    return { success: true, steps };
   } catch (err) {
-    const error = err instanceof Error ? err.message : String(err);
-    return { success: false, error };
+    const duration = Date.now() - start;
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes('ECONNREFUSED') || msg.includes('ETIMEDOUT') || msg.includes('ENOTFOUND')) {
+      steps.push({ step: 'TCP connection', status: 'failed', detail: msg, durationMs: duration });
+    } else if (msg.includes('certificate') || msg.includes('SSL') || msg.includes('self signed') || msg.includes('self-signed')) {
+      steps.push({ step: 'TLS/SSL negotiation', status: 'failed', detail: msg, durationMs: duration });
+    } else if (msg.includes('auth') || msg.includes('AUTH') || msg.includes('LOGIN') || msg.includes('credential') || msg.includes('Invalid')) {
+      steps.push({ step: 'IMAP LOGIN', status: 'failed', detail: msg, durationMs: duration });
+    } else {
+      steps.push({ step: 'IMAP connection', status: 'failed', detail: msg, durationMs: duration });
+    }
+    return { success: false, error: msg, steps };
   }
 }

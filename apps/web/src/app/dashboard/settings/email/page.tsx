@@ -23,6 +23,59 @@ interface EmailAccount {
 interface QueueOption { id: string; name: string; }
 interface CategoryOption { id: string; name: string; }
 
+interface TestStep {
+  step: string;
+  status: 'ok' | 'failed' | 'skipped';
+  detail?: string;
+  durationMs?: number;
+}
+
+interface TestResult {
+  success: boolean;
+  error?: string;
+  steps: TestStep[];
+}
+
+// ─── Test Result Modal ────────────────────────────────────────────────────────
+
+function TestResultModal({ type, result, onClose }: { type: 'SMTP' | 'IMAP'; result: TestResult; onClose: () => void }) {
+  return (
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div style={{ backgroundColor: '#fff', borderRadius: 12, width: '100%', maxWidth: 500, overflow: 'hidden' }}>
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: result.success ? '#f0fdf4' : '#fef2f2' }}>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: result.success ? '#065f46' : '#991b1b' }}>
+            {type} Test — {result.success ? 'Passed' : 'Failed'}
+          </h3>
+          <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: 18, cursor: 'pointer', color: '#6b7280', padding: '0 4px' }}>&times;</button>
+        </div>
+        <div style={{ padding: '16px 20px' }}>
+          {result.steps.map((step, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0', borderBottom: i < result.steps.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
+              <span style={{ fontSize: 16, lineHeight: '20px', flexShrink: 0 }}>
+                {step.status === 'ok' ? '\u2705' : step.status === 'failed' ? '\u274C' : '\u23ED\uFE0F'}
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{step.step}</div>
+                {step.detail && (
+                  <div style={{ fontSize: 12, color: step.status === 'failed' ? '#dc2626' : '#6b7280', marginTop: 2, wordBreak: 'break-word' }}>
+                    {step.detail}
+                  </div>
+                )}
+              </div>
+              {step.durationMs !== undefined && (
+                <span style={{ fontSize: 11, color: '#9ca3af', whiteSpace: 'nowrap', flexShrink: 0 }}>{step.durationMs}ms</span>
+              )}
+            </div>
+          ))}
+        </div>
+        <div style={{ padding: '12px 20px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{ padding: '6px 16px', backgroundColor: '#4f46e5', color: '#fff', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Email Account Modal ──────────────────────────────────────────────────────
 
 function EmailModal({
@@ -52,8 +105,7 @@ function EmailModal({
   const [imapSecure, setImapSecure] = useState(true);
   const [defaultQueueId, setDefaultQueueId] = useState(account?.defaultQueue?.id ?? '');
   const [defaultCategoryId, setDefaultCategoryId] = useState(account?.defaultCategory?.id ?? '');
-  const [testSmtpResult, setTestSmtpResult] = useState<string | null>(null);
-  const [testImapResult, setTestImapResult] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<{ type: 'SMTP' | 'IMAP'; result: TestResult } | null>(null);
   const [isTesting, setIsTesting] = useState<'smtp' | 'imap' | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,12 +122,13 @@ function EmailModal({
         credentials: 'include',
         body: JSON.stringify(body),
       });
-      const data = (await res.json()) as { ok?: boolean; error?: string };
-      if (type === 'smtp') setTestSmtpResult(data.ok ? 'Connection successful' : (data.error ?? 'Failed'));
-      else setTestImapResult(data.ok ? 'Connection successful' : (data.error ?? 'Failed'));
-    } catch {
-      if (type === 'smtp') setTestSmtpResult('Test failed');
-      else setTestImapResult('Test failed');
+      const data = (await res.json()) as TestResult;
+      setTestResult({ type: type === 'smtp' ? 'SMTP' : 'IMAP', result: data });
+    } catch (err) {
+      setTestResult({
+        type: type === 'smtp' ? 'SMTP' : 'IMAP',
+        result: { success: false, error: err instanceof Error ? err.message : 'Network error', steps: [{ step: 'Send request', status: 'failed', detail: 'Could not reach the API server' }] },
+      });
     } finally {
       setIsTesting(null);
     }
@@ -150,12 +203,9 @@ function EmailModal({
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
                 <input type="checkbox" checked={smtpSecure} onChange={(e) => setSmtpSecure(e.target.checked)} />SSL/TLS
               </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {testSmtpResult && <span style={{ fontSize: 12, color: testSmtpResult.includes('successful') ? '#059669' : '#dc2626' }}>{testSmtpResult}</span>}
-                <button type="button" onClick={() => void handleTest('smtp')} disabled={isTesting === 'smtp'} style={{ padding: '5px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: '#fff', color: '#374151' }}>
-                  {isTesting === 'smtp' ? 'Testing...' : 'Test SMTP'}
-                </button>
-              </div>
+              <button type="button" onClick={() => void handleTest('smtp')} disabled={isTesting === 'smtp'} style={{ padding: '5px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: '#fff', color: '#374151' }}>
+                {isTesting === 'smtp' ? 'Testing...' : 'Test SMTP'}
+              </button>
             </div>
           </div>
 
@@ -174,12 +224,9 @@ function EmailModal({
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
                 <input type="checkbox" checked={imapSecure} onChange={(e) => setImapSecure(e.target.checked)} />SSL/TLS
               </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {testImapResult && <span style={{ fontSize: 12, color: testImapResult.includes('successful') ? '#059669' : '#dc2626' }}>{testImapResult}</span>}
-                <button type="button" onClick={() => void handleTest('imap')} disabled={isTesting === 'imap'} style={{ padding: '5px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: '#fff', color: '#374151' }}>
-                  {isTesting === 'imap' ? 'Testing...' : 'Test IMAP'}
-                </button>
-              </div>
+              <button type="button" onClick={() => void handleTest('imap')} disabled={isTesting === 'imap'} style={{ padding: '5px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: '#fff', color: '#374151' }}>
+                {isTesting === 'imap' ? 'Testing...' : 'Test IMAP'}
+              </button>
             </div>
           </div>
 
@@ -210,6 +257,9 @@ function EmailModal({
           </div>
         </form>
       </div>
+      {testResult && (
+        <TestResultModal type={testResult.type} result={testResult.result} onClose={() => setTestResult(null)} />
+      )}
     </div>
   );
 }
