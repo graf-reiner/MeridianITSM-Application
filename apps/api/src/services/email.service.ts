@@ -77,15 +77,13 @@ function buildDefaultHtml(title: string, body: string): string {
  */
 export async function getSmtpTransport(account: EmailAccount): Promise<nodemailer.Transporter> {
   const decryptedPassword = account.smtpPasswordEnc ? decrypt(account.smtpPasswordEnc) : '';
+  const hasAuth = account.smtpUser || decryptedPassword;
 
   return nodemailer.createTransport({
     host: account.smtpHost ?? undefined,
     port: account.smtpPort ?? 587,
     secure: account.smtpSecure,
-    auth: {
-      user: account.smtpUser ?? undefined,
-      pass: decryptedPassword,
-    },
+    ...(hasAuth ? { auth: { user: account.smtpUser ?? undefined, pass: decryptedPassword } } : {}),
   });
 }
 
@@ -179,14 +177,12 @@ export async function renderTemplate(
  * Tests an SMTP connection without saving credentials.
  */
 export async function testSmtpConnection(config: SmtpConfig): Promise<TestConnectionResult> {
+  const hasAuth = config.user || config.password;
   const transport = nodemailer.createTransport({
     host: config.host,
     port: config.port,
     secure: config.secure,
-    auth: {
-      user: config.user,
-      pass: config.password,
-    },
+    ...(hasAuth ? { auth: { user: config.user, pass: config.password } } : {}),
   });
 
   try {

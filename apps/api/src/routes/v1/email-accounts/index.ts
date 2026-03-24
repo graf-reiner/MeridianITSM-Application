@@ -211,8 +211,8 @@ export async function emailAccountRoutes(fastify: FastifyInstance): Promise<void
         secure: boolean;
       };
 
-      if (!body.host || !body.user || !body.password) {
-        return reply.status(400).send({ error: 'host, user, and password are required' });
+      if (!body.host) {
+        return reply.status(400).send({ error: 'host is required' });
       }
 
       const result = await testSmtpConnection(body);
@@ -233,8 +233,8 @@ export async function emailAccountRoutes(fastify: FastifyInstance): Promise<void
         secure: boolean;
       };
 
-      if (!body.host || !body.user || !body.password) {
-        return reply.status(400).send({ error: 'host, user, and password are required' });
+      if (!body.host) {
+        return reply.status(400).send({ error: 'host is required' });
       }
 
       const result = await testImapConnection(body);

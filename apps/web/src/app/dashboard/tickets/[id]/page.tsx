@@ -111,8 +111,9 @@ export default function TicketDetailPage() {
     queryFn: async () => {
       const res = await fetch(`/api/v1/tickets/${ticketId}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to load ticket');
-      const data = (await res.json()) as { ticket: TicketDetail };
-      return data.ticket;
+      const data = await res.json();
+      // API may return ticket directly or wrapped in { ticket: ... }
+      return (data.ticket ?? data) as TicketDetail;
     },
   });
 
