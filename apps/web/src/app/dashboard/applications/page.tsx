@@ -12,13 +12,11 @@ import {
   Background,
   Controls,
   MiniMap,
-  useNodesState,
-  useEdgesState,
   ReactFlowProvider,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import dagre from '@dagrejs/dagre';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -186,16 +184,6 @@ function DependencyGraph({ appGraphData }: { appGraphData: { nodes: AppNodeApi[]
     return applyDagreLayout(rawNodes, rawEdges);
   }, [rawNodes, rawEdges]);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(layoutNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(layoutEdges);
-
-  useEffect(() => {
-    setNodes(layoutNodes);
-    // Delay edges slightly so ReactFlow registers nodes first
-    const timer = setTimeout(() => setEdges(layoutEdges), 50);
-    return () => clearTimeout(timer);
-  }, [layoutNodes, layoutEdges, setNodes, setEdges]);
-
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     void router.push(`/dashboard/applications/${node.id}`);
   }, [router]);
@@ -214,10 +202,8 @@ function DependencyGraph({ appGraphData }: { appGraphData: { nodes: AppNodeApi[]
   return (
     <div style={{ height: 420, border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
       <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
+        nodes={layoutNodes}
+        edges={layoutEdges}
         onNodeClick={onNodeClick}
         nodeTypes={nodeTypes}
         fitView
