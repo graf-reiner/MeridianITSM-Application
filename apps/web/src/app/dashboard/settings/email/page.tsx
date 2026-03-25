@@ -11,13 +11,15 @@ import { mdiArrowLeft, mdiEmail, mdiPlus, mdiPencil, mdiTrashCan, mdiCheckCircle
 interface EmailAccount {
   id: string;
   name: string;
-  email: string;
-  smtpConfigured: boolean;
-  imapConfigured: boolean;
+  emailAddress: string;
+  smtpHost: string | null;
+  smtpConfigured?: boolean;
+  imapHost: string | null;
+  imapConfigured?: boolean;
   isActive: boolean;
   lastPolledAt: string | null;
-  defaultQueue: { id: string; name: string } | null;
-  defaultCategory: { id: string; name: string } | null;
+  defaultQueueId: string | null;
+  defaultCategoryId: string | null;
 }
 
 interface QueueOption { id: string; name: string; }
@@ -92,7 +94,7 @@ function EmailModal({
   onSaved: () => void;
 }) {
   const [name, setName] = useState(account?.name ?? '');
-  const [email, setEmail] = useState(account?.email ?? '');
+  const [email, setEmail] = useState(account?.emailAddress ?? '');
   const [smtpHost, setSmtpHost] = useState('');
   const [smtpPort, setSmtpPort] = useState('587');
   const [smtpUser, setSmtpUser] = useState('');
@@ -103,8 +105,8 @@ function EmailModal({
   const [imapUser, setImapUser] = useState('');
   const [imapPass, setImapPass] = useState('');
   const [imapSecure, setImapSecure] = useState(true);
-  const [defaultQueueId, setDefaultQueueId] = useState(account?.defaultQueue?.id ?? '');
-  const [defaultCategoryId, setDefaultCategoryId] = useState(account?.defaultCategory?.id ?? '');
+  const [defaultQueueId, setDefaultQueueId] = useState(account?.defaultQueueId ?? '');
+  const [defaultCategoryId, setDefaultCategoryId] = useState(account?.defaultCategoryId ?? '');
   const [smtpSendTo, setSmtpSendTo] = useState('');
   const [testResult, setTestResult] = useState<{ type: 'SMTP' | 'IMAP'; result: TestResult } | null>(null);
   const [isTesting, setIsTesting] = useState<'smtp' | 'imap' | null>(null);
@@ -205,12 +207,12 @@ function EmailModal({
           <div style={{ backgroundColor: '#f9fafb', borderRadius: 8, padding: 14, marginBottom: 14 }}>
             <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 700, color: '#374151' }}>SMTP (Outbound)</p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px', gap: 8, marginBottom: 8 }}>
-              <div><label style={labelStyle}>Host</label><input type="text" value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} placeholder={account?.smtpConfigured ? '(configured)' : 'smtp.gmail.com'} style={inputStyle} /></div>
+              <div><label style={labelStyle}>Host</label><input type="text" value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} placeholder={account?.smtpHost ? '(configured)' : 'smtp.gmail.com'} style={inputStyle} /></div>
               <div><label style={labelStyle}>Port</label><input type="number" value={smtpPort} onChange={(e) => setSmtpPort(e.target.value)} style={inputStyle} /></div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-              <div><label style={labelStyle}>Username</label><input type="text" value={smtpUser} onChange={(e) => setSmtpUser(e.target.value)} placeholder={account?.smtpConfigured ? '(configured)' : ''} style={inputStyle} /></div>
-              <div><label style={labelStyle}>Password</label><input type="password" value={smtpPass} onChange={(e) => setSmtpPass(e.target.value)} placeholder={account?.smtpConfigured ? '(configured)' : ''} style={inputStyle} /></div>
+              <div><label style={labelStyle}>Username</label><input type="text" value={smtpUser} onChange={(e) => setSmtpUser(e.target.value)} placeholder={account?.smtpHost ? '(configured)' : ''} style={inputStyle} /></div>
+              <div><label style={labelStyle}>Password</label><input type="password" value={smtpPass} onChange={(e) => setSmtpPass(e.target.value)} placeholder={account?.smtpHost ? '(configured)' : ''} style={inputStyle} /></div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
@@ -230,12 +232,12 @@ function EmailModal({
           <div style={{ backgroundColor: '#f9fafb', borderRadius: 8, padding: 14, marginBottom: 14 }}>
             <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 700, color: '#374151' }}>IMAP (Inbound)</p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px', gap: 8, marginBottom: 8 }}>
-              <div><label style={labelStyle}>Host</label><input type="text" value={imapHost} onChange={(e) => setImapHost(e.target.value)} placeholder={account?.imapConfigured ? '(configured)' : 'imap.gmail.com'} style={inputStyle} /></div>
+              <div><label style={labelStyle}>Host</label><input type="text" value={imapHost} onChange={(e) => setImapHost(e.target.value)} placeholder={account?.imapHost ? '(configured)' : 'imap.gmail.com'} style={inputStyle} /></div>
               <div><label style={labelStyle}>Port</label><input type="number" value={imapPort} onChange={(e) => setImapPort(e.target.value)} style={inputStyle} /></div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-              <div><label style={labelStyle}>Username</label><input type="text" value={imapUser} onChange={(e) => setImapUser(e.target.value)} placeholder={account?.imapConfigured ? '(configured)' : ''} style={inputStyle} /></div>
-              <div><label style={labelStyle}>Password</label><input type="password" value={imapPass} onChange={(e) => setImapPass(e.target.value)} placeholder={account?.imapConfigured ? '(configured)' : ''} style={inputStyle} /></div>
+              <div><label style={labelStyle}>Username</label><input type="text" value={imapUser} onChange={(e) => setImapUser(e.target.value)} placeholder={account?.imapHost ? '(configured)' : ''} style={inputStyle} /></div>
+              <div><label style={labelStyle}>Password</label><input type="password" value={imapPass} onChange={(e) => setImapPass(e.target.value)} placeholder={account?.imapHost ? '(configured)' : ''} style={inputStyle} /></div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
@@ -288,12 +290,14 @@ export default function EmailSettingsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editAccount, setEditAccount] = useState<EmailAccount | null>(null);
 
-  const { data, isLoading } = useQuery<{ accounts: EmailAccount[] }>({
+  const { data, isLoading } = useQuery<EmailAccount[]>({
     queryKey: ['settings-email'],
     queryFn: async () => {
       const res = await fetch('/api/v1/email-accounts', { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to load email accounts');
-      return res.json() as Promise<{ accounts: EmailAccount[] }>;
+      const json = await res.json();
+      // API returns array directly or { accounts: [...] }
+      return Array.isArray(json) ? json : (json.accounts ?? []);
     },
   });
 
@@ -321,7 +325,7 @@ export default function EmailSettingsPage() {
     void qc.invalidateQueries({ queryKey: ['settings-email'] });
   };
 
-  const accounts = data?.accounts ?? [];
+  const accounts = data ?? [];
   const queues = queuesData?.queues ?? [];
   const categories = categoriesData?.categories ?? [];
 
@@ -366,12 +370,12 @@ export default function EmailSettingsPage() {
               {accounts.map((acc) => (
                 <tr key={acc.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
                   <td style={{ padding: '10px 14px', fontWeight: 500 }}>{acc.name}</td>
-                  <td style={{ padding: '10px 14px', color: '#6b7280' }}>{acc.email}</td>
+                  <td style={{ padding: '10px 14px', color: '#6b7280' }}>{acc.emailAddress}</td>
                   <td style={{ padding: '10px 14px', textAlign: 'center' }}>
-                    <Icon path={acc.smtpConfigured ? mdiCheckCircle : mdiCloseCircle} size={0.8} color={acc.smtpConfigured ? '#059669' : '#d1d5db'} />
+                    <Icon path={!!acc.smtpHost ? mdiCheckCircle : mdiCloseCircle} size={0.8} color={!!acc.smtpHost ? '#059669' : '#d1d5db'} />
                   </td>
                   <td style={{ padding: '10px 14px', textAlign: 'center' }}>
-                    <Icon path={acc.imapConfigured ? mdiCheckCircle : mdiCloseCircle} size={0.8} color={acc.imapConfigured ? '#059669' : '#d1d5db'} />
+                    <Icon path={!!acc.imapHost ? mdiCheckCircle : mdiCloseCircle} size={0.8} color={!!acc.imapHost ? '#059669' : '#d1d5db'} />
                   </td>
                   <td style={{ padding: '10px 14px', textAlign: 'center' }}>
                     <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 500, backgroundColor: acc.isActive ? '#d1fae5' : '#f3f4f6', color: acc.isActive ? '#065f46' : '#6b7280' }}>
