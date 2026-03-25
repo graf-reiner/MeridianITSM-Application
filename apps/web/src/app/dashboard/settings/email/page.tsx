@@ -142,12 +142,24 @@ function EmailModal({
     try {
       const body: Record<string, unknown> = {
         name: name.trim(),
-        email: email.trim(),
+        emailAddress: email.trim(),
         defaultQueueId: defaultQueueId || null,
         defaultCategoryId: defaultCategoryId || null,
       };
-      if (smtpHost) body.smtpConfig = { host: smtpHost, port: Number(smtpPort), user: smtpUser, password: smtpPass, secure: smtpSecure };
-      if (imapHost) body.imapConfig = { host: imapHost, port: Number(imapPort), user: imapUser, password: imapPass, secure: imapSecure };
+      if (smtpHost) {
+        body.smtpHost = smtpHost;
+        body.smtpPort = Number(smtpPort);
+        body.smtpUser = smtpUser || undefined;
+        body.smtpPassword = smtpPass || undefined;
+        body.smtpSecure = smtpSecure;
+      }
+      if (imapHost) {
+        body.imapHost = imapHost;
+        body.imapPort = Number(imapPort);
+        body.imapUser = imapUser || undefined;
+        body.imapPassword = imapPass || undefined;
+        body.imapSecure = imapSecure;
+      }
       const res = await fetch(account ? `/api/v1/email-accounts/${account.id}` : '/api/v1/email-accounts', {
         method: account ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
