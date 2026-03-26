@@ -14,6 +14,7 @@ import {
   mdiWebhook,
   mdiBellRing,
   mdiTagMultiple,
+  mdiShieldLock,
 } from '@mdi/js';
 
 // ─── Settings Hub ─────────────────────────────────────────────────────────────
@@ -95,6 +96,13 @@ const SETTINGS_SECTIONS = [
     description: 'Manage tags for tickets and knowledge articles',
     icon: mdiTagMultiple,
     color: '#8b5cf6',
+  },
+  {
+    href: '/dashboard/settings/security',
+    label: 'Security',
+    description: 'Manage two-factor authentication and recovery codes',
+    icon: mdiShieldLock,
+    color: '#dc2626',
   },
 ];
 
