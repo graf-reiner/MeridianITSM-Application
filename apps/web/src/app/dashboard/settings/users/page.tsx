@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiAccountGroup, mdiPlus, mdiMagnify, mdiPencil, mdiLockReset } from '@mdi/js';
+import { mdiArrowLeft, mdiAccountGroup, mdiPlus, mdiMagnify, mdiPencil, mdiLockReset, mdiShieldOff } from '@mdi/js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -198,6 +198,16 @@ export default function UsersSettingsPage() {
     window.alert('Password reset email would be sent (not wired to email service in this demo).');
   };
 
+  const handleClearMfa = async (user: User) => {
+    if (!window.confirm(`Clear all MFA devices for ${user.firstName} ${user.lastName}? They will need to re-enroll.`)) return;
+    try {
+      await fetch(`/api/v1/settings/users/${user.id}/clear-mfa`, { method: 'POST', credentials: 'include' });
+      window.alert('MFA devices cleared successfully.');
+    } catch {
+      window.alert('Failed to clear MFA devices.');
+    }
+  };
+
   const users = data?.users ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -286,6 +296,13 @@ export default function UsersSettingsPage() {
                         style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: '#fff', color: '#374151' }}
                       >
                         <Icon path={mdiLockReset} size={0.65} color="currentColor" />
+                      </button>
+                      <button
+                        onClick={() => void handleClearMfa(user)}
+                        title="Clear MFA"
+                        style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', border: '1px solid #fecaca', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: '#fff', color: '#dc2626' }}
+                      >
+                        <Icon path={mdiShieldOff} size={0.65} color="currentColor" />
                       </button>
                     </div>
                   </td>

@@ -21,6 +21,7 @@ import {
   mdiSwapHorizontal,
   mdiAccountGroup,
   mdiApplicationBracketsOutline,
+  mdiShieldLock,
 } from '@mdi/js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -320,11 +321,33 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                     border: '1px solid #e5e7eb',
                     borderRadius: 8,
                     boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                    minWidth: 160,
+                    minWidth: 180,
                     zIndex: 20,
                     overflow: 'hidden',
                   }}
                 >
+                  <Link
+                    href="/dashboard/settings/security"
+                    onClick={() => setUserMenuOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      width: '100%',
+                      padding: '10px 14px',
+                      background: 'none',
+                      border: 'none',
+                      borderBottom: '1px solid #f3f4f6',
+                      cursor: 'pointer',
+                      textDecoration: 'none',
+                      textAlign: 'left',
+                      fontSize: 14,
+                      color: '#374151',
+                    }}
+                  >
+                    <Icon path={mdiShieldLock} size={0.8} color="#6b7280" />
+                    Security &amp; MFA
+                  </Link>
                   <button
                     onClick={() => {
                       setUserMenuOpen(false);

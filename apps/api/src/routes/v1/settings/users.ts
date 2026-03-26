@@ -304,4 +304,29 @@ export async function usersSettingsRoutes(fastify: FastifyInstance): Promise<voi
       return reply.status(200).send({ message: 'User enabled' });
     },
   );
+
+  // POST /api/v1/settings/users/:id/clear-mfa — Clear all MFA devices for a user (admin action)
+  fastify.post(
+    '/api/v1/settings/users/:id/clear-mfa',
+    { preHandler: [requirePermission('settings:write')] },
+    async (request, reply) => {
+      const currentUser = request.user as { tenantId: string };
+      const tenantId = currentUser.tenantId;
+      const { id } = request.params as { id: string };
+
+      const existing = await prisma.user.findFirst({ where: { id, tenantId } });
+      if (!existing) {
+        return reply.status(404).send({ error: 'User not found' });
+      }
+
+      // Delete all MFA devices, challenges, and recovery codes
+      await prisma.$transaction([
+        prisma.mfaDevice.deleteMany({ where: { userId: id } }),
+        prisma.mfaChallenge.deleteMany({ where: { userId: id } }),
+        prisma.recoveryCode.deleteMany({ where: { userId: id } }),
+      ]);
+
+      return reply.status(200).send({ message: 'MFA cleared for user' });
+    },
+  );
 }
