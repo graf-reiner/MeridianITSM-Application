@@ -75,8 +75,8 @@ function QueueModal({ queue, users, onClose, onSaved }: { queue: Queue | null; u
         </div>
         <form onSubmit={(e) => void handleSubmit(e)} style={{ padding: 24 }}>
           <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>Name *</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} required style={inputStyle} />
+            <label htmlFor="name" style={labelStyle}>Name *</label>
+            <input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} required style={inputStyle} />
           </div>
           <div style={{ marginBottom: 16 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14 }}>
@@ -85,15 +85,16 @@ function QueueModal({ queue, users, onClose, onSaved }: { queue: Queue | null; u
             </label>
           </div>
           <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>Default Assignee</label>
-            <select value={defaultAssigneeId} onChange={(e) => setDefaultAssigneeId(e.target.value)} style={inputStyle}>
+            <label htmlFor="defaultAssignee" style={labelStyle}>Default Assignee</label>
+            <select id="defaultAssignee" value={defaultAssigneeId} onChange={(e) => setDefaultAssigneeId(e.target.value)} style={inputStyle}>
               <option value="">-- None --</option>
               {users.map((u) => <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>)}
             </select>
           </div>
           <div style={{ marginBottom: 20 }}>
-            <label style={labelStyle}>Assignment Rules (JSON)</label>
+            <label htmlFor="assignmentRules" style={labelStyle}>Assignment Rules (JSON)</label>
             <textarea
+              id="assignmentRules"
               value={assignmentRules}
               onChange={(e) => setAssignmentRules(e.target.value)}
               placeholder={'{"priority": "CRITICAL", "assignTo": "user-id"}'}
@@ -122,12 +123,14 @@ export default function QueuesSettingsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editQueue, setEditQueue] = useState<Queue | null>(null);
 
-  const { data, isLoading } = useQuery<{ queues: Queue[] }>({
+  const { data, isLoading } = useQuery<Queue[]>({
     queryKey: ['settings-queues'],
     queryFn: async () => {
       const res = await fetch('/api/v1/settings/queues', { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to load queues');
-      return res.json() as Promise<{ queues: Queue[] }>;
+      const json = await res.json();
+      // API may return array directly or { queues: [...] }
+      return Array.isArray(json) ? json : json.queues ?? [];
     },
   });
 
@@ -146,7 +149,7 @@ export default function QueuesSettingsPage() {
     void qc.invalidateQueries({ queryKey: ['settings-queues'] });
   };
 
-  const queues = data?.queues ?? [];
+  const queues = data ?? [];
   const users = usersData?.users ?? [];
 
   return (

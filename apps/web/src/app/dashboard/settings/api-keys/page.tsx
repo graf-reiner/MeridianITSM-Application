@@ -159,8 +159,9 @@ function CreateApiKeyModal({
         </div>
         <form onSubmit={(e) => void handleSubmit(e)} style={{ padding: 24 }}>
           <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>Name *</label>
+            <label htmlFor="name" style={labelStyle}>Name *</label>
             <input
+              id="name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -208,8 +209,9 @@ function CreateApiKeyModal({
           </div>
 
           <div style={{ marginBottom: 20 }}>
-            <label style={labelStyle}>Rate Limit Override (requests/min, optional)</label>
+            <label htmlFor="rateLimit" style={labelStyle}>Rate Limit Override (requests/min, optional)</label>
             <input
+              id="rateLimit"
               type="number"
               min={1}
               value={rateLimit}

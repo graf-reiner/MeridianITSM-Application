@@ -201,8 +201,9 @@ function WebhookFormModal({
         </div>
         <form onSubmit={(e) => void handleSubmit(e)} style={{ padding: 24 }}>
           <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>Name</label>
+            <label htmlFor="name" style={labelStyle}>Name</label>
             <input
+              id="name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -212,8 +213,9 @@ function WebhookFormModal({
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>Endpoint URL *</label>
+            <label htmlFor="endpointUrl" style={labelStyle}>Endpoint URL *</label>
             <input
+              id="endpointUrl"
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
@@ -390,12 +392,19 @@ export default function WebhooksSettingsPage() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [deleting, setDeleting] = useState(false);
 
-  const { data, isLoading } = useQuery<WebhookListResponse>({
+  const { data, isLoading } = useQuery<Webhook[]>({
     queryKey: ['settings-webhooks'],
     queryFn: async () => {
       const res = await fetch('/api/v1/webhooks', { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to load webhooks');
-      return res.json() as Promise<WebhookListResponse>;
+      const json = await res.json();
+      const webhooks = Array.isArray(json) ? json : json.webhooks ?? [];
+      // Normalize: API uses isActive, frontend uses isEnabled
+      return webhooks.map((w: any) => ({
+        ...w,
+        isEnabled: w.isEnabled ?? w.isActive ?? true,
+        isAutoDisabled: w.isAutoDisabled ?? (w.consecutiveFailures >= 50),
+      }));
     },
   });
 
@@ -450,14 +459,14 @@ export default function WebhooksSettingsPage() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ isEnabled: !webhook.isEnabled }),
+        body: JSON.stringify({ isActive: !webhook.isEnabled }),
       });
       void qc.invalidateQueries({ queryKey: ['settings-webhooks'] });
     },
     [qc],
   );
 
-  const webhooks = data?.webhooks ?? [];
+  const webhooks = data ?? [];
 
   const getStatusBadge = (webhook: Webhook) => {
     if (webhook.isAutoDisabled) {

@@ -14,7 +14,7 @@ interface JwtPayload {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const AUTH_COOKIE_NAME = 'meridian_session';
-const JWT_SECRET = process.env.JWT_SECRET ?? process.env.NEXTAUTH_SECRET ?? 'change-me-in-production-jwt-secret-32chars';
+const JWT_SECRET = process.env.JWT_SECRET || 'meridian-dev-jwt-secret-change-in-production';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -86,5 +86,5 @@ export async function middleware(request: NextRequest) {
  * TanStack Query fetches and Next.js internal paths.
  */
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|login|signup).*)'],
+  matcher: ['/((?!api|auth-action|_next/static|_next/image|images|favicon.ico|login|signup).*)'],
 };

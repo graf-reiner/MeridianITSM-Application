@@ -103,14 +103,14 @@ export async function getApp(tenantId: string, appId: string) {
       dependencies: {
         include: {
           targetApplication: {
-            select: { id: true, name: true, type: true, status: true },
+            select: { id: true, name: true, type: true, status: true, criticality: true },
           },
         },
       },
       dependents: {
         include: {
           sourceApplication: {
-            select: { id: true, name: true, type: true, status: true },
+            select: { id: true, name: true, type: true, status: true, criticality: true },
           },
         },
       },

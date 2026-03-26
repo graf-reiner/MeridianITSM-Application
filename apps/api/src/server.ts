@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import fastifyJwt from '@fastify/jwt';
+import fastifyCookie from '@fastify/cookie';
 import { registerCors } from './plugins/cors.js';
 import { registerSwagger } from './plugins/swagger.js';
 import { registerRateLimit } from './plugins/rate-limit.js';
@@ -30,7 +31,10 @@ export async function buildApp() {
     secret: process.env.JWT_SECRET ?? 'change-me-in-production-jwt-secret-32chars',
   });
 
-  // Layer 4: Rate limiting with Redis backing
+  // Layer 4: Cookie support (for form-based login)
+  await app.register(fastifyCookie);
+
+  // Layer 5: Rate limiting with Redis backing
   await registerRateLimit(app);
 
   // Public routes — no authentication required

@@ -13,6 +13,7 @@ import {
   mdiKeyVariant,
   mdiWebhook,
   mdiBellRing,
+  mdiTagMultiple,
 } from '@mdi/js';
 
 // ─── Settings Hub ─────────────────────────────────────────────────────────────
@@ -87,6 +88,13 @@ const SETTINGS_SECTIONS = [
     description: 'Send alerts to Slack, Teams, or email',
     icon: mdiBellRing,
     color: '#d97706',
+  },
+  {
+    href: '/dashboard/settings/tags',
+    label: 'Tags',
+    description: 'Manage tags for tickets and knowledge articles',
+    icon: mdiTagMultiple,
+    color: '#8b5cf6',
   },
 ];
 

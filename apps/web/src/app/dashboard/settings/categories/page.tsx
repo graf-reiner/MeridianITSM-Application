@@ -80,24 +80,24 @@ function CategoryModal({
         </div>
         <form onSubmit={(e) => void handleSubmit(e)} style={{ padding: 24 }}>
           <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>Name *</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} required style={inputStyle} />
+            <label htmlFor="name" style={labelStyle}>Name *</label>
+            <input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} required style={inputStyle} />
           </div>
           <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>Description</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
+            <label htmlFor="description" style={labelStyle}>Description</label>
+            <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
           </div>
           <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>Parent Category</label>
-            <select value={parentId} onChange={(e) => setParentId(e.target.value)} style={inputStyle}>
+            <label htmlFor="parentCategory" style={labelStyle}>Parent Category</label>
+            <select id="parentCategory" value={parentId} onChange={(e) => setParentId(e.target.value)} style={inputStyle}>
               <option value="">-- None (top-level) --</option>
               {parentOptions.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ flex: 1 }}>
-              <label style={labelStyle}>Color</label>
-              <input type="color" value={color} onChange={(e) => setColor(e.target.value)} style={{ width: '100%', height: 38, border: '1px solid #d1d5db', borderRadius: 7, cursor: 'pointer', padding: 2 }} />
+              <label htmlFor="color" style={labelStyle}>Color</label>
+              <input id="color" type="color" value={color} onChange={(e) => setColor(e.target.value)} style={{ width: '100%', height: 38, border: '1px solid #d1d5db', borderRadius: 7, cursor: 'pointer', padding: 2 }} />
             </div>
           </div>
           {error && <div style={{ padding: '8px 12px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, marginBottom: 14, color: '#dc2626', fontSize: 13 }}>{error}</div>}
@@ -203,7 +203,7 @@ export default function CategoriesSettingsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editCategory, setEditCategory] = useState<Category | null>(null);
 
-  const { data, isLoading } = useQuery<{ categories: Category[] }>({
+  const { data, isLoading } = useQuery<Category[]>({
     queryKey: ['settings-categories-tree'],
     queryFn: async () => {
       const res = await fetch('/api/v1/settings/categories/tree', { credentials: 'include' });
@@ -211,9 +211,11 @@ export default function CategoriesSettingsPage() {
         // Fall back to flat list if tree endpoint not available
         const res2 = await fetch('/api/v1/settings/categories', { credentials: 'include' });
         if (!res2.ok) throw new Error('Failed to load categories');
-        return res2.json() as Promise<{ categories: Category[] }>;
+        const json2 = await res2.json();
+        return Array.isArray(json2) ? json2 : json2.categories ?? [];
       }
-      return res.json() as Promise<{ categories: Category[] }>;
+      const json = await res.json();
+      return Array.isArray(json) ? json : json.categories ?? [];
     },
   });
 
@@ -228,7 +230,7 @@ export default function CategoriesSettingsPage() {
     void qc.invalidateQueries({ queryKey: ['settings-categories-tree'] });
   };
 
-  const categories = data?.categories ?? [];
+  const categories = data ?? [];
   const flatCategories = flattenCategories(categories);
 
   return (

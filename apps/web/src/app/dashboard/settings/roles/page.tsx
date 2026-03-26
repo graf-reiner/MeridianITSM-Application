@@ -90,8 +90,9 @@ function RoleModal({ role, onClose, onSaved }: { role: Role | null; onClose: () 
         </div>
         <form onSubmit={(e) => void handleSubmit(e)} style={{ padding: 24 }}>
           <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 600, color: '#374151' }}>Role Name *</label>
+            <label htmlFor="roleName" style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 600, color: '#374151' }}>Role Name *</label>
             <input
+              id="roleName"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -145,12 +146,18 @@ export default function RolesSettingsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editRole, setEditRole] = useState<Role | null>(null);
 
-  const { data, isLoading } = useQuery<{ roles: Role[] }>({
+  const { data, isLoading } = useQuery<Role[]>({
     queryKey: ['settings-roles'],
     queryFn: async () => {
       const res = await fetch('/api/v1/settings/roles', { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to load roles');
-      return res.json() as Promise<{ roles: Role[] }>;
+      const json = await res.json();
+      const roles = Array.isArray(json) ? json : json.roles ?? [];
+      // Normalize: API sends isSystemRole boolean, frontend expects type string
+      return roles.map((r: any) => ({
+        ...r,
+        type: r.type ?? (r.isSystemRole ? 'SYSTEM' : 'CUSTOM'),
+      }));
     },
   });
 
@@ -160,7 +167,7 @@ export default function RolesSettingsPage() {
     void qc.invalidateQueries({ queryKey: ['settings-roles'] });
   };
 
-  const roles = data?.roles ?? [];
+  const roles = data ?? [];
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>

@@ -195,8 +195,9 @@ function GenerateTokenModal({
         {!generated ? (
           <form onSubmit={(e) => void handleSubmit(e)} style={{ padding: 24 }}>
             <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>Expiry Date (optional)</label>
+              <label htmlFor="expiryDate" style={labelStyle}>Expiry Date (optional)</label>
               <input
+                id="expiryDate"
                 type="date"
                 value={expiresAt}
                 onChange={(e) => setExpiresAt(e.target.value)}
@@ -207,8 +208,9 @@ function GenerateTokenModal({
               </p>
             </div>
             <div style={{ marginBottom: 20 }}>
-              <label style={labelStyle}>Max Enrollments (optional)</label>
+              <label htmlFor="maxEnrollments" style={labelStyle}>Max Enrollments (optional)</label>
               <input
+                id="maxEnrollments"
                 type="number"
                 min={1}
                 value={maxEnrollments}
@@ -286,9 +288,10 @@ function GenerateTokenModal({
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>Enrollment Token</label>
+              <label htmlFor="enrollmentToken" style={labelStyle}>Enrollment Token</label>
               <div style={{ display: 'flex', gap: 8 }}>
                 <input
+                  id="enrollmentToken"
                   type="text"
                   readOnly
                   value={generated.token}

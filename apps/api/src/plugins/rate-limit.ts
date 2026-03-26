@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import fastifyRateLimit from '@fastify/rate-limit';
 import { redis } from '../lib/redis.js';
 
-export const AUTH_RATE_LIMIT = { max: 5, timeWindow: '15 minutes' };
+export const AUTH_RATE_LIMIT = { max: 50, timeWindow: '15 minutes' };
 export const API_RATE_LIMIT = { max: 100, timeWindow: '1 minute' };
 export const API_READ_RATE_LIMIT = { max: 300, timeWindow: '1 minute' };
 export const API_WRITE_RATE_LIMIT = { max: 30, timeWindow: '1 minute' };

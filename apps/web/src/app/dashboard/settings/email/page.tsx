@@ -194,12 +194,12 @@ function EmailModal({
           {/* Basic info */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 18 }}>
             <div>
-              <label style={labelStyle}>Display Name *</label>
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} required style={inputStyle} placeholder="Support" />
+              <label htmlFor="displayName" style={labelStyle}>Display Name *</label>
+              <input id="displayName" type="text" value={name} onChange={(e) => setName(e.target.value)} required style={inputStyle} placeholder="Support" />
             </div>
             <div>
-              <label style={labelStyle}>Email Address *</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={inputStyle} placeholder="support@company.com" />
+              <label htmlFor="emailAddress" style={labelStyle}>Email Address *</label>
+              <input id="emailAddress" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={inputStyle} placeholder="support@company.com" />
             </div>
           </div>
 
@@ -207,12 +207,12 @@ function EmailModal({
           <div style={{ backgroundColor: '#f9fafb', borderRadius: 8, padding: 14, marginBottom: 14 }}>
             <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 700, color: '#374151' }}>SMTP (Outbound)</p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px', gap: 8, marginBottom: 8 }}>
-              <div><label style={labelStyle}>Host</label><input type="text" value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} placeholder={account?.smtpHost ? '(configured)' : 'smtp.gmail.com'} style={inputStyle} /></div>
-              <div><label style={labelStyle}>Port</label><input type="number" value={smtpPort} onChange={(e) => setSmtpPort(e.target.value)} style={inputStyle} /></div>
+              <div><label htmlFor="smtpHost" style={labelStyle}>Host</label><input id="smtpHost" type="text" value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} placeholder={account?.smtpHost ? '(configured)' : 'smtp.gmail.com'} style={inputStyle} /></div>
+              <div><label htmlFor="smtpPort" style={labelStyle}>Port</label><input id="smtpPort" type="number" value={smtpPort} onChange={(e) => setSmtpPort(e.target.value)} style={inputStyle} /></div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-              <div><label style={labelStyle}>Username</label><input type="text" value={smtpUser} onChange={(e) => setSmtpUser(e.target.value)} placeholder={account?.smtpHost ? '(configured)' : ''} style={inputStyle} /></div>
-              <div><label style={labelStyle}>Password</label><input type="password" value={smtpPass} onChange={(e) => setSmtpPass(e.target.value)} placeholder={account?.smtpHost ? '(configured)' : ''} style={inputStyle} /></div>
+              <div><label htmlFor="smtpUsername" style={labelStyle}>Username</label><input id="smtpUsername" type="text" value={smtpUser} onChange={(e) => setSmtpUser(e.target.value)} placeholder={account?.smtpHost ? '(configured)' : ''} style={inputStyle} /></div>
+              <div><label htmlFor="smtpPassword" style={labelStyle}>Password</label><input id="smtpPassword" type="password" value={smtpPass} onChange={(e) => setSmtpPass(e.target.value)} placeholder={account?.smtpHost ? '(configured)' : ''} style={inputStyle} /></div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
@@ -220,8 +220,8 @@ function EmailModal({
               </label>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', whiteSpace: 'nowrap' }}>Send To</label>
-              <input type="email" value={smtpSendTo} onChange={(e) => setSmtpSendTo(e.target.value)} placeholder="test@example.com" style={{ ...inputStyle, flex: 1 }} />
+              <label htmlFor="smtpSendTo" style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', whiteSpace: 'nowrap' }}>Send To</label>
+              <input id="smtpSendTo" type="email" value={smtpSendTo} onChange={(e) => setSmtpSendTo(e.target.value)} placeholder="test@example.com" style={{ ...inputStyle, flex: 1 }} />
               <button type="button" onClick={() => void handleTest('smtp')} disabled={isTesting === 'smtp' || !smtpHost} style={{ padding: '6px 14px', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: isTesting === 'smtp' || !smtpHost ? 'not-allowed' : 'pointer', backgroundColor: isTesting === 'smtp' || !smtpHost ? '#d1d5db' : '#4f46e5', color: '#fff', whiteSpace: 'nowrap' }}>
                 {isTesting === 'smtp' ? 'Testing...' : 'Test SMTP'}
               </button>
@@ -232,12 +232,12 @@ function EmailModal({
           <div style={{ backgroundColor: '#f9fafb', borderRadius: 8, padding: 14, marginBottom: 14 }}>
             <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 700, color: '#374151' }}>IMAP (Inbound)</p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px', gap: 8, marginBottom: 8 }}>
-              <div><label style={labelStyle}>Host</label><input type="text" value={imapHost} onChange={(e) => setImapHost(e.target.value)} placeholder={account?.imapHost ? '(configured)' : 'imap.gmail.com'} style={inputStyle} /></div>
-              <div><label style={labelStyle}>Port</label><input type="number" value={imapPort} onChange={(e) => setImapPort(e.target.value)} style={inputStyle} /></div>
+              <div><label htmlFor="imapHost" style={labelStyle}>Host</label><input id="imapHost" type="text" value={imapHost} onChange={(e) => setImapHost(e.target.value)} placeholder={account?.imapHost ? '(configured)' : 'imap.gmail.com'} style={inputStyle} /></div>
+              <div><label htmlFor="imapPort" style={labelStyle}>Port</label><input id="imapPort" type="number" value={imapPort} onChange={(e) => setImapPort(e.target.value)} style={inputStyle} /></div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-              <div><label style={labelStyle}>Username</label><input type="text" value={imapUser} onChange={(e) => setImapUser(e.target.value)} placeholder={account?.imapHost ? '(configured)' : ''} style={inputStyle} /></div>
-              <div><label style={labelStyle}>Password</label><input type="password" value={imapPass} onChange={(e) => setImapPass(e.target.value)} placeholder={account?.imapHost ? '(configured)' : ''} style={inputStyle} /></div>
+              <div><label htmlFor="imapUsername" style={labelStyle}>Username</label><input id="imapUsername" type="text" value={imapUser} onChange={(e) => setImapUser(e.target.value)} placeholder={account?.imapHost ? '(configured)' : ''} style={inputStyle} /></div>
+              <div><label htmlFor="imapPassword" style={labelStyle}>Password</label><input id="imapPassword" type="password" value={imapPass} onChange={(e) => setImapPass(e.target.value)} placeholder={account?.imapHost ? '(configured)' : ''} style={inputStyle} /></div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
@@ -252,15 +252,15 @@ function EmailModal({
           {/* Defaults */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 18 }}>
             <div>
-              <label style={{ ...labelStyle, color: '#374151', fontSize: 13, fontWeight: 600 }}>Default Queue</label>
-              <select value={defaultQueueId} onChange={(e) => setDefaultQueueId(e.target.value)} style={inputStyle}>
+              <label htmlFor="defaultQueue" style={{ ...labelStyle, color: '#374151', fontSize: 13, fontWeight: 600 }}>Default Queue</label>
+              <select id="defaultQueue" value={defaultQueueId} onChange={(e) => setDefaultQueueId(e.target.value)} style={inputStyle}>
                 <option value="">-- None --</option>
                 {queues.map((q) => <option key={q.id} value={q.id}>{q.name}</option>)}
               </select>
             </div>
             <div>
-              <label style={{ ...labelStyle, color: '#374151', fontSize: 13, fontWeight: 600 }}>Default Category</label>
-              <select value={defaultCategoryId} onChange={(e) => setDefaultCategoryId(e.target.value)} style={inputStyle}>
+              <label htmlFor="defaultCategory" style={{ ...labelStyle, color: '#374151', fontSize: 13, fontWeight: 600 }}>Default Category</label>
+              <select id="defaultCategory" value={defaultCategoryId} onChange={(e) => setDefaultCategoryId(e.target.value)} style={inputStyle}>
                 <option value="">-- None --</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
@@ -301,21 +301,23 @@ export default function EmailSettingsPage() {
     },
   });
 
-  const { data: queuesData } = useQuery<{ queues: QueueOption[] }>({
+  const { data: queuesData } = useQuery<QueueOption[]>({
     queryKey: ['settings-queues-minimal'],
     queryFn: async () => {
       const res = await fetch('/api/v1/settings/queues', { credentials: 'include' });
-      if (!res.ok) return { queues: [] };
-      return res.json() as Promise<{ queues: QueueOption[] }>;
+      if (!res.ok) return [];
+      const json = await res.json();
+      return Array.isArray(json) ? json : json.queues ?? [];
     },
   });
 
-  const { data: categoriesData } = useQuery<{ categories: CategoryOption[] }>({
+  const { data: categoriesData } = useQuery<CategoryOption[]>({
     queryKey: ['settings-categories-minimal'],
     queryFn: async () => {
       const res = await fetch('/api/v1/settings/categories', { credentials: 'include' });
-      if (!res.ok) return { categories: [] };
-      return res.json() as Promise<{ categories: CategoryOption[] }>;
+      if (!res.ok) return [];
+      const json = await res.json();
+      return Array.isArray(json) ? json : json.categories ?? [];
     },
   });
 
@@ -326,8 +328,8 @@ export default function EmailSettingsPage() {
   };
 
   const accounts = data ?? [];
-  const queues = queuesData?.queues ?? [];
-  const categories = categoriesData?.categories ?? [];
+  const queues = queuesData ?? [];
+  const categories = categoriesData ?? [];
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>

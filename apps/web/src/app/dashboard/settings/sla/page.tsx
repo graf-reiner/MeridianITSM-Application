@@ -142,8 +142,8 @@ function SlaPolicyModal({
         <form onSubmit={(e) => void handleSubmit(e)} style={{ padding: 24 }}>
           {/* Name */}
           <div style={{ marginBottom: 18 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 600, color: '#374151' }}>Policy Name *</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} required style={{ ...inputStyle, fontSize: 14 }} />
+            <label htmlFor="policyName" style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 600, color: '#374151' }}>Policy Name *</label>
+            <input id="policyName" type="text" value={name} onChange={(e) => setName(e.target.value)} required style={{ ...inputStyle, fontSize: 14 }} />
           </div>
 
           {/* Priority response/resolution matrix */}
@@ -179,18 +179,18 @@ function SlaPolicyModal({
             <div style={{ backgroundColor: '#f9fafb', borderRadius: 8, padding: 14, marginBottom: 14 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: 3, fontSize: 12, fontWeight: 600, color: '#6b7280' }}>Timezone</label>
-                  <select value={timezone} onChange={(e) => setTimezone(e.target.value)} style={inputStyle}>
+                  <label htmlFor="timezone" style={{ display: 'block', marginBottom: 3, fontSize: 12, fontWeight: 600, color: '#6b7280' }}>Timezone</label>
+                  <select id="timezone" value={timezone} onChange={(e) => setTimezone(e.target.value)} style={inputStyle}>
                     {COMMON_TIMEZONES.map((tz) => <option key={tz} value={tz}>{tz}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: 3, fontSize: 12, fontWeight: 600, color: '#6b7280' }}>Start Time</label>
-                  <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} style={inputStyle} />
+                  <label htmlFor="startTime" style={{ display: 'block', marginBottom: 3, fontSize: 12, fontWeight: 600, color: '#6b7280' }}>Start Time</label>
+                  <input id="startTime" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} style={inputStyle} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: 3, fontSize: 12, fontWeight: 600, color: '#6b7280' }}>End Time</label>
-                  <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} style={inputStyle} />
+                  <label htmlFor="endTime" style={{ display: 'block', marginBottom: 3, fontSize: 12, fontWeight: 600, color: '#6b7280' }}>End Time</label>
+                  <input id="endTime" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} style={inputStyle} />
                 </div>
               </div>
               <label style={{ display: 'block', marginBottom: 5, fontSize: 12, fontWeight: 600, color: '#6b7280' }}>Business Days</label>
@@ -214,8 +214,8 @@ function SlaPolicyModal({
           </div>
           {autoEscalate && (
             <div style={{ marginBottom: 18 }}>
-              <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 600, color: '#374151' }}>Escalation Queue</label>
-              <select value={escalationQueueId} onChange={(e) => setEscalationQueueId(e.target.value)} style={{ ...inputStyle, fontSize: 14 }}>
+              <label htmlFor="escalationQueue" style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 600, color: '#374151' }}>Escalation Queue</label>
+              <select id="escalationQueue" value={escalationQueueId} onChange={(e) => setEscalationQueueId(e.target.value)} style={{ ...inputStyle, fontSize: 14 }}>
                 <option value="">-- None --</option>
                 {queues.map((q) => <option key={q.id} value={q.id}>{q.name}</option>)}
               </select>
@@ -242,21 +242,23 @@ export default function SlaSettingsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editPolicy, setEditPolicy] = useState<SlaPolicy | null>(null);
 
-  const { data, isLoading } = useQuery<{ policies: SlaPolicy[] }>({
+  const { data, isLoading } = useQuery<SlaPolicy[]>({
     queryKey: ['settings-sla'],
     queryFn: async () => {
       const res = await fetch('/api/v1/sla', { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to load SLA policies');
-      return res.json() as Promise<{ policies: SlaPolicy[] }>;
+      const json = await res.json();
+      return Array.isArray(json) ? json : json.policies ?? [];
     },
   });
 
-  const { data: queuesData } = useQuery<{ queues: QueueOption[] }>({
+  const { data: queuesData } = useQuery<QueueOption[]>({
     queryKey: ['settings-queues-minimal'],
     queryFn: async () => {
       const res = await fetch('/api/v1/settings/queues', { credentials: 'include' });
-      if (!res.ok) return { queues: [] };
-      return res.json() as Promise<{ queues: QueueOption[] }>;
+      if (!res.ok) return [];
+      const json = await res.json();
+      return Array.isArray(json) ? json : json.queues ?? [];
     },
   });
 
@@ -266,8 +268,8 @@ export default function SlaSettingsPage() {
     void qc.invalidateQueries({ queryKey: ['settings-sla'] });
   };
 
-  const policies = data?.policies ?? [];
-  const queues = queuesData?.queues ?? [];
+  const policies = data ?? [];
+  const queues = queuesData ?? [];
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>

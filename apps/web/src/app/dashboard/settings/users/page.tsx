@@ -92,25 +92,25 @@ function UserModal({
         <form onSubmit={(e) => void handleSubmit(e)} style={{ padding: 24 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
             <div>
-              <label style={labelStyle}>First Name *</label>
-              <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} required style={inputStyle} />
+              <label htmlFor="firstName" style={labelStyle}>First Name *</label>
+              <input id="firstName" type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} required style={inputStyle} />
             </div>
             <div>
-              <label style={labelStyle}>Last Name *</label>
-              <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} required style={inputStyle} />
+              <label htmlFor="lastName" style={labelStyle}>Last Name *</label>
+              <input id="lastName" type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} required style={inputStyle} />
             </div>
           </div>
           <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>Email *</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={inputStyle} />
+            <label htmlFor="email" style={labelStyle}>Email *</label>
+            <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={inputStyle} />
           </div>
           <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>{user ? 'New Password (leave blank to keep)' : 'Password *'}</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required={!user} style={inputStyle} />
+            <label htmlFor="password" style={labelStyle}>{user ? 'New Password (leave blank to keep)' : 'Password *'}</label>
+            <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required={!user} style={inputStyle} />
           </div>
           <div style={{ marginBottom: 20 }}>
-            <label style={labelStyle}>Role</label>
-            <select value={role} onChange={(e) => setRole(e.target.value)} style={inputStyle}>
+            <label htmlFor="role" style={labelStyle}>Role</label>
+            <select id="role" value={role} onChange={(e) => setRole(e.target.value)} style={inputStyle}>
               <option value="admin">Admin</option>
               <option value="msp_admin">MSP Admin</option>
               <option value="agent">Agent</option>
@@ -152,16 +152,34 @@ export default function UsersSettingsPage() {
       if (search) params.set('search', search);
       const res = await fetch(`/api/v1/settings/users?${params.toString()}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to load users');
-      return res.json() as Promise<UserListResponse>;
+      const json = await res.json();
+      // Normalize: API may use status string instead of isActive boolean
+      const normalize = (list: any[]) =>
+        list.map((u: any) => ({
+          ...u,
+          isActive: u.isActive ?? (u.status === 'ACTIVE'),
+        }));
+      // API returns { data: [...], meta: { total, ... } } or { users: [...], total }
+      if (json.data && json.meta) {
+        return { users: normalize(json.data), total: json.meta.total };
+      }
+      if (Array.isArray(json)) {
+        return { users: normalize(json), total: json.length };
+      }
+      if (json.users) {
+        return { users: normalize(json.users), total: json.total ?? json.users.length };
+      }
+      return json as UserListResponse;
     },
   });
 
-  const { data: rolesData } = useQuery<{ roles: RoleOption[] }>({
+  const { data: rolesData } = useQuery<RoleOption[]>({
     queryKey: ['settings-roles-minimal'],
     queryFn: async () => {
       const res = await fetch('/api/v1/settings/roles', { credentials: 'include' });
-      if (!res.ok) return { roles: [] };
-      return res.json() as Promise<{ roles: RoleOption[] }>;
+      if (!res.ok) return [];
+      const json = await res.json();
+      return Array.isArray(json) ? json : json.roles ?? [];
     },
   });
 
@@ -170,7 +188,7 @@ export default function UsersSettingsPage() {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ isActive: !user.isActive }),
+      body: JSON.stringify({ isActive: !user.isActive, status: user.isActive ? 'INACTIVE' : 'ACTIVE' }),
     });
     void qc.invalidateQueries({ queryKey: ['settings-users'] });
   };
@@ -183,7 +201,7 @@ export default function UsersSettingsPage() {
   const users = data?.users ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE);
-  const roles = rolesData?.roles ?? [];
+  const roles = rolesData ?? [];
 
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>

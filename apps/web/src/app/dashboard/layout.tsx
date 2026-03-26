@@ -68,8 +68,8 @@ function NavLink({ item, isActive, onClick }: { item: NavItem; isActive: boolean
         textDecoration: 'none',
         fontSize: 14,
         fontWeight: isActive ? 600 : 400,
-        backgroundColor: isActive ? '#e0e7ff' : 'transparent',
-        color: isActive ? '#4f46e5' : '#374151',
+        backgroundColor: isActive ? '#e0f2fe' : 'transparent',
+        color: isActive ? '#0284c7' : '#374151',
         transition: 'background-color 0.15s ease, color 0.15s ease',
       }}
     >
@@ -136,9 +136,12 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         className="dashboard-sidebar-desktop"
       >
         <nav style={{ flex: 1, padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div style={{ marginBottom: 24, padding: '4px 16px' }}>
-            <span style={{ fontWeight: 700, fontSize: 18, color: '#4f46e5' }}>MeridianITSM</span>
-            <p style={{ margin: '2px 0 0', fontSize: 11, color: '#9ca3af', fontWeight: 400 }}>Staff Dashboard</p>
+          <div style={{ marginBottom: 24, padding: '4px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <img src="/images/meridian-logo.svg" alt="" width={28} height={28} />
+            <div>
+              <span style={{ fontWeight: 700, fontSize: 16, color: '#0284c7' }}>Meridian ITSM</span>
+              <p style={{ margin: '1px 0 0', fontSize: 10, color: '#94a3b8', fontWeight: 400 }}>Staff Dashboard</p>
+            </div>
           </div>
           {navItems.map((item) => (
             <NavLink
@@ -151,17 +154,61 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         </nav>
       </div>
 
-      {/* ── Mobile Sidebar Overlay ────────────────────────────────────────────── */}
+      {/* ── Mobile Sidebar Overlay + Drawer ─────────────────────────────────── */}
       {sidebarOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.4)',
-            zIndex: 30,
-          }}
-          onClick={() => setSidebarOpen(false)}
-        />
+        <>
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(0,0,0,0.4)',
+              zIndex: 30,
+            }}
+            onClick={() => setSidebarOpen(false)}
+          />
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              bottom: 0,
+              width: 260,
+              backgroundColor: '#fff',
+              zIndex: 31,
+              boxShadow: '4px 0 12px rgba(0,0,0,0.15)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflowY: 'auto',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 16px 8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <img src="/images/meridian-logo.svg" alt="" width={28} height={28} />
+                <div>
+                  <span style={{ fontWeight: 700, fontSize: 16, color: '#0284c7' }}>Meridian ITSM</span>
+                  <p style={{ margin: '1px 0 0', fontSize: 10, color: '#94a3b8', fontWeight: 400 }}>Staff Dashboard</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#6b7280' }}
+                aria-label="Close menu"
+              >
+                <Icon path={mdiClose} size={1} color="currentColor" />
+              </button>
+            </div>
+            <nav style={{ flex: 1, padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {navItems.map((item) => (
+                <NavLink
+                  key={item.href}
+                  item={item}
+                  isActive={isActive(item.href)}
+                  onClick={() => setSidebarOpen(false)}
+                />
+              ))}
+            </nav>
+          </div>
+        </>
       )}
 
       {/* ── Main Content ──────────────────────────────────────────────────────── */}

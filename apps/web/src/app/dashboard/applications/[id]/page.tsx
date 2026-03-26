@@ -40,13 +40,13 @@ interface ApplicationDetail {
   updatedAt: string;
   dependencies: Array<{
     id: string;
-    targetApp: { id: string; name: string; status: string; criticality: string };
+    targetApplication: { id: string; name: string; status: string; criticality: string };
     dependencyType: string;
     description: string | null;
   }>;
   dependents: Array<{
     id: string;
-    sourceApp: { id: string; name: string; status: string; criticality: string };
+    sourceApplication: { id: string; name: string; status: string; criticality: string };
     dependencyType: string;
     description: string | null;
   }>;
@@ -383,15 +383,15 @@ export default function ApplicationDetailPage() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {app.dependencies.map((dep) => {
-                    const depCrit = CRITICALITY_COLORS[dep.targetApp.criticality] ?? CRITICALITY_COLORS.LOW;
+                    const depCrit = CRITICALITY_COLORS[dep.targetApplication.criticality] ?? CRITICALITY_COLORS.LOW;
                     return (
                       <Link
                         key={dep.id}
-                        href={`/dashboard/applications/${dep.targetApp.id}`}
+                        href={`/dashboard/applications/${dep.targetApplication.id}`}
                         style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, textDecoration: 'none', color: 'inherit' }}
                       >
                         <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: depCrit.dot, flexShrink: 0 }} />
-                        <span style={{ fontSize: 13, fontWeight: 600, color: '#111827', flex: 1 }}>{dep.targetApp.name}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#111827', flex: 1 }}>{dep.targetApplication.name}</span>
                         <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 8, backgroundColor: '#eff6ff', color: DEPENDENCY_TYPE_COLORS[dep.dependencyType] ?? '#6b7280' }}>
                           {dep.dependencyType.replace('_', ' ')}
                         </span>
@@ -411,15 +411,15 @@ export default function ApplicationDetailPage() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {app.dependents.map((dep) => {
-                    const depCrit = CRITICALITY_COLORS[dep.sourceApp.criticality] ?? CRITICALITY_COLORS.LOW;
+                    const depCrit = CRITICALITY_COLORS[dep.sourceApplication.criticality] ?? CRITICALITY_COLORS.LOW;
                     return (
                       <Link
                         key={dep.id}
-                        href={`/dashboard/applications/${dep.sourceApp.id}`}
+                        href={`/dashboard/applications/${dep.sourceApplication.id}`}
                         style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, textDecoration: 'none', color: 'inherit' }}
                       >
                         <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: depCrit.dot, flexShrink: 0 }} />
-                        <span style={{ fontSize: 13, fontWeight: 600, color: '#111827', flex: 1 }}>{dep.sourceApp.name}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#111827', flex: 1 }}>{dep.sourceApplication.name}</span>
                         <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 8, backgroundColor: '#fff7ed', color: '#ea580c' }}>
                           {dep.dependencyType.replace('_', ' ')}
                         </span>

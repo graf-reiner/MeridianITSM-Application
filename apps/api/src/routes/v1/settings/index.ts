@@ -13,6 +13,7 @@ import { logsSettingsRoutes } from './logs.js';
 import { agentSettingsRoutes } from './agents.js';
 import { apiKeySettingsRoutes } from './api-keys.js';
 import { alertChannelRoutes } from './alerts.js';
+import { tagsSettingsRoutes } from './tags.js';
 
 /**
  * Settings routes registrar.
@@ -50,4 +51,5 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
   await fastify.register(agentSettingsRoutes);
   await fastify.register(apiKeySettingsRoutes);
   await fastify.register(alertChannelRoutes);
+  await fastify.register(tagsSettingsRoutes);
 }

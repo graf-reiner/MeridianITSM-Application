@@ -9,9 +9,11 @@ import {
   ReactFlow,
   type Node,
   type Edge,
+  Handle,
+  Position,
   Background,
   Controls,
-  MiniMap,
+  MarkerType,
   ReactFlowProvider,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -129,6 +131,8 @@ function AppFlowNode({ data }: { data: { name: string; criticality: string; stat
       boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
       cursor: 'pointer',
     }}>
+      <Handle type="target" position={Position.Left} style={{ background: '#9ca3af', width: 6, height: 6 }} />
+      <Handle type="source" position={Position.Right} style={{ background: '#9ca3af', width: 6, height: 6 }} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         <div style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: crit.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <Icon path={mdiApplicationCog} size={0.75} color={crit.dot} />
@@ -136,11 +140,9 @@ function AppFlowNode({ data }: { data: { name: string; criticality: string; stat
         <span style={{ fontSize: 12, fontWeight: 700, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{data.name}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        {/* Criticality badge */}
         <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 10, backgroundColor: crit.bg, color: crit.text }}>
           {data.criticality}
         </span>
-        {/* Status indicator dot */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <div style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: stat.dot }} />
           <span style={{ fontSize: 9, color: stat.text, fontWeight: 600 }}>{data.status.replace('_', ' ')}</span>
@@ -175,6 +177,8 @@ function DependencyGraph({ appGraphData }: { appGraphData: { nodes: AppNodeApi[]
       label: e.label ?? e.dependencyType?.replace(/_/g, ' ') ?? '',
       style: { stroke: '#9ca3af', strokeWidth: 1.5 },
       labelStyle: { fontSize: 10, fill: '#6b7280' },
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#9ca3af', width: 20, height: 20 },
+      animated: false,
     })),
     [appGraphData]
   );
@@ -200,26 +204,24 @@ function DependencyGraph({ appGraphData }: { appGraphData: { nodes: AppNodeApi[]
   }
 
   return (
-    <div style={{ height: 420, border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
-      <ReactFlow
-        nodes={layoutNodes}
-        edges={layoutEdges}
-        onNodeClick={onNodeClick}
-        nodeTypes={nodeTypes}
-        fitView
-        fitViewOptions={{ padding: 0.2 }}
-        minZoom={0.3}
-        maxZoom={2}
-        attributionPosition="bottom-right"
-      >
-        <Background gap={16} color="#f3f4f6" />
-        <Controls />
-        <MiniMap nodeColor={(n) => {
-          const crit = (n.data as { criticality?: string }).criticality ?? 'LOW';
-          return CRITICALITY_COLORS[crit]?.dot ?? '#9ca3af';
-        }} />
-      </ReactFlow>
-    </div>
+    <>
+      <style>{`.react-flow__attribution { display: none !important; }`}</style>
+      <div style={{ height: 420, border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+        <ReactFlow
+          nodes={layoutNodes}
+          edges={layoutEdges}
+          onNodeClick={onNodeClick}
+          nodeTypes={nodeTypes}
+          fitView
+          fitViewOptions={{ padding: 0.2 }}
+          minZoom={0.3}
+          maxZoom={2}
+        >
+          <Background gap={16} color="#f3f4f6" />
+          <Controls />
+        </ReactFlow>
+      </div>
+    </>
   );
 }
 

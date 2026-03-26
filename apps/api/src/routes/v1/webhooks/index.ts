@@ -77,13 +77,22 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
           tenantId,
           name: body.name,
           url: body.url,
-          events: body.events as never[],
+          events: body.events.map((e: string) =>
+            e.includes('.') ? e.replace(/\./g, '_').toUpperCase() : e
+          ) as never[],
           secret,
           isActive: true,
         },
       });
 
-      return reply.code(201).send({ ...webhook, secret });
+      // Return events in dot-notation for frontend consistency
+      return reply.code(201).send({
+        ...webhook,
+        events: (webhook.events as string[]).map((e: string) =>
+          e.includes('_') ? e.replace(/_/g, '.').toLowerCase() : e
+        ),
+        secret,
+      });
     },
   );
 
@@ -111,7 +120,14 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
         orderBy: { createdAt: 'desc' },
       });
 
-      return reply.send(webhooks);
+      // Return events in dot-notation for frontend consistency
+      const normalized = webhooks.map((w: any) => ({
+        ...w,
+        events: (w.events as string[]).map((e: string) =>
+          e.includes('_') ? e.replace(/_/g, '.').toLowerCase() : e
+        ),
+      }));
+      return reply.send(normalized);
     },
   );
 
@@ -173,7 +189,11 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
       const updateData: Record<string, unknown> = {};
       if (body.name !== undefined) updateData.name = body.name;
       if (body.url !== undefined) updateData.url = body.url;
-      if (body.events !== undefined) updateData.events = body.events;
+      if (body.events !== undefined) {
+        updateData.events = body.events.map((e: string) =>
+          e.includes('.') ? e.replace(/\./g, '_').toUpperCase() : e
+        );
+      }
       if (body.isActive !== undefined) {
         updateData.isActive = body.isActive;
         // Re-enabling resets consecutive failure counter

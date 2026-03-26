@@ -114,14 +114,14 @@ function ChannelFormModal({
     setIsSubmitting(true);
     setError(null);
     try {
-      const config: Record<string, string> = {};
-      if (type === 'email') config.recipients = recipients;
+      const config: Record<string, unknown> = {};
+      if (type === 'email') config.recipients = recipients.split(',').map((r: string) => r.trim()).filter(Boolean);
       if (type === 'slack') config.webhookUrl = webhookUrl;
-      if (type === 'teams') config.connectorUrl = connectorUrl;
+      if (type === 'teams') config.webhookUrl = connectorUrl;
 
       const body = {
         name,
-        type,
+        channelType: type.toUpperCase(),
         events: Array.from(events),
         config,
       };
@@ -253,8 +253,9 @@ function ChannelFormModal({
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>Name *</label>
+            <label htmlFor="name" style={labelStyle}>Name *</label>
             <input
+              id="name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -267,8 +268,9 @@ function ChannelFormModal({
           {/* Dynamic config fields */}
           {type === 'email' && (
             <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>Recipients (comma-separated emails) *</label>
+              <label htmlFor="recipients" style={labelStyle}>Recipients (comma-separated emails) *</label>
               <input
+                id="recipients"
                 type="text"
                 value={recipients}
                 onChange={(e) => setRecipients(e.target.value)}
@@ -281,8 +283,9 @@ function ChannelFormModal({
 
           {type === 'slack' && (
             <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>Slack Webhook URL *</label>
+              <label htmlFor="slackWebhookUrl" style={labelStyle}>Slack Webhook URL *</label>
               <input
+                id="slackWebhookUrl"
                 type="url"
                 value={webhookUrl}
                 onChange={(e) => { setWebhookUrl(e.target.value); setUrlError(null); }}
@@ -302,8 +305,9 @@ function ChannelFormModal({
 
           {type === 'teams' && (
             <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>Teams Connector URL *</label>
+              <label htmlFor="teamsConnectorUrl" style={labelStyle}>Teams Connector URL *</label>
               <input
+                id="teamsConnectorUrl"
                 type="url"
                 value={connectorUrl}
                 onChange={(e) => { setConnectorUrl(e.target.value); setUrlError(null); }}
@@ -413,12 +417,19 @@ export default function AlertChannelsPage() {
   const [deleting, setDeleting] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  const { data, isLoading } = useQuery<AlertChannelListResponse>({
+  const { data, isLoading } = useQuery<AlertChannel[]>({
     queryKey: ['settings-alert-channels'],
     queryFn: async () => {
       const res = await fetch('/api/v1/settings/alerts', { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to load alert channels');
-      return res.json() as Promise<AlertChannelListResponse>;
+      const json = await res.json();
+      const channels = Array.isArray(json) ? json : json.channels ?? [];
+      // Normalize: API returns channelType (uppercase) -> map to type (lowercase)
+      return channels.map((c: any) => ({
+        ...c,
+        type: c.type ?? (c.channelType?.toLowerCase() ?? 'email'),
+        events: c.events ?? [],
+      }));
     },
   });
 
@@ -467,7 +478,7 @@ export default function AlertChannelsPage() {
     [qc],
   );
 
-  const channels = data?.channels ?? [];
+  const channels = data ?? [];
 
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
