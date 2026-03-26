@@ -10,6 +10,7 @@ interface SsoConnection {
 
 interface SsoDiscoveryResponse {
   connections: SsoConnection[];
+  tenantId?: string;
   allowLocalAuth: boolean;
   enforceSso: boolean;
 }
@@ -27,6 +28,7 @@ interface SsoDiscoveryResponse {
  */
 export function SsoButtons({ tenantSlug }: { tenantSlug: string }) {
   const [connections, setConnections] = useState<SsoConnection[]>([]);
+  const [tenantId, setTenantId] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,6 +43,7 @@ export function SsoButtons({ tenantSlug }: { tenantSlug: string }) {
       .then((r) => r.json())
       .then((data: SsoDiscoveryResponse) => {
         setConnections(data.connections ?? []);
+        setTenantId(data.tenantId ?? '');
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -67,7 +70,11 @@ export function SsoButtons({ tenantSlug }: { tenantSlug: string }) {
       {connections.map((conn) => (
         <a
           key={conn.id}
-          href={`/api/auth/sso/oidc/${conn.id}?callbackUrl=/dashboard/tickets`}
+          href={
+            conn.protocol === 'saml'
+              ? `/api/auth/sso/saml/authorize?tenant=${encodeURIComponent(tenantId)}&state=${btoa(JSON.stringify({ callbackUrl: '/dashboard/tickets', tenantId }))}`
+              : `/api/auth/sso/oidc/${conn.id}?callbackUrl=/dashboard/tickets`
+          }
           style={{
             display: 'flex',
             alignItems: 'center',

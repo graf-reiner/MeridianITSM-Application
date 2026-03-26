@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@auth/core": "^0.34.3",
+    "@boxyhq/saml-jackson": "^26.2.0",
     "@dagrejs/dagre": "^2.0.4",
     "@hookform/resolvers": "^5.2.2",
     "@mdi/js": "^7.4.47",

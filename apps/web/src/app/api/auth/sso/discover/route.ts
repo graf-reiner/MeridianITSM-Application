@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       connections,
+      tenantId: tenant.id,
       allowLocalAuth: authSettings?.allowLocalAuth ?? true,
       enforceSso: authSettings?.enforceSso ?? false,
     });
