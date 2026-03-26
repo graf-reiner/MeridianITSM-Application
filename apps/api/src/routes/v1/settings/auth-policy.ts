@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '@meridian/db';
 import { requirePermission } from '../../../plugins/rbac.js';
+import { logAuthEvent } from '../../../lib/auth-audit.js';
 
 /**
  * Settings: Authentication Policy Routes
@@ -69,6 +70,16 @@ export async function authPolicyRoutes(fastify: FastifyInstance): Promise<void> 
         where: { tenantId: user.tenantId },
         create: { tenantId: user.tenantId, ...updateData },
         update: updateData,
+      });
+
+      logAuthEvent({
+        tenantId: user.tenantId,
+        userId: (user as any).userId,
+        eventType: 'AUTH_POLICY_UPDATED',
+        ipAddress: request.ip,
+        userAgent: request.headers['user-agent'] ?? undefined,
+        success: true,
+        metadata: { updatedFields: Object.keys(updateData) },
       });
 
       return reply.send(settings);

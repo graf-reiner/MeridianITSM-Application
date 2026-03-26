@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify, createRemoteJWKSet, SignJWT } from 'jose';
 import { ssoPrisma as prisma } from '@/lib/sso/db';
 import { decrypt } from '@/lib/sso/encryption';
+import { sanitizeDisplayName } from '@/lib/sso/sanitize';
 
 const JWT_SECRET =
   process.env.JWT_SECRET ?? 'meridian-dev-jwt-secret-change-in-production';
@@ -129,11 +130,11 @@ export async function GET(request: NextRequest) {
     });
 
     const email = claims.email as string | undefined;
-    const name =
+    const name = sanitizeDisplayName(
       (claims.name as string) ??
       (claims.preferred_username as string) ??
-      email ??
-      'SSO User';
+      email,
+    ) || 'SSO User';
 
     if (!email) {
       return NextResponse.redirect(

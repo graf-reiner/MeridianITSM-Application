@@ -3,6 +3,8 @@ import { loginWithTenantSchema } from '@meridian/types';
 import { prisma } from '@meridian/db';
 import { validateCredentials, getUserRoles, generateTokens } from '../../services/auth.service.js';
 import { AUTH_RATE_LIMIT } from '../../plugins/rate-limit.js';
+import { logAuthEvent } from '../../lib/auth-audit.js';
+import { checkBruteForce, recordFailedAttempt, clearFailedAttempts } from '../../lib/brute-force.js';
 
 /**
  * POST /api/auth/login
@@ -30,12 +32,42 @@ export async function loginRoute(app: FastifyInstance): Promise<void> {
       return reply.code(401).send({ error: 'Invalid credentials' });
     }
 
+    const ip = request.ip;
+    const ua = request.headers['user-agent'] ?? undefined;
+
+    // Brute force protection — check before validating credentials
+    const bruteCheck = checkBruteForce(email, tenant.id);
+    if (bruteCheck.locked) {
+      logAuthEvent({
+        tenantId: tenant.id,
+        eventType: 'ACCOUNT_LOCKED',
+        ipAddress: ip,
+        userAgent: ua,
+        success: false,
+        metadata: { email },
+      });
+      return reply.code(429).send({ error: 'Account temporarily locked. Try again later.' });
+    }
+
     // Validate user credentials against the resolved tenant
     const user = await validateCredentials(email, password, tenant.id);
 
     if (!user) {
+      recordFailedAttempt(email, tenant.id);
+      logAuthEvent({
+        tenantId: tenant.id,
+        eventType: 'LOGIN_FAILURE',
+        authMethod: 'credentials',
+        ipAddress: ip,
+        userAgent: ua,
+        success: false,
+        metadata: { email },
+      });
       return reply.code(401).send({ error: 'Invalid credentials' });
     }
+
+    // Clear brute force counters on success
+    clearFailedAttempts(email, tenant.id);
 
     // Load user's roles
     const roles = await getUserRoles(user.id, tenant.id);
@@ -50,6 +82,16 @@ export async function loginRoute(app: FastifyInstance): Promise<void> {
       },
       app,
     );
+
+    logAuthEvent({
+      tenantId: tenant.id,
+      userId: user.id,
+      eventType: 'LOGIN_SUCCESS',
+      authMethod: 'credentials',
+      ipAddress: ip,
+      userAgent: ua,
+      success: true,
+    });
 
     return reply.code(200).send({
       accessToken: tokens.accessToken,

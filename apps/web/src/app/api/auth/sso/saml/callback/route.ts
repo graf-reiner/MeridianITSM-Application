@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SignJWT } from 'jose';
 import { getJacksonInstance } from '@/lib/sso/saml-jackson';
 import { ssoPrisma as prisma } from '@/lib/sso/db';
+import { sanitizeDisplayName } from '@/lib/sso/sanitize';
 
 const JWT_SECRET =
   process.env.JWT_SECRET ?? 'meridian-dev-jwt-secret-change-in-production';
@@ -91,9 +92,11 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user && connection?.autoProvision) {
-      const name = profile.firstName
-        ? `${profile.firstName} ${profile.lastName ?? ''}`.trim()
-        : email;
+      const name = sanitizeDisplayName(
+        profile.firstName
+          ? `${profile.firstName} ${profile.lastName ?? ''}`.trim()
+          : email,
+      ) || email;
       const nameParts = name.split(' ');
 
       user = await prisma.user.create({
@@ -140,9 +143,11 @@ export async function GET(request: NextRequest) {
       update: {
         lastLoginAt: new Date(),
         rawClaims: JSON.parse(JSON.stringify(profile)),
-        displayName: profile.firstName
-          ? `${profile.firstName} ${profile.lastName ?? ''}`.trim()
-          : email,
+        displayName: sanitizeDisplayName(
+          profile.firstName
+            ? `${profile.firstName} ${profile.lastName ?? ''}`.trim()
+            : email,
+        ) || email,
         email,
       },
       create: {
@@ -150,9 +155,11 @@ export async function GET(request: NextRequest) {
         provider: 'saml',
         providerAccountId: providerId,
         email,
-        displayName: profile.firstName
-          ? `${profile.firstName} ${profile.lastName ?? ''}`.trim()
-          : email,
+        displayName: sanitizeDisplayName(
+          profile.firstName
+            ? `${profile.firstName} ${profile.lastName ?? ''}`.trim()
+            : email,
+        ) || email,
         lastLoginAt: new Date(),
         rawClaims: JSON.parse(JSON.stringify(profile)),
       },

@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { prisma } from '@meridian/db';
 import { requirePermission } from '../../../plugins/rbac.js';
 import { encrypt } from '../../../lib/encryption.js';
+import { logAuthEvent } from '../../../lib/auth-audit.js';
 
 /**
  * Settings: SSO Connection Management Routes
@@ -69,8 +70,41 @@ export async function ssoSettingsRoutes(fastify: FastifyInstance): Promise<void>
         return reply.status(400).send({ error: 'name and protocol are required' });
       }
 
+      if (typeof body.name !== 'string' || body.name.length > 255) {
+        return reply.status(400).send({ error: 'name must be a non-empty string (max 255 chars)' });
+      }
+
       if (!['oidc', 'saml'].includes(body.protocol)) {
         return reply.status(400).send({ error: 'protocol must be "oidc" or "saml"' });
+      }
+
+      // Validate OIDC URLs
+      if (body.protocol === 'oidc') {
+        if (body.oidcIssuerUrl) {
+          try { new URL(body.oidcIssuerUrl); } catch {
+            return reply.status(400).send({ error: 'oidcIssuerUrl must be a valid URL' });
+          }
+        }
+        if (body.oidcDiscoveryUrl) {
+          try { new URL(body.oidcDiscoveryUrl); } catch {
+            return reply.status(400).send({ error: 'oidcDiscoveryUrl must be a valid URL' });
+          }
+        }
+      }
+
+      // Validate SAML URLs and metadata
+      if (body.protocol === 'saml') {
+        if (body.samlMetadataUrl) {
+          try { new URL(body.samlMetadataUrl); } catch {
+            return reply.status(400).send({ error: 'samlMetadataUrl must be a valid URL' });
+          }
+        }
+        if (body.samlMetadataRaw) {
+          const trimmed = body.samlMetadataRaw.trim();
+          if (!trimmed.startsWith('<?xml') && !trimmed.startsWith('<')) {
+            return reply.status(400).send({ error: 'samlMetadataRaw must be valid XML' });
+          }
+        }
       }
 
       const connection = await prisma.ssoConnection.create({
@@ -89,6 +123,18 @@ export async function ssoSettingsRoutes(fastify: FastifyInstance): Promise<void>
           defaultRole: body.defaultRole ?? 'agent',
           forceMfa: body.forceMfa ?? false,
         },
+      });
+
+      const reqUser = request.user as { tenantId: string; userId?: string };
+      logAuthEvent({
+        tenantId: reqUser.tenantId,
+        userId: (reqUser as any).userId,
+        eventType: 'SSO_CONNECTION_CREATED',
+        resourceId: connection.id,
+        ipAddress: request.ip,
+        userAgent: request.headers['user-agent'] ?? undefined,
+        success: true,
+        metadata: { name: body.name, protocol: body.protocol },
       });
 
       return reply.status(201).send(connection);
@@ -138,6 +184,18 @@ export async function ssoSettingsRoutes(fastify: FastifyInstance): Promise<void>
         },
       });
 
+      const reqUser = request.user as { tenantId: string; userId?: string };
+      logAuthEvent({
+        tenantId: reqUser.tenantId,
+        userId: (reqUser as any).userId,
+        eventType: 'SSO_CONNECTION_UPDATED',
+        resourceId: id,
+        ipAddress: request.ip,
+        userAgent: request.headers['user-agent'] ?? undefined,
+        success: true,
+        metadata: { updatedFields: Object.keys(body) },
+      });
+
       return reply.status(200).send(updated);
     },
   );
@@ -158,6 +216,19 @@ export async function ssoSettingsRoutes(fastify: FastifyInstance): Promise<void>
       }
 
       await prisma.ssoConnection.delete({ where: { id } });
+
+      const reqUser = request.user as { tenantId: string; userId?: string };
+      logAuthEvent({
+        tenantId: reqUser.tenantId,
+        userId: (reqUser as any).userId,
+        eventType: 'SSO_CONNECTION_DELETED',
+        resourceId: id,
+        ipAddress: request.ip,
+        userAgent: request.headers['user-agent'] ?? undefined,
+        success: true,
+        metadata: { name: existing.name, protocol: existing.protocol },
+      });
+
       return reply.status(204).send();
     },
   );
