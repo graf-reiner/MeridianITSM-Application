@@ -11,6 +11,7 @@
     "test:e2e:headed": "playwright test --headed"
   },
   "dependencies": {
+    "@auth/core": "^0.34.3",
     "@dagrejs/dagre": "^2.0.4",
     "@hookform/resolvers": "^5.2.2",
     "@mdi/js": "^7.4.47",
@@ -28,6 +29,7 @@
     "jose": "^6.0.10",
     "lowlight": "^3.3.0",
     "next": "^16.2.0",
+    "next-auth": "5.0.0-beta.30",
     "papaparse": "^5.5.3",
     "qrcode": "^1.5.4",
     "react": "^19.2.1",
