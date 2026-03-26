@@ -72,6 +72,9 @@ export async function emailAccountRoutes(fastify: FastifyInstance): Promise<void
       if (!body.emailAddress) {
         return reply.status(400).send({ error: 'emailAddress is required' });
       }
+      if (body.pollInterval !== undefined && (body.pollInterval < 1 || body.pollInterval > 1440)) {
+        return reply.status(400).send({ error: 'pollInterval must be between 1 and 1440 minutes' });
+      }
 
       const account = await prisma.emailAccount.create({
         data: {
@@ -139,6 +142,10 @@ export async function emailAccountRoutes(fastify: FastifyInstance): Promise<void
       });
       if (!existing) {
         return reply.status(404).send({ error: 'Email account not found' });
+      }
+
+      if (body.pollInterval !== undefined && (body.pollInterval < 1 || body.pollInterval > 1440)) {
+        return reply.status(400).send({ error: 'pollInterval must be between 1 and 1440 minutes' });
       }
 
       // Only encrypt password if a new one is provided; leave existing encrypted value otherwise

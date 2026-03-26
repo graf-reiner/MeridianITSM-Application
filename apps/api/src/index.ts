@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 import { buildApp } from './server.js';
+import { startEmailPolling } from './workers/email-poll.worker.js';
 
 const start = async () => {
   const app = await buildApp();
@@ -13,6 +14,9 @@ const start = async () => {
 
   await app.listen({ port, host: '0.0.0.0' });
   console.log(`MeridianITSM API server listening on port ${port}`);
+
+  // Start background workers
+  await startEmailPolling();
 };
 
 // Graceful shutdown handlers

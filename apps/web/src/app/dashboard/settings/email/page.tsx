@@ -16,6 +16,7 @@ interface EmailAccount {
   smtpConfigured?: boolean;
   imapHost: string | null;
   imapConfigured?: boolean;
+  pollInterval: number;
   isActive: boolean;
   lastPolledAt: string | null;
   defaultQueueId: string | null;
@@ -105,6 +106,7 @@ function EmailModal({
   const [imapUser, setImapUser] = useState('');
   const [imapPass, setImapPass] = useState('');
   const [imapSecure, setImapSecure] = useState(true);
+  const [pollInterval, setPollInterval] = useState(account?.pollInterval ?? 5);
   const [defaultQueueId, setDefaultQueueId] = useState(account?.defaultQueueId ?? '');
   const [defaultCategoryId, setDefaultCategoryId] = useState(account?.defaultCategoryId ?? '');
   const [smtpSendTo, setSmtpSendTo] = useState('');
@@ -145,6 +147,7 @@ function EmailModal({
       const body: Record<string, unknown> = {
         name: name.trim(),
         emailAddress: email.trim(),
+        pollInterval,
         defaultQueueId: defaultQueueId || null,
         defaultCategoryId: defaultCategoryId || null,
       };
@@ -247,6 +250,13 @@ function EmailModal({
                 {isTesting === 'imap' ? 'Testing...' : 'Test IMAP'}
               </button>
             </div>
+          </div>
+
+          {/* Poll Interval */}
+          <div style={{ marginBottom: 14 }}>
+            <label htmlFor="pollInterval" style={labelStyle}>Poll Interval (minutes)</label>
+            <input id="pollInterval" type="number" min={1} max={1440} value={pollInterval} onChange={(e) => setPollInterval(Math.max(1, Math.min(1440, Number(e.target.value) || 1)))} style={{ ...inputStyle, maxWidth: 120 }} />
+            <span style={{ marginLeft: 8, fontSize: 11, color: '#9ca3af' }}>How often to check for new emails (1-1440 min)</span>
           </div>
 
           {/* Defaults */}
@@ -364,6 +374,7 @@ export default function EmailSettingsPage() {
                 <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: '#374151' }}>SMTP</th>
                 <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: '#374151' }}>IMAP</th>
                 <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: '#374151' }}>Active</th>
+                <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: '#374151' }}>Poll</th>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Last Polled</th>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Actions</th>
               </tr>
@@ -384,6 +395,9 @@ export default function EmailSettingsPage() {
                       {acc.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </td>
+                  <td style={{ padding: '10px 14px', textAlign: 'center', color: '#6b7280', fontSize: 12 }}>
+                    {acc.pollInterval ?? 5} min
+                  </td>
                   <td style={{ padding: '10px 14px', color: '#9ca3af', fontSize: 12 }}>
                     {acc.lastPolledAt ? new Date(acc.lastPolledAt).toLocaleString() : 'Never'}
                   </td>
@@ -400,7 +414,7 @@ export default function EmailSettingsPage() {
                 </tr>
               ))}
               {accounts.length === 0 && (
-                <tr><td colSpan={7} style={{ padding: 32, textAlign: 'center', color: '#9ca3af' }}>No email accounts configured</td></tr>
+                <tr><td colSpan={8} style={{ padding: 32, textAlign: 'center', color: '#9ca3af' }}>No email accounts configured</td></tr>
               )}
             </tbody>
           </table>
