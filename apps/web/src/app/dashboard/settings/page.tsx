@@ -15,6 +15,8 @@ import {
   mdiBellRing,
   mdiTagMultiple,
   mdiShieldLock,
+  mdiShieldKey,
+  mdiShieldLockOutline,
 } from '@mdi/js';
 
 // ─── Settings Hub ─────────────────────────────────────────────────────────────
@@ -103,6 +105,20 @@ const SETTINGS_SECTIONS = [
     description: 'Manage two-factor authentication and recovery codes',
     icon: mdiShieldLock,
     color: '#dc2626',
+  },
+  {
+    href: '/dashboard/settings/sso',
+    label: 'SSO Configuration',
+    description: 'Configure OIDC and SAML identity providers',
+    icon: mdiShieldKey,
+    color: '#0891b2',
+  },
+  {
+    href: '/dashboard/settings/auth-policy',
+    label: 'Auth Policy',
+    description: 'MFA, password, and session policies',
+    icon: mdiShieldLockOutline,
+    color: '#7c3aed',
   },
 ];
 
