@@ -14,6 +14,7 @@ import { agentSettingsRoutes } from './agents.js';
 import { apiKeySettingsRoutes } from './api-keys.js';
 import { alertChannelRoutes } from './alerts.js';
 import { tagsSettingsRoutes } from './tags.js';
+import { ssoSettingsRoutes } from './sso.js';
 
 /**
  * Settings routes registrar.
@@ -52,4 +53,5 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
   await fastify.register(apiKeySettingsRoutes);
   await fastify.register(alertChannelRoutes);
   await fastify.register(tagsSettingsRoutes);
+  await fastify.register(ssoSettingsRoutes);
 }

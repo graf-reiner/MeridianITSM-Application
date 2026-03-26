@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { ssoPrisma as prisma } from '@/lib/sso/db';
 
-const API_URL = process.env.API_URL ?? 'http://localhost:4000';
-
+/**
+ * GET /api/auth/sso/discover?tenantSlug=<slug>
+ *
+ * Public endpoint (pre-auth) that returns active SSO connections
+ * and auth policy for a given tenant. Used by the login page to
+ * render SSO sign-in buttons.
+ */
 export async function GET(request: NextRequest) {
   const tenantSlug = request.nextUrl.searchParams.get('tenantSlug');
 
@@ -10,15 +16,33 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Query the Fastify API for SSO connections
-    // For now, return empty — will be populated when SSO connections are configured
-    // In Phase 3, this will query the SsoConnection table via an API endpoint
-    return NextResponse.json({
-      connections: [],
-      allowLocalAuth: true,
-      enforceSso: false,
+    // Resolve tenant by slug
+    const tenant = await prisma.tenant.findFirst({
+      where: { slug: tenantSlug, status: 'ACTIVE' },
     });
-  } catch {
+
+    if (!tenant) {
+      return NextResponse.json({ connections: [], allowLocalAuth: true });
+    }
+
+    // Get active SSO connections (only return public-safe fields)
+    const connections = await prisma.ssoConnection.findMany({
+      where: { tenantId: tenant.id, status: 'active' },
+      select: { id: true, name: true, protocol: true },
+    });
+
+    // Get tenant auth settings
+    const authSettings = await prisma.tenantAuthSettings.findUnique({
+      where: { tenantId: tenant.id },
+    });
+
+    return NextResponse.json({
+      connections,
+      allowLocalAuth: authSettings?.allowLocalAuth ?? true,
+      enforceSso: authSettings?.enforceSso ?? false,
+    });
+  } catch (error) {
+    console.error('SSO discovery error:', error);
     return NextResponse.json({ connections: [], allowLocalAuth: true });
   }
 }
