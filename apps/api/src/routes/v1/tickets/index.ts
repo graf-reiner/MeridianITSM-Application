@@ -169,16 +169,25 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
       description?: string;
       status?: string;
       priority?: string;
+      type?: string;
       assignedToId?: string;
       queueId?: string;
       categoryId?: string;
       slaId?: string;
+      slaPolicyId?: string;
       resolution?: string;
       tags?: string[];
     };
 
+    // Normalize: frontend may send slaPolicyId, API expects slaId
+    const updateData = {
+      ...body,
+      slaId: body.slaId ?? body.slaPolicyId,
+    };
+    delete (updateData as any).slaPolicyId;
+
     try {
-      const ticket = await updateTicket(tenantId, id, body, userId);
+      const ticket = await updateTicket(tenantId, id, updateData, userId);
       return reply.status(200).send(ticket);
     } catch (err) {
       const error = err as Error & { statusCode?: number };

@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiArrowLeft, mdiPaperclip, mdiSend, mdiAccountCircle, mdiClockOutline } from '@mdi/js';
 import SlaCountdown from '../../../../components/SlaCountdown';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
+import { UnsavedChangesToast } from '@/components/UnsavedChangesToast';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -105,7 +107,13 @@ export default function TicketDetailPage() {
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [commentError, setCommentError] = useState<string | null>(null);
   const [statusUpdating, setStatusUpdating] = useState(false);
-  const [fieldUpdating, setFieldUpdating] = useState<string | null>(null);
+  const [editAssignee, setEditAssignee] = useState('');
+  const [editQueue, setEditQueue] = useState('');
+  const [editCategory, setEditCategory] = useState('');
+  const [editSla, setEditSla] = useState('');
+  const [editPriority, setEditPriority] = useState('');
+  const [editType, setEditType] = useState('');
+  const [sidebarSaving, setSidebarSaving] = useState(false);
 
   const { data: ticket, isLoading, error } = useQuery<TicketDetail>({
     queryKey: ['ticket', ticketId],
@@ -200,22 +208,64 @@ export default function TicketDetailPage() {
     },
   });
 
-  const handleFieldUpdate = async (field: string, value: string | null) => {
-    setFieldUpdating(field);
+  // ── Initialize sidebar edit state from ticket ────────────────────────────
+  useEffect(() => {
+    if (ticket) {
+      setEditAssignee(ticket.assignee?.id ?? '');
+      setEditQueue(ticket.queue?.id ?? '');
+      setEditCategory(ticket.category?.id ?? '');
+      setEditSla(ticket.slaPolicy?.id ?? '');
+      setEditPriority(ticket.priority);
+      setEditType(ticket.type);
+    }
+  }, [ticket]);
+
+  // ── Dirty check ─────────────────────────────────────────────────────────
+  const sidebarDirty = ticket ? (
+    editAssignee !== (ticket.assignee?.id ?? '') ||
+    editQueue !== (ticket.queue?.id ?? '') ||
+    editCategory !== (ticket.category?.id ?? '') ||
+    editSla !== (ticket.slaPolicy?.id ?? '') ||
+    editPriority !== ticket.priority ||
+    editType !== ticket.type
+  ) : false;
+
+  useUnsavedChanges(sidebarDirty);
+
+  // ── Save all sidebar changes at once ────────────────────────────────────
+  const handleSidebarSave = async () => {
+    setSidebarSaving(true);
     try {
       const res = await fetch(`/api/v1/tickets/${ticketId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ [field]: value || null }),
+        body: JSON.stringify({
+          assignedToId: editAssignee || null,
+          queueId: editQueue || null,
+          categoryId: editCategory || null,
+          slaPolicyId: editSla || null,
+          priority: editPriority,
+          type: editType,
+        }),
       });
       if (!res.ok) throw new Error('Failed to update');
       void qc.invalidateQueries({ queryKey: ['ticket', ticketId] });
       void qc.invalidateQueries({ queryKey: ['tickets'] });
-    } catch {
-      // silently fail — will show stale data
     } finally {
-      setFieldUpdating(null);
+      setSidebarSaving(false);
+    }
+  };
+
+  // ── Discard sidebar changes ─────────────────────────────────────────────
+  const handleSidebarDiscard = () => {
+    if (ticket) {
+      setEditAssignee(ticket.assignee?.id ?? '');
+      setEditQueue(ticket.queue?.id ?? '');
+      setEditCategory(ticket.category?.id ?? '');
+      setEditSla(ticket.slaPolicy?.id ?? '');
+      setEditPriority(ticket.priority);
+      setEditType(ticket.type);
     }
   };
 
@@ -524,9 +574,8 @@ export default function TicketDetailPage() {
               <div>
                 <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>Assignee</span>
                 <select
-                  value={ticket.assignee?.id ?? ''}
-                  onChange={(e) => void handleFieldUpdate('assignedToId', e.target.value)}
-                  disabled={fieldUpdating === 'assignedToId'}
+                  value={editAssignee}
+                  onChange={(e) => setEditAssignee(e.target.value)}
                   style={{ width: '100%', padding: '5px 8px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, backgroundColor: '#fff', cursor: 'pointer' }}
                 >
                   <option value="">Unassigned</option>
@@ -548,9 +597,8 @@ export default function TicketDetailPage() {
               <div>
                 <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>Queue</span>
                 <select
-                  value={ticket.queue?.id ?? ''}
-                  onChange={(e) => void handleFieldUpdate('queueId', e.target.value)}
-                  disabled={fieldUpdating === 'queueId'}
+                  value={editQueue}
+                  onChange={(e) => setEditQueue(e.target.value)}
                   style={{ width: '100%', padding: '5px 8px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, backgroundColor: '#fff', cursor: 'pointer' }}
                 >
                   <option value="">— None —</option>
@@ -564,9 +612,8 @@ export default function TicketDetailPage() {
               <div>
                 <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>Category</span>
                 <select
-                  value={ticket.category?.id ?? ''}
-                  onChange={(e) => void handleFieldUpdate('categoryId', e.target.value)}
-                  disabled={fieldUpdating === 'categoryId'}
+                  value={editCategory}
+                  onChange={(e) => setEditCategory(e.target.value)}
                   style={{ width: '100%', padding: '5px 8px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, backgroundColor: '#fff', cursor: 'pointer' }}
                 >
                   <option value="">— None —</option>
@@ -580,9 +627,8 @@ export default function TicketDetailPage() {
               <div>
                 <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>SLA Policy</span>
                 <select
-                  value={ticket.slaPolicy?.id ?? ''}
-                  onChange={(e) => void handleFieldUpdate('slaPolicyId', e.target.value)}
-                  disabled={fieldUpdating === 'slaPolicyId'}
+                  value={editSla}
+                  onChange={(e) => setEditSla(e.target.value)}
                   style={{ width: '100%', padding: '5px 8px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, backgroundColor: '#fff', cursor: 'pointer' }}
                 >
                   <option value="">— None —</option>
@@ -596,9 +642,8 @@ export default function TicketDetailPage() {
               <div>
                 <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>Priority</span>
                 <select
-                  value={ticket.priority}
-                  onChange={(e) => void handleFieldUpdate('priority', e.target.value)}
-                  disabled={fieldUpdating === 'priority'}
+                  value={editPriority}
+                  onChange={(e) => setEditPriority(e.target.value)}
                   style={{ width: '100%', padding: '5px 8px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, backgroundColor: '#fff', cursor: 'pointer' }}
                 >
                   <option value="LOW">Low</option>
@@ -612,9 +657,8 @@ export default function TicketDetailPage() {
               <div>
                 <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>Type</span>
                 <select
-                  value={ticket.type}
-                  onChange={(e) => void handleFieldUpdate('type', e.target.value)}
-                  disabled={fieldUpdating === 'type'}
+                  value={editType}
+                  onChange={(e) => setEditType(e.target.value)}
                   style={{ width: '100%', padding: '5px 8px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, backgroundColor: '#fff', cursor: 'pointer' }}
                 >
                   <option value="INCIDENT">Incident</option>
@@ -636,6 +680,13 @@ export default function TicketDetailPage() {
           </div>
         </div>
       </div>
+
+      <UnsavedChangesToast
+        visible={sidebarDirty}
+        onSave={() => void handleSidebarSave()}
+        onDiscard={handleSidebarDiscard}
+        saving={sidebarSaving}
+      />
     </div>
   );
 }

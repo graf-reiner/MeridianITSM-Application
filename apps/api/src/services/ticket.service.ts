@@ -40,6 +40,7 @@ export interface UpdateTicketData {
   description?: string;
   status?: string;
   priority?: string;
+  type?: string;
   assignedToId?: string;
   queueId?: string;
   categoryId?: string;
@@ -285,6 +286,7 @@ export async function updateTicket(
   trackChange('title', existing.title, data.title);
   trackChange('description', existing.description, data.description);
   trackChange('priority', existing.priority, data.priority);
+  trackChange('type', existing.type, data.type);
   trackChange('assignedToId', existing.assignedToId, data.assignedToId);
   trackChange('queueId', existing.queueId, data.queueId);
   trackChange('categoryId', existing.categoryId, data.categoryId);
