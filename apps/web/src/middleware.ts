@@ -9,6 +9,7 @@ interface JwtPayload {
   role?: string;
   sub?: string;
   tenantId?: string;
+  mfaVerified?: boolean;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -67,6 +68,12 @@ export async function middleware(request: NextRequest) {
 
   // Support both `roles` (array from API JWT) and `role` (legacy single string)
   const roles = payload.roles ?? (payload.role ? [payload.role] : []);
+
+  // ── MFA enforcement ────────────────────────────────────────────────────────
+  // If the JWT has mfaVerified explicitly set to false, redirect to MFA challenge
+  if (payload.mfaVerified === false && !pathname.startsWith('/mfa')) {
+    return NextResponse.redirect(new URL('/mfa/challenge', request.url));
+  }
 
   // ── end_user accessing /dashboard → redirect to /portal ──────────────────
   if (roles.includes('end_user') && pathname.startsWith('/dashboard')) {

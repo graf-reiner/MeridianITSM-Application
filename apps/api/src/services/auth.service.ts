@@ -53,7 +53,11 @@ export interface TokenPayload {
 /**
  * Generate access and refresh JWT tokens.
  */
-export function generateTokens(payload: TokenPayload, fastify: FastifyInstance): TokenPair {
+export function generateTokens(
+  payload: TokenPayload,
+  fastify: FastifyInstance,
+  options?: { mfaVerified?: boolean },
+): TokenPair {
   const accessToken = fastify.jwt.sign(
     {
       userId: payload.userId,
@@ -61,6 +65,7 @@ export function generateTokens(payload: TokenPayload, fastify: FastifyInstance):
       email: payload.email,
       roles: payload.roles,
       type: 'access',
+      mfaVerified: options?.mfaVerified ?? false,
     },
     { expiresIn: '15m' },
   );
@@ -72,11 +77,35 @@ export function generateTokens(payload: TokenPayload, fastify: FastifyInstance):
       email: payload.email,
       roles: payload.roles,
       type: 'refresh',
+      mfaVerified: options?.mfaVerified ?? false,
     },
     { expiresIn: '7d' },
   );
 
   return { accessToken, refreshToken };
+}
+
+/**
+ * Check if a user requires MFA based on tenant settings and enrolled devices.
+ */
+export async function checkMfaRequired(userId: string, tenantId: string): Promise<boolean> {
+  const authSettings = await prisma.tenantAuthSettings.findUnique({
+    where: { tenantId },
+  });
+
+  if (!authSettings || authSettings.mfaPolicy === 'disabled') return false;
+
+  if (authSettings.mfaPolicy === 'required') return true;
+
+  if (authSettings.mfaPolicy === 'optional') {
+    // Only require if user has active MFA devices
+    const deviceCount = await prisma.mfaDevice.count({
+      where: { userId, status: 'active' },
+    });
+    return deviceCount > 0;
+  }
+
+  return false;
 }
 
 /**

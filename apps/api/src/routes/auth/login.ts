@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { loginWithTenantSchema } from '@meridian/types';
 import { prisma } from '@meridian/db';
-import { validateCredentials, getUserRoles, generateTokens } from '../../services/auth.service.js';
+import { validateCredentials, getUserRoles, generateTokens, checkMfaRequired } from '../../services/auth.service.js';
 import { AUTH_RATE_LIMIT } from '../../plugins/rate-limit.js';
 import { logAuthEvent } from '../../lib/auth-audit.js';
 import { checkBruteForce, recordFailedAttempt, clearFailedAttempts } from '../../lib/brute-force.js';
@@ -72,7 +72,10 @@ export async function loginRoute(app: FastifyInstance): Promise<void> {
     // Load user's roles
     const roles = await getUserRoles(user.id, tenant.id);
 
-    // Generate token pair
+    // Check if MFA is required for this user
+    const mfaRequired = await checkMfaRequired(user.id, tenant.id);
+
+    // Generate token pair — mfaVerified is true only if MFA is NOT required
     const tokens = generateTokens(
       {
         userId: user.id,
@@ -81,6 +84,7 @@ export async function loginRoute(app: FastifyInstance): Promise<void> {
         roles,
       },
       app,
+      { mfaVerified: !mfaRequired },
     );
 
     logAuthEvent({
@@ -91,11 +95,13 @@ export async function loginRoute(app: FastifyInstance): Promise<void> {
       ipAddress: ip,
       userAgent: ua,
       success: true,
+      metadata: { mfaRequired },
     });
 
     return reply.code(200).send({
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
+      mfaRequired,
       user: {
         id: user.id,
         email: user.email,
