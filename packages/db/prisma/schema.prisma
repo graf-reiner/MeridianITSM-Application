@@ -420,6 +420,8 @@ model Tenant {
   usageSnapshots        TenantUsageSnapshot[]
   ownerNotes            OwnerNote[]
   tags                  Tag[]
+  ssoConnections        SsoConnection[]
+  tenantAuthSettings    TenantAuthSettings?
 
   @@map("tenants")
 }
@@ -482,9 +484,13 @@ model User {
   notifications       Notification[]
   deviceTokens        DeviceToken[]
   auditLogs           AuditLog[]
-  passwordResetTokens PasswordResetToken[]
-  userGroupMembers    UserGroupMember[]
-  apiKeys             ApiKey[]
+  passwordResetTokens  PasswordResetToken[]
+  userGroupMembers     UserGroupMember[]
+  apiKeys              ApiKey[]
+  federatedIdentities  FederatedIdentity[]
+  mfaDevices           MfaDevice[]
+  mfaChallenges        MfaChallenge[]
+  recoveryCodes        RecoveryCode[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -1899,4 +1905,141 @@ model Tag {
   @@map("tags")
 }
 
-// Total: 64 models (63 required + UserGroupMember + StripeWebhookEvent)
+// ─── Enterprise Auth ──────────────────────────────────────────────────────────
+
+// Model 65: SsoConnection
+model SsoConnection {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @db.Uuid
+  name             String
+  protocol         String   // "saml" | "oidc"
+  status           String   @default("active") // "active" | "disabled" | "pending_setup"
+  oidcClientId     String?
+  oidcClientSecret String?  // Encrypted at rest
+  oidcIssuerUrl    String?
+  oidcDiscoveryUrl String?
+  samlMetadataUrl  String?
+  samlMetadataRaw  String?  @db.Text
+  samlEntityId     String?
+  samlAcsUrl       String?
+  autoProvision    Boolean  @default(true)
+  defaultRole      String   @default("agent")
+  forceMfa         Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("sso_connections")
+}
+
+// Model 66: FederatedIdentity
+model FederatedIdentity {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @db.Uuid
+  provider          String    // "okta" | "azure-ad" | "saml-jackson" | "local"
+  providerAccountId String
+  email             String?
+  displayName       String?
+  rawClaims         Json?
+  lastLoginAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("federated_identities")
+}
+
+// Model 67: MfaDevice
+model MfaDevice {
+  id                    String   @id @default(uuid()) @db.Uuid
+  userId                String   @db.Uuid
+  type                  String   // "totp" | "webauthn" | "email" | "sms"
+  name                  String
+  status                String   @default("active")
+  totpSecret            String?  // Encrypted at rest
+  totpVerified          Boolean  @default(false)
+  webauthnCredentialId  String?  @unique
+  webauthnPublicKey     Bytes?
+  webauthnCounter       BigInt   @default(0)
+  webauthnTransports    String[]
+  webauthnAaguid        String?
+  contactValue          String?
+  lastUsedAt            DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([userId, type])
+  @@map("mfa_devices")
+}
+
+// Model 68: MfaChallenge
+model MfaChallenge {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @db.Uuid
+  type              String
+  codeHash          String?
+  webauthnChallenge String?
+  expiresAt         DateTime
+  usedAt            DateTime?
+  attempts          Int       @default(0)
+  maxAttempts       Int       @default(5)
+  createdAt         DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("mfa_challenges")
+}
+
+// Model 69: TenantAuthSettings
+model TenantAuthSettings {
+  id                      String   @id @default(uuid()) @db.Uuid
+  tenantId                String   @unique @db.Uuid
+  allowLocalAuth          Boolean  @default(true)
+  allowOidcSso            Boolean  @default(false)
+  allowSamlSso            Boolean  @default(false)
+  enforceSso              Boolean  @default(false)
+  mfaPolicy               String   @default("optional") // "disabled" | "optional" | "required"
+  mfaGracePeriodDays      Int      @default(7)
+  allowedMfaTypes         String[] @default(["totp", "webauthn", "email", "sms"])
+  sessionMaxAgeMins       Int      @default(480)
+  sessionIdleTimeoutMins  Int      @default(60)
+  passwordMinLength       Int      @default(12)
+  passwordRequireUpper    Boolean  @default(true)
+  passwordRequireLower    Boolean  @default(true)
+  passwordRequireNumber   Boolean  @default(true)
+  passwordRequireSymbol   Boolean  @default(true)
+  passwordMaxAgeDays      Int      @default(90)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("tenant_auth_settings")
+}
+
+// Model 70: RecoveryCode
+model RecoveryCode {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  codeHash  String
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("recovery_codes")
+}
+
+// Total: 70 models
