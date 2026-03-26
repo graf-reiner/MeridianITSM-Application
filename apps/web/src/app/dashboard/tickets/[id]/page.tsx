@@ -105,6 +105,7 @@ export default function TicketDetailPage() {
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [commentError, setCommentError] = useState<string | null>(null);
   const [statusUpdating, setStatusUpdating] = useState(false);
+  const [fieldUpdating, setFieldUpdating] = useState<string | null>(null);
 
   const { data: ticket, isLoading, error } = useQuery<TicketDetail>({
     queryKey: ['ticket', ticketId],
@@ -156,6 +157,67 @@ export default function TicketDetailPage() {
     },
     enabled: activeTab === 'attachments',
   });
+
+  // ── Dropdown options for editable sidebar fields ──────────────────────────
+  const { data: usersData } = useQuery<Array<{ id: string; firstName: string; lastName: string }>>({
+    queryKey: ['users-minimal'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/settings/users?isActive=true&pageSize=200', { credentials: 'include' });
+      if (!res.ok) return [];
+      const json = await res.json();
+      const list = json.data ?? json.users ?? (Array.isArray(json) ? json : []);
+      return list;
+    },
+  });
+
+  const { data: queuesData } = useQuery<Array<{ id: string; name: string }>>({
+    queryKey: ['queues-minimal'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/settings/queues', { credentials: 'include' });
+      if (!res.ok) return [];
+      const json = await res.json();
+      return Array.isArray(json) ? json : json.queues ?? [];
+    },
+  });
+
+  const { data: categoriesData } = useQuery<Array<{ id: string; name: string }>>({
+    queryKey: ['categories-minimal'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/settings/categories', { credentials: 'include' });
+      if (!res.ok) return [];
+      const json = await res.json();
+      return Array.isArray(json) ? json : json.categories ?? [];
+    },
+  });
+
+  const { data: slaPoliciesData } = useQuery<Array<{ id: string; name: string }>>({
+    queryKey: ['sla-minimal'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/sla', { credentials: 'include' });
+      if (!res.ok) return [];
+      const json = await res.json();
+      return Array.isArray(json) ? json : json.policies ?? [];
+    },
+  });
+
+  const handleFieldUpdate = async (field: string, value: string | null) => {
+    setFieldUpdating(field);
+    try {
+      const res = await fetch(`/api/v1/tickets/${ticketId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ [field]: value || null }),
+      });
+      if (!res.ok) throw new Error('Failed to update');
+      void qc.invalidateQueries({ queryKey: ['ticket', ticketId] });
+      void qc.invalidateQueries({ queryKey: ['tickets'] });
+    } catch {
+      // silently fail — will show stale data
+    } finally {
+      setFieldUpdating(null);
+    }
+  };
 
   const updateStatusMutation = useMutation({
     mutationFn: async (newStatus: string) => {
@@ -458,19 +520,109 @@ export default function TicketDetailPage() {
             <h3 style={{ margin: '0 0 14px', fontSize: 13, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Details</h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>
-              {[
-                { label: 'Assignee', value: ticket.assignee ? `${ticket.assignee.firstName} ${ticket.assignee.lastName}` : 'Unassigned' },
-                { label: 'Requester', value: ticket.requester ? `${ticket.requester.firstName} ${ticket.requester.lastName}` : '—' },
-                { label: 'Queue', value: ticket.queue?.name ?? '—' },
-                { label: 'Category', value: ticket.category?.name ?? '—' },
-                { label: 'SLA Policy', value: ticket.slaPolicy?.name ?? '—' },
-                { label: 'Type', value: ticket.type.replace(/_/g, ' ') },
-              ].map(({ label, value }) => (
-                <div key={label}>
-                  <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>{label}</span>
-                  <span style={{ color: '#374151', fontWeight: 500 }}>{value}</span>
-                </div>
-              ))}
+              {/* Assignee — editable */}
+              <div>
+                <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>Assignee</span>
+                <select
+                  value={ticket.assignee?.id ?? ''}
+                  onChange={(e) => void handleFieldUpdate('assignedToId', e.target.value)}
+                  disabled={fieldUpdating === 'assignedToId'}
+                  style={{ width: '100%', padding: '5px 8px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, backgroundColor: '#fff', cursor: 'pointer' }}
+                >
+                  <option value="">Unassigned</option>
+                  {(usersData ?? []).map((u) => (
+                    <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Requester — read-only */}
+              <div>
+                <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>Requester</span>
+                <span style={{ color: '#374151', fontWeight: 500 }}>
+                  {ticket.requester ? `${ticket.requester.firstName} ${ticket.requester.lastName}` : '—'}
+                </span>
+              </div>
+
+              {/* Queue — editable */}
+              <div>
+                <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>Queue</span>
+                <select
+                  value={ticket.queue?.id ?? ''}
+                  onChange={(e) => void handleFieldUpdate('queueId', e.target.value)}
+                  disabled={fieldUpdating === 'queueId'}
+                  style={{ width: '100%', padding: '5px 8px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, backgroundColor: '#fff', cursor: 'pointer' }}
+                >
+                  <option value="">— None —</option>
+                  {(queuesData ?? []).map((q) => (
+                    <option key={q.id} value={q.id}>{q.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Category — editable */}
+              <div>
+                <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>Category</span>
+                <select
+                  value={ticket.category?.id ?? ''}
+                  onChange={(e) => void handleFieldUpdate('categoryId', e.target.value)}
+                  disabled={fieldUpdating === 'categoryId'}
+                  style={{ width: '100%', padding: '5px 8px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, backgroundColor: '#fff', cursor: 'pointer' }}
+                >
+                  <option value="">— None —</option>
+                  {(categoriesData ?? []).map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* SLA Policy — editable */}
+              <div>
+                <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>SLA Policy</span>
+                <select
+                  value={ticket.slaPolicy?.id ?? ''}
+                  onChange={(e) => void handleFieldUpdate('slaPolicyId', e.target.value)}
+                  disabled={fieldUpdating === 'slaPolicyId'}
+                  style={{ width: '100%', padding: '5px 8px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, backgroundColor: '#fff', cursor: 'pointer' }}
+                >
+                  <option value="">— None —</option>
+                  {(slaPoliciesData ?? []).map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Priority — editable */}
+              <div>
+                <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>Priority</span>
+                <select
+                  value={ticket.priority}
+                  onChange={(e) => void handleFieldUpdate('priority', e.target.value)}
+                  disabled={fieldUpdating === 'priority'}
+                  style={{ width: '100%', padding: '5px 8px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, backgroundColor: '#fff', cursor: 'pointer' }}
+                >
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
+                  <option value="CRITICAL">Critical</option>
+                </select>
+              </div>
+
+              {/* Type — editable */}
+              <div>
+                <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>Type</span>
+                <select
+                  value={ticket.type}
+                  onChange={(e) => void handleFieldUpdate('type', e.target.value)}
+                  disabled={fieldUpdating === 'type'}
+                  style={{ width: '100%', padding: '5px 8px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, backgroundColor: '#fff', cursor: 'pointer' }}
+                >
+                  <option value="INCIDENT">Incident</option>
+                  <option value="SERVICE_REQUEST">Service Request</option>
+                  <option value="PROBLEM">Problem</option>
+                  <option value="CHANGE">Change</option>
+                </select>
+              </div>
 
               <div>
                 <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>Created</span>
