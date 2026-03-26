@@ -158,6 +158,7 @@ export default function UsersSettingsPage() {
         list.map((u: any) => ({
           ...u,
           isActive: u.isActive ?? (u.status === 'ACTIVE'),
+          role: u.role ?? u.userRoles?.[0]?.role?.name ?? '',
         }));
       // API returns { data: [...], meta: { total, ... } } or { users: [...], total }
       if (json.data && json.meta) {

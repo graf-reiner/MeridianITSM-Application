@@ -2,11 +2,13 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// Load .env from the api package directory (not CWD which may be monorepo root)
+// Load .env BEFORE any other imports (ESM hoists static imports above module code)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
-import { buildApp } from './server.js';
-import { startEmailPolling } from './workers/email-poll.worker.js';
+
+// Dynamic imports AFTER dotenv so DATABASE_URL and ENCRYPTION_KEY are available
+const { buildApp } = await import('./server.js');
+const { startEmailPolling } = await import('./workers/email-poll.worker.js');
 
 const start = async () => {
   const app = await buildApp();

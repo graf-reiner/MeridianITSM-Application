@@ -139,7 +139,10 @@ export default function QueuesSettingsPage() {
     queryFn: async () => {
       const res = await fetch('/api/v1/settings/users?isActive=true&pageSize=200', { credentials: 'include' });
       if (!res.ok) return { users: [] };
-      return res.json() as Promise<{ users: UserOption[] }>;
+      const json = await res.json();
+      // API returns { data: [...], meta: {...} } or { users: [...] }
+      const list = json.data ?? json.users ?? (Array.isArray(json) ? json : []);
+      return { users: list as UserOption[] };
     },
   });
 
