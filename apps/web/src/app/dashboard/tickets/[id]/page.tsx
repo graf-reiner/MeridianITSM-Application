@@ -304,7 +304,7 @@ export default function TicketDetailPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ body: commentBody.trim(), visibility: commentVisibility }),
+        body: JSON.stringify({ content: commentBody.trim(), visibility: commentVisibility }),
       });
       if (!res.ok) throw new Error('Failed to post comment');
       setCommentBody('');

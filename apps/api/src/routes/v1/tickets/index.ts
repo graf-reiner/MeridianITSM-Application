@@ -201,6 +201,38 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
     }
   });
 
+  // ─── GET /api/v1/tickets/:id/comments — List comments ─────────────────────
+
+  fastify.get('/api/v1/tickets/:id/comments', async (request, reply) => {
+    const user = request.user as { tenantId: string };
+    const tenantId = user.tenantId;
+    const { id } = request.params as { id: string };
+
+    // Verify ticket belongs to tenant
+    const ticket = await prisma.ticket.findFirst({ where: { id, tenantId } });
+    if (!ticket) return reply.status(404).send({ error: 'Ticket not found' });
+
+    const comments = await prisma.ticketComment.findMany({
+      where: { ticketId: id, tenantId },
+      include: {
+        author: { select: { firstName: true, lastName: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return reply.send({
+      comments: comments.map(c => ({
+        id: c.id,
+        body: c.content,
+        content: c.content,
+        visibility: c.visibility,
+        author: c.author,
+        createdAt: c.createdAt,
+        timeSpentMinutes: c.timeSpentMinutes,
+      })),
+    });
+  });
+
   // ─── POST /api/v1/tickets/:id/comments — Add comment ──────────────────────
 
   fastify.post('/api/v1/tickets/:id/comments', async (request, reply) => {
