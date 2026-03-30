@@ -1,12 +1,6 @@
 import { prisma } from '@meridian/db';
-import {
-  notifyTicketCreated,
-  notifyTicketAssigned,
-  notifyTicketCommented,
-  notifyTicketResolved,
-  notifyTicketUpdated,
-} from './notification.service.js';
 import { calculateBreachAt, getResolutionMinutes, type Priority as SlaPriority } from './sla.service.js';
+import { dispatchNotificationEvent } from './notification-rules.service.js';
 
 // ─── Status Transition Map ────────────────────────────────────────────────────
 
@@ -237,7 +231,9 @@ export async function createTicket(
     // Fire-and-forget notification — must not block ticket creation
     void (async () => {
       try {
-        await notifyTicketCreated(tenantId, createdTicket, actorId);
+        await dispatchNotificationEvent(tenantId, 'TICKET_CREATED', {
+          ticket: createdTicket, actorId,
+        });
       } catch (err) {
         console.error('[ticket.service] notifyTicketCreated failed:', err);
       }
@@ -422,11 +418,11 @@ export async function updateTicket(
     void (async () => {
       try {
         if (newStatus === 'RESOLVED') {
-          await notifyTicketResolved(tenantId, updatedTicket, actorId);
+          await dispatchNotificationEvent(tenantId, 'TICKET_RESOLVED', { ticket: updatedTicket, actorId });
         } else if (newAssignedToId && newAssignedToId !== existing.assignedToId) {
-          await notifyTicketAssigned(tenantId, updatedTicket, newAssignedToId, actorId);
+          await dispatchNotificationEvent(tenantId, 'TICKET_ASSIGNED', { ticket: updatedTicket, actorId, newAssignedToId });
         } else if (otherChangedFields.length > 0) {
-          await notifyTicketUpdated(tenantId, updatedTicket, otherChangedFields, actorId);
+          await dispatchNotificationEvent(tenantId, 'TICKET_UPDATED', { ticket: updatedTicket, actorId, changedFields: otherChangedFields });
         }
       } catch (err) {
         console.error('[ticket.service] update notification failed:', err);
@@ -512,7 +508,9 @@ export async function addComment(
 
     void (async () => {
       try {
-        await notifyTicketCommented(tenantId, ticketForNotify, comment, actorId);
+        await dispatchNotificationEvent(tenantId, 'TICKET_COMMENTED', {
+          ticket: ticketForNotify, comment, actorId,
+        });
       } catch (err) {
         console.error('[ticket.service] notifyTicketCommented failed:', err);
       }
@@ -619,7 +617,9 @@ export async function assignTicket(
     // Fire-and-forget notification — must not block ticket assignment
     void (async () => {
       try {
-        await notifyTicketAssigned(tenantId, assignedTicket, assignedToId, actorId);
+        await dispatchNotificationEvent(tenantId, 'TICKET_ASSIGNED', {
+          ticket: assignedTicket, actorId, newAssignedToId: assignedToId,
+        });
       } catch (err) {
         console.error('[ticket.service] notifyTicketAssigned failed:', err);
       }
