@@ -411,6 +411,8 @@ model Tenant {
   deviceTokens          DeviceToken[]
   emailTemplates        EmailTemplate[]
   alertConfigurations   AlertConfiguration[]
+  notificationRules    NotificationRule[]
+  notificationRuleLogs NotificationRuleLog[]
   scheduledReports      ScheduledReport[]
   webhooks              Webhook[]
   webhookDeliveries     WebhookDelivery[]
@@ -774,7 +776,8 @@ model Queue {
 
   tenant    Tenant     @relation(fields: [tenantId], references: [id])
   userGroup UserGroup? @relation(fields: [userGroupId], references: [id])
-  tickets   Ticket[]
+  tickets           Ticket[]
+  notificationRules NotificationRule[]
 
   @@index([tenantId])
   @@map("queues")
@@ -1867,6 +1870,53 @@ model AlertConfiguration {
 
   @@index([tenantId])
   @@map("alert_configurations")
+}
+
+// Model 58b: NotificationRule
+model NotificationRule {
+  id              String    @id @default(uuid()) @db.Uuid
+  tenantId        String    @db.Uuid
+  name            String
+  description     String?
+  isActive        Boolean   @default(true)
+  trigger         String
+  conditionGroups Json      @default("[]")
+  actions         Json      @default("[]")
+  priority        Int       @default(100)
+  stopAfterMatch  Boolean   @default(false)
+  scopedQueueId   String?   @db.Uuid
+  createdById     String?   @db.Uuid
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  queue  Queue?  @relation(fields: [scopedQueueId], references: [id])
+  logs   NotificationRuleLog[]
+
+  @@index([tenantId, trigger, isActive])
+  @@index([tenantId, priority])
+  @@index([scopedQueueId])
+  @@map("notification_rules")
+}
+
+// Model 58c: NotificationRuleLog
+model NotificationRuleLog {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @db.Uuid
+  ruleId       String   @db.Uuid
+  trigger      String
+  matched      Boolean
+  eventPayload Json?
+  actionsFired Json?
+  error        String?
+  firedAt      DateTime @default(now())
+
+  tenant Tenant           @relation(fields: [tenantId], references: [id])
+  rule   NotificationRule @relation(fields: [ruleId], references: [id])
+
+  @@index([tenantId, firedAt])
+  @@index([ruleId, firedAt])
+  @@map("notification_rule_logs")
 }
 
 // Model 59: ScheduledReport
