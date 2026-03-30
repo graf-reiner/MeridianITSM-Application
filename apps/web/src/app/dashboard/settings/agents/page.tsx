@@ -20,7 +20,8 @@ interface Agent {
   id: string;
   hostname: string;
   platform: string;
-  status: 'ONLINE' | 'OFFLINE' | 'STALE';
+  status: string;
+  displayStatus?: string;
   lastHeartbeatAt: string | null;
   agentVersion: string | null;
 }
@@ -32,7 +33,7 @@ interface AgentListResponse {
 interface EnrollmentToken {
   id: string;
   prefix: string;
-  enrollmentCount: number;
+  enrollCount: number;
   maxEnrollments: number | null;
   createdAt: string;
   expiresAt: string | null;
@@ -51,13 +52,15 @@ interface GeneratedToken {
 
 // ─── Agent Status Badge ───────────────────────────────────────────────────────
 
-function AgentStatusBadge({ status }: { status: Agent['status'] }) {
-  const styles: Record<Agent['status'], { bg: string; text: string; label: string }> = {
+function AgentStatusBadge({ status }: { status: string }) {
+  const styles: Record<string, { bg: string; text: string; label: string }> = {
+    ACTIVE: { bg: '#d1fae5', text: '#065f46', label: 'Online' },
     ONLINE: { bg: '#d1fae5', text: '#065f46', label: 'Online' },
     OFFLINE: { bg: '#f3f4f6', text: '#6b7280', label: 'Offline' },
     STALE: { bg: '#fef3c7', text: '#92400e', label: 'Stale — not seen in 24h' },
+    DEREGISTERED: { bg: '#fee2e2', text: '#991b1b', label: 'Deregistered' },
   };
-  const s = styles[status];
+  const s = styles[status] ?? { bg: '#f3f4f6', text: '#6b7280', label: status };
   return (
     <span
       title={status === 'STALE' ? 'Not seen in 24h' : undefined}
@@ -639,8 +642,8 @@ export default function AgentsSettingsPage() {
                           {token.prefix}...
                         </td>
                         <td style={{ padding: '10px 16px', color: '#374151' }}>
-                          {token.enrollmentCount} /{' '}
-                          {token.maxEnrollments !== null ? token.maxEnrollments : '∞'}
+                          {token.enrollCount} /{' '}
+                          {token.maxEnrollments != null && token.maxEnrollments >= 0 ? token.maxEnrollments : '∞'}
                         </td>
                         <td style={{ padding: '10px 16px', color: '#6b7280', fontSize: 13 }}>
                           {formatDate(token.createdAt)}
@@ -862,7 +865,7 @@ export default function AgentsSettingsPage() {
                     </td>
                     <td style={{ padding: '10px 16px', color: '#6b7280' }}>{agent.platform}</td>
                     <td style={{ padding: '10px 16px' }}>
-                      <AgentStatusBadge status={agent.status} />
+                      <AgentStatusBadge status={agent.displayStatus ?? agent.status} />
                     </td>
                     <td style={{ padding: '10px 16px', color: '#6b7280', fontSize: 13 }}>
                       {formatDate(agent.lastHeartbeatAt)}

@@ -22,6 +22,11 @@ interface UserOption {
   lastName: string;
 }
 
+interface GroupOption {
+  id: string;
+  name: string;
+}
+
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
 const createTicketSchema = z.object({
@@ -33,6 +38,7 @@ const createTicketSchema = z.object({
   queueId: z.string().optional(),
   slaPolicyId: z.string().optional(),
   assignedToId: z.string().optional(),
+  assignedGroupId: z.string().optional(),
 });
 
 type CreateTicketForm = z.infer<typeof createTicketSchema>;
@@ -45,6 +51,7 @@ export default function NewTicketPage() {
   const [queues, setQueues] = useState<SelectOption[]>([]);
   const [slaPolicies, setSlaPolicies] = useState<SelectOption[]>([]);
   const [users, setUsers] = useState<UserOption[]>([]);
+  const [groups, setGroups] = useState<GroupOption[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -63,11 +70,12 @@ export default function NewTicketPage() {
   // Load dropdowns
   useEffect(() => {
     async function loadOptions() {
-      const [catRes, queueRes, slaRes, userRes] = await Promise.all([
+      const [catRes, queueRes, slaRes, userRes, groupRes] = await Promise.all([
         fetch('/api/v1/settings/categories', { credentials: 'include' }),
         fetch('/api/v1/settings/queues', { credentials: 'include' }),
         fetch('/api/v1/sla', { credentials: 'include' }),
         fetch('/api/v1/settings/users?isActive=true&pageSize=200', { credentials: 'include' }),
+        fetch('/api/v1/settings/groups', { credentials: 'include' }),
       ]);
       if (catRes.ok) {
         const data = (await catRes.json()) as { categories: SelectOption[] };
@@ -85,6 +93,10 @@ export default function NewTicketPage() {
         const data = (await userRes.json()) as { users: UserOption[] };
         setUsers(data.users ?? []);
       }
+      if (groupRes.ok) {
+        const data = (await groupRes.json()) as { groups: GroupOption[] };
+        setGroups(data.groups ?? []);
+      }
     }
     void loadOptions();
   }, []);
@@ -99,6 +111,7 @@ export default function NewTicketPage() {
         queueId: values.queueId || undefined,
         slaPolicyId: values.slaPolicyId || undefined,
         assignedToId: values.assignedToId || undefined,
+        assignedGroupId: values.assignedGroupId || undefined,
       };
       const res = await fetch('/api/v1/tickets', {
         method: 'POST',
@@ -224,23 +237,34 @@ export default function NewTicketPage() {
             </div>
           </div>
 
-          {/* SLA & Assignee row */}
+          {/* SLA Policy row */}
+          <div style={{ marginBottom: 18 }}>
+            <label style={labelStyle}>SLA Policy</label>
+            <select {...register('slaPolicyId')} style={inputStyle}>
+              <option value="">-- None --</option>
+              {slaPolicies.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Assign To & Assigned Group row */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
-            <div>
-              <label style={labelStyle}>SLA Policy</label>
-              <select {...register('slaPolicyId')} style={inputStyle}>
-                <option value="">-- None --</option>
-                {slaPolicies.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            </div>
             <div>
               <label style={labelStyle}>Assign To</label>
               <select {...register('assignedToId')} style={inputStyle}>
                 <option value="">-- Unassigned --</option>
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>Assigned Group</label>
+              <select {...register('assignedGroupId')} style={inputStyle}>
+                <option value="">-- None --</option>
+                {groups.map((g) => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
                 ))}
               </select>
             </div>

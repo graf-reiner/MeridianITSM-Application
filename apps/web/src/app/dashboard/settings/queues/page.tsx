@@ -13,6 +13,8 @@ interface Queue {
   name: string;
   autoAssign: boolean;
   defaultAssignee: { id: string; firstName: string; lastName: string } | null;
+  userGroup: { id: string; name: string } | null;
+  userGroupId: string | null;
   _count?: { tickets: number };
 }
 
@@ -22,12 +24,18 @@ interface UserOption {
   lastName: string;
 }
 
+interface GroupOption {
+  id: string;
+  name: string;
+}
+
 // ─── Queue Modal ──────────────────────────────────────────────────────────────
 
-function QueueModal({ queue, users, onClose, onSaved }: { queue: Queue | null; users: UserOption[]; onClose: () => void; onSaved: () => void }) {
+function QueueModal({ queue, users, groups, onClose, onSaved }: { queue: Queue | null; users: UserOption[]; groups: GroupOption[]; onClose: () => void; onSaved: () => void }) {
   const [name, setName] = useState(queue?.name ?? '');
   const [autoAssign, setAutoAssign] = useState(queue?.autoAssign ?? false);
   const [defaultAssigneeId, setDefaultAssigneeId] = useState(queue?.defaultAssignee?.id ?? '');
+  const [userGroupId, setUserGroupId] = useState(queue?.userGroupId ?? '');
   const [assignmentRules, setAssignmentRules] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +48,8 @@ function QueueModal({ queue, users, onClose, onSaved }: { queue: Queue | null; u
       const body: Record<string, unknown> = {
         name: name.trim(),
         autoAssign,
-        defaultAssigneeId: defaultAssigneeId || undefined,
+        defaultAssigneeId: defaultAssigneeId || null,
+        userGroupId: userGroupId || null,
       };
       if (assignmentRules.trim()) {
         try { body.assignmentRules = JSON.parse(assignmentRules); } catch { /* ignore invalid JSON */ }
@@ -91,6 +100,14 @@ function QueueModal({ queue, users, onClose, onSaved }: { queue: Queue | null; u
               {users.map((u) => <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>)}
             </select>
           </div>
+          <div style={{ marginBottom: 16 }}>
+            <label htmlFor="userGroup" style={labelStyle}>Assigned Group</label>
+            <select id="userGroup" value={userGroupId} onChange={(e) => setUserGroupId(e.target.value)} style={inputStyle}>
+              <option value="">-- None --</option>
+              {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+            </select>
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: '#9ca3af' }}>Assign this queue to a user group</p>
+          </div>
           <div style={{ marginBottom: 20 }}>
             <label htmlFor="assignmentRules" style={labelStyle}>Assignment Rules (JSON)</label>
             <textarea
@@ -140,9 +157,18 @@ export default function QueuesSettingsPage() {
       const res = await fetch('/api/v1/settings/users?isActive=true&pageSize=200', { credentials: 'include' });
       if (!res.ok) return { users: [] };
       const json = await res.json();
-      // API returns { data: [...], meta: {...} } or { users: [...] }
       const list = json.data ?? json.users ?? (Array.isArray(json) ? json : []);
       return { users: list as UserOption[] };
+    },
+  });
+
+  const { data: groupsData } = useQuery<GroupOption[]>({
+    queryKey: ['settings-groups-minimal'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/settings/groups', { credentials: 'include' });
+      if (!res.ok) return [];
+      const json = await res.json();
+      return Array.isArray(json) ? json : json.groups ?? [];
     },
   });
 
@@ -154,6 +180,7 @@ export default function QueuesSettingsPage() {
 
   const queues = data ?? [];
   const users = usersData?.users ?? [];
+  const groups = groupsData ?? [];
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
@@ -184,6 +211,7 @@ export default function QueuesSettingsPage() {
             <thead>
               <tr style={{ borderBottom: '2px solid #e5e7eb', backgroundColor: '#f9fafb' }}>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Name</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Group</th>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Auto-Assign</th>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Default Assignee</th>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Actions</th>
@@ -193,6 +221,9 @@ export default function QueuesSettingsPage() {
               {queues.map((queue) => (
                 <tr key={queue.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
                   <td style={{ padding: '10px 14px', fontWeight: 500 }}>{queue.name}</td>
+                  <td style={{ padding: '10px 14px', color: queue.userGroup ? '#111827' : '#9ca3af' }}>
+                    {queue.userGroup ? queue.userGroup.name : '\u2014'}
+                  </td>
                   <td style={{ padding: '10px 14px' }}>
                     <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 12, fontWeight: 500, backgroundColor: queue.autoAssign ? '#d1fae5' : '#f3f4f6', color: queue.autoAssign ? '#065f46' : '#6b7280' }}>
                       {queue.autoAssign ? 'Yes' : 'No'}
@@ -222,7 +253,7 @@ export default function QueuesSettingsPage() {
                 </tr>
               ))}
               {queues.length === 0 && (
-                <tr><td colSpan={4} style={{ padding: 32, textAlign: 'center', color: '#9ca3af' }}>No queues found</td></tr>
+                <tr><td colSpan={5} style={{ padding: 32, textAlign: 'center', color: '#9ca3af' }}>No queues found</td></tr>
               )}
             </tbody>
           </table>
@@ -233,6 +264,7 @@ export default function QueuesSettingsPage() {
         <QueueModal
           queue={editQueue}
           users={users}
+          groups={groups}
           onClose={() => setShowModal(false)}
           onSaved={() => void qc.invalidateQueries({ queryKey: ['settings-queues'] })}
         />

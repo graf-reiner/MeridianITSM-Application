@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiEmail, mdiPlus, mdiPencil, mdiTrashCan, mdiCheckCircle, mdiCloseCircle } from '@mdi/js';
+import { mdiArrowLeft, mdiEmail, mdiPlus, mdiPencil, mdiTrashCan, mdiCheckCircle, mdiCloseCircle, mdiHistory } from '@mdi/js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -127,6 +127,10 @@ function EmailModal({
         credentials: 'include',
         body: JSON.stringify(body),
       });
+      const contentType = res.headers.get('content-type') ?? '';
+      if (!contentType.includes('application/json')) {
+        throw new Error(`Server returned ${res.status} — API may be unavailable`);
+      }
       const data = (await res.json()) as TestResult;
       setTestResult({ type: type === 'smtp' ? 'SMTP' : 'IMAP', result: data });
     } catch (err) {
@@ -246,7 +250,7 @@ function EmailModal({
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
                 <input type="checkbox" checked={imapSecure} onChange={(e) => setImapSecure(e.target.checked)} />SSL/TLS
               </label>
-              <button type="button" onClick={() => void handleTest('imap')} disabled={isTesting === 'imap'} style={{ padding: '5px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: '#fff', color: '#374151' }}>
+              <button type="button" onClick={() => void handleTest('imap')} disabled={isTesting === 'imap' || !imapHost} style={{ padding: '5px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, cursor: isTesting === 'imap' || !imapHost ? 'not-allowed' : 'pointer', backgroundColor: '#fff', color: '#374151' }}>
                 {isTesting === 'imap' ? 'Testing...' : 'Test IMAP'}
               </button>
             </div>
@@ -351,7 +355,14 @@ export default function EmailSettingsPage() {
           <Icon path={mdiEmail} size={1} color="#dc2626" />
           Email Accounts
         </h1>
-        <div style={{ marginLeft: 'auto' }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+          <Link
+            href="/dashboard/settings/email/activity"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', backgroundColor: '#fff', color: '#374151', textDecoration: 'none' }}
+          >
+            <Icon path={mdiHistory} size={0.8} color="currentColor" />
+            View Activity Log
+          </Link>
           <button
             onClick={() => { setEditAccount(null); setShowModal(true); }}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', backgroundColor: '#4f46e5', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}

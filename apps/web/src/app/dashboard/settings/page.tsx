@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Icon from '@mdi/react';
 import {
   mdiAccountGroup,
+  mdiAccountMultiple,
   mdiShieldAccount,
   mdiTrayFull,
   mdiTag,
@@ -35,6 +36,13 @@ const SETTINGS_SECTIONS = [
     description: 'Create custom roles with permission sets',
     icon: mdiShieldAccount,
     color: '#7c3aed',
+  },
+  {
+    href: '/dashboard/settings/groups',
+    label: 'Groups',
+    description: 'Organize users into teams and assign to queues',
+    icon: mdiAccountMultiple,
+    color: '#059669',
   },
   {
     href: '/dashboard/settings/queues',

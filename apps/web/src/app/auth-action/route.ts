@@ -6,9 +6,16 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
+    // Forward the trusted device cookie so the backend can skip MFA if valid
+    const trustCookie = request.cookies.get('meridian_mfa_trust');
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (trustCookie?.value) {
+      headers['Cookie'] = `meridian_mfa_trust=${trustCookie.value}`;
+    }
+
     const res = await fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(body),
     });
 

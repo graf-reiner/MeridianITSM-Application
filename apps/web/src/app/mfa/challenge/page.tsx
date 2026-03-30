@@ -44,6 +44,7 @@ export default function MfaChallengePage() {
   const [code, setCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [trustDevice, setTrustDevice] = useState(false);
 
   // Load available MFA methods on mount
   useEffect(() => {
@@ -146,7 +147,7 @@ export default function MfaChallengePage() {
       const res = await fetch('/api/mfa/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, trustDevice }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -354,6 +355,7 @@ export default function MfaChallengePage() {
                 boxSizing: 'border-box',
               }}
             />
+            <TrustCheckbox checked={trustDevice} onChange={setTrustDevice} />
             <button
               type="submit"
               disabled={code.length !== 6 || submitting}
@@ -382,6 +384,9 @@ export default function MfaChallengePage() {
             <p style={{ fontSize: 14, color: '#374151', marginTop: 16 }}>
               Follow your browser&apos;s prompt to verify with your security key.
             </p>
+            <div style={{ textAlign: 'left' }}>
+              <TrustCheckbox checked={trustDevice} onChange={setTrustDevice} />
+            </div>
             <BackButton onBack={() => goBack(setView, setCode, setError)} />
           </div>
         )}
@@ -416,6 +421,7 @@ export default function MfaChallengePage() {
                 boxSizing: 'border-box',
               }}
             />
+            <TrustCheckbox checked={trustDevice} onChange={setTrustDevice} />
             <button
               type="submit"
               disabled={code.length !== 6 || submitting}
@@ -463,6 +469,7 @@ export default function MfaChallengePage() {
                 boxSizing: 'border-box',
               }}
             />
+            <TrustCheckbox checked={trustDevice} onChange={setTrustDevice} />
             <button
               type="submit"
               disabled={!code.trim() || submitting}
@@ -540,6 +547,37 @@ async function goBack(
   } catch {
     setView({ kind: 'error', message: 'Failed to reload methods' });
   }
+}
+
+function TrustCheckbox({
+  checked,
+  onChange,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <label
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 16,
+        fontSize: 13,
+        color: '#374151',
+        cursor: 'pointer',
+        userSelect: 'none',
+      }}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        style={{ width: 16, height: 16, accentColor: '#4f46e5', cursor: 'pointer' }}
+      />
+      Trust this device for 30 days
+    </label>
+  );
 }
 
 function BackButton({ onBack }: { onBack: () => void }) {

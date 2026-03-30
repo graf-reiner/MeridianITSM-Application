@@ -25,6 +25,7 @@ interface TicketDetail {
   category: { id: string; name: string } | null;
   queue: { id: string; name: string } | null;
   slaPolicy: { id: string; name: string } | null;
+  assignedGroup?: { id: string; name: string } | null;
   createdAt: string;
   updatedAt: string;
   customFields: Record<string, unknown> | null;
@@ -108,6 +109,7 @@ export default function TicketDetailPage() {
   const [commentError, setCommentError] = useState<string | null>(null);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [editAssignee, setEditAssignee] = useState('');
+  const [editGroup, setEditGroup] = useState('');
   const [editQueue, setEditQueue] = useState('');
   const [editCategory, setEditCategory] = useState('');
   const [editSla, setEditSla] = useState('');
@@ -208,10 +210,21 @@ export default function TicketDetailPage() {
     },
   });
 
+  const { data: groupsData } = useQuery<Array<{ id: string; name: string }>>({
+    queryKey: ['groups-minimal'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/settings/groups', { credentials: 'include' });
+      if (!res.ok) return [];
+      const json = await res.json();
+      return Array.isArray(json) ? json : json.groups ?? [];
+    },
+  });
+
   // ── Initialize sidebar edit state from ticket ────────────────────────────
   useEffect(() => {
     if (ticket) {
       setEditAssignee(ticket.assignee?.id ?? '');
+      setEditGroup(ticket.assignedGroup?.id ?? '');
       setEditQueue(ticket.queue?.id ?? '');
       setEditCategory(ticket.category?.id ?? '');
       setEditSla(ticket.slaPolicy?.id ?? '');
@@ -223,6 +236,7 @@ export default function TicketDetailPage() {
   // ── Dirty check ─────────────────────────────────────────────────────────
   const sidebarDirty = ticket ? (
     editAssignee !== (ticket.assignee?.id ?? '') ||
+    editGroup !== (ticket.assignedGroup?.id ?? '') ||
     editQueue !== (ticket.queue?.id ?? '') ||
     editCategory !== (ticket.category?.id ?? '') ||
     editSla !== (ticket.slaPolicy?.id ?? '') ||
@@ -242,6 +256,7 @@ export default function TicketDetailPage() {
         credentials: 'include',
         body: JSON.stringify({
           assignedToId: editAssignee || null,
+          assignedGroupId: editGroup || null,
           queueId: editQueue || null,
           categoryId: editCategory || null,
           slaPolicyId: editSla || null,
@@ -261,6 +276,7 @@ export default function TicketDetailPage() {
   const handleSidebarDiscard = () => {
     if (ticket) {
       setEditAssignee(ticket.assignee?.id ?? '');
+      setEditGroup(ticket.assignedGroup?.id ?? '');
       setEditQueue(ticket.queue?.id ?? '');
       setEditCategory(ticket.category?.id ?? '');
       setEditSla(ticket.slaPolicy?.id ?? '');
@@ -581,6 +597,21 @@ export default function TicketDetailPage() {
                   <option value="">Unassigned</option>
                   {(usersData ?? []).map((u) => (
                     <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Assigned Group — editable */}
+              <div>
+                <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>Assigned Group</span>
+                <select
+                  value={editGroup}
+                  onChange={(e) => setEditGroup(e.target.value)}
+                  style={{ width: '100%', padding: '5px 8px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, backgroundColor: '#fff', cursor: 'pointer' }}
+                >
+                  <option value="">— None —</option>
+                  {(groupsData ?? []).map((g) => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
                   ))}
                 </select>
               </div>

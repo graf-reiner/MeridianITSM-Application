@@ -22,6 +22,7 @@ export async function queuesSettingsRoutes(fastify: FastifyInstance): Promise<vo
       const queues = await prisma.queue.findMany({
         where: { tenantId },
         include: {
+          userGroup: { select: { id: true, name: true } },
           _count: { select: { tickets: true } },
         },
         orderBy: { name: 'asc' },
@@ -42,6 +43,7 @@ export async function queuesSettingsRoutes(fastify: FastifyInstance): Promise<vo
         name: string;
         autoAssign?: boolean;
         defaultAssigneeId?: string;
+        userGroupId?: string | null;
         assignmentRules?: unknown;
       };
 
@@ -59,12 +61,23 @@ export async function queuesSettingsRoutes(fastify: FastifyInstance): Promise<vo
         }
       }
 
+      // Validate userGroupId if provided
+      if (body.userGroupId) {
+        const group = await prisma.userGroup.findFirst({
+          where: { id: body.userGroupId, tenantId },
+        });
+        if (!group) {
+          return reply.status(400).send({ error: 'userGroupId refers to unknown group' });
+        }
+      }
+
       const queue = await prisma.queue.create({
         data: {
           tenantId,
           name: body.name,
           autoAssign: body.autoAssign ?? false,
           defaultAssigneeId: body.defaultAssigneeId,
+          userGroupId: body.userGroupId,
           assignmentRules: body.assignmentRules ?? undefined,
         },
       });
@@ -85,6 +98,7 @@ export async function queuesSettingsRoutes(fastify: FastifyInstance): Promise<vo
         name?: string;
         autoAssign?: boolean;
         defaultAssigneeId?: string | null;
+        userGroupId?: string | null;
         assignmentRules?: unknown;
       };
 
@@ -103,12 +117,23 @@ export async function queuesSettingsRoutes(fastify: FastifyInstance): Promise<vo
         }
       }
 
+      // Validate userGroupId if provided
+      if (body.userGroupId) {
+        const group = await prisma.userGroup.findFirst({
+          where: { id: body.userGroupId, tenantId },
+        });
+        if (!group) {
+          return reply.status(400).send({ error: 'userGroupId refers to unknown group' });
+        }
+      }
+
       const updated = await prisma.queue.update({
         where: { id },
         data: {
           ...(body.name !== undefined && { name: body.name }),
           ...(body.autoAssign !== undefined && { autoAssign: body.autoAssign }),
           ...(body.defaultAssigneeId !== undefined && { defaultAssigneeId: body.defaultAssigneeId }),
+          ...(body.userGroupId !== undefined && { userGroupId: body.userGroupId }),
           ...(body.assignmentRules !== undefined && { assignmentRules: body.assignmentRules ?? undefined }),
         },
       });

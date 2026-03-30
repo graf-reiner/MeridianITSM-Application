@@ -3,6 +3,7 @@ import { ImapFlow } from 'imapflow';
 import { randomUUID } from 'node:crypto';
 import { prisma, PrismaClient } from '@meridian/db';
 import { decrypt } from '@meridian/core';
+import { logEmailActivity } from './email-activity.service.js';
 
 // Derive EmailAccount type from PrismaClient inference to avoid direct @prisma/client dependency
 type EmailAccount = Awaited<ReturnType<PrismaClient['emailAccount']['findUniqueOrThrow']>>;
@@ -112,17 +113,25 @@ export async function sendEmail(
 
   const messageId = options.messageId ?? `<${randomUUID()}@meridian.local>`;
 
-  await transport.sendMail({
-    from: account.emailAddress,
-    to,
-    subject,
-    html,
-    messageId,
-    inReplyTo: options.inReplyTo,
-    references: options.references?.join(' '),
-  });
+  try {
+    await transport.sendMail({
+      from: account.emailAddress,
+      to,
+      subject,
+      html,
+      messageId,
+      inReplyTo: options.inReplyTo,
+      references: options.references?.join(' '),
+    });
 
-  transport.close();
+    logEmailActivity({ tenantId: account.tenantId, emailAccountId: account.id, direction: 'OUTBOUND', status: 'SENT', subject, toAddresses: [to], messageId });
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    logEmailActivity({ tenantId: account.tenantId, emailAccountId: account.id, direction: 'OUTBOUND', status: 'FAILED', subject, toAddresses: [to], errorMessage: errMsg });
+    throw err;
+  } finally {
+    transport.close();
+  }
 
   return messageId;
 }
@@ -313,6 +322,9 @@ export async function testImapConnection(config: ImapConfig): Promise<TestConnec
     secure: config.secure,
     auth: hasAuth ? { user: config.user, pass: config.password } : { user: '', pass: '' },
     logger: false,
+    tls: { rejectUnauthorized: false },
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
   });
 
   // Step 4: Connect

@@ -422,6 +422,8 @@ model Tenant {
   tags                  Tag[]
   ssoConnections        SsoConnection[]
   tenantAuthSettings    TenantAuthSettings?
+  mfaTrustedDevices     MfaTrustedDevice[]
+  emailActivityLogs     EmailActivityLog[]
 
   @@map("tenants")
 }
@@ -491,6 +493,7 @@ model User {
   mfaDevices           MfaDevice[]
   mfaChallenges        MfaChallenge[]
   recoveryCodes        RecoveryCode[]
+  mfaTrustedDevices    MfaTrustedDevice[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -512,6 +515,8 @@ model UserGroup {
   tenant          Tenant            @relation(fields: [tenantId], references: [id])
   userGroupMembers UserGroupMember[]
   categories      Category[]
+  queues          Queue[]
+  ticketsAssigned  Ticket[] @relation("TicketAssignedGroup")
 
   @@index([tenantId])
   @@map("user_groups")
@@ -632,6 +637,7 @@ model Ticket {
   urgency        String?
   status         TicketStatus   @default(NEW)
   assignedToId   String?        @db.Uuid
+  assignedGroupId String?       @db.Uuid
   requestedById  String?        @db.Uuid
   queueId        String?        @db.Uuid
   slaId          String?        @db.Uuid
@@ -649,6 +655,7 @@ model Ticket {
 
   tenant              Tenant                 @relation(fields: [tenantId], references: [id])
   assignedTo          User?                  @relation("AssignedTo", fields: [assignedToId], references: [id])
+  assignedGroup       UserGroup?             @relation("TicketAssignedGroup", fields: [assignedGroupId], references: [id])
   requestedBy         User?                  @relation("RequestedBy", fields: [requestedById], references: [id])
   queue               Queue?                 @relation(fields: [queueId], references: [id])
   sla                 SLA?                   @relation(fields: [slaId], references: [id])
@@ -760,12 +767,14 @@ model Queue {
   name              String
   autoAssign        Boolean  @default(false)
   defaultAssigneeId String?  @db.Uuid
+  userGroupId       String?  @db.Uuid
   assignmentRules   Json?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  tenant  Tenant   @relation(fields: [tenantId], references: [id])
-  tickets Ticket[]
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  userGroup UserGroup? @relation(fields: [userGroupId], references: [id])
+  tickets   Ticket[]
 
   @@index([tenantId])
   @@map("queues")
@@ -847,13 +856,83 @@ model EmailAccount {
   defaultQueueId    String?  @db.Uuid
   defaultCategoryId String?  @db.Uuid
   lastPolledAt      DateTime?
+  lastProcessedUid  Int       @default(0)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
+  activityLogs EmailActivityLog[]
+  pollJob      EmailPollJob?
 
   @@index([tenantId])
   @@map("email_accounts")
+}
+
+// ─── Email Activity Log ──────────────────────────────────────────────────────
+
+model EmailActivityLog {
+  id              String              @id @default(uuid()) @db.Uuid
+  tenantId        String              @db.Uuid
+  emailAccountId  String              @db.Uuid
+  direction       String              // OUTBOUND | INBOUND
+  status          String              // QUEUED | SENDING | SENT | FAILED | RETRYING | PERMANENT_FAILURE | RECEIVED | POLL_STARTED | POLL_COMPLETE | POLL_FAILED
+  subject         String?
+  fromAddress     String?
+  toAddresses     String[]
+  messageId       String?
+  ticketId        String?             @db.Uuid
+  attemptNumber   Int                 @default(1)
+  errorCode       String?
+  errorMessage    String?
+  rawMeta         Json?
+  occurredAt      DateTime            @default(now())
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id])
+  emailAccount EmailAccount @relation(fields: [emailAccountId], references: [id])
+
+  @@index([tenantId, emailAccountId])
+  @@index([tenantId, status])
+  @@index([tenantId, occurredAt])
+  @@index([ticketId])
+  @@map("email_activity_logs")
+}
+
+model EmailPollJob {
+  id                    String    @id @default(uuid()) @db.Uuid
+  tenantId              String    @db.Uuid
+  emailAccountId        String    @unique @db.Uuid
+  lastPollAt            DateTime?
+  lastUid               Int?
+  consecutiveFailures   Int       @default(0)
+  nextPollAt            DateTime?
+  isPaused              Boolean   @default(false)
+  pauseReason           String?
+
+  emailAccount EmailAccount @relation(fields: [emailAccountId], references: [id])
+
+  @@index([tenantId])
+  @@index([nextPollAt])
+  @@map("email_poll_jobs")
+}
+
+model SchedulerJob {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String?  @db.Uuid
+  jobType       String   // EMAIL_DELIVERY | IMAP_POLL | EMAIL_RETRY | SLA_CHECK | ESCALATION | AUTO_CLOSE
+  status        String   @default("PENDING") // PENDING | RUNNING | COMPLETED | FAILED | CANCELLED
+  payload       Json?
+  result        Json?
+  errorMessage  String?
+  attemptNumber Int      @default(1)
+  maxAttempts   Int      @default(3)
+  scheduledFor  DateTime @default(now())
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([status, scheduledFor])
+  @@index([tenantId, jobType])
+  @@map("scheduler_jobs")
 }
 
 // ─── Change Management ────────────────────────────────────────────────────────
@@ -1999,6 +2078,25 @@ model MfaChallenge {
   @@index([userId])
   @@index([expiresAt])
   @@map("mfa_challenges")
+}
+
+model MfaTrustedDevice {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  tenantId   String   @db.Uuid
+  tokenHash  String   @unique
+  userAgent  String?
+  ipAddress  String?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("mfa_trusted_devices")
 }
 
 // Model 69: TenantAuthSettings

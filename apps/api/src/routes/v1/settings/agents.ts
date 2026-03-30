@@ -112,7 +112,8 @@ export async function agentSettingsRoutes(fastify: FastifyInstance): Promise<voi
         data: {
           tenantId,
           tokenHash,
-          maxEnrollments: body.maxEnrollments ?? 1,
+          scopes: [],
+          maxEnrollments: body.maxEnrollments ?? -1,
           expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
           isActive: true,
           enrollCount: 0,
@@ -153,6 +154,65 @@ export async function agentSettingsRoutes(fastify: FastifyInstance): Promise<voi
       });
 
       return reply.send({ ok: true });
+    },
+  );
+
+  // ─── GET /api/v1/settings/agents/:id ───────────────────────────────────────────
+
+  fastify.get(
+    '/api/v1/settings/agents/:id',
+    { preHandler: [requirePermission('settings:read')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string };
+      const tenantId = user.tenantId;
+      const { id } = request.params as { id: string };
+
+      const agent = await prisma.agent.findFirst({
+        where: { id, tenantId },
+        select: {
+          id: true,
+          hostname: true,
+          platform: true,
+          platformVersion: true,
+          agentVersion: true,
+          status: true,
+          lastHeartbeatAt: true,
+          enrolledAt: true,
+          metadata: true,
+          inventorySnapshots: {
+            orderBy: { collectedAt: 'desc' },
+            take: 5,
+            select: {
+              id: true,
+              hostname: true,
+              operatingSystem: true,
+              osVersion: true,
+              cpuModel: true,
+              cpuCores: true,
+              ramGb: true,
+              disks: true,
+              networkInterfaces: true,
+              installedSoftware: true,
+              collectedAt: true,
+            },
+          },
+        },
+      });
+
+      if (!agent) {
+        return reply.code(404).send({ error: 'Agent not found' });
+      }
+
+      // Compute display status
+      const staleThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const displayStatus =
+        agent.status === 'ACTIVE' &&
+        agent.lastHeartbeatAt !== null &&
+        agent.lastHeartbeatAt < staleThreshold
+          ? 'STALE'
+          : agent.status;
+
+      return reply.send({ ...agent, displayStatus });
     },
   );
 

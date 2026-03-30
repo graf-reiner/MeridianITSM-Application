@@ -30,10 +30,17 @@ export const emailPollWorker = new Worker(
       },
     });
 
+    // Skip paused accounts
+    const pausedAccountIds = new Set(
+      (await prisma.emailPollJob.findMany({ where: { isPaused: true }, select: { emailAccountId: true } }))
+        .map(j => j.emailAccountId)
+    );
+
     let totalNew = 0;
     let totalComments = 0;
 
     for (const account of accounts) {
+      if (pausedAccountIds.has(account.id)) continue;
       // Check if enough time has passed since last poll
       const intervalMs = (account.pollInterval ?? 5) * 60 * 1000;
       const lastPolled = account.lastPolledAt?.getTime() ?? 0;
@@ -47,18 +54,10 @@ export const emailPollWorker = new Worker(
         const result = await pollMailbox(account);
         totalNew += result.newTickets;
         totalComments += result.comments;
-
-        // Update lastPolledAt
-        await prisma.emailAccount.update({
-          where: { id: account.id },
-          data: { lastPolledAt: new Date() },
-        });
-
-        console.log(
-          `[email-poll] Account ${account.name}: ${result.newTickets} new tickets, ${result.comments} comments`
-        );
+        // Note: lastPolledAt and lastProcessedUid are now updated inside pollMailbox
       } catch (err) {
-        console.error(`[email-poll] Failed to poll account ${account.name}:`, err);
+        // pollMailbox no longer throws, but guard just in case
+        console.error(`[email-poll] Unexpected error polling account ${account.name}:`, err);
       }
     }
 

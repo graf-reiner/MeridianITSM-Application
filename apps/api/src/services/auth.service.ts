@@ -88,12 +88,37 @@ export function generateTokens(
 /**
  * Check if a user requires MFA based on tenant settings and enrolled devices.
  */
-export async function checkMfaRequired(userId: string, tenantId: string): Promise<boolean> {
+export async function checkMfaRequired(
+  userId: string,
+  tenantId: string,
+  trustToken?: string,
+): Promise<boolean> {
   const authSettings = await prisma.tenantAuthSettings.findUnique({
     where: { tenantId },
   });
 
   if (!authSettings || authSettings.mfaPolicy === 'disabled') return false;
+
+  // Check for a valid trusted device token before requiring MFA
+  if (trustToken) {
+    const tokenHash = createHash('sha256').update(trustToken).digest('hex');
+    const trustedDevice = await prisma.mfaTrustedDevice.findFirst({
+      where: {
+        tokenHash,
+        userId,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    if (trustedDevice) {
+      // Update lastUsedAt timestamp
+      await prisma.mfaTrustedDevice.update({
+        where: { id: trustedDevice.id },
+        data: { lastUsedAt: new Date() },
+      });
+      return false;
+    }
+  }
 
   if (authSettings.mfaPolicy === 'required') return true;
 

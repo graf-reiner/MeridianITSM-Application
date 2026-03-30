@@ -30,6 +30,7 @@ export interface CreateTicketData {
   categoryId?: string;
   queueId?: string;
   assignedToId?: string;
+  assignedGroupId?: string;
   requestedById?: string;
   slaId?: string;
   tags?: string[];
@@ -42,6 +43,7 @@ export interface UpdateTicketData {
   priority?: string;
   type?: string;
   assignedToId?: string;
+  assignedGroupId?: string;
   queueId?: string;
   categoryId?: string;
   slaId?: string;
@@ -74,6 +76,9 @@ const TICKET_LIST_INCLUDE = {
   assignedTo: {
     select: { id: true, firstName: true, lastName: true, email: true },
   },
+  assignedGroup: {
+    select: { id: true, name: true },
+  },
   category: {
     select: { id: true, name: true },
   },
@@ -85,6 +90,9 @@ const TICKET_LIST_INCLUDE = {
 const TICKET_DETAIL_INCLUDE = {
   assignedTo: {
     select: { id: true, firstName: true, lastName: true, email: true },
+  },
+  assignedGroup: {
+    select: { id: true, name: true },
   },
   requestedBy: {
     select: { id: true, firstName: true, lastName: true, email: true },
@@ -183,6 +191,7 @@ export async function createTicket(
         categoryId: data.categoryId,
         queueId: data.queueId,
         assignedToId,
+        assignedGroupId: data.assignedGroupId,
         requestedById: data.requestedById,
         slaId: data.slaId,
         tags: data.tags ?? [],
@@ -288,6 +297,7 @@ export async function updateTicket(
   trackChange('priority', existing.priority, data.priority);
   trackChange('type', existing.type, data.type);
   trackChange('assignedToId', existing.assignedToId, data.assignedToId);
+  trackChange('assignedGroupId', existing.assignedGroupId, data.assignedGroupId);
   trackChange('queueId', existing.queueId, data.queueId);
   trackChange('categoryId', existing.categoryId, data.categoryId);
   trackChange('slaId', existing.slaId, data.slaId);

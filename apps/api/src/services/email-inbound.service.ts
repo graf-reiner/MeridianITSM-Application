@@ -5,6 +5,7 @@ import { prisma, PrismaClient } from '@meridian/db';
 import { decrypt, uploadFile } from '@meridian/core';
 import { redis } from '../lib/redis.js';
 import { createTicket, addComment } from './ticket.service.js';
+import { logEmailActivity } from './email-activity.service.js';
 
 // Derive EmailAccount type from PrismaClient inference to avoid direct @prisma/client dependency
 type EmailAccount = Awaited<ReturnType<PrismaClient['emailAccount']['findUniqueOrThrow']>>;
@@ -19,22 +20,23 @@ const MAX_ATTACHMENT_TOTAL_BYTES = 25 * 1024 * 1024; // 25 MB
 
 /**
  * Checks if a Message-ID has already been processed for a tenant.
- * On first sight, records it with a 90-day TTL.
  * Returns true if duplicate (should skip), false if new.
+ * Does NOT mark the message as processed — call markProcessed() after successful handling.
  */
 export async function isDuplicate(tenantId: string, messageId: string): Promise<boolean> {
   const key = `${DEDUP_KEY_PREFIX}${tenantId}`;
-
   const isMember = await redis.sismember(key, messageId);
-  if (isMember === 1) {
-    return true;
-  }
+  return isMember === 1;
+}
 
-  // New message: record it and set/refresh TTL
+/**
+ * Records a Message-ID as processed for a tenant with a 90-day TTL.
+ * Call this AFTER successful ticket/comment creation to avoid losing messages on failure.
+ */
+export async function markProcessed(tenantId: string, messageId: string): Promise<void> {
+  const key = `${DEDUP_KEY_PREFIX}${tenantId}`;
   await redis.sadd(key, messageId);
   await redis.expire(key, DEDUP_TTL_SECONDS);
-
-  return false;
 }
 
 // ─── Reply Threading ──────────────────────────────────────────────────────────
@@ -106,17 +108,24 @@ async function lookupUserByEmail(tenantId: string, email?: string): Promise<stri
 // ─── Mailbox Polling ──────────────────────────────────────────────────────────
 
 /**
- * Polls a single tenant mailbox: fetches unseen emails, creates tickets or threads
- * comments onto existing tickets, deduplicates via Redis Message-ID set.
+ * Polls a single tenant mailbox using UID-based tracking + Redis dedup.
+ * Instead of relying on IMAP \Seen flags, tracks the highest processed UID
+ * per email account. Resilient to Gmail IMAP timeouts and connection drops.
  * Returns counts of new tickets and threaded comments created.
  */
 export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: number; comments: number }> {
   if (!account.imapHost || !account.imapUser || !account.imapPasswordEnc) {
-    console.warn(`[email-inbound] Account ${account.id} missing IMAP config, skipping`);
     return { newTickets: 0, comments: 0 };
   }
 
   const decryptedPassword = decrypt(account.imapPasswordEnc);
+  let newTickets = 0;
+  let comments = 0;
+  let highestUid = account.lastProcessedUid ?? 0;
+
+  console.log(`[email-inbound] Polling account ${account.name} (${account.emailAddress}), lastUid=${highestUid}`);
+
+  logEmailActivity({ tenantId: account.tenantId, emailAccountId: account.id, direction: 'INBOUND', status: 'POLL_STARTED' });
 
   const client = new ImapFlow({
     host: account.imapHost,
@@ -127,22 +136,46 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
       pass: decryptedPassword,
     },
     logger: false,
+    greetingTimeout: 15000,
+    socketTimeout: 120000,
+    tls: { rejectUnauthorized: false },
   });
 
-  let newTickets = 0;
-  let comments = 0;
+  // Prevent unhandled 'error' events from crashing the process
+  client.on('error', (err: Error) => {
+    console.error(`[email-inbound] ImapFlow error for ${account.name}: ${err.message}`);
+  });
+
+  // Wrap entire poll in a 2-minute abort timeout
+  const abortController = new AbortController();
+  const abortTimer = setTimeout(() => abortController.abort(), 120000);
 
   try {
     await client.connect();
     const lock = await client.getMailboxLock('INBOX');
 
     try {
-      const messages = client.fetch({ seen: false }, { envelope: true, source: true }, { uid: true });
+      // UID-based fetch: get messages newer than lastProcessedUid
+      const uidRange = highestUid > 0 ? `${highestUid + 1}:*` : '1:*';
+
+      let fetchedAny = false;
+      const messages = client.fetch(uidRange, { envelope: true, source: true, uid: true });
 
       for await (const message of messages) {
+        if (abortController.signal.aborted) {
+          console.warn(`[email-inbound] Abort timeout reached for ${account.name}, saving progress`);
+          break;
+        }
+
+        fetchedAny = true;
+        const uid = message.uid;
+
+        // Skip if we've already processed this UID (can happen with UID range edge cases)
+        if (uid <= highestUid) continue;
+
         try {
           if (!message.source) {
-            console.warn(`[email-inbound] Message has no source in account ${account.id}, skipping`);
+            highestUid = Math.max(highestUid, uid);
             continue;
           }
 
@@ -150,14 +183,16 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
           const messageId = parsed.messageId;
 
           if (!messageId) {
-            console.warn(`[email-inbound] Message without Message-ID in account ${account.id}, skipping`);
+            highestUid = Math.max(highestUid, uid);
             continue;
           }
 
+          // Redis dedup check
           const duplicate = await isDuplicate(account.tenantId, messageId);
           if (duplicate) {
-            console.log(`[email-inbound] Duplicate Message-ID ${messageId}, skipping`);
-            await client.messageFlagsAdd({ uid: message.uid }, ['\\Seen'], { uid: true });
+            highestUid = Math.max(highestUid, uid);
+            // Fire-and-forget Seen flag — don't await, don't care if it fails
+            client.messageFlagsAdd({ uid }, ['\\Seen'], { uid: true }).catch(() => {});
             continue;
           }
 
@@ -184,7 +219,10 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
               { content: textContent, visibility: 'PUBLIC' },
               null as unknown as string,
             );
+            await markProcessed(account.tenantId, messageId);
             comments++;
+            logEmailActivity({ tenantId: account.tenantId, emailAccountId: account.id, direction: 'INBOUND', status: 'RECEIVED', subject: parsed.subject ?? undefined, fromAddress: parsed.from?.value?.[0]?.address, messageId, ticketId: existingTicket.id });
+            console.log(`[email-inbound] Threaded comment on TKT-${existingTicket.ticketNumber} from uid ${uid}`);
           } else {
             const fromEmail = parsed.from?.value?.[0]?.address;
             const requestedById = await lookupUserByEmail(account.tenantId, fromEmail);
@@ -224,6 +262,13 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
                 } as object,
               },
             });
+
+            // Mark as processed AFTER successful ticket creation
+            await markProcessed(account.tenantId, messageId);
+
+            logEmailActivity({ tenantId: account.tenantId, emailAccountId: account.id, direction: 'INBOUND', status: 'RECEIVED', subject: parsed.subject ?? undefined, fromAddress: fromEmail, messageId, ticketId: ticket.id });
+
+            console.log(`[email-inbound] Created ticket ${ticket.id} from uid ${uid} (${parsed.subject ?? 'No Subject'})`);
 
             // Process attachments (25 MB total cap)
             if (parsed.attachments && parsed.attachments.length > 0) {
@@ -275,29 +320,80 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
             }
           }
 
-          await client.messageFlagsAdd({ uid: message.uid }, ['\\Seen'], { uid: true });
+          // After successful processing, update highestUid
+          highestUid = Math.max(highestUid, uid);
+
+          // Fire-and-forget Seen flag — non-blocking, ignore failures (Gmail timeout fix)
+          client.messageFlagsAdd({ uid }, ['\\Seen'], { uid: true }).catch(() => {});
+
         } catch (msgErr) {
           console.error(
-            `[email-inbound] Error processing message in account ${account.id}: ${msgErr instanceof Error ? msgErr.message : String(msgErr)}`,
+            `[email-inbound] Error processing uid ${uid} in ${account.name}: ${msgErr instanceof Error ? msgErr.message : String(msgErr)}`,
           );
+          // Still advance the UID so we don't get stuck on a bad message
+          highestUid = Math.max(highestUid, uid);
         }
       }
+
+      if (!fetchedAny && highestUid === 0) {
+        // First poll — set highestUid to current mailbox state so we don't reprocess old emails
+        highestUid = client.mailbox?.uidNext ? client.mailbox.uidNext - 1 : 0;
+        console.log(`[email-inbound] First poll for ${account.name}, setting baseline uid=${highestUid}`);
+      }
+
     } finally {
-      lock.release();
+      try { lock.release(); } catch { /* ignore */ }
     }
 
-    await client.logout();
+    try { await client.logout(); } catch { /* ignore */ }
   } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err);
     console.error(
-      `[email-inbound] Failed to poll mailbox for account ${account.id}: ${err instanceof Error ? err.message : String(err)}`,
+      `[email-inbound] Failed to poll ${account.name}: ${errMsg}`,
     );
-    throw err;
+
+    // Log poll failure
+    logEmailActivity({ tenantId: account.tenantId, emailAccountId: account.id, direction: 'INBOUND', status: 'POLL_FAILED', errorMessage: errMsg });
+
+    // Track consecutive failures and auto-pause if >= 5
+    try {
+      const pollJob = await prisma.emailPollJob.findUnique({ where: { emailAccountId: account.id } });
+      const failures = (pollJob?.consecutiveFailures ?? 0) + 1;
+      await prisma.emailPollJob.upsert({
+        where: { emailAccountId: account.id },
+        create: { tenantId: account.tenantId, emailAccountId: account.id, consecutiveFailures: failures, isPaused: failures >= 5, pauseReason: failures >= 5 ? 'Auto-paused after 5 consecutive failures' : null },
+        update: { consecutiveFailures: failures, isPaused: failures >= 5, pauseReason: failures >= 5 ? 'Auto-paused after 5 consecutive failures' : null },
+      });
+    } catch { /* non-critical */ }
+
+    // Don't throw — let the worker continue to the next account
+  } finally {
+    clearTimeout(abortTimer);
   }
 
-  await prisma.emailAccount.update({
-    where: { id: account.id },
-    data: { lastPolledAt: new Date() },
-  });
+  // Always save progress — even partial
+  try {
+    await prisma.emailAccount.update({
+      where: { id: account.id },
+      data: { lastPolledAt: new Date(), lastProcessedUid: highestUid },
+    });
+  } catch (err) {
+    console.error(
+      `[email-inbound] Failed to update lastProcessedUid for ${account.name}: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
 
+  // Log poll completion and update poll job tracking
+  logEmailActivity({ tenantId: account.tenantId, emailAccountId: account.id, direction: 'INBOUND', status: 'POLL_COMPLETE', rawMeta: { newTickets, comments, lastUid: highestUid } });
+
+  try {
+    await prisma.emailPollJob.upsert({
+      where: { emailAccountId: account.id },
+      create: { tenantId: account.tenantId, emailAccountId: account.id, lastPollAt: new Date(), lastUid: highestUid, consecutiveFailures: 0, nextPollAt: new Date(Date.now() + (account.pollInterval ?? 5) * 60000) },
+      update: { lastPollAt: new Date(), lastUid: highestUid, consecutiveFailures: 0, nextPollAt: new Date(Date.now() + (account.pollInterval ?? 5) * 60000) },
+    });
+  } catch { /* non-critical */ }
+
+  console.log(`[email-inbound] Poll complete for ${account.name}: ${newTickets} new, ${comments} comments, lastUid=${highestUid}`);
   return { newTickets, comments };
 }

@@ -34,7 +34,8 @@ interface CI {
 }
 
 interface CIListResponse {
-  cis: CI[];
+  cis?: CI[];
+  data?: CI[];
   total: number;
 }
 
@@ -108,7 +109,7 @@ export default function CMDBPage() {
     },
   });
 
-  const cis = data?.cis ?? [];
+  const cis = data?.data ?? data?.cis ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE);
 

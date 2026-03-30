@@ -10,9 +10,19 @@ export async function loginAction(
   tenantSlug: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Forward the trusted device cookie so the backend can skip MFA if valid
+    const cookieStore = await cookies();
+    const trustCookie = cookieStore.get('meridian_mfa_trust');
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (trustCookie?.value) {
+      headers['Cookie'] = `meridian_mfa_trust=${trustCookie.value}`;
+    }
+
     const res = await fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ email, password, tenantSlug }),
     });
 
@@ -28,7 +38,6 @@ export async function loginAction(
     }
 
     // Set cookie server-side — this is reliable regardless of browser/network quirks
-    const cookieStore = await cookies();
     cookieStore.set('meridian_session', data.accessToken, {
       path: '/',
       maxAge: 15 * 60,

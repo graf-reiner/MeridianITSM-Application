@@ -63,6 +63,7 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
         categoryId?: unknown;
         queueId?: unknown;
         assignedToId?: unknown;
+        assignedGroupId?: unknown;
         requestedById?: unknown;
         slaId?: unknown;
         tags?: unknown;
@@ -94,6 +95,7 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
           categoryId: typeof body.categoryId === 'string' ? body.categoryId : undefined,
           queueId: typeof body.queueId === 'string' ? body.queueId : undefined,
           assignedToId: typeof body.assignedToId === 'string' ? body.assignedToId : undefined,
+          assignedGroupId: typeof body.assignedGroupId === 'string' ? body.assignedGroupId : undefined,
           requestedById: typeof body.requestedById === 'string' ? body.requestedById : undefined,
           slaId: typeof body.slaId === 'string' ? body.slaId : undefined,
           tags: Array.isArray(body.tags) ? (body.tags as string[]) : undefined,
@@ -171,6 +173,7 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
       priority?: string;
       type?: string;
       assignedToId?: string;
+      assignedGroupId?: string;
       queueId?: string;
       categoryId?: string;
       slaId?: string;

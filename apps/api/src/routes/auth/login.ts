@@ -72,8 +72,17 @@ export async function loginRoute(app: FastifyInstance): Promise<void> {
     // Load user's roles
     const roles = await getUserRoles(user.id, tenant.id);
 
-    // Check if MFA is required for this user
-    const mfaRequired = await checkMfaRequired(user.id, tenant.id);
+    // Extract trusted device cookie from request headers
+    const cookieHeader = request.headers.cookie ?? '';
+    const trustToken = cookieHeader
+      .split(';')
+      .map((c) => c.trim())
+      .find((c) => c.startsWith('meridian_mfa_trust='))
+      ?.split('=')[1];
+
+    // Check if MFA is required for this user (skip if trusted device)
+    console.log(`[auth] Login for ${email}: trustToken=${trustToken ? 'present (' + trustToken.substring(0, 8) + '...)' : 'MISSING'}, cookieHeader=${cookieHeader ? 'has cookies' : 'EMPTY'}`);
+    const mfaRequired = await checkMfaRequired(user.id, tenant.id, trustToken);
 
     // Generate token pair — mfaVerified is true only if MFA is NOT required
     const tokens = generateTokens(

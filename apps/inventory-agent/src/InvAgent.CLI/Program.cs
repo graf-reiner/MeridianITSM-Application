@@ -64,8 +64,10 @@ rootCommand.SetHandler(async (context) =>
     if (inMemoryOverrides.Count > 0)
         builder.Configuration.AddInMemoryCollection(inMemoryOverrides);
 
-    // Register AgentConfig
+    // Register AgentConfig (both IOptions<AgentConfig> and concrete AgentConfig for direct injection)
     builder.Services.Configure<AgentConfig>(builder.Configuration.GetSection("AgentConfig"));
+    builder.Services.AddSingleton(sp =>
+        sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<AgentConfig>>().Value);
 
     // Register platform-specific collector via OS detection
     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -124,6 +126,29 @@ rootCommand.SetHandler(async (context) =>
         var host = builder.Build();
         var collector = host.Services.GetRequiredService<ICollector>();
         var api = host.Services.GetRequiredService<MeridianApiClient>();
+        var cfg = host.Services.GetRequiredService<AgentConfig>();
+
+        // Enroll if enrollment token is provided and no agent key exists yet
+        if (!string.IsNullOrEmpty(cfg.EnrollmentToken) && string.IsNullOrEmpty(cfg.AgentKey))
+        {
+            Console.WriteLine("Enrolling agent...");
+            var enrollResult = await api.EnrollAsync(
+                cfg.EnrollmentToken,
+                Environment.MachineName,
+                System.Runtime.InteropServices.RuntimeInformation.OSDescription,
+                "1.0.0");
+            if (enrollResult?.AgentKey != null)
+            {
+                Console.WriteLine($"Enrolled successfully. AgentId: {enrollResult.AgentId}");
+                api.SetAgentKey(enrollResult.AgentKey);
+            }
+            else
+            {
+                Console.Error.WriteLine("Enrollment failed — server may have rejected the token.");
+                host.Dispose();
+                return;
+            }
+        }
 
         var payload = await collector.CollectAsync();
         Console.WriteLine($"Collection complete. Hostname: {payload.Hostname}, OS: {payload.Os.Name}, Software count: {payload.Software.Count}");

@@ -109,17 +109,20 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(401).send({ error: 'Invalid or expired enrollment token' });
     }
 
-    // Check enrollment limit
-    if (enrollmentToken.enrollCount >= enrollmentToken.maxEnrollments) {
+    // Check enrollment limit (-1 means unlimited)
+    if (enrollmentToken.maxEnrollments >= 0 && enrollmentToken.enrollCount >= enrollmentToken.maxEnrollments) {
       return reply.code(409).send({ error: 'Enrollment token max usage reached' });
     }
 
-    // Validate platform enum
-    const validPlatforms = ['WINDOWS', 'LINUX', 'MACOS'] as const;
-    const platformUpper = platform.toUpperCase() as (typeof validPlatforms)[number];
-    if (!validPlatforms.includes(platformUpper)) {
+    // Normalize platform string to enum value
+    const platformLower = platform.toLowerCase();
+    let platformEnum: 'WINDOWS' | 'LINUX' | 'MACOS';
+    if (platformLower.includes('windows')) platformEnum = 'WINDOWS';
+    else if (platformLower.includes('linux')) platformEnum = 'LINUX';
+    else if (platformLower.includes('macos') || platformLower.includes('darwin') || platformLower.includes('mac os')) platformEnum = 'MACOS';
+    else {
       return reply.code(400).send({
-        error: `Invalid platform. Must be one of: ${validPlatforms.join(', ')}`,
+        error: `Unable to determine platform from: "${platform}". Expected Windows, Linux, or macOS.`,
       });
     }
 
@@ -133,7 +136,7 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
           tenantId: enrollmentToken.tenantId,
           agentKey,
           hostname,
-          platform: platformUpper,
+          platform: platformEnum,
           agentVersion: agentVersion ?? null,
           status: 'ACTIVE',
           enrolledAt: now,
@@ -202,7 +205,7 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
     if (!agent) return;
 
     const body = request.body as {
-      os?: string;
+      os?: string | { name?: string; version?: string; architecture?: string; buildNumber?: string };
       hostname?: string;
       hardware?: Record<string, unknown>;
       software?: unknown[];
@@ -213,37 +216,42 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
       [key: string]: unknown;
     };
 
+    // Normalize OS field — agent sends { name, version, ... } object or a plain string
+    const osObj = typeof body.os === 'object' && body.os !== null ? body.os : null;
+    const osString = typeof body.os === 'string' ? body.os : osObj?.name ?? null;
+    const osVersion = osObj?.version ?? (body.hardware as Record<string, unknown> | undefined)?.['osVersion'] as string | null | undefined;
+    const hw = (body.hardware ?? {}) as Record<string, unknown>;
+
     // Create the InventorySnapshot with the full raw payload
     const snapshot = await prisma.inventorySnapshot.create({
       data: {
         tenantId: agent.tenantId,
         agentId: agent.id,
         hostname: body.hostname ?? agent.hostname,
-        operatingSystem: body.os ?? null,
-        osVersion: (body.hardware as Record<string, unknown> | undefined)?.['osVersion'] as
-          | string
-          | null
-          | undefined,
-        cpuModel: (body.hardware as Record<string, unknown> | undefined)?.['cpuModel'] as
-          | string
-          | null
-          | undefined,
-        cpuCores: (body.hardware as Record<string, unknown> | undefined)?.['cpuCores'] as
-          | number
-          | null
-          | undefined,
-        ramGb: (body.hardware as Record<string, unknown> | undefined)?.['ramGb'] as
-          | number
-          | null
-          | undefined,
-        disks: (body.hardware as Record<string, unknown> | undefined)?.['disks'] as never,
-        networkInterfaces: body.network as never,
-        installedSoftware: body.software as never,
-        localUsers: body.localUsers as never,
+        operatingSystem: osString,
+        osVersion: osVersion ?? null,
+        cpuModel: hw['cpuModel'] as string | null | undefined,
+        cpuCores: typeof hw['cpuCores'] === 'number' ? hw['cpuCores'] : null,
+        ramGb: typeof hw['ramGb'] === 'number' ? hw['ramGb'] : null,
+        disks: hw['disks'] as never ?? null,
+        networkInterfaces: body.network as never ?? null,
+        installedSoftware: body.software as never ?? null,
+        localUsers: body.localUsers as never ?? null,
         rawData: body as never,
         collectedAt: new Date(),
       },
     });
+
+    // Auto-trigger CMDB reconciliation for this agent
+    try {
+      await cmdbReconciliationQueue.add('agent-inventory', {
+        tenantId: agent.tenantId,
+        agentId: agent.id,
+        trigger: 'inventory-submit',
+      });
+    } catch {
+      // Non-critical — reconciliation will still run on schedule
+    }
 
     return reply.code(201).send({ snapshotId: snapshot.id });
   });

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomBytes, createHash } from 'node:crypto';
 import { ssoPrisma as prisma } from '@/lib/sso/db';
 import { getMfaUser, issueSessionToken } from '@/lib/mfa/auth-helper';
 import { verifyTotpCode } from '@/lib/mfa/totp';
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
         where: { userId: user.userId, usedAt: null },
       });
 
-      return await successResponse(user, { remainingRecoveryCodes: remaining });
+      return await successResponse(user, request, body, { remainingRecoveryCodes: remaining });
     }
 
     // ── Device-based verification ──────────────────────────────────────────
@@ -196,7 +197,7 @@ export async function POST(request: NextRequest) {
       data: { lastUsedAt: new Date() },
     });
 
-    return await successResponse(user);
+    return await successResponse(user, request, body);
   } catch (error) {
     console.error('MFA verify error:', error);
     return NextResponse.json(
@@ -210,6 +211,8 @@ export async function POST(request: NextRequest) {
 
 async function successResponse(
   user: { userId: string; tenantId: string; email: string; roles: string[] },
+  request: NextRequest,
+  body: Record<string, unknown>,
   extra?: Record<string, unknown>,
 ) {
   const token = await issueSessionToken(
@@ -229,6 +232,45 @@ async function successResponse(
     sameSite: 'lax',
     httpOnly: false,
   });
+
+  // Set trusted device cookie if requested
+  if (body.trustDevice === true) {
+    try {
+      const rawToken = randomBytes(32).toString('hex');
+      const tokenHash = createHash('sha256').update(rawToken).digest('hex');
+
+      const thirtyDays = 30 * 24 * 60 * 60; // seconds
+      const expiresAt = new Date(Date.now() + thirtyDays * 1000);
+
+      const userAgent = request.headers.get('user-agent') ?? undefined;
+      const ipAddress =
+        request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+        request.headers.get('x-real-ip') ??
+        undefined;
+
+      await prisma.mfaTrustedDevice.create({
+        data: {
+          userId: user.userId,
+          tenantId: user.tenantId,
+          tokenHash,
+          userAgent,
+          ipAddress,
+          expiresAt,
+        },
+      });
+
+      response.cookies.set('meridian_mfa_trust', rawToken, {
+        path: '/',
+        maxAge: thirtyDays,
+        sameSite: 'lax',
+        httpOnly: true,
+        secure: true,
+      });
+    } catch (err) {
+      // Trust cookie is non-critical — log but don't fail the MFA verification
+      console.error('Failed to create trusted device:', err);
+    }
+  }
 
   return response;
 }

@@ -17,6 +17,7 @@ import { tagsSettingsRoutes } from './tags.js';
 import { ssoSettingsRoutes } from './sso.js';
 import { authPolicyRoutes } from './auth-policy.js';
 import { federationRoutes } from './federation.js';
+import { emailActivityRoutes } from './email-activity.js';
 
 /**
  * Settings routes registrar.
@@ -58,4 +59,5 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
   await fastify.register(ssoSettingsRoutes);
   await fastify.register(authPolicyRoutes);
   await fastify.register(federationRoutes);
+  await fastify.register(emailActivityRoutes);
 }
