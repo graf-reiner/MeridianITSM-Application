@@ -18,6 +18,7 @@ import {
   mdiShieldLock,
   mdiShieldKey,
   mdiShieldLockOutline,
+  mdiBellAlert,
 } from '@mdi/js';
 
 // ─── Settings Hub ─────────────────────────────────────────────────────────────
@@ -127,6 +128,13 @@ const SETTINGS_SECTIONS = [
     description: 'MFA, password, and session policies',
     icon: mdiShieldLockOutline,
     color: '#7c3aed',
+  },
+  {
+    href: '/dashboard/settings/notification-rules',
+    label: 'Notification Rules',
+    description: 'Configure when and how notifications are sent',
+    icon: mdiBellAlert,
+    color: '#d97706',
   },
 ];
 
