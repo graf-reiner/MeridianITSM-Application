@@ -860,6 +860,15 @@ model EmailAccount {
   defaultCategoryId String?  @db.Uuid
   lastPolledAt      DateTime?
   lastProcessedUid  Int       @default(0)
+
+  // OAuth2
+  authProvider          String    @default("MANUAL")  // MANUAL, GOOGLE, MICROSOFT
+  oauthAccessTokenEnc   String?
+  oauthRefreshTokenEnc  String?
+  oauthTokenExpiresAt   DateTime?
+  oauthScope            String?
+  oauthConnectionStatus String?   // CONNECTED, DISCONNECTED, REFRESH_FAILED
+
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
