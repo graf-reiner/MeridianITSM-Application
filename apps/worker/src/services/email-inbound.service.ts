@@ -8,7 +8,7 @@ import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
 import { randomUUID } from 'node:crypto';
 import { prisma, PrismaClient } from '@meridian/db';
-import { decrypt, uploadFile } from '@meridian/core';
+import { decrypt, encrypt, uploadFile, getFreshAccessToken } from '@meridian/core';
 import { Redis } from 'ioredis';
 
 // Derive EmailAccount type from PrismaClient to avoid direct @prisma/client import
@@ -153,18 +153,125 @@ async function addEmailComment(tenantId: string, ticketId: string, content: stri
 // ─── Mailbox Polling ──────────────────────────────────────────────────────────
 
 export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: number; comments: number }> {
-  if (!account.imapHost || !account.imapUser || !account.imapPasswordEnc) {
-    console.warn(`[email-inbound] Account ${account.id} missing IMAP config, skipping`);
+  if (!account.imapHost) {
+    console.warn(`[email-inbound] Account ${account.id} missing IMAP host, skipping`);
     return { newTickets: 0, comments: 0 };
   }
 
-  const decryptedPassword = decrypt(account.imapPasswordEnc);
+  // Determine IMAP auth based on authProvider
+  let imapAuth: { user: string; pass?: string; accessToken?: string };
+
+  const authProvider = (account as any).authProvider as string | null;
+
+  if (authProvider === 'GOOGLE' || authProvider === 'MICROSOFT') {
+    // ── OAuth2 path ──
+    const encRefresh = (account as any).oauthRefreshTokenEnc as string | null;
+    if (!encRefresh) {
+      console.warn(`[email-inbound] OAuth account ${account.id} missing refresh token, skipping`);
+      return { newTickets: 0, comments: 0 };
+    }
+
+    const isGoogle = authProvider === 'GOOGLE';
+    const clientId = isGoogle ? process.env.GOOGLE_CLIENT_ID : process.env.MICROSOFT_CLIENT_ID;
+    const clientSecret = isGoogle ? process.env.GOOGLE_CLIENT_SECRET : process.env.MICROSOFT_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+      console.warn(`[email-inbound] Missing ${authProvider} OAuth client credentials in env, skipping account ${account.id}`);
+      return { newTickets: 0, comments: 0 };
+    }
+
+    const providerLower = authProvider.toLowerCase() as 'google' | 'microsoft';
+
+    try {
+      const encAccess = (account as any).oauthAccessTokenEnc as string | null;
+      const expiresAt = (account as any).oauthTokenExpiresAt as Date | null;
+
+      const result = await getFreshAccessToken(
+        providerLower,
+        encAccess ?? '',
+        encRefresh,
+        expiresAt ?? new Date(0),
+        clientId,
+        clientSecret,
+      );
+
+      if (result.refreshed) {
+        await prisma.emailAccount.update({
+          where: { id: account.id },
+          data: {
+            oauthAccessTokenEnc: encrypt(result.accessToken),
+            oauthTokenExpiresAt: result.newExpiresAt ?? null,
+            oauthConnectionStatus: 'CONNECTED',
+          } as any,
+        });
+      }
+
+      imapAuth = {
+        user: account.imapUser ?? account.emailAddress,
+        accessToken: result.accessToken,
+      };
+    } catch (oauthErr) {
+      console.error(
+        `[email-inbound] OAuth token refresh failed for account ${account.id}: ${oauthErr instanceof Error ? oauthErr.message : String(oauthErr)}`,
+      );
+
+      // Mark account as disconnected
+      await prisma.emailAccount.update({
+        where: { id: account.id },
+        data: {
+          oauthConnectionStatus: 'REFRESH_FAILED',
+          isActive: false,
+        } as any,
+      });
+
+      // Notify tenant admin (non-critical)
+      prisma.user.findFirst({
+        where: {
+          tenantId: account.tenantId,
+          userRoles: { some: { role: { slug: 'admin', tenantId: account.tenantId } } },
+        },
+        select: { id: true },
+      }).then((adminUser) => {
+        if (adminUser) {
+          return prisma.notification.create({
+            data: {
+              tenantId: account.tenantId,
+              userId: adminUser.id,
+              type: 'SYSTEM',
+              title: `Email account "${(account as any).name ?? account.emailAddress}" disconnected`,
+              body: 'The OAuth token could not be refreshed. Please reconnect the email account in Settings.',
+            },
+          });
+        }
+      }).catch(() => { /* notification is non-critical */ });
+
+      return { newTickets: 0, comments: 0 };
+    }
+  } else {
+    // ── Manual / password path ──
+    if (!account.imapUser || !account.imapPasswordEnc) {
+      console.warn(`[email-inbound] Account ${account.id} missing IMAP credentials, skipping`);
+      return { newTickets: 0, comments: 0 };
+    }
+
+    let decryptedPassword: string;
+    try {
+      decryptedPassword = decrypt(account.imapPasswordEnc);
+    } catch (decryptErr) {
+      console.error(
+        `[email-inbound] Failed to decrypt IMAP password for account ${account.id}: ${decryptErr instanceof Error ? decryptErr.message : String(decryptErr)}`,
+      );
+      return { newTickets: 0, comments: 0 };
+    }
+
+    imapAuth = { user: account.imapUser, pass: decryptedPassword };
+  }
 
   const client = new ImapFlow({
     host: account.imapHost,
     port: account.imapPort ?? 993,
-    secure: account.imapSecure,
-    auth: { user: account.imapUser, pass: decryptedPassword },
+    secure: (authProvider === 'GOOGLE' || authProvider === 'MICROSOFT') ? false : account.imapSecure,
+    auth: imapAuth,
     logger: false,
   });
 
@@ -176,6 +283,10 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
     const lock = await client.getMailboxLock('INBOX');
 
     try {
+      // Log mailbox status for diagnostics
+      const status = await client.status('INBOX', { messages: true, unseen: true });
+      console.log(`[email-inbound] Account ${account.id}: INBOX has ${status.messages} total, ${status.unseen} unseen`);
+
       const messages = client.fetch({ seen: false }, { envelope: true, source: true }, { uid: true });
 
       for await (const message of messages) {

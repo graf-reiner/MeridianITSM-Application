@@ -1,7 +1,7 @@
 import { Worker } from 'bullmq';
 import nodemailer from 'nodemailer';
 import { prisma } from '@meridian/db';
-import { decrypt } from '@meridian/core';
+import { decrypt, encrypt, getFreshAccessToken } from '@meridian/core';
 import { bullmqConnection } from '../queues/connection.js';
 import { assertTenantId, QUEUE_NAMES } from '../queues/definitions.js';
 
@@ -95,39 +95,137 @@ export const emailNotificationWorker = new Worker(
       orderBy: { createdAt: 'asc' },
     });
 
-    if (!account || !account.smtpHost || !account.smtpUser || !account.smtpPasswordEnc) {
+    if (!account || !account.smtpHost) {
       console.warn(
         `[email-notification] No active SMTP account for tenant ${tenantId}, skipping send to ${to}`,
       );
       return;
     }
 
-    const decryptedPassword = decrypt(account.smtpPasswordEnc);
-
     const { subject, html } = await renderTemplate(tenantId, templateName, variables);
 
-    const transport = nodemailer.createTransport({
-      host: account.smtpHost,
-      port: account.smtpPort ?? 587,
-      secure: account.smtpSecure,
-      auth: {
-        user: account.smtpUser,
-        pass: decryptedPassword,
-      },
-    });
+    const authProvider = (account as any).authProvider as string | null;
+    let transport: nodemailer.Transporter;
 
-    await transport.sendMail({
-      from: account.emailAddress,
-      to,
-      subject,
-      html,
-      inReplyTo,
-      references: references?.join(' '),
-    });
+    if (authProvider === 'GOOGLE' || authProvider === 'MICROSOFT') {
+      // ── OAuth2 SMTP path ──
+      const encRefresh = (account as any).oauthRefreshTokenEnc as string | null;
+      if (!encRefresh) {
+        console.warn(`[email-notification] OAuth account ${account.id} missing refresh token, skipping`);
+        return;
+      }
 
-    transport.close();
+      const isGoogle = authProvider === 'GOOGLE';
+      const clientId = isGoogle ? process.env.GOOGLE_CLIENT_ID : process.env.MICROSOFT_CLIENT_ID;
+      const clientSecret = isGoogle ? process.env.GOOGLE_CLIENT_SECRET : process.env.MICROSOFT_CLIENT_SECRET;
 
-    console.log(`[email-notification] Sent ${templateName} to ${to} for tenant ${tenantId}`);
+      if (!clientId || !clientSecret) {
+        console.warn(`[email-notification] Missing ${authProvider} OAuth client credentials in env, skipping`);
+        return;
+      }
+
+      const encAccess = (account as any).oauthAccessTokenEnc as string | null;
+      const expiresAt = (account as any).oauthTokenExpiresAt as Date | null;
+
+      const providerLower = authProvider.toLowerCase() as 'google' | 'microsoft';
+
+      const result = await getFreshAccessToken(
+        providerLower,
+        encAccess ?? '',
+        encRefresh,
+        expiresAt ?? new Date(0),
+        clientId,
+        clientSecret,
+      );
+
+      if (result.refreshed) {
+        await prisma.emailAccount.update({
+          where: { id: account.id },
+          data: {
+            oauthAccessTokenEnc: encrypt(result.accessToken),
+            oauthTokenExpiresAt: result.newExpiresAt ?? null,
+            oauthConnectionStatus: 'CONNECTED',
+          } as any,
+        });
+      }
+
+      transport = nodemailer.createTransport({
+        host: account.smtpHost,
+        port: account.smtpPort ?? 587,
+        secure: false, // STARTTLS for both Google and Microsoft on port 587
+        auth: {
+          type: 'OAuth2',
+          user: account.smtpUser ?? account.emailAddress,
+          accessToken: result.accessToken,
+        } as any,
+      });
+    } else {
+      // ── Manual / password path ──
+      let decryptedPassword = '';
+      if (account.smtpPasswordEnc) {
+        try { decryptedPassword = decrypt(account.smtpPasswordEnc); } catch { decryptedPassword = ''; }
+      }
+      const hasAuth = !!(account.smtpUser || decryptedPassword);
+
+      transport = nodemailer.createTransport({
+        host: account.smtpHost,
+        port: account.smtpPort ?? 587,
+        secure: account.smtpSecure,
+        ...(hasAuth ? { auth: { user: account.smtpUser ?? '', pass: decryptedPassword } } : {}),
+      });
+    }
+
+    let messageId: string | undefined;
+    try {
+      const info = await transport.sendMail({
+        from: account.emailAddress,
+        to,
+        subject,
+        html,
+        inReplyTo,
+        references: references?.join(' '),
+      });
+      messageId = info.messageId;
+
+      // Log successful send to email activity
+      await prisma.emailActivityLog.create({
+        data: {
+          tenantId,
+          emailAccountId: account.id,
+          direction: 'OUTBOUND',
+          status: 'SENT',
+          subject,
+          fromAddress: account.emailAddress,
+          toAddresses: [to],
+          messageId: messageId ?? null,
+          ticketId: variables.ticketId || null,
+          attemptNumber: 1,
+        },
+      }).catch(() => { /* activity logging is non-critical */ });
+
+      console.log(`[email-notification] Sent ${templateName} to ${to} for tenant ${tenantId} (${messageId})`);
+    } catch (sendErr) {
+      // Log failed send to email activity
+      const errMsg = sendErr instanceof Error ? sendErr.message : String(sendErr);
+      await prisma.emailActivityLog.create({
+        data: {
+          tenantId,
+          emailAccountId: account.id,
+          direction: 'OUTBOUND',
+          status: 'FAILED',
+          subject,
+          fromAddress: account.emailAddress,
+          toAddresses: [to],
+          ticketId: variables.ticketId || null,
+          attemptNumber: 1,
+          errorMessage: errMsg,
+        },
+      }).catch(() => { /* activity logging is non-critical */ });
+
+      throw sendErr; // Re-throw so BullMQ marks the job as failed
+    } finally {
+      transport.close();
+    }
   },
   {
     connection: bullmqConnection,
