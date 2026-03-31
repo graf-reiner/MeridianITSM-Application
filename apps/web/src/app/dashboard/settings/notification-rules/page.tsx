@@ -232,7 +232,7 @@ export default function NotificationRulesPage() {
     },
   });
 
-  const rules = data?.rules ?? [];
+  const rules = Array.isArray(data) ? data : (data?.rules ?? []);
 
   const handleToggleActive = async (rule: NotificationRule) => {
     await fetch(`/api/v1/settings/notification-rules/${rule.id}`, {
@@ -569,7 +569,7 @@ export default function NotificationRulesPage() {
                       </td>
                       <td style={tdStyle}>
                         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                          {rule.actions.map((a, i) => (
+                          {rule.actions.map((a: { type: string }, i: number) => (
                             <span
                               key={i}
                               title={a.type}
