@@ -1,4 +1,17 @@
 export { encrypt, decrypt } from './utils/encryption.js';
+export {
+  OAUTH_PROVIDERS,
+  createOAuthState,
+  validateOAuthState,
+  buildAuthorizationUrl,
+  exchangeCodeForTokens,
+  refreshAccessToken,
+  fetchUserInfo,
+  getFreshAccessToken,
+  type OAuthProviderConfig,
+  type OAuthTokens,
+  type OAuthUserInfo,
+} from './utils/oauth.js';
 export { uploadFile, getFileUrl, deleteFile, buildStoragePath } from './utils/storage.js';
 export { TenantService } from './services/tenant.service.js';
 export {
