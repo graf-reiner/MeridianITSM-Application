@@ -127,14 +127,14 @@ function StepIndicator({ currentStep }: { currentStep: WizardStep }) {
               borderRadius: 20,
               fontSize: 12,
               fontWeight: 600,
-              backgroundColor: isDone ? '#d1fae5' : isActive ? '#4f46e5' : '#f3f4f6',
-              color: isDone ? '#065f46' : isActive ? '#fff' : '#9ca3af',
+              backgroundColor: isDone ? 'var(--badge-green-bg)' : isActive ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+              color: isDone ? '#065f46' : isActive ? 'var(--bg-primary)' : 'var(--text-placeholder)',
               whiteSpace: 'nowrap',
             }}>
               {step.label}
             </div>
             {idx < steps.length - 1 && (
-              <div style={{ flex: 1, height: 2, backgroundColor: isDone ? '#10b981' : '#e5e7eb', margin: '0 4px' }} />
+              <div style={{ flex: 1, height: 2, backgroundColor: isDone ? '#10b981' : 'var(--border-primary)', margin: '0 4px' }} />
             )}
           </div>
         );
@@ -315,11 +315,11 @@ export default function CmdbImportPage() {
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
-        <Link href="/dashboard/cmdb" style={{ color: '#6b7280', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+        <Link href="/dashboard/cmdb" style={{ color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
           <Icon path={mdiArrowLeft} size={0.9} color="currentColor" />
         </Link>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Icon path={mdiCloudUpload} size={1} color="#4f46e5" />
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon path={mdiCloudUpload} size={1} color="var(--accent-primary)" />
           Bulk Import CIs
         </h1>
       </div>
@@ -328,13 +328,13 @@ export default function CmdbImportPage() {
       <StepIndicator currentStep={step} />
 
       {/* Card */}
-      <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 28 }}>
+      <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: 28 }}>
 
         {/* STEP 1: UPLOAD */}
         {step === 'UPLOAD' && (
           <div>
-            <h2 style={{ margin: '0 0 6px', fontSize: 17, fontWeight: 700, color: '#111827' }}>Upload File</h2>
-            <p style={{ margin: '0 0 20px', color: '#6b7280', fontSize: 14 }}>
+            <h2 style={{ margin: '0 0 6px', fontSize: 17, fontWeight: 700, color: 'var(--text-primary)' }}>Upload File</h2>
+            <p style={{ margin: '0 0 20px', color: 'var(--text-muted)', fontSize: 14 }}>
               Upload a CSV or JSON file containing your CI data. CSV files must have a header row.
             </p>
 
@@ -345,20 +345,20 @@ export default function CmdbImportPage() {
               onDrop={handleFileDrop}
               onClick={() => fileInputRef.current?.click()}
               style={{
-                border: `2px dashed ${isDragOver ? '#4f46e5' : '#d1d5db'}`,
+                border: `2px dashed ${isDragOver ? 'var(--accent-primary)' : 'var(--border-secondary)'}`,
                 borderRadius: 10,
                 padding: '48px 24px',
                 textAlign: 'center',
                 cursor: 'pointer',
-                backgroundColor: isDragOver ? '#eef2ff' : '#f9fafb',
+                backgroundColor: isDragOver ? '#eef2ff' : 'var(--bg-secondary)',
                 transition: 'all 0.15s ease',
               }}
             >
-              <Icon path={mdiCloudUpload} size={2.5} color={isDragOver ? '#4f46e5' : '#9ca3af'} />
-              <p style={{ margin: '12px 0 4px', fontSize: 16, fontWeight: 600, color: isDragOver ? '#4f46e5' : '#374151' }}>
+              <Icon path={mdiCloudUpload} size={2.5} color={isDragOver ? 'var(--accent-primary)' : 'var(--text-placeholder)'} />
+              <p style={{ margin: '12px 0 4px', fontSize: 16, fontWeight: 600, color: isDragOver ? 'var(--accent-primary)' : 'var(--text-secondary)' }}>
                 {isDragOver ? 'Drop file here' : 'Drag & drop your file here'}
               </p>
-              <p style={{ margin: 0, fontSize: 13, color: '#9ca3af' }}>or click to browse — CSV or JSON files supported</p>
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--text-placeholder)' }}>or click to browse — CSV or JSON files supported</p>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -369,13 +369,13 @@ export default function CmdbImportPage() {
             </div>
 
             {parseError && (
-              <div style={{ marginTop: 14, padding: '10px 14px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, color: '#dc2626', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ marginTop: 14, padding: '10px 14px', backgroundColor: 'var(--badge-red-bg-subtle)', border: '1px solid #fecaca', borderRadius: 7, color: 'var(--accent-danger)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Icon path={mdiAlertCircle} size={0.8} color="currentColor" />
                 {parseError}
               </div>
             )}
 
-            <p style={{ marginTop: 20, fontSize: 12, color: '#9ca3af' }}>
+            <p style={{ marginTop: 20, fontSize: 12, color: 'var(--text-placeholder)' }}>
               <strong>Tips:</strong> CSV columns can use any names — you will map them to CI fields in the next step.
               JSON files should be an array of objects. Maximum recommended file size: 10,000 rows.
             </p>
@@ -385,34 +385,34 @@ export default function CmdbImportPage() {
         {/* STEP 2: MAP */}
         {step === 'MAP' && (
           <div>
-            <h2 style={{ margin: '0 0 6px', fontSize: 17, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Icon path={mdiTableColumn} size={1} color="#4f46e5" />
+            <h2 style={{ margin: '0 0 6px', fontSize: 17, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Icon path={mdiTableColumn} size={1} color="var(--accent-primary)" />
               Map Columns
             </h2>
-            <p style={{ margin: '0 0 6px', color: '#6b7280', fontSize: 14 }}>
+            <p style={{ margin: '0 0 6px', color: 'var(--text-muted)', fontSize: 14 }}>
               File: <strong>{fileName}</strong> — {fullData.length} rows detected, {parsedHeaders.length} columns
             </p>
-            <p style={{ margin: '0 0 20px', color: '#6b7280', fontSize: 13 }}>
+            <p style={{ margin: '0 0 20px', color: 'var(--text-muted)', fontSize: 13 }}>
               Map each file column to a CI field. Columns set to "Skip" will be ignored. <strong>Name</strong> is required.
             </p>
 
-            <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden', marginBottom: 20 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb', padding: '8px 14px' }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>File Column</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>Map to CI Field</span>
+            <div style={{ border: '1px solid var(--border-primary)', borderRadius: 8, overflow: 'hidden', marginBottom: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, backgroundColor: 'var(--bg-secondary)', borderBottom: '2px solid var(--border-primary)', padding: '8px 14px' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>File Column</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>Map to CI Field</span>
               </div>
               {parsedHeaders.map((header, idx) => (
-                <div key={header} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, padding: '8px 14px', borderBottom: idx < parsedHeaders.length - 1 ? '1px solid #f3f4f6' : 'none', alignItems: 'center' }}>
+                <div key={header} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, padding: '8px 14px', borderBottom: idx < parsedHeaders.length - 1 ? '1px solid var(--bg-tertiary)' : 'none', alignItems: 'center' }}>
                   <div>
-                    <span style={{ fontFamily: 'monospace', fontSize: 13, color: '#374151', backgroundColor: '#f3f4f6', padding: '2px 8px', borderRadius: 4 }}>{header}</span>
+                    <span style={{ fontFamily: 'monospace', fontSize: 13, color: 'var(--text-secondary)', backgroundColor: 'var(--bg-tertiary)', padding: '2px 8px', borderRadius: 4 }}>{header}</span>
                     {previewRows[0]?.[header] && (
-                      <span style={{ marginLeft: 8, fontSize: 12, color: '#9ca3af' }}>e.g. &quot;{previewRows[0][header]}&quot;</span>
+                      <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--text-placeholder)' }}>e.g. &quot;{previewRows[0][header]}&quot;</span>
                     )}
                   </div>
                   <select
                     value={columnMap[header] ?? 'skip'}
                     onChange={(e) => setColumnMap((prev) => ({ ...prev, [header]: e.target.value }))}
-                    style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, outline: 'none', backgroundColor: columnMap[header] !== 'skip' ? '#f0fdf4' : '#fff' }}
+                    style={{ padding: '6px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 13, outline: 'none', backgroundColor: columnMap[header] !== 'skip' ? '#f0fdf4' : 'var(--bg-primary)' }}
                   >
                     {CI_FIELDS.map((f) => (
                       <option key={f.value} value={f.value}>{f.label}</option>
@@ -423,7 +423,7 @@ export default function CmdbImportPage() {
             </div>
 
             {!Object.values(columnMap).includes('name') && (
-              <div style={{ padding: '8px 12px', backgroundColor: '#fef3c7', border: '1px solid #fde68a', borderRadius: 7, marginBottom: 14, color: '#92400e', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ padding: '8px 12px', backgroundColor: 'var(--badge-yellow-bg)', border: '1px solid #fde68a', borderRadius: 7, marginBottom: 14, color: '#92400e', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Icon path={mdiAlertCircle} size={0.8} color="currentColor" />
                 You must map at least one column to &quot;Name (required)&quot; before continuing.
               </div>
@@ -432,14 +432,14 @@ export default function CmdbImportPage() {
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button
                 onClick={handleReset}
-                style={{ padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 14, cursor: 'pointer', backgroundColor: '#fff', color: '#374151' }}
+                style={{ padding: '8px 16px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}
               >
                 Back
               </button>
               <button
                 onClick={handleNextToPreview}
                 disabled={!Object.values(columnMap).includes('name')}
-                style={{ padding: '8px 18px', backgroundColor: Object.values(columnMap).includes('name') ? '#4f46e5' : '#a5b4fc', color: '#fff', border: 'none', borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: Object.values(columnMap).includes('name') ? 'pointer' : 'not-allowed' }}
+                style={{ padding: '8px 18px', backgroundColor: Object.values(columnMap).includes('name') ? 'var(--accent-primary)' : '#a5b4fc', color: 'var(--bg-primary)', border: 'none', borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: Object.values(columnMap).includes('name') ? 'pointer' : 'not-allowed' }}
               >
                 Preview &amp; Validate
               </button>
@@ -450,29 +450,29 @@ export default function CmdbImportPage() {
         {/* STEP 3: PREVIEW */}
         {step === 'PREVIEW' && (
           <div>
-            <h2 style={{ margin: '0 0 6px', fontSize: 17, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Icon path={mdiEye} size={1} color="#4f46e5" />
+            <h2 style={{ margin: '0 0 6px', fontSize: 17, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Icon path={mdiEye} size={1} color="var(--accent-primary)" />
               Preview &amp; Validate
             </h2>
-            <p style={{ margin: '0 0 4px', color: '#6b7280', fontSize: 14 }}>
+            <p style={{ margin: '0 0 4px', color: 'var(--text-muted)', fontSize: 14 }}>
               Showing first {validations.length} rows from <strong>{fullData.length}</strong> total.
             </p>
             <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-              <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, backgroundColor: '#d1fae5', color: '#065f46' }}>
+              <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, backgroundColor: 'var(--badge-green-bg)', color: '#065f46' }}>
                 {validPreviewCount} valid in preview
               </span>
               {invalidPreviewCount > 0 && (
-                <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, backgroundColor: '#fee2e2', color: '#991b1b' }}>
+                <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, backgroundColor: 'var(--badge-red-bg)', color: '#991b1b' }}>
                   {invalidPreviewCount} with errors in preview
                 </span>
               )}
-              <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, backgroundColor: '#dbeafe', color: '#1e40af' }}>
+              <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, backgroundColor: 'var(--badge-blue-bg)', color: '#1e40af' }}>
                 {validTotalCount} valid rows total (will be imported)
               </span>
             </div>
 
             {importError && (
-              <div style={{ padding: '10px 14px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, color: '#dc2626', fontSize: 13, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ padding: '10px 14px', backgroundColor: 'var(--badge-red-bg-subtle)', border: '1px solid #fecaca', borderRadius: 7, color: 'var(--accent-danger)', fontSize: 13, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Icon path={mdiAlertCircle} size={0.8} color="currentColor" />
                 {importError}
               </div>
@@ -482,43 +482,43 @@ export default function CmdbImportPage() {
             <div style={{ overflowX: 'auto', marginBottom: 20 }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
-                  <tr style={{ backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
-                    <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap' }}>#</th>
+                  <tr style={{ backgroundColor: 'var(--bg-secondary)', borderBottom: '2px solid var(--border-primary)' }}>
+                    <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 700, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>#</th>
                     {Object.entries(columnMap).filter(([, v]) => v !== 'skip').map(([header]) => (
-                      <th key={header} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>{header}</th>
+                      <th key={header} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{header}</th>
                     ))}
-                    <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Status</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {validations.map((validation) => (
-                    <tr key={validation.rowIndex} style={{ borderBottom: '1px solid #f3f4f6', backgroundColor: validation.isValid ? '#fff' : '#fef2f2' }}>
-                      <td style={{ padding: '7px 10px', color: '#6b7280' }}>{validation.rowIndex}</td>
+                    <tr key={validation.rowIndex} style={{ borderBottom: '1px solid var(--bg-tertiary)', backgroundColor: validation.isValid ? 'var(--bg-primary)' : 'var(--badge-red-bg-subtle)' }}>
+                      <td style={{ padding: '7px 10px', color: 'var(--text-muted)' }}>{validation.rowIndex}</td>
                       {Object.entries(columnMap).filter(([, v]) => v !== 'skip').map(([header, field]) => {
                         const sourceRow = previewRows[validation.rowIndex - 1] ?? {};
                         const cellValue = sourceRow[header] ?? '';
                         const mappedField = field.startsWith('attributesJson.') ? field.replace('attributesJson.', '') : field;
                         const hasError = validation.errors.some((e) => e.toLowerCase().includes(mappedField.toLowerCase()));
                         return (
-                          <td key={header} style={{ padding: '7px 10px', color: hasError ? '#dc2626' : '#374151', backgroundColor: hasError ? '#fee2e2' : 'transparent' }}>
-                            {cellValue || <span style={{ color: '#d1d5db', fontStyle: 'italic' }}>empty</span>}
+                          <td key={header} style={{ padding: '7px 10px', color: hasError ? 'var(--accent-danger)' : 'var(--text-secondary)', backgroundColor: hasError ? 'var(--badge-red-bg)' : 'transparent' }}>
+                            {cellValue || <span style={{ color: 'var(--border-secondary)', fontStyle: 'italic' }}>empty</span>}
                           </td>
                         );
                       })}
                       <td style={{ padding: '7px 10px' }}>
                         {validation.isValid ? (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#059669', fontSize: 11, fontWeight: 600 }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--accent-success)', fontSize: 11, fontWeight: 600 }}>
                             <Icon path={mdiCheckCircle} size={0.65} color="currentColor" />
                             Valid
                           </span>
                         ) : (
                           <div>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#dc2626', fontSize: 11, fontWeight: 600, marginBottom: 3 }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--accent-danger)', fontSize: 11, fontWeight: 600, marginBottom: 3 }}>
                               <Icon path={mdiAlertCircle} size={0.65} color="currentColor" />
                               {validation.errors.length} error{validation.errors.length > 1 ? 's' : ''}
                             </span>
                             {validation.errors.map((err, i) => (
-                              <div key={i} style={{ fontSize: 11, color: '#dc2626' }}>• {err}</div>
+                              <div key={i} style={{ fontSize: 11, color: 'var(--accent-danger)' }}>• {err}</div>
                             ))}
                           </div>
                         )}
@@ -532,7 +532,7 @@ export default function CmdbImportPage() {
             <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between', alignItems: 'center' }}>
               <button
                 onClick={() => setStep('MAP')}
-                style={{ padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 14, cursor: 'pointer', backgroundColor: '#fff', color: '#374151' }}
+                style={{ padding: '8px 16px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}
               >
                 Back to Mapping
               </button>
@@ -541,8 +541,8 @@ export default function CmdbImportPage() {
                 disabled={validTotalCount === 0}
                 style={{
                   padding: '8px 20px',
-                  backgroundColor: validTotalCount > 0 ? '#4f46e5' : '#a5b4fc',
-                  color: '#fff', border: 'none', borderRadius: 7, fontSize: 14, fontWeight: 600,
+                  backgroundColor: validTotalCount > 0 ? 'var(--accent-primary)' : '#a5b4fc',
+                  color: 'var(--bg-primary)', border: 'none', borderRadius: 7, fontSize: 14, fontWeight: 600,
                   cursor: validTotalCount > 0 ? 'pointer' : 'not-allowed',
                 }}
               >
@@ -560,15 +560,15 @@ export default function CmdbImportPage() {
                 display: 'inline-block',
                 width: 48,
                 height: 48,
-                border: '4px solid #e5e7eb',
-                borderTopColor: '#4f46e5',
+                border: '4px solid var(--border-primary)',
+                borderTopColor: 'var(--accent-primary)',
                 borderRadius: '50%',
                 animation: 'spin 0.8s linear infinite',
               }} />
             </div>
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-            <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 700, color: '#111827' }}>Importing CIs...</h3>
-            <p style={{ margin: 0, color: '#6b7280', fontSize: 14 }}>Please wait while your data is being imported.</p>
+            <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Importing CIs...</h3>
+            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 14 }}>Please wait while your data is being imported.</p>
           </div>
         )}
 
@@ -576,31 +576,31 @@ export default function CmdbImportPage() {
         {step === 'COMPLETE' && importResult && (
           <div>
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <Icon path={mdiCheckCircle} size={3} color="#059669" />
-              <h2 style={{ margin: '12px 0 6px', fontSize: 20, fontWeight: 700, color: '#111827' }}>Import Complete</h2>
-              <p style={{ margin: 0, color: '#6b7280', fontSize: 14 }}>Your CI data has been processed.</p>
+              <Icon path={mdiCheckCircle} size={3} color="var(--accent-success)" />
+              <h2 style={{ margin: '12px 0 6px', fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>Import Complete</h2>
+              <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 14 }}>Your CI data has been processed.</p>
             </div>
 
             {/* Result summary */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
-              <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: 16, textAlign: 'center' }}>
-                <div style={{ fontSize: 28, fontWeight: 800, color: '#059669' }}>{importResult.imported}</div>
+              <div style={{ backgroundColor: 'var(--badge-green-bg-subtle)', border: '1px solid #bbf7d0', borderRadius: 10, padding: 16, textAlign: 'center' }}>
+                <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--accent-success)' }}>{importResult.imported}</div>
                 <div style={{ fontSize: 13, color: '#065f46', fontWeight: 600 }}>Imported</div>
               </div>
-              <div style={{ backgroundColor: '#fefce8', border: '1px solid #fde047', borderRadius: 10, padding: 16, textAlign: 'center' }}>
+              <div style={{ backgroundColor: 'var(--badge-yellow-bg-subtle)', border: '1px solid #fde047', borderRadius: 10, padding: 16, textAlign: 'center' }}>
                 <div style={{ fontSize: 28, fontWeight: 800, color: '#ca8a04' }}>{importResult.skipped}</div>
                 <div style={{ fontSize: 13, color: '#854d0e', fontWeight: 600 }}>Skipped</div>
               </div>
-              <div style={{ backgroundColor: importResult.errors.length > 0 ? '#fef2f2' : '#f9fafb', border: `1px solid ${importResult.errors.length > 0 ? '#fecaca' : '#e5e7eb'}`, borderRadius: 10, padding: 16, textAlign: 'center' }}>
-                <div style={{ fontSize: 28, fontWeight: 800, color: importResult.errors.length > 0 ? '#dc2626' : '#6b7280' }}>{importResult.errors.length}</div>
-                <div style={{ fontSize: 13, color: importResult.errors.length > 0 ? '#991b1b' : '#6b7280', fontWeight: 600 }}>Errors</div>
+              <div style={{ backgroundColor: importResult.errors.length > 0 ? 'var(--badge-red-bg-subtle)' : 'var(--bg-secondary)', border: `1px solid ${importResult.errors.length > 0 ? '#fecaca' : 'var(--border-primary)'}`, borderRadius: 10, padding: 16, textAlign: 'center' }}>
+                <div style={{ fontSize: 28, fontWeight: 800, color: importResult.errors.length > 0 ? 'var(--accent-danger)' : 'var(--text-muted)' }}>{importResult.errors.length}</div>
+                <div style={{ fontSize: 13, color: importResult.errors.length > 0 ? '#991b1b' : 'var(--text-muted)', fontWeight: 600 }}>Errors</div>
               </div>
             </div>
 
             {/* Error download */}
             {importResult.errors.length > 0 && (
-              <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: 14, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
-                <Icon path={mdiAlertCircle} size={1} color="#dc2626" />
+              <div style={{ backgroundColor: 'var(--badge-red-bg-subtle)', border: '1px solid #fecaca', borderRadius: 8, padding: 14, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Icon path={mdiAlertCircle} size={1} color="var(--accent-danger)" />
                 <div style={{ flex: 1 }}>
                   <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 600, color: '#991b1b' }}>
                     {importResult.errors.length} row{importResult.errors.length > 1 ? 's' : ''} had errors and were skipped.
@@ -609,7 +609,7 @@ export default function CmdbImportPage() {
                 </div>
                 <button
                   onClick={handleDownloadErrors}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', backgroundColor: '#dc2626', color: '#fff', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', backgroundColor: 'var(--accent-danger)', color: 'var(--bg-primary)', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
                 >
                   <Icon path={mdiDownload} size={0.75} color="currentColor" />
                   Download Errors
@@ -620,14 +620,14 @@ export default function CmdbImportPage() {
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
               <button
                 onClick={handleReset}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: '#fff', color: '#374151' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}
               >
                 <Icon path={mdiRefresh} size={0.8} color="currentColor" />
                 Import More
               </button>
               <Link
                 href="/dashboard/cmdb"
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', backgroundColor: '#4f46e5', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', backgroundColor: 'var(--accent-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}
               >
                 View CIs
               </Link>

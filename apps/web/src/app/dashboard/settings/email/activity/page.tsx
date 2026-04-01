@@ -60,26 +60,26 @@ function getStatusBadgeStyle(status: string): { backgroundColor: string; color: 
     case 'SENT':
     case 'RECEIVED':
     case 'POLL_COMPLETE':
-      return { backgroundColor: '#d1fae5', color: '#065f46' };
+      return { backgroundColor: 'var(--badge-green-bg)', color: '#065f46' };
     case 'FAILED':
     case 'POLL_FAILED':
-      return { backgroundColor: '#fee2e2', color: '#991b1b' };
+      return { backgroundColor: 'var(--badge-red-bg)', color: '#991b1b' };
     case 'PERMANENT_FAILURE':
-      return { backgroundColor: '#fecaca', color: '#7f1d1d' };
+      return { backgroundColor: 'var(--badge-red-bg-strong)', color: '#7f1d1d' };
     case 'RETRYING':
     case 'SENDING':
     case 'POLL_STARTED':
-      return { backgroundColor: '#fef3c7', color: '#92400e' };
+      return { backgroundColor: 'var(--badge-yellow-bg)', color: '#92400e' };
     case 'QUEUED':
-      return { backgroundColor: '#f3f4f6', color: '#6b7280' };
+      return { backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-muted)' };
     default:
-      return { backgroundColor: '#f3f4f6', color: '#6b7280' };
+      return { backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-muted)' };
   }
 }
 
 function getDirectionBadgeStyle(direction: string): { backgroundColor: string; color: string } {
-  if (direction === 'INBOUND') return { backgroundColor: '#d1fae5', color: '#065f46' };
-  return { backgroundColor: '#dbeafe', color: '#1e40af' };
+  if (direction === 'INBOUND') return { backgroundColor: 'var(--badge-green-bg)', color: '#065f46' };
+  return { backgroundColor: 'var(--badge-blue-bg)', color: '#1e40af' };
 }
 
 function formatStatus(status: string): string {
@@ -127,19 +127,19 @@ export default function EmailActivityPage() {
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  const selectStyle = { padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 13, outline: 'none', backgroundColor: '#fff', color: '#374151' };
-  const inputStyle = { padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 13, outline: 'none', backgroundColor: '#fff', color: '#374151' };
-  const thStyle = { padding: '10px 12px', textAlign: 'left' as const, fontWeight: 600 as const, color: '#374151', fontSize: 13 };
-  const tdStyle = { padding: '10px 12px', fontSize: 13, color: '#374151' };
+  const selectStyle = { padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 13, outline: 'none', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' };
+  const inputStyle = { padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 13, outline: 'none', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' };
+  const thStyle = { padding: '10px 12px', textAlign: 'left' as const, fontWeight: 600 as const, color: 'var(--text-secondary)', fontSize: 13 };
+  const tdStyle = { padding: '10px 12px', fontSize: 13, color: 'var(--text-secondary)' };
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
-        <Link href="/dashboard/settings/email" style={{ color: '#6b7280', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+        <Link href="/dashboard/settings/email" style={{ color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
           <Icon path={mdiArrowLeft} size={0.9} color="currentColor" />
         </Link>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
           <Icon path={mdiEmailSync} size={1} color="#4f46e5" />
           Email Activity
         </h1>
@@ -158,24 +158,24 @@ export default function EmailActivityPage() {
           ))}
         </select>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <label style={{ fontSize: 12, color: '#6b7280', fontWeight: 600 }}>From</label>
+          <label style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>From</label>
           <input type="date" value={fromDate} onChange={(e) => { setFromDate(e.target.value); setPage(1); }} style={inputStyle} />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <label style={{ fontSize: 12, color: '#6b7280', fontWeight: 600 }}>To</label>
+          <label style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>To</label>
           <input type="date" value={toDate} onChange={(e) => { setToDate(e.target.value); setPage(1); }} style={inputStyle} />
         </div>
       </div>
 
       {/* Table */}
       {isLoading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>Loading email activity...</div>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading email activity...</div>
       ) : (
-        <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
-                <tr style={{ borderBottom: '2px solid #e5e7eb', backgroundColor: '#f9fafb' }}>
+                <tr style={{ borderBottom: '2px solid var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
                   <th style={thStyle}>Time</th>
                   <th style={thStyle}>Direction</th>
                   <th style={thStyle}>Status</th>
@@ -190,7 +190,7 @@ export default function EmailActivityPage() {
               <tbody>
                 {entries.map((entry) => (
                   <tr key={entry.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                    <td style={{ ...tdStyle, whiteSpace: 'nowrap', color: '#6b7280', fontSize: 12 }}>
+                    <td style={{ ...tdStyle, whiteSpace: 'nowrap', color: 'var(--text-muted)', fontSize: 12 }}>
                       {new Date(entry.occurredAt).toLocaleString()}
                     </td>
                     <td style={tdStyle}>
@@ -206,32 +206,32 @@ export default function EmailActivityPage() {
                     <td style={{ ...tdStyle, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={entry.subject ?? ''}>
                       {entry.subject ?? ''}
                     </td>
-                    <td style={{ ...tdStyle, color: '#6b7280', fontSize: 12 }}>
+                    <td style={{ ...tdStyle, color: 'var(--text-muted)', fontSize: 12 }}>
                       {entry.fromAddress ?? ''}
                     </td>
-                    <td style={{ ...tdStyle, color: '#6b7280', fontSize: 12, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={formatToAddresses(entry.toAddresses)}>
+                    <td style={{ ...tdStyle, color: 'var(--text-muted)', fontSize: 12, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={formatToAddresses(entry.toAddresses)}>
                       {formatToAddresses(entry.toAddresses)}
                     </td>
-                    <td style={{ ...tdStyle, color: '#9ca3af', fontSize: 11, fontFamily: 'monospace', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={entry.messageId ?? ''}>
+                    <td style={{ ...tdStyle, color: 'var(--text-placeholder)', fontSize: 11, fontFamily: 'monospace', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={entry.messageId ?? ''}>
                       {truncate(entry.messageId, 20)}
                     </td>
                     <td style={tdStyle}>
                       {entry.ticketId ? (
-                        <Link href={`/dashboard/tickets/${entry.ticketId}`} style={{ color: '#4f46e5', textDecoration: 'none', fontSize: 12, fontWeight: 500 }}>
+                        <Link href={`/dashboard/tickets/${entry.ticketId}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontSize: 12, fontWeight: 500 }}>
                           View Ticket
                         </Link>
                       ) : (
-                        <span style={{ color: '#d1d5db' }}>-</span>
+                        <span style={{ color: 'var(--border-secondary)' }}>-</span>
                       )}
                     </td>
-                    <td style={{ ...tdStyle, color: '#dc2626', fontSize: 12, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={entry.errorMessage ?? ''}>
+                    <td style={{ ...tdStyle, color: 'var(--accent-danger)', fontSize: 12, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={entry.errorMessage ?? ''}>
                       {entry.errorMessage ? truncate(entry.errorMessage, 40) : ''}
                     </td>
                   </tr>
                 ))}
                 {entries.length === 0 && (
                   <tr>
-                    <td colSpan={9} style={{ padding: 32, textAlign: 'center', color: '#9ca3af' }}>
+                    <td colSpan={9} style={{ padding: 32, textAlign: 'center', color: 'var(--text-placeholder)' }}>
                       No email activity found
                     </td>
                   </tr>
@@ -242,26 +242,26 @@ export default function EmailActivityPage() {
 
           {/* Pagination */}
           {total > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderTop: '1px solid #e5e7eb', backgroundColor: '#f9fafb' }}>
-              <span style={{ fontSize: 13, color: '#6b7280' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderTop: '1px solid var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                 Showing {((page - 1) * pageSize) + 1}–{Math.min(page * pageSize, total)} of {total}
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1}
-                  style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, cursor: page <= 1 ? 'not-allowed' : 'pointer', backgroundColor: '#fff', color: page <= 1 ? '#d1d5db' : '#374151' }}
+                  style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, cursor: page <= 1 ? 'not-allowed' : 'pointer', backgroundColor: 'var(--bg-primary)', color: page <= 1 ? 'var(--border-secondary)' : 'var(--text-secondary)' }}
                 >
                   <Icon path={mdiChevronLeft} size={0.7} color="currentColor" />
                   Prev
                 </button>
-                <span style={{ fontSize: 13, color: '#374151', padding: '0 8px' }}>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)', padding: '0 8px' }}>
                   Page {page} of {totalPages}
                 </span>
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages}
-                  style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, cursor: page >= totalPages ? 'not-allowed' : 'pointer', backgroundColor: '#fff', color: page >= totalPages ? '#d1d5db' : '#374151' }}
+                  style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, cursor: page >= totalPages ? 'not-allowed' : 'pointer', backgroundColor: 'var(--bg-primary)', color: page >= totalPages ? 'var(--border-secondary)' : 'var(--text-secondary)' }}
                 >
                   Next
                   <Icon path={mdiChevronRight} size={0.7} color="currentColor" />

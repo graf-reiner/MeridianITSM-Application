@@ -80,7 +80,7 @@ interface ImpactCI {
 // ─── Dynamic ReactFlow Import (SSR safe) ─────────────────────────────────────
 
 const RelationshipMap = dynamic(() => import('./RelationshipMap'), { ssr: false, loading: () => (
-  <div style={{ height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: 14 }}>
+  <div style={{ height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-placeholder)', fontSize: 14 }}>
     Loading relationship map...
   </div>
 ) });
@@ -104,11 +104,11 @@ function getCITypeIcon(type: string): string {
 
 function getStatusStyle(status: string): { bg: string; text: string; border: string } {
   switch (status) {
-    case 'ACTIVE':        return { bg: '#d1fae5', text: '#065f46', border: '#16a34a' };
-    case 'MAINTENANCE':   return { bg: '#fef3c7', text: '#92400e', border: '#d97706' };
-    case 'INACTIVE':      return { bg: '#f3f4f6', text: '#6b7280', border: '#9ca3af' };
-    case 'DECOMMISSIONED': return { bg: '#fee2e2', text: '#991b1b', border: '#dc2626' };
-    default:              return { bg: '#f3f4f6', text: '#374151', border: '#d1d5db' };
+    case 'ACTIVE':        return { bg: 'var(--badge-green-bg)', text: '#065f46', border: '#16a34a' };
+    case 'MAINTENANCE':   return { bg: 'var(--badge-yellow-bg)', text: '#92400e', border: '#d97706' };
+    case 'INACTIVE':      return { bg: 'var(--bg-tertiary)', text: '#6b7280', border: '#9ca3af' };
+    case 'DECOMMISSIONED': return { bg: 'var(--badge-red-bg)', text: '#991b1b', border: '#dc2626' };
+    default:              return { bg: 'var(--bg-tertiary)', text: '#374151', border: 'var(--border-secondary)' };
   }
 }
 
@@ -157,10 +157,10 @@ export default function CMDBDetailPage() {
   const clearImpact = () => setImpactData(null);
 
   if (isLoading) {
-    return <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>Loading CI...</div>;
+    return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading CI...</div>;
   }
   if (error || !ci) {
-    return <div style={{ padding: 40, textAlign: 'center', color: '#dc2626' }}>
+    return <div style={{ padding: 40, textAlign: 'center', color: 'var(--accent-danger)' }}>
       {error instanceof Error ? error.message : 'CI not found'}
     </div>;
   }
@@ -182,25 +182,25 @@ export default function CMDBDetailPage() {
       <div style={{ marginBottom: 20 }}>
         <button
           onClick={() => router.back()}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 14, padding: 0, marginBottom: 12 }}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14, padding: 0, marginBottom: 12 }}
         >
           <Icon path={mdiArrowLeft} size={0.8} color="currentColor" />
           Back to CMDB
         </button>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Icon path={typeIcon} size={1} color="#4f46e5" />
+            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Icon path={typeIcon} size={1} color="var(--accent-primary)" />
               {ci.name}
             </h1>
             <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>CI-{ci.ciNumber}</span>
+              <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>CI-{ci.ciNumber}</span>
               <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 13, fontWeight: 600, backgroundColor: statusStyle.bg, color: statusStyle.text }}>
                 {ci.status}
               </span>
-              <span style={{ fontSize: 13, color: '#9ca3af' }}>{ci.type.replace(/_/g, ' ')}</span>
+              <span style={{ fontSize: 13, color: 'var(--text-placeholder)' }}>{ci.type.replace(/_/g, ' ')}</span>
               {ci.environment && (
-                <span style={{ fontSize: 12, color: '#6b7280', backgroundColor: '#f3f4f6', padding: '2px 8px', borderRadius: 10 }}>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)', backgroundColor: 'var(--bg-tertiary)', padding: '2px 8px', borderRadius: 10 }}>
                   {ci.environment}
                 </span>
               )}
@@ -210,7 +210,7 @@ export default function CMDBDetailPage() {
       </div>
 
       {/* ── Tabs ──────────────────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', marginBottom: 20, gap: 0, overflowX: 'auto' }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-primary)', marginBottom: 20, gap: 0, overflowX: 'auto' }}>
         {tabs.map((tab) => (
           <button
             key={tab.key}
@@ -222,8 +222,8 @@ export default function CMDBDetailPage() {
               padding: '10px 16px',
               background: 'none',
               border: 'none',
-              borderBottom: `2px solid ${activeTab === tab.key ? '#4f46e5' : 'transparent'}`,
-              color: activeTab === tab.key ? '#4f46e5' : '#6b7280',
+              borderBottom: `2px solid ${activeTab === tab.key ? 'var(--accent-primary)' : 'transparent'}`,
+              color: activeTab === tab.key ? 'var(--accent-primary)' : 'var(--text-muted)',
               fontWeight: activeTab === tab.key ? 600 : 400,
               fontSize: 14,
               cursor: 'pointer',
@@ -240,7 +240,7 @@ export default function CMDBDetailPage() {
       {/* ── Tab: Details ──────────────────────────────────────────────────────── */}
       {activeTab === 'details' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-          <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 20 }}>
+          <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
             <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600 }}>Configuration Item Info</h2>
             {[
               ['Category', ci.category?.name],
@@ -250,11 +250,11 @@ export default function CMDBDetailPage() {
               ['Created', formatDateTime(ci.createdAt)],
               ['Updated', formatDateTime(ci.updatedAt)],
             ].map(([label, value]) => (
-              <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f3f4f6', fontSize: 14 }}>
-                <span style={{ color: '#6b7280', flexShrink: 0, marginRight: 8 }}>{label}</span>
-                <span style={{ color: '#111827', textAlign: 'right' }}>
+              <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14 }}>
+                <span style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: 8 }}>{label}</span>
+                <span style={{ color: 'var(--text-primary)', textAlign: 'right' }}>
                   {label === 'Linked Asset' && ci.asset ? (
-                    <Link href={`/dashboard/assets/${ci.asset.id}`} style={{ color: '#4f46e5', textDecoration: 'none' }}>
+                    <Link href={`/dashboard/assets/${ci.asset.id}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>
                       {ci.asset.assetTag}
                     </Link>
                   ) : ((value as string | null | undefined) ?? '—')}
@@ -264,14 +264,14 @@ export default function CMDBDetailPage() {
           </div>
 
           {ci.attributesJson && Object.keys(ci.attributesJson).length > 0 && (
-            <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 20 }}>
+            <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
               <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600 }}>Attributes</h2>
               {Object.entries(ci.attributesJson).map(([key, value]) => (
-                <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f3f4f6', fontSize: 14 }}>
-                  <span style={{ color: '#6b7280', flexShrink: 0, marginRight: 8, textTransform: 'capitalize' }}>
+                <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14 }}>
+                  <span style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: 8, textTransform: 'capitalize' }}>
                     {key.replace(/_/g, ' ')}
                   </span>
-                  <span style={{ color: '#111827', textAlign: 'right', wordBreak: 'break-word' }}>
+                  <span style={{ color: 'var(--text-primary)', textAlign: 'right', wordBreak: 'break-word' }}>
                     {String(value ?? '—')}
                   </span>
                 </div>
@@ -286,11 +286,11 @@ export default function CMDBDetailPage() {
         <div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 13, color: '#6b7280' }}>Depth:</span>
+              <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Depth:</span>
               <select
                 value={mapDepth}
                 onChange={(e) => { setMapDepth(Number(e.target.value)); setImpactData(null); }}
-                style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, cursor: 'pointer', backgroundColor: '#fff' }}
+                style={{ padding: '6px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 13, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}
               >
                 <option value={1}>1 level</option>
                 <option value={2}>2 levels</option>
@@ -306,7 +306,7 @@ export default function CMDBDetailPage() {
                   alignItems: 'center',
                   gap: 6,
                   padding: '7px 14px',
-                  backgroundColor: '#fef3c7',
+                  backgroundColor: 'var(--badge-yellow-bg)',
                   color: '#92400e',
                   border: '1px solid #fbbf24',
                   borderRadius: 6,
@@ -324,7 +324,7 @@ export default function CMDBDetailPage() {
                 onClick={clearImpact}
                 style={{
                   padding: '7px 14px',
-                  backgroundColor: '#fee2e2',
+                  backgroundColor: 'var(--badge-red-bg)',
                   color: '#991b1b',
                   border: '1px solid #fca5a5',
                   borderRadius: 6,
@@ -337,13 +337,13 @@ export default function CMDBDetailPage() {
               </button>
             )}
             {impactData !== null && (
-              <span style={{ fontSize: 13, color: '#6b7280' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                 {impactData.length} CI{impactData.length !== 1 ? 's' : ''} impacted
               </span>
             )}
           </div>
 
-          <div style={{ height: 500, border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden', backgroundColor: '#f9fafb' }}>
+          <div style={{ height: 500, border: '1px solid var(--border-primary)', borderRadius: 10, overflow: 'hidden', backgroundColor: 'var(--bg-secondary)' }}>
             <RelationshipMap
               ci={ci}
               impactData={impactData}
@@ -351,14 +351,14 @@ export default function CMDBDetailPage() {
           </div>
 
           {impactData !== null && impactData.length > 0 && (
-            <div style={{ marginTop: 12, backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12 }}>
-              <h3 style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600, color: '#374151' }}>Impacted CIs</h3>
+            <div style={{ marginTop: 12, backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 8, padding: 12 }}>
+              <h3 style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Impacted CIs</h3>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {impactData.map((imp) => (
                   <Link
                     key={imp.id}
                     href={`/dashboard/cmdb/${imp.id}`}
-                    style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', backgroundColor: '#fee2e2', color: '#991b1b', textDecoration: 'none', borderRadius: 12, fontSize: 12, fontWeight: 500 }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', backgroundColor: 'var(--badge-red-bg)', color: '#991b1b', textDecoration: 'none', borderRadius: 12, fontSize: 12, fontWeight: 500 }}
                   >
                     <Icon path={getCITypeIcon(imp.type)} size={0.6} color="currentColor" />
                     {imp.name} (CI-{imp.ciNumber})
@@ -374,7 +374,7 @@ export default function CMDBDetailPage() {
       {activeTab === 'history' && (
         <div>
           {ci.changeHistory.length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', color: '#9ca3af', fontSize: 14 }}>
+            <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-placeholder)', fontSize: 14 }}>
               No change history recorded
             </div>
           ) : (
@@ -386,29 +386,29 @@ export default function CMDBDetailPage() {
                     display: 'flex',
                     gap: 16,
                     padding: '12px 0',
-                    borderBottom: idx < ci.changeHistory.length - 1 ? '1px solid #f3f4f6' : 'none',
+                    borderBottom: idx < ci.changeHistory.length - 1 ? '1px solid var(--bg-tertiary)' : 'none',
                   }}
                 >
-                  <div style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', backgroundColor: '#4f46e5', marginTop: 6 }} />
+                  <div style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-primary)', marginTop: 6 }} />
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
-                      <span style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>
+                      <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>
                         {record.fieldName.replace(/_/g, ' ')} changed
                       </span>
-                      <span style={{ fontSize: 12, color: '#9ca3af', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-placeholder)', whiteSpace: 'nowrap' }}>
                         {formatDateTime(record.createdAt)}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#6b7280', flexWrap: 'wrap' }}>
-                      <span style={{ backgroundColor: '#fee2e2', color: '#991b1b', padding: '1px 6px', borderRadius: 4 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+                      <span style={{ backgroundColor: 'var(--badge-red-bg)', color: '#991b1b', padding: '1px 6px', borderRadius: 4 }}>
                         {record.oldValue ?? '(empty)'}
                       </span>
                       <span>→</span>
-                      <span style={{ backgroundColor: '#d1fae5', color: '#065f46', padding: '1px 6px', borderRadius: 4 }}>
+                      <span style={{ backgroundColor: 'var(--badge-green-bg)', color: '#065f46', padding: '1px 6px', borderRadius: 4 }}>
                         {record.newValue ?? '(empty)'}
                       </span>
                       {record.changedBy && (
-                        <span style={{ color: '#9ca3af', marginLeft: 4 }}>
+                        <span style={{ color: 'var(--text-placeholder)', marginLeft: 4 }}>
                           by {record.changedBy.firstName} {record.changedBy.lastName}
                         </span>
                       )}
@@ -425,26 +425,26 @@ export default function CMDBDetailPage() {
       {activeTab === 'tickets' && (
         <div>
           {ci.ticketLinks.length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', color: '#9ca3af', fontSize: 14 }}>
+            <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-placeholder)', fontSize: 14 }}>
               No tickets linked to this CI
             </div>
           ) : (
-            <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+            <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                 <thead>
-                  <tr style={{ borderBottom: '2px solid #e5e7eb', backgroundColor: '#f9fafb' }}>
-                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Ticket #</th>
-                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Title</th>
-                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Status</th>
+                  <tr style={{ borderBottom: '2px solid var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Ticket #</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Title</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {ci.ticketLinks.map((link) => (
-                    <tr key={link.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <tr key={link.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
                       <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
                         <Link
                           href={`/dashboard/tickets/${link.ticket.id}`}
-                          style={{ color: '#4f46e5', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}
+                          style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}
                         >
                           {link.ticket.ticketNumber}
                         </Link>
@@ -452,13 +452,13 @@ export default function CMDBDetailPage() {
                       <td style={{ padding: '10px 14px' }}>
                         <Link
                           href={`/dashboard/tickets/${link.ticket.id}`}
-                          style={{ color: '#111827', textDecoration: 'none', fontWeight: 500 }}
+                          style={{ color: 'var(--text-primary)', textDecoration: 'none', fontWeight: 500 }}
                         >
                           {link.ticket.title}
                         </Link>
                       </td>
                       <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                        <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 12, fontWeight: 500, backgroundColor: '#f3f4f6', color: '#374151' }}>
+                        <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 12, fontWeight: 500, backgroundColor: 'var(--bg-tertiary)', color: '#374151' }}>
                           {link.ticket.status.replace(/_/g, ' ')}
                         </span>
                       </td>

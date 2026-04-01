@@ -103,19 +103,19 @@ function MicrosoftIcon({ size = 16 }: { size?: number }) {
 function ProviderSelectModal({ onSelect, onClose }: { onSelect: (provider: 'MANUAL' | 'GOOGLE' | 'MICROSOFT') => void; onClose: () => void }) {
   const cardStyle = {
     display: 'flex', alignItems: 'center', gap: 14, padding: '16px 18px',
-    border: '1px solid #e5e7eb', borderRadius: 10, cursor: 'pointer',
-    backgroundColor: '#fff', transition: 'border-color 0.15s',
+    border: '1px solid var(--border-primary)', borderRadius: 10, cursor: 'pointer',
+    backgroundColor: 'var(--bg-primary)', transition: 'border-color 0.15s',
   };
 
   return (
     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div style={{ backgroundColor: '#fff', borderRadius: 12, width: '100%', maxWidth: 480, overflow: 'hidden' }}>
-        <div style={{ padding: '18px 24px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ backgroundColor: 'var(--bg-primary)', borderRadius: 12, width: '100%', maxWidth: 480, overflow: 'hidden' }}>
+        <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--border-primary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>Add Email Account</h2>
-          <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: 20, cursor: 'pointer', color: '#6b7280', padding: '0 4px' }}>&times;</button>
+          <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--text-muted)', padding: '0 4px' }}>&times;</button>
         </div>
         <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <p style={{ margin: '0 0 8px', fontSize: 14, color: '#6b7280' }}>Choose how to connect your email account:</p>
+          <p style={{ margin: '0 0 8px', fontSize: 14, color: 'var(--text-muted)' }}>Choose how to connect your email account:</p>
           <div
             role="button"
             tabIndex={0}
@@ -123,12 +123,12 @@ function ProviderSelectModal({ onSelect, onClose }: { onSelect: (provider: 'MANU
             onKeyDown={(e) => e.key === 'Enter' && onSelect('GOOGLE')}
             style={cardStyle}
             onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#4285F4'; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#e5e7eb'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-primary)'; }}
           >
             <GoogleIcon size={28} />
             <div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>Google</div>
-              <div style={{ fontSize: 12, color: '#6b7280' }}>Workspace &amp; Gmail</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Google</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Workspace &amp; Gmail</div>
             </div>
           </div>
           <div
@@ -138,12 +138,12 @@ function ProviderSelectModal({ onSelect, onClose }: { onSelect: (provider: 'MANU
             onKeyDown={(e) => e.key === 'Enter' && onSelect('MICROSOFT')}
             style={cardStyle}
             onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#00a4ef'; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#e5e7eb'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-primary)'; }}
           >
             <MicrosoftIcon size={28} />
             <div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>Microsoft 365</div>
-              <div style={{ fontSize: 12, color: '#6b7280' }}>Outlook &amp; Exchange</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Microsoft 365</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Outlook &amp; Exchange</div>
             </div>
           </div>
           <div
@@ -152,13 +152,13 @@ function ProviderSelectModal({ onSelect, onClose }: { onSelect: (provider: 'MANU
             onClick={() => onSelect('MANUAL')}
             onKeyDown={(e) => e.key === 'Enter' && onSelect('MANUAL')}
             style={cardStyle}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#4f46e5'; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#e5e7eb'; }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent-primary)'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-primary)'; }}
           >
             <Icon path={mdiEmail} size={1.2} color="#6b7280" />
             <div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>Manual</div>
-              <div style={{ fontSize: 12, color: '#6b7280' }}>SMTP / IMAP configuration</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Manual</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>SMTP / IMAP configuration</div>
             </div>
           </div>
         </div>
@@ -190,8 +190,8 @@ function PostConnectModal({
   const [error, setError] = useState<string | null>(null);
 
   const inputStyle = { width: '100%', padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 13, outline: 'none', boxSizing: 'border-box' as const };
-  const labelStyle = { display: 'block', marginBottom: 3, fontSize: 12, fontWeight: 600 as const, color: '#6b7280' };
-  const selectStyle = { ...inputStyle, backgroundColor: '#fff', cursor: 'pointer' as const };
+  const labelStyle = { display: 'block', marginBottom: 3, fontSize: 12, fontWeight: 600 as const, color: 'var(--text-muted)' };
+  const selectStyle = { ...inputStyle, backgroundColor: 'var(--bg-primary)', cursor: 'pointer' as const };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -224,14 +224,14 @@ function PostConnectModal({
 
   return (
     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div style={{ backgroundColor: '#fff', borderRadius: 12, width: '100%', maxWidth: 480, overflow: 'hidden' }}>
-        <div style={{ padding: '18px 24px', borderBottom: '1px solid #e5e7eb' }}>
+      <div style={{ backgroundColor: 'var(--bg-primary)', borderRadius: 12, width: '100%', maxWidth: 480, overflow: 'hidden' }}>
+        <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--border-primary)' }}>
           <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>Account Connected</h2>
         </div>
         <form onSubmit={(e) => void handleSave(e)} style={{ padding: 24 }}>
-          <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: 14, marginBottom: 16, textAlign: 'center' }}>
+          <div style={{ backgroundColor: 'var(--badge-green-bg-subtle)', border: '1px solid #bbf7d0', borderRadius: 8, padding: 14, marginBottom: 16, textAlign: 'center' }}>
             <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: '#065f46' }}>Successfully connected!</p>
-            <p style={{ margin: 0, fontSize: 13, color: '#374151' }}>{account.email}</p>
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)' }}>{account.email}</p>
           </div>
           <div style={{ marginBottom: 12 }}>
             <label htmlFor="postDisplayName" style={labelStyle}>Display Name</label>
@@ -239,7 +239,7 @@ function PostConnectModal({
           </div>
           <div style={{ marginBottom: 12 }}>
             <label htmlFor="postEmail" style={labelStyle}>Email Address</label>
-            <input id="postEmail" type="email" value={account.email} readOnly style={{ ...inputStyle, backgroundColor: '#f3f4f6', color: '#9ca3af', cursor: 'not-allowed' }} />
+            <input id="postEmail" type="email" value={account.email} readOnly style={{ ...inputStyle, backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-placeholder)', cursor: 'not-allowed' }} />
           </div>
           <div style={{ marginBottom: 12 }}>
             <label htmlFor="postPollInterval" style={labelStyle}>Poll Interval (minutes)</label>
@@ -261,10 +261,10 @@ function PostConnectModal({
               </select>
             </div>
           </div>
-          {error && <div style={{ padding: '8px 12px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, marginBottom: 14, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+          {error && <div style={{ padding: '8px 12px', backgroundColor: 'var(--badge-red-bg-subtle)', border: '1px solid #fecaca', borderRadius: 7, marginBottom: 14, color: 'var(--accent-danger)', fontSize: 13 }}>{error}</div>}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <button type="button" onClick={onClose} style={{ padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 14, cursor: 'pointer', backgroundColor: '#fff', color: '#374151' }}>Skip</button>
-            <button type="submit" disabled={isSaving} style={{ padding: '8px 18px', backgroundColor: isSaving ? '#a5b4fc' : '#4f46e5', color: '#fff', border: 'none', borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: isSaving ? 'not-allowed' : 'pointer' }}>
+            <button type="button" onClick={onClose} style={{ padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>Skip</button>
+            <button type="submit" disabled={isSaving} style={{ padding: '8px 18px', backgroundColor: isSaving ? '#a5b4fc' : 'var(--accent-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: isSaving ? 'not-allowed' : 'pointer' }}>
               {isSaving ? 'Saving...' : 'Save Settings'}
             </button>
           </div>
@@ -279,12 +279,12 @@ function PostConnectModal({
 function TestResultModal({ type, result, onClose }: { type: 'SMTP' | 'IMAP'; result: TestResult; onClose: () => void }) {
   return (
     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div style={{ backgroundColor: '#fff', borderRadius: 12, width: '100%', maxWidth: 500, overflow: 'hidden' }}>
-        <div style={{ padding: '14px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: result.success ? '#f0fdf4' : '#fef2f2' }}>
+      <div style={{ backgroundColor: 'var(--bg-primary)', borderRadius: 12, width: '100%', maxWidth: 500, overflow: 'hidden' }}>
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border-primary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: result.success ? 'var(--badge-green-bg-subtle)' : 'var(--badge-red-bg-subtle)' }}>
           <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: result.success ? '#065f46' : '#991b1b' }}>
             {type} Test — {result.success ? 'Passed' : 'Failed'}
           </h3>
-          <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: 18, cursor: 'pointer', color: '#6b7280', padding: '0 4px' }}>&times;</button>
+          <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: 18, cursor: 'pointer', color: 'var(--text-muted)', padding: '0 4px' }}>&times;</button>
         </div>
         <div style={{ padding: '16px 20px' }}>
           {result.steps.map((step, i) => (
@@ -293,21 +293,21 @@ function TestResultModal({ type, result, onClose }: { type: 'SMTP' | 'IMAP'; res
                 {step.status === 'ok' ? '\u2705' : step.status === 'failed' ? '\u274C' : '\u23ED\uFE0F'}
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{step.step}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{step.step}</div>
                 {step.detail && (
-                  <div style={{ fontSize: 12, color: step.status === 'failed' ? '#dc2626' : '#6b7280', marginTop: 2, wordBreak: 'break-word' }}>
+                  <div style={{ fontSize: 12, color: step.status === 'failed' ? 'var(--accent-danger)' : 'var(--text-muted)', marginTop: 2, wordBreak: 'break-word' }}>
                     {step.detail}
                   </div>
                 )}
               </div>
               {step.durationMs !== undefined && (
-                <span style={{ fontSize: 11, color: '#9ca3af', whiteSpace: 'nowrap', flexShrink: 0 }}>{step.durationMs}ms</span>
+                <span style={{ fontSize: 11, color: 'var(--text-placeholder)', whiteSpace: 'nowrap', flexShrink: 0 }}>{step.durationMs}ms</span>
               )}
             </div>
           ))}
         </div>
-        <div style={{ padding: '12px 20px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={{ padding: '6px 16px', backgroundColor: '#4f46e5', color: '#fff', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Close</button>
+        <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border-primary)', display: 'flex', justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{ padding: '6px 16px', backgroundColor: 'var(--accent-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Close</button>
         </div>
       </div>
     </div>
@@ -324,14 +324,14 @@ function DeleteConfirmModal({ account, rules, onConfirm, onCancel }: {
 }) {
   return (
     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div style={{ backgroundColor: '#fff', borderRadius: 12, width: '100%', maxWidth: 480, overflow: 'hidden' }}>
-        <div style={{ padding: '14px 20px', borderBottom: '1px solid #e5e7eb', backgroundColor: '#fef2f2' }}>
+      <div style={{ backgroundColor: 'var(--bg-primary)', borderRadius: 12, width: '100%', maxWidth: 480, overflow: 'hidden' }}>
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border-primary)', backgroundColor: 'var(--badge-red-bg-subtle)' }}>
           <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#991b1b' }}>
             Delete Email Account
           </h3>
         </div>
         <div style={{ padding: '16px 20px' }}>
-          <p style={{ margin: '0 0 12px', fontSize: 14, color: '#374151' }}>
+          <p style={{ margin: '0 0 12px', fontSize: 14, color: 'var(--text-secondary)' }}>
             Are you sure you want to delete <strong>{account.name}</strong> ({account.emailAddress})?
           </p>
           {rules.length > 0 && (
@@ -347,9 +347,9 @@ function DeleteConfirmModal({ account, rules, onConfirm, onCancel }: {
             </div>
           )}
         </div>
-        <div style={{ padding: '12px 20px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button onClick={onCancel} style={{ padding: '6px 16px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 13, cursor: 'pointer', backgroundColor: '#fff', color: '#374151' }}>Cancel</button>
-          <button onClick={onConfirm} style={{ padding: '6px 16px', backgroundColor: '#dc2626', color: '#fff', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Delete</button>
+        <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border-primary)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button onClick={onCancel} style={{ padding: '6px 16px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 13, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>Cancel</button>
+          <button onClick={onConfirm} style={{ padding: '6px 16px', backgroundColor: 'var(--accent-danger)', color: 'var(--bg-primary)', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Delete</button>
         </div>
       </div>
     </div>
@@ -543,14 +543,14 @@ function EmailModal({
   };
 
   const inputStyle = { width: '100%', padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 13, outline: 'none', boxSizing: 'border-box' as const };
-  const labelStyle = { display: 'block', marginBottom: 3, fontSize: 12, fontWeight: 600 as const, color: '#6b7280' };
-  const selectStyle = { ...inputStyle, backgroundColor: '#fff', cursor: 'pointer' as const };
-  const disabledInputStyle = { ...inputStyle, backgroundColor: '#f3f4f6', color: '#9ca3af', cursor: 'not-allowed' as const };
+  const labelStyle = { display: 'block', marginBottom: 3, fontSize: 12, fontWeight: 600 as const, color: 'var(--text-muted)' };
+  const selectStyle = { ...inputStyle, backgroundColor: 'var(--bg-primary)', cursor: 'pointer' as const };
+  const disabledInputStyle = { ...inputStyle, backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-placeholder)', cursor: 'not-allowed' as const };
 
   return (
     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div style={{ backgroundColor: '#fff', borderRadius: 12, width: '100%', maxWidth: 600, overflow: 'auto', maxHeight: '90vh' }}>
-        <div style={{ padding: '18px 24px', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: 0, backgroundColor: '#fff', zIndex: 1 }}>
+      <div style={{ backgroundColor: 'var(--bg-primary)', borderRadius: 12, width: '100%', maxWidth: 600, overflow: 'auto', maxHeight: '90vh' }}>
+        <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--border-primary)', position: 'sticky', top: 0, backgroundColor: 'var(--bg-primary)', zIndex: 1 }}>
           <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>{account ? 'Edit Email Account' : 'Add Email Account'}</h2>
         </div>
         <form onSubmit={(e) => void handleSubmit(e)} style={{ padding: 24 }}>
@@ -570,23 +570,23 @@ function EmailModal({
           <div style={{ marginBottom: 18 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
               <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
-              <span style={{ fontWeight: 600, color: '#374151' }}>Active</span>
-              <span style={{ fontSize: 11, color: '#9ca3af' }}>— uncheck to disable email polling for this account</span>
+              <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Active</span>
+              <span style={{ fontSize: 11, color: 'var(--text-placeholder)' }}>— uncheck to disable email polling for this account</span>
             </label>
           </div>
 
           {account && account.authProvider !== 'MANUAL' ? (
-            <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: 16, marginBottom: 14, textAlign: 'center' }}>
+            <div style={{ backgroundColor: 'var(--badge-green-bg-subtle)', border: '1px solid #bbf7d0', borderRadius: 8, padding: 16, marginBottom: 14, textAlign: 'center' }}>
               <p style={{ margin: '0 0 8px', fontSize: 14, fontWeight: 600, color: '#065f46' }}>
                 Connected via {account.authProvider === 'GOOGLE' ? 'Google' : 'Microsoft 365'}
               </p>
-              <p style={{ margin: 0, fontSize: 13, color: '#374151' }}>{account.emailAddress}</p>
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)' }}>{account.emailAddress}</p>
             </div>
           ) : (
             <>
               {/* SMTP section */}
-              <div style={{ backgroundColor: '#f9fafb', borderRadius: 8, padding: 14, marginBottom: 14 }}>
-                <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 700, color: '#374151' }}>SMTP (Outbound)</p>
+              <div style={{ backgroundColor: 'var(--bg-secondary)', borderRadius: 8, padding: 14, marginBottom: 14 }}>
+                <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)' }}>SMTP (Outbound)</p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px 80px', gap: 8, marginBottom: 8 }}>
                   <div>
                     <label htmlFor="smtpHost" style={labelStyle}>Host</label>
@@ -630,17 +630,17 @@ function EmailModal({
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <label htmlFor="smtpSendTo" style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', whiteSpace: 'nowrap' }}>Send To</label>
+                  <label htmlFor="smtpSendTo" style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Send To</label>
                   <input id="smtpSendTo" type="email" value={smtpSendTo} onChange={(e) => setSmtpSendTo(e.target.value)} placeholder="test@example.com" style={{ ...inputStyle, flex: 1 }} />
-                  <button type="button" onClick={() => void handleTest('smtp')} disabled={isTesting === 'smtp' || !smtpConfigured} style={{ padding: '6px 14px', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: isTesting === 'smtp' || !smtpConfigured ? 'not-allowed' : 'pointer', backgroundColor: isTesting === 'smtp' || !smtpConfigured ? '#d1d5db' : '#4f46e5', color: '#fff', whiteSpace: 'nowrap' }}>
+                  <button type="button" onClick={() => void handleTest('smtp')} disabled={isTesting === 'smtp' || !smtpConfigured} style={{ padding: '6px 14px', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: isTesting === 'smtp' || !smtpConfigured ? 'not-allowed' : 'pointer', backgroundColor: isTesting === 'smtp' || !smtpConfigured ? 'var(--border-secondary)' : 'var(--accent-primary)', color: 'var(--bg-primary)', whiteSpace: 'nowrap' }}>
                     {isTesting === 'smtp' ? 'Testing...' : 'Test SMTP'}
                   </button>
                 </div>
               </div>
 
               {/* IMAP section */}
-              <div style={{ backgroundColor: '#f9fafb', borderRadius: 8, padding: 14, marginBottom: 14 }}>
-                <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 700, color: '#374151' }}>IMAP (Inbound)</p>
+              <div style={{ backgroundColor: 'var(--bg-secondary)', borderRadius: 8, padding: 14, marginBottom: 14 }}>
+                <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)' }}>IMAP (Inbound)</p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px 80px', gap: 8, marginBottom: 8 }}>
                   <div>
                     <label htmlFor="imapHost" style={labelStyle}>Host</label>
@@ -684,7 +684,7 @@ function EmailModal({
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                  <button type="button" onClick={() => void handleTest('imap')} disabled={isTesting === 'imap' || !imapConfigured} style={{ padding: '5px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, cursor: isTesting === 'imap' || !imapConfigured ? 'not-allowed' : 'pointer', backgroundColor: '#fff', color: '#374151' }}>
+                  <button type="button" onClick={() => void handleTest('imap')} disabled={isTesting === 'imap' || !imapConfigured} style={{ padding: '5px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, cursor: isTesting === 'imap' || !imapConfigured ? 'not-allowed' : 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
                     {isTesting === 'imap' ? 'Testing...' : 'Test IMAP'}
                   </button>
                 </div>
@@ -696,20 +696,20 @@ function EmailModal({
           <div style={{ marginBottom: 14 }}>
             <label htmlFor="pollInterval" style={labelStyle}>Poll Interval (minutes)</label>
             <input id="pollInterval" type="number" min={1} max={1440} value={pollInterval} onChange={(e) => setPollInterval(Math.max(1, Math.min(1440, Number(e.target.value) || 1)))} style={{ ...inputStyle, maxWidth: 120 }} />
-            <span style={{ marginLeft: 8, fontSize: 11, color: '#9ca3af' }}>How often to check for new emails (1-1440 min)</span>
+            <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--text-placeholder)' }}>How often to check for new emails (1-1440 min)</span>
           </div>
 
           {/* Defaults */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 18 }}>
             <div>
-              <label htmlFor="defaultQueue" style={{ ...labelStyle, color: '#374151', fontSize: 13, fontWeight: 600 }}>Default Queue</label>
+              <label htmlFor="defaultQueue" style={{ ...labelStyle, color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600 }}>Default Queue</label>
               <select id="defaultQueue" value={defaultQueueId} onChange={(e) => setDefaultQueueId(e.target.value)} style={selectStyle}>
                 <option value="">-- None --</option>
                 {queues.map((q) => <option key={q.id} value={q.id}>{q.name}</option>)}
               </select>
             </div>
             <div>
-              <label htmlFor="defaultCategory" style={{ ...labelStyle, color: '#374151', fontSize: 13, fontWeight: 600 }}>Default Category</label>
+              <label htmlFor="defaultCategory" style={{ ...labelStyle, color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600 }}>Default Category</label>
               <select id="defaultCategory" value={defaultCategoryId} onChange={(e) => setDefaultCategoryId(e.target.value)} style={selectStyle}>
                 <option value="">-- None --</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -717,10 +717,10 @@ function EmailModal({
             </div>
           </div>
 
-          {error && <div style={{ padding: '8px 12px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, marginBottom: 14, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+          {error && <div style={{ padding: '8px 12px', backgroundColor: 'var(--badge-red-bg-subtle)', border: '1px solid #fecaca', borderRadius: 7, marginBottom: 14, color: 'var(--accent-danger)', fontSize: 13 }}>{error}</div>}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <button type="button" onClick={onClose} style={{ padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 14, cursor: 'pointer', backgroundColor: '#fff', color: '#374151' }}>Cancel</button>
-            <button type="submit" disabled={isSaving} style={{ padding: '8px 18px', backgroundColor: isSaving ? '#a5b4fc' : '#4f46e5', color: '#fff', border: 'none', borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: isSaving ? 'not-allowed' : 'pointer' }}>
+            <button type="button" onClick={onClose} style={{ padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>Cancel</button>
+            <button type="submit" disabled={isSaving} style={{ padding: '8px 18px', backgroundColor: isSaving ? '#a5b4fc' : 'var(--accent-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: isSaving ? 'not-allowed' : 'pointer' }}>
               {isSaving ? 'Saving...' : account ? 'Save Changes' : 'Add Account'}
             </button>
           </div>
@@ -847,24 +847,24 @@ export default function EmailSettingsPage() {
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
-        <Link href="/dashboard/settings" style={{ color: '#6b7280', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+        <Link href="/dashboard/settings" style={{ color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
           <Icon path={mdiArrowLeft} size={0.9} color="currentColor" />
         </Link>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
           <Icon path={mdiEmail} size={1} color="#dc2626" />
           Email Accounts
         </h1>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
           <Link
             href="/dashboard/settings/email/activity"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', backgroundColor: '#fff', color: '#374151', textDecoration: 'none' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)', textDecoration: 'none' }}
           >
             <Icon path={mdiHistory} size={0.8} color="currentColor" />
             View Activity Log
           </Link>
           <button
             onClick={() => setShowProviderSelect(true)}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', backgroundColor: '#4f46e5', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', backgroundColor: 'var(--accent-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
           >
             <Icon path={mdiPlus} size={0.8} color="currentColor" />
             Add Account
@@ -873,19 +873,19 @@ export default function EmailSettingsPage() {
       </div>
 
       {isLoading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>Loading email accounts...</div>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading email accounts...</div>
       ) : (
-        <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #e5e7eb', backgroundColor: '#f9fafb' }}>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Name</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Email</th>
-                <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: '#374151' }}>Connection</th>
-                <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: '#374151' }}>Active</th>
-                <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: '#374151' }}>Poll</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Last Polled</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Actions</th>
+              <tr style={{ borderBottom: '2px solid var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Name</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Email</th>
+                <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: 'var(--text-secondary)' }}>Connection</th>
+                <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: 'var(--text-secondary)' }}>Active</th>
+                <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: 'var(--text-secondary)' }}>Poll</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Last Polled</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -899,35 +899,35 @@ export default function EmailSettingsPage() {
                       {acc.name}
                     </span>
                   </td>
-                  <td style={{ padding: '10px 14px', color: '#6b7280' }}>{acc.emailAddress}</td>
+                  <td style={{ padding: '10px 14px', color: 'var(--text-muted)' }}>{acc.emailAddress}</td>
                   <td style={{ padding: '10px 14px', textAlign: 'center' }}>
                     <span style={{
                       padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 500,
-                      backgroundColor: acc.oauthConnectionStatus === 'REFRESH_FAILED' ? '#fef2f2'
-                        : (acc.smtpHost || acc.authProvider !== 'MANUAL') ? '#d1fae5' : '#f3f4f6',
+                      backgroundColor: acc.oauthConnectionStatus === 'REFRESH_FAILED' ? 'var(--badge-red-bg-subtle)'
+                        : (acc.smtpHost || acc.authProvider !== 'MANUAL') ? 'var(--badge-green-bg)' : 'var(--bg-tertiary)',
                       color: acc.oauthConnectionStatus === 'REFRESH_FAILED' ? '#991b1b'
-                        : (acc.smtpHost || acc.authProvider !== 'MANUAL') ? '#065f46' : '#6b7280',
+                        : (acc.smtpHost || acc.authProvider !== 'MANUAL') ? '#065f46' : 'var(--text-muted)',
                     }}>
                       {acc.oauthConnectionStatus === 'REFRESH_FAILED' ? 'Disconnected' : 'Connected'}
                     </span>
                   </td>
                   <td style={{ padding: '10px 14px', textAlign: 'center' }}>
-                    <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 500, backgroundColor: acc.isActive ? '#d1fae5' : '#f3f4f6', color: acc.isActive ? '#065f46' : '#6b7280' }}>
+                    <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 500, backgroundColor: acc.isActive ? 'var(--badge-green-bg)' : 'var(--bg-tertiary)', color: acc.isActive ? '#065f46' : 'var(--text-muted)' }}>
                       {acc.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td style={{ padding: '10px 14px', textAlign: 'center', color: '#6b7280', fontSize: 12 }}>
+                  <td style={{ padding: '10px 14px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
                     {acc.pollInterval ?? 5} min
                   </td>
-                  <td style={{ padding: '10px 14px', color: '#9ca3af', fontSize: 12 }}>
+                  <td style={{ padding: '10px 14px', color: 'var(--text-placeholder)', fontSize: 12 }}>
                     {acc.lastPolledAt ? new Date(acc.lastPolledAt).toLocaleString() : 'Never'}
                   </td>
                   <td style={{ padding: '10px 14px' }}>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <button onClick={() => { setEditAccount(acc); setShowModal(true); }} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: '#fff', color: '#374151' }}>
+                      <button onClick={() => { setEditAccount(acc); setShowModal(true); }} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
                         <Icon path={mdiPencil} size={0.65} color="currentColor" />Edit
                       </button>
-                      <button onClick={() => void handleDeleteClick(acc)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', border: '1px solid #fecaca', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: '#fff', color: '#dc2626' }}>
+                      <button onClick={() => void handleDeleteClick(acc)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', border: '1px solid #fecaca', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--accent-danger)' }}>
                         <Icon path={mdiTrashCan} size={0.65} color="currentColor" />Delete
                       </button>
                     </div>
@@ -935,7 +935,7 @@ export default function EmailSettingsPage() {
                 </tr>
               ))}
               {accounts.length === 0 && (
-                <tr><td colSpan={7} style={{ padding: 32, textAlign: 'center', color: '#9ca3af' }}>No email accounts configured</td></tr>
+                <tr><td colSpan={7} style={{ padding: 32, textAlign: 'center', color: 'var(--text-placeholder)' }}>No email accounts configured</td></tr>
               )}
             </tbody>
           </table>

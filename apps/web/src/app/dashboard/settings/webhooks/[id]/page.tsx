@@ -42,9 +42,9 @@ interface WebhookDetail {
 
 function DeliveryStatusBadge({ status }: { status: WebhookDelivery['status'] }) {
   const styles: Record<WebhookDelivery['status'], { bg: string; text: string; label: string }> = {
-    success: { bg: '#d1fae5', text: '#065f46', label: 'Success' },
-    failed: { bg: '#fee2e2', text: '#991b1b', label: 'Failed' },
-    pending: { bg: '#dbeafe', text: '#1e40af', label: 'Pending' },
+    success: { bg: 'var(--badge-green-bg)', text: '#065f46', label: 'Success' },
+    failed: { bg: 'var(--badge-red-bg)', text: '#991b1b', label: 'Failed' },
+    pending: { bg: 'var(--badge-blue-bg)', text: '#1e40af', label: 'Pending' },
   };
   const s = styles[status];
   return (
@@ -100,14 +100,14 @@ function DeliveryRow({ delivery }: { delivery: WebhookDelivery }) {
         )}
 
         {delivery.responseTimeMs !== null && (
-          <span style={{ fontSize: 13, color: '#6b7280' }}>{delivery.responseTimeMs}ms</span>
+          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{delivery.responseTimeMs}ms</span>
         )}
 
         {delivery.retryCount > 0 && (
           <span
             style={{
               padding: '1px 6px',
-              backgroundColor: '#fef3c7',
+              backgroundColor: 'var(--badge-yellow-bg)',
               color: '#92400e',
               borderRadius: 4,
               fontSize: 12,
@@ -118,7 +118,7 @@ function DeliveryRow({ delivery }: { delivery: WebhookDelivery }) {
           </span>
         )}
 
-        <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 'auto', fontFamily: 'monospace' }}>
+        <span style={{ fontSize: 12, color: 'var(--text-placeholder)', marginLeft: 'auto', fontFamily: 'monospace' }}>
           {formatTime(delivery.createdAt)}
         </span>
 
@@ -129,12 +129,12 @@ function DeliveryRow({ delivery }: { delivery: WebhookDelivery }) {
             alignItems: 'center',
             gap: 4,
             padding: '3px 8px',
-            border: '1px solid #e5e7eb',
+            border: '1px solid var(--border-primary)',
             borderRadius: 6,
-            backgroundColor: '#fff',
+            backgroundColor: 'var(--bg-primary)',
             cursor: 'pointer',
             fontSize: 12,
-            color: '#374151',
+            color: 'var(--text-secondary)',
           }}
         >
           Payload
@@ -146,7 +146,7 @@ function DeliveryRow({ delivery }: { delivery: WebhookDelivery }) {
         <div style={{ padding: '0 16px 12px' }}>
           {delivery.requestPayload !== undefined && delivery.requestPayload !== null && (
             <div style={{ marginBottom: 8 }}>
-              <p style={{ margin: '0 0 4px', fontSize: 12, fontWeight: 600, color: '#374151' }}>
+              <p style={{ margin: '0 0 4px', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
                 Request Payload
               </p>
               <pre
@@ -155,13 +155,13 @@ function DeliveryRow({ delivery }: { delivery: WebhookDelivery }) {
                   padding: '10px 12px',
                   fontFamily: 'monospace',
                   fontSize: 12,
-                  backgroundColor: '#f3f4f6',
-                  border: '1px solid #e5e7eb',
+                  backgroundColor: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border-primary)',
                   borderRadius: 6,
                   overflowX: 'auto',
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-all',
-                  color: '#374151',
+                  color: 'var(--text-secondary)',
                 }}
               >
                 {JSON.stringify(delivery.requestPayload, null, 2)}
@@ -170,7 +170,7 @@ function DeliveryRow({ delivery }: { delivery: WebhookDelivery }) {
           )}
           {delivery.responseBody && (
             <div>
-              <p style={{ margin: '0 0 4px', fontSize: 12, fontWeight: 600, color: '#374151' }}>
+              <p style={{ margin: '0 0 4px', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
                 Response Body
               </p>
               <pre
@@ -179,13 +179,13 @@ function DeliveryRow({ delivery }: { delivery: WebhookDelivery }) {
                   padding: '10px 12px',
                   fontFamily: 'monospace',
                   fontSize: 12,
-                  backgroundColor: '#f3f4f6',
-                  border: '1px solid #e5e7eb',
+                  backgroundColor: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border-primary)',
                   borderRadius: 6,
                   overflowX: 'auto',
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-all',
-                  color: '#374151',
+                  color: 'var(--text-secondary)',
                 }}
               >
                 {delivery.responseBody}
@@ -193,7 +193,7 @@ function DeliveryRow({ delivery }: { delivery: WebhookDelivery }) {
             </div>
           )}
           {!delivery.requestPayload && !delivery.responseBody && (
-            <p style={{ margin: 0, fontSize: 13, color: '#9ca3af' }}>No payload data available.</p>
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--text-placeholder)' }}>No payload data available.</p>
           )}
         </div>
       )}
@@ -248,7 +248,7 @@ export default function WebhookDetailPage() {
 
   if (isLoading) {
     return (
-      <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>
+      <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
         Loading webhook...
       </div>
     );
@@ -256,7 +256,7 @@ export default function WebhookDetailPage() {
 
   if (!webhook) {
     return (
-      <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>
+      <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
         Webhook not found.
       </div>
     );
@@ -264,10 +264,10 @@ export default function WebhookDetailPage() {
 
   const deliveries = webhook.deliveries ?? [];
   const statusBadge = webhook.isAutoDisabled
-    ? { label: 'Auto-disabled', bg: '#fee2e2', text: '#991b1b' }
+    ? { label: 'Auto-disabled', bg: 'var(--badge-red-bg)', text: '#991b1b' }
     : webhook.isEnabled
-      ? { label: 'Enabled', bg: '#d1fae5', text: '#065f46' }
-      : { label: 'Disabled', bg: '#f3f4f6', text: '#6b7280' };
+      ? { label: 'Enabled', bg: 'var(--badge-green-bg)', text: '#065f46' }
+      : { label: 'Disabled', bg: 'var(--bg-tertiary)', text: 'var(--text-muted)' };
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
@@ -283,7 +283,7 @@ export default function WebhookDetailPage() {
             borderRadius: 8,
             fontSize: 14,
             fontWeight: 500,
-            backgroundColor: toastType === 'success' ? '#d1fae5' : '#fee2e2',
+            backgroundColor: toastType === 'success' ? 'var(--badge-green-bg)' : 'var(--badge-red-bg)',
             color: toastType === 'success' ? '#065f46' : '#991b1b',
             border: `1px solid ${toastType === 'success' ? '#6ee7b7' : '#fca5a5'}`,
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
@@ -305,7 +305,7 @@ export default function WebhookDetailPage() {
       >
         <Link
           href="/dashboard/settings/webhooks"
-          style={{ color: '#6b7280', textDecoration: 'none', display: 'flex', alignItems: 'center', marginTop: 4 }}
+          style={{ color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center', marginTop: 4 }}
         >
           <Icon path={mdiArrowLeft} size={0.9} color="currentColor" />
         </Link>
@@ -316,7 +316,7 @@ export default function WebhookDetailPage() {
                 margin: 0,
                 fontSize: 22,
                 fontWeight: 600,
-                color: '#111827',
+                color: 'var(--text-primary)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
@@ -342,7 +342,7 @@ export default function WebhookDetailPage() {
             style={{
               margin: '4px 0 0',
               fontSize: 13,
-              color: '#6b7280',
+              color: 'var(--text-muted)',
               fontFamily: 'monospace',
               wordBreak: 'break-all',
             }}
@@ -363,8 +363,8 @@ export default function WebhookDetailPage() {
               borderRadius: 8,
               fontSize: 14,
               cursor: testingId ? 'not-allowed' : 'pointer',
-              backgroundColor: '#fff',
-              color: '#374151',
+              backgroundColor: 'var(--bg-primary)',
+              color: 'var(--text-secondary)',
               opacity: testingId ? 0.6 : 1,
             }}
           >
@@ -378,8 +378,8 @@ export default function WebhookDetailPage() {
               alignItems: 'center',
               gap: 6,
               padding: '7px 14px',
-              backgroundColor: '#4f46e5',
-              color: '#fff',
+              backgroundColor: 'var(--accent-primary)',
+              color: 'var(--bg-primary)',
               textDecoration: 'none',
               borderRadius: 8,
               fontSize: 14,
@@ -395,14 +395,14 @@ export default function WebhookDetailPage() {
       {/* Events */}
       <div
         style={{
-          backgroundColor: '#fff',
-          border: '1px solid #e5e7eb',
+          backgroundColor: 'var(--bg-primary)',
+          border: '1px solid var(--border-primary)',
           borderRadius: 10,
           padding: '14px 16px',
           marginBottom: 24,
         }}
       >
-        <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600, color: '#374151' }}>
+        <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
           Subscribed Events
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -412,8 +412,8 @@ export default function WebhookDetailPage() {
                 key={event}
                 style={{
                   padding: '2px 8px',
-                  backgroundColor: '#e0e7ff',
-                  color: '#4f46e5',
+                  backgroundColor: 'var(--badge-indigo-bg)',
+                  color: 'var(--accent-primary)',
                   borderRadius: 4,
                   fontSize: 12,
                   fontFamily: 'monospace',
@@ -423,7 +423,7 @@ export default function WebhookDetailPage() {
               </span>
             ))
           ) : (
-            <span style={{ fontSize: 13, color: '#9ca3af' }}>No events configured.</span>
+            <span style={{ fontSize: 13, color: 'var(--text-placeholder)' }}>No events configured.</span>
           )}
         </div>
       </div>
@@ -435,7 +435,7 @@ export default function WebhookDetailPage() {
             margin: '0 0 12px',
             fontSize: 16,
             fontWeight: 600,
-            color: '#374151',
+            color: 'var(--text-secondary)',
           }}
         >
           Delivery History
@@ -444,15 +444,15 @@ export default function WebhookDetailPage() {
 
       <div
         style={{
-          backgroundColor: '#fff',
-          border: '1px solid #e5e7eb',
+          backgroundColor: 'var(--bg-primary)',
+          border: '1px solid var(--border-primary)',
           borderRadius: 10,
           overflow: 'hidden',
         }}
       >
         {deliveries.length === 0 ? (
           <div style={{ padding: '40px 24px', textAlign: 'center' }}>
-            <p style={{ margin: 0, fontSize: 14, color: '#9ca3af' }}>
+            <p style={{ margin: 0, fontSize: 14, color: 'var(--text-placeholder)' }}>
               No deliveries yet. Trigger a test delivery to verify your endpoint.
             </p>
           </div>
@@ -469,7 +469,7 @@ export default function WebhookDetailPage() {
                   borderTop: '1px solid #f3f4f6',
                 }}
               >
-                <p style={{ margin: 0, fontSize: 13, color: '#9ca3af' }}>
+                <p style={{ margin: 0, fontSize: 13, color: 'var(--text-placeholder)' }}>
                   Showing last {deliveries.length} of {webhook.deliveryCount} deliveries.
                   Deliveries older than 30 days are automatically removed.
                 </p>

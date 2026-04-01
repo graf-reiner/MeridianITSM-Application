@@ -135,12 +135,12 @@ const labelStyle: React.CSSProperties = {
   marginBottom: 4,
   fontSize: 13,
   fontWeight: 600,
-  color: '#374151',
+  color: 'var(--text-secondary)',
 };
 
 const sectionStyle: React.CSSProperties = {
-  backgroundColor: '#fff',
-  border: '1px solid #e5e7eb',
+  backgroundColor: 'var(--bg-primary)',
+  border: '1px solid var(--border-primary)',
   borderRadius: 10,
   padding: 20,
   marginBottom: 20,
@@ -155,8 +155,8 @@ const smallBtnStyle: React.CSSProperties = {
   borderRadius: 7,
   fontSize: 13,
   cursor: 'pointer',
-  backgroundColor: '#fff',
-  color: '#374151',
+  backgroundColor: 'var(--bg-primary)',
+  color: 'var(--text-secondary)',
 };
 
 // ─── Condition Row ────────────────────────────────────────────────────────────
@@ -216,7 +216,7 @@ function ConditionRow({
         ))}
       </select>
       {isBoolOp ? (
-        <div style={{ flex: 1, padding: '8px 10px', color: '#9ca3af', fontSize: 13 }}>(no value needed)</div>
+        <div style={{ flex: 1, padding: '8px 10px', color: 'var(--text-placeholder)', fontSize: 13 }}>(no value needed)</div>
       ) : isSelectField && valueOptions.length > 0 && !['in', 'not_in'].includes(condition.operator) ? (
         <select
           value={condition.value}
@@ -237,7 +237,7 @@ function ConditionRow({
           style={{ ...inputStyle, flex: 1 }}
         />
       )}
-      <button onClick={onRemove} style={{ ...smallBtnStyle, padding: '6px 8px', border: '1px solid #fecaca', color: '#dc2626', flex: 'none' }}>
+      <button onClick={onRemove} style={{ ...smallBtnStyle, padding: '6px 8px', border: '1px solid #fecaca', color: 'var(--accent-danger)', flex: 'none' }}>
         <Icon path={mdiClose} size={0.65} color="currentColor" />
       </button>
     </div>
@@ -331,14 +331,14 @@ function ActionCard({
               <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
             ))}
           </select>
-          <p style={{ margin: '4px 0 0', fontSize: 11, color: '#9ca3af' }}>Hold Ctrl/Cmd to select multiple</p>
+          <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-placeholder)' }}>Hold Ctrl/Cmd to select multiple</p>
         </div>
       )}
     </div>
   );
 
   return (
-    <div style={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 10, padding: 16, marginBottom: 12, position: 'relative' }}>
+    <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 16, marginBottom: 12, position: 'relative' }}>
       <button
         onClick={onRemove}
         style={{ position: 'absolute', top: 12, right: 12, background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
@@ -498,7 +498,7 @@ function ActionCard({
                     const headers = (action.webhookHeaders ?? []).filter((_, idx) => idx !== hi);
                     update({ webhookHeaders: headers });
                   }}
-                  style={{ ...smallBtnStyle, padding: '6px 8px', border: '1px solid #fecaca', color: '#dc2626' }}
+                  style={{ ...smallBtnStyle, padding: '6px 8px', border: '1px solid #fecaca', color: 'var(--accent-danger)' }}
                 >
                   <Icon path={mdiClose} size={0.6} color="currentColor" />
                 </button>
@@ -812,11 +812,11 @@ export default function NotificationRuleEditorPage() {
     if (ruleError) {
       return (
         <div style={{ maxWidth: 900, margin: '0 auto', padding: 40 }}>
-          <div style={{ padding: '12px 16px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, color: '#dc2626', fontSize: 14 }}>
+          <div style={{ padding: '12px 16px', backgroundColor: 'var(--badge-red-bg-subtle)', border: '1px solid #fecaca', borderRadius: 8, color: 'var(--accent-danger)', fontSize: 14 }}>
             Failed to load rule: {ruleError.message}
           </div>
           <div style={{ marginTop: 16, textAlign: 'center' }}>
-            <Link href="/dashboard/settings/notification-rules" style={{ color: '#4f46e5', textDecoration: 'none', fontSize: 14 }}>
+            <Link href="/dashboard/settings/notification-rules" style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontSize: 14 }}>
               &larr; Back to Notification Rules
             </Link>
           </div>
@@ -824,7 +824,7 @@ export default function NotificationRuleEditorPage() {
       );
     }
     return (
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: 40, textAlign: 'center', color: '#6b7280' }}>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
         Loading rule...
       </div>
     );
@@ -836,11 +836,11 @@ export default function NotificationRuleEditorPage() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
         <Link
           href="/dashboard/settings/notification-rules"
-          style={{ color: '#6b7280', textDecoration: 'none', display: 'flex', alignItems: 'center' }}
+          style={{ color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center' }}
         >
           <Icon path={mdiArrowLeft} size={0.9} color="currentColor" />
         </Link>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
           <Icon path={mdiBellAlert} size={1} color="#d97706" />
           {isNew ? 'New Notification Rule' : 'Edit Notification Rule'}
         </h1>
@@ -864,12 +864,12 @@ export default function NotificationRuleEditorPage() {
               onClick={() => setIsActive(!isActive)}
               style={{
                 width: 40, height: 22, borderRadius: 11, border: 'none', cursor: 'pointer',
-                backgroundColor: isActive ? '#4f46e5' : '#d1d5db', position: 'relative', transition: 'background-color 0.2s',
+                backgroundColor: isActive ? 'var(--accent-primary)' : 'var(--border-secondary)', position: 'relative', transition: 'background-color 0.2s',
               }}
             >
               <span style={{
                 position: 'absolute', top: 2, left: isActive ? 20 : 2,
-                width: 18, height: 18, borderRadius: 9, backgroundColor: '#fff',
+                width: 18, height: 18, borderRadius: 9, backgroundColor: 'var(--bg-primary)',
                 transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
               }} />
             </button>
@@ -887,21 +887,21 @@ export default function NotificationRuleEditorPage() {
 
       {/* Trigger */}
       <div style={sectionStyle}>
-        <h2 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600, color: '#111827' }}>Trigger</h2>
+        <h2 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>Trigger</h2>
         <select value={trigger} onChange={(e) => setTrigger(e.target.value)} style={{ ...inputStyle, maxWidth: 350 }}>
           {TRIGGERS.map((t) => (
             <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
           ))}
         </select>
         {TRIGGER_HELP[trigger] && (
-          <p style={{ margin: '6px 0 0', fontSize: 12, color: '#6b7280' }}>{TRIGGER_HELP[trigger]}</p>
+          <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>{TRIGGER_HELP[trigger]}</p>
         )}
       </div>
 
       {/* Conditions */}
       <div style={sectionStyle}>
-        <h2 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 600, color: '#111827' }}>Conditions</h2>
-        <p style={{ margin: '0 0 16px', fontSize: 12, color: '#6b7280' }}>
+        <h2 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>Conditions</h2>
+        <p style={{ margin: '0 0 16px', fontSize: 12, color: 'var(--text-muted)' }}>
           Match ANY group (OR). All conditions within a group must match (AND).
         </p>
 
@@ -909,19 +909,19 @@ export default function NotificationRuleEditorPage() {
           <div key={gi}>
             {gi > 0 && (
               <div style={{ textAlign: 'center', margin: '8px 0' }}>
-                <span style={{ padding: '2px 12px', borderRadius: 9999, backgroundColor: '#dbeafe', color: '#1e40af', fontSize: 12, fontWeight: 600 }}>
+                <span style={{ padding: '2px 12px', borderRadius: 9999, backgroundColor: 'var(--badge-blue-bg)', color: '#1e40af', fontSize: 12, fontWeight: 600 }}>
                   OR
                 </span>
               </div>
             )}
-            <div style={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 10, padding: 16, marginBottom: 8, position: 'relative' }}>
+            <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 16, marginBottom: 8, position: 'relative' }}>
               <button
                 onClick={() => removeConditionGroup(gi)}
                 style={{ position: 'absolute', top: 10, right: 10, background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
               >
                 <Icon path={mdiClose} size={0.75} color="#dc2626" />
               </button>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 10 }}>
                 Group {gi + 1} (AND)
               </div>
               {group.conditions.map((cond, ci) => (
@@ -951,7 +951,7 @@ export default function NotificationRuleEditorPage() {
 
       {/* Actions */}
       <div style={sectionStyle}>
-        <h2 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600, color: '#111827' }}>Actions</h2>
+        <h2 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>Actions</h2>
 
         {actions.map((action, ai) => (
           <ActionCard
@@ -975,7 +975,7 @@ export default function NotificationRuleEditorPage() {
 
       {/* Error */}
       {error && (
-        <div style={{ padding: '8px 12px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, marginBottom: 16, color: '#dc2626', fontSize: 13 }}>
+        <div style={{ padding: '8px 12px', backgroundColor: 'var(--badge-red-bg-subtle)', border: '1px solid #fecaca', borderRadius: 7, marginBottom: 16, color: 'var(--accent-danger)', fontSize: 13 }}>
           {error}
         </div>
       )}
@@ -995,8 +995,8 @@ export default function NotificationRuleEditorPage() {
                 borderRadius: 8,
                 fontSize: 14,
                 cursor: 'pointer',
-                backgroundColor: '#fff',
-                color: '#dc2626',
+                backgroundColor: 'var(--bg-primary)',
+                color: 'var(--accent-danger)',
               }}
             >
               <Icon path={mdiTrashCan} size={0.75} color="currentColor" />
@@ -1013,8 +1013,8 @@ export default function NotificationRuleEditorPage() {
               borderRadius: 8,
               fontSize: 14,
               cursor: 'pointer',
-              backgroundColor: '#fff',
-              color: '#374151',
+              backgroundColor: 'var(--bg-primary)',
+              color: 'var(--text-secondary)',
               textDecoration: 'none',
               display: 'inline-flex',
               alignItems: 'center',
@@ -1027,8 +1027,8 @@ export default function NotificationRuleEditorPage() {
             disabled={saving}
             style={{
               padding: '8px 20px',
-              backgroundColor: saving ? '#a5b4fc' : '#4f46e5',
-              color: '#fff',
+              backgroundColor: saving ? '#a5b4fc' : 'var(--accent-primary)',
+              color: 'var(--bg-primary)',
               border: 'none',
               borderRadius: 8,
               fontSize: 14,

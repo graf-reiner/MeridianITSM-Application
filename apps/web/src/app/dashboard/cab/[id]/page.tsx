@@ -61,11 +61,11 @@ interface CABMeetingDetail {
 
 function getStatusStyle(status: string): { bg: string; text: string } {
   switch (status) {
-    case 'SCHEDULED':   return { bg: '#dbeafe', text: '#1e40af' };
-    case 'IN_PROGRESS': return { bg: '#fef3c7', text: '#92400e' };
-    case 'COMPLETED':   return { bg: '#d1fae5', text: '#065f46' };
-    case 'CANCELLED':   return { bg: '#f3f4f6', text: '#9ca3af' };
-    default:            return { bg: '#f3f4f6', text: '#374151' };
+    case 'SCHEDULED':   return { bg: 'var(--badge-blue-bg)', text: '#1e40af' };
+    case 'IN_PROGRESS': return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
+    case 'COMPLETED':   return { bg: 'var(--badge-green-bg)', text: '#065f46' };
+    case 'CANCELLED':   return { bg: 'var(--bg-tertiary)', text: '#9ca3af' };
+    default:            return { bg: 'var(--bg-tertiary)', text: '#374151' };
   }
 }
 
@@ -80,30 +80,30 @@ function getRsvpIcon(rsvpStatus: string): { path: string; color: string } {
 
 function getRsvpBadge(rsvpStatus: string): { bg: string; text: string } {
   switch (rsvpStatus) {
-    case 'ACCEPTED':  return { bg: '#d1fae5', text: '#065f46' };
-    case 'DECLINED':  return { bg: '#fee2e2', text: '#991b1b' };
-    case 'TENTATIVE': return { bg: '#fef3c7', text: '#92400e' };
-    default:          return { bg: '#f3f4f6', text: '#9ca3af' };
+    case 'ACCEPTED':  return { bg: 'var(--badge-green-bg)', text: '#065f46' };
+    case 'DECLINED':  return { bg: 'var(--badge-red-bg)', text: '#991b1b' };
+    case 'TENTATIVE': return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
+    default:          return { bg: 'var(--bg-tertiary)', text: '#9ca3af' };
   }
 }
 
 function getOutcomeBadge(outcome: string | null): { bg: string; text: string } {
   switch (outcome) {
-    case 'APPROVED':       return { bg: '#d1fae5', text: '#065f46' };
-    case 'REJECTED':       return { bg: '#fee2e2', text: '#991b1b' };
-    case 'DEFERRED':       return { bg: '#fef3c7', text: '#92400e' };
-    case 'NEEDS_MORE_INFO': return { bg: '#dbeafe', text: '#1e40af' };
-    default:               return { bg: '#f3f4f6', text: '#9ca3af' };
+    case 'APPROVED':       return { bg: 'var(--badge-green-bg)', text: '#065f46' };
+    case 'REJECTED':       return { bg: 'var(--badge-red-bg)', text: '#991b1b' };
+    case 'DEFERRED':       return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
+    case 'NEEDS_MORE_INFO': return { bg: 'var(--badge-blue-bg)', text: '#1e40af' };
+    default:               return { bg: 'var(--bg-tertiary)', text: '#9ca3af' };
   }
 }
 
 function getRiskStyle(risk: string): { bg: string; text: string } {
   switch (risk) {
-    case 'LOW':      return { bg: '#d1fae5', text: '#065f46' };
-    case 'MEDIUM':   return { bg: '#fef3c7', text: '#92400e' };
-    case 'HIGH':     return { bg: '#fee2e2', text: '#991b1b' };
+    case 'LOW':      return { bg: 'var(--badge-green-bg)', text: '#065f46' };
+    case 'MEDIUM':   return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
+    case 'HIGH':     return { bg: 'var(--badge-red-bg)', text: '#991b1b' };
     case 'CRITICAL': return { bg: '#450a0a', text: '#fca5a5' };
-    default:         return { bg: '#f3f4f6', text: '#374151' };
+    default:         return { bg: 'var(--bg-tertiary)', text: '#374151' };
   }
 }
 
@@ -222,7 +222,7 @@ function VotingButtons({
         </span>
         <button
           onClick={() => void handleVote(currentOutcome)}
-          style={{ fontSize: 11, color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+          style={{ fontSize: 11, color: 'var(--text-placeholder)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
         >
           change
         </button>
@@ -240,9 +240,9 @@ function VotingButtons({
             disabled={submitting !== null}
             style={{
               padding: '4px 10px',
-              backgroundColor: active === o.value ? o.bg : '#fff',
-              color: active === o.value ? o.color : '#374151',
-              border: `1px solid ${active === o.value ? o.bg : '#d1d5db'}`,
+              backgroundColor: active === o.value ? o.bg : 'var(--bg-primary)',
+              color: active === o.value ? o.color : 'var(--text-secondary)',
+              border: `1px solid ${active === o.value ? o.bg : 'var(--border-secondary)'}`,
               borderRadius: 4,
               fontSize: 12,
               fontWeight: 500,
@@ -261,12 +261,12 @@ function VotingButtons({
             placeholder="Optional notes..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            style={{ flex: 1, padding: '5px 8px', border: '1px solid #d1d5db', borderRadius: 4, fontSize: 12 }}
+            style={{ flex: 1, padding: '5px 8px', border: '1px solid var(--border-secondary)', borderRadius: 4, fontSize: 12 }}
           />
           <button
             onClick={() => void handleVote(active)}
             disabled={submitting !== null}
-            style={{ padding: '5px 12px', backgroundColor: '#4f46e5', color: '#fff', border: 'none', borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+            style={{ padding: '5px 12px', backgroundColor: 'var(--accent-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
           >
             {submitting ? '...' : 'Confirm'}
           </button>
@@ -296,10 +296,10 @@ export default function CABMeetingDetailPage() {
   const refresh = () => void queryClient.invalidateQueries({ queryKey: ['cab-meeting', id] });
 
   if (isLoading) {
-    return <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>Loading meeting...</div>;
+    return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading meeting...</div>;
   }
   if (error || !meeting) {
-    return <div style={{ padding: 40, textAlign: 'center', color: '#dc2626' }}>
+    return <div style={{ padding: 40, textAlign: 'center', color: 'var(--accent-danger)' }}>
       {error instanceof Error ? error.message : 'Meeting not found'}
     </div>;
   }
@@ -316,7 +316,7 @@ export default function CABMeetingDetailPage() {
       <div style={{ marginBottom: 20 }}>
         <button
           onClick={() => router.back()}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 14, padding: 0, marginBottom: 12 }}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14, padding: 0, marginBottom: 12 }}
         >
           <Icon path={mdiArrowLeft} size={0.8} color="currentColor" />
           Back to CAB Meetings
@@ -324,17 +324,17 @@ export default function CABMeetingDetailPage() {
 
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Icon path={mdiAccountGroup} size={1} color="#4f46e5" />
+            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Icon path={mdiAccountGroup} size={1} color="var(--accent-primary)" />
               {meeting.title}
             </h1>
             <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 13, fontWeight: 600, backgroundColor: statusStyle.bg, color: statusStyle.text }}>
                 {meeting.status}
               </span>
-              <span style={{ fontSize: 13, color: '#374151' }}>{formatDateTime(meeting.scheduledFor)}</span>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{formatDateTime(meeting.scheduledFor)}</span>
               {meeting.durationMinutes && (
-                <span style={{ fontSize: 12, color: '#9ca3af' }}>{meeting.durationMinutes} min</span>
+                <span style={{ fontSize: 12, color: 'var(--text-placeholder)' }}>{meeting.durationMinutes} min</span>
               )}
             </div>
           </div>
@@ -348,13 +348,13 @@ export default function CABMeetingDetailPage() {
               alignItems: 'center',
               gap: 6,
               padding: '8px 16px',
-              backgroundColor: '#fff',
-              color: '#374151',
+              backgroundColor: 'var(--bg-primary)',
+              color: 'var(--text-secondary)',
               textDecoration: 'none',
               borderRadius: 8,
               fontSize: 14,
               fontWeight: 500,
-              border: '1px solid #d1d5db',
+              border: '1px solid var(--border-secondary)',
             }}
           >
             <Icon path={mdiCalendarExport} size={0.8} color="currentColor" />
@@ -364,11 +364,11 @@ export default function CABMeetingDetailPage() {
       </div>
 
       {/* ── Meeting Info Card ─────────────────────────────────────────────────── */}
-      <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 20, marginBottom: 20 }}>
+      <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20, marginBottom: 20 }}>
         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
           {meeting.location && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: '#374151' }}>
-              <Icon path={mdiMapMarkerOutline} size={0.8} color="#9ca3af" />
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: 'var(--text-secondary)' }}>
+              <Icon path={mdiMapMarkerOutline} size={0.8} color="var(--text-placeholder)" />
               {meeting.location}
             </span>
           )}
@@ -377,7 +377,7 @@ export default function CABMeetingDetailPage() {
               href={meeting.meetingUrl}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: '#4f46e5', textDecoration: 'none' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: 'var(--accent-primary)', textDecoration: 'none' }}
             >
               <Icon path={mdiVideoOutline} size={0.8} color="currentColor" />
               Join Meeting
@@ -385,7 +385,7 @@ export default function CABMeetingDetailPage() {
           )}
         </div>
         {meeting.notes && (
-          <p style={{ margin: '12px 0 0', fontSize: 14, color: '#6b7280', fontStyle: 'italic' }}>{meeting.notes}</p>
+          <p style={{ margin: '12px 0 0', fontSize: 14, color: 'var(--text-muted)', fontStyle: 'italic' }}>{meeting.notes}</p>
         )}
       </div>
 
@@ -393,14 +393,14 @@ export default function CABMeetingDetailPage() {
 
         {/* ── Agenda / Changes ──────────────────────────────────────────────────── */}
         <div>
-          <h2 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Icon path={mdiSwapHorizontal} size={0.9} color="#4f46e5" />
+          <h2 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Icon path={mdiSwapHorizontal} size={0.9} color="var(--accent-primary)" />
             Agenda ({meeting.changes.length} change{meeting.changes.length !== 1 ? 's' : ''})
           </h2>
 
           {meeting.changes.length === 0 ? (
-            <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 32, textAlign: 'center' }}>
-              <p style={{ margin: 0, color: '#9ca3af', fontSize: 14 }}>No changes on agenda yet</p>
+            <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 32, textAlign: 'center' }}>
+              <p style={{ margin: 0, color: 'var(--text-placeholder)', fontSize: 14 }}>No changes on agenda yet</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -416,38 +416,38 @@ export default function CABMeetingDetailPage() {
                     <div
                       key={item.id}
                       style={{
-                        backgroundColor: '#fff',
-                        border: `1px solid ${isEmergency ? '#fca5a5' : '#e5e7eb'}`,
+                        backgroundColor: 'var(--bg-primary)',
+                        border: `1px solid ${isEmergency ? '#fca5a5' : 'var(--border-primary)'}`,
                         borderRadius: 10,
                         padding: 16,
-                        borderLeft: isEmergency ? '4px solid #dc2626' : '4px solid #e5e7eb',
+                        borderLeft: isEmergency ? '4px solid #dc2626' : '4px solid var(--border-primary)',
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
-                          <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 600, minWidth: 20 }}>
+                          <span style={{ fontSize: 12, color: 'var(--text-placeholder)', fontWeight: 600, minWidth: 20 }}>
                             {idx + 1}.
                           </span>
                           <div>
                             <Link
                               href={`/dashboard/changes/${item.change.id}`}
-                              style={{ fontSize: 14, fontWeight: 600, color: '#4f46e5', textDecoration: 'none' }}
+                              style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent-primary)', textDecoration: 'none' }}
                             >
                               CHG-{item.change.changeNumber}
                             </Link>
-                            <span style={{ fontSize: 14, color: '#111827', marginLeft: 6 }}>{item.change.title}</span>
+                            <span style={{ fontSize: 14, color: 'var(--text-primary)', marginLeft: 6 }}>{item.change.title}</span>
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
                           {isEmergency && (
-                            <span style={{ padding: '2px 6px', borderRadius: 10, fontSize: 11, fontWeight: 700, backgroundColor: '#fee2e2', color: '#991b1b' }}>
+                            <span style={{ padding: '2px 6px', borderRadius: 10, fontSize: 11, fontWeight: 700, backgroundColor: 'var(--badge-red-bg)', color: '#991b1b' }}>
                               EMERGENCY
                             </span>
                           )}
                           <span style={{ padding: '2px 6px', borderRadius: 10, fontSize: 11, fontWeight: 500, backgroundColor: riskStyle.bg, color: riskStyle.text }}>
                             {item.change.riskLevel}
                           </span>
-                          <span style={{ padding: '2px 6px', borderRadius: 10, fontSize: 11, fontWeight: 500, backgroundColor: '#f3f4f6', color: '#6b7280' }}>
+                          <span style={{ padding: '2px 6px', borderRadius: 10, fontSize: 11, fontWeight: 500, backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}>
                             {item.change.status.replace(/_/g, ' ')}
                           </span>
                         </div>
@@ -455,7 +455,7 @@ export default function CABMeetingDetailPage() {
 
                       {/* Voting / outcome */}
                       <div style={{ paddingLeft: 28 }}>
-                        <p style={{ margin: '0 0 6px', fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>CAB Decision:</p>
+                        <p style={{ margin: '0 0 6px', fontSize: 12, color: 'var(--text-placeholder)', fontWeight: 500 }}>CAB Decision:</p>
                         <VotingButtons
                           meetingId={id}
                           changeId={item.change.id}
@@ -463,7 +463,7 @@ export default function CABMeetingDetailPage() {
                           onVoted={refresh}
                         />
                         {item.outcomeNotes && (
-                          <p style={{ margin: '6px 0 0', fontSize: 12, color: '#6b7280', fontStyle: 'italic' }}>
+                          <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>
                             Note: {item.outcomeNotes}
                           </p>
                         )}
@@ -477,14 +477,14 @@ export default function CABMeetingDetailPage() {
 
         {/* ── Attendees ─────────────────────────────────────────────────────────── */}
         <div>
-          <h2 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Icon path={mdiAccountGroup} size={0.9} color="#4f46e5" />
+          <h2 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Icon path={mdiAccountGroup} size={0.9} color="var(--accent-primary)" />
             Attendees ({meeting.attendees.length})
           </h2>
 
-          <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden', marginBottom: 12 }}>
+          <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, overflow: 'hidden', marginBottom: 12 }}>
             {meeting.attendees.length === 0 ? (
-              <div style={{ padding: 24, textAlign: 'center', color: '#9ca3af', fontSize: 13 }}>No attendees added</div>
+              <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-placeholder)', fontSize: 13 }}>No attendees added</div>
             ) : (
               <div>
                 {meeting.attendees.map((attendee, idx) => {
@@ -498,15 +498,15 @@ export default function CABMeetingDetailPage() {
                         alignItems: 'center',
                         gap: 10,
                         padding: '10px 14px',
-                        borderBottom: idx < meeting.attendees.length - 1 ? '1px solid #f3f4f6' : 'none',
+                        borderBottom: idx < meeting.attendees.length - 1 ? '1px solid var(--bg-tertiary)' : 'none',
                       }}
                     >
                       <Icon path={rsvp.path} size={0.85} color={rsvp.color} />
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 500, color: '#111827' }}>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>
                           {attendee.user.firstName} {attendee.user.lastName}
                         </div>
-                        <div style={{ fontSize: 11, color: '#9ca3af' }}>{attendee.role}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-placeholder)' }}>{attendee.role}</div>
                       </div>
                       <span style={{ padding: '2px 6px', borderRadius: 8, fontSize: 11, fontWeight: 500, backgroundColor: badge.bg, color: badge.text }}>
                         {attendee.rsvpStatus}
@@ -520,8 +520,8 @@ export default function CABMeetingDetailPage() {
 
           {/* RSVP buttons for current user */}
           {isCurrentUserAttendee && (
-            <div style={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: 14 }}>
-              <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 500, color: '#374151' }}>Your RSVP:</p>
+            <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: 8, padding: 14 }}>
+              <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>Your RSVP:</p>
               <RSVPButtons meetingId={id} onRsvp={refresh} />
             </div>
           )}
@@ -534,9 +534,9 @@ export default function CABMeetingDetailPage() {
               justifyContent: 'center',
               gap: 6,
               padding: '8px 0',
-              backgroundColor: '#fff',
-              color: '#374151',
-              border: '1px dashed #d1d5db',
+              backgroundColor: 'var(--bg-primary)',
+              color: 'var(--text-secondary)',
+              border: '1px dashed var(--border-secondary)',
               borderRadius: 8,
               fontSize: 13,
               fontWeight: 500,

@@ -72,10 +72,10 @@ interface ImportPreview {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getTriggerBadge(trigger: string): { bg: string; text: string } {
-  if (trigger.startsWith('TICKET_')) return { bg: '#dbeafe', text: '#1e40af' };
-  if (trigger.startsWith('SLA_')) return { bg: '#fef3c7', text: '#92400e' };
-  if (trigger.startsWith('CHANGE_') || trigger === 'CAB_INVITATION') return { bg: '#d1fae5', text: '#065f46' };
-  return { bg: '#f3f4f6', text: '#6b7280' };
+  if (trigger.startsWith('TICKET_')) return { bg: 'var(--badge-blue-bg)', text: '#1e40af' };
+  if (trigger.startsWith('SLA_')) return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
+  if (trigger.startsWith('CHANGE_') || trigger === 'CAB_INVITATION') return { bg: 'var(--badge-green-bg)', text: '#065f46' };
+  return { bg: 'var(--bg-tertiary)', text: 'var(--text-muted)' };
 }
 
 const ACTION_ICONS: Record<string, string> = {
@@ -131,7 +131,7 @@ function ImportPreviewModal({
     >
       <div
         style={{
-          backgroundColor: '#fff',
+          backgroundColor: 'var(--bg-primary)',
           borderRadius: 12,
           width: '100%',
           maxWidth: 640,
@@ -139,8 +139,8 @@ function ImportPreviewModal({
           maxHeight: '90vh',
         }}
       >
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: '#111827' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-primary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>
             Import Preview
           </h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
@@ -150,10 +150,10 @@ function ImportPreviewModal({
         <div style={{ padding: 24 }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
-                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Rule Name</th>
-                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Action</th>
-                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Warnings</th>
+              <tr style={{ borderBottom: '2px solid var(--border-primary)' }}>
+                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Rule Name</th>
+                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Action</th>
+                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Warnings</th>
               </tr>
             </thead>
             <tbody>
@@ -167,14 +167,14 @@ function ImportPreviewModal({
                         borderRadius: 9999,
                         fontSize: 11,
                         fontWeight: 500,
-                        backgroundColor: r.action === 'create' ? '#d1fae5' : r.action === 'update' ? '#dbeafe' : '#f3f4f6',
-                        color: r.action === 'create' ? '#065f46' : r.action === 'update' ? '#1e40af' : '#6b7280',
+                        backgroundColor: r.action === 'create' ? 'var(--badge-green-bg)' : r.action === 'update' ? 'var(--badge-blue-bg)' : 'var(--bg-tertiary)',
+                        color: r.action === 'create' ? '#065f46' : r.action === 'update' ? '#1e40af' : 'var(--text-muted)',
                       }}
                     >
                       {r.action}
                     </span>
                   </td>
-                  <td style={{ padding: '8px 12px', color: '#d97706', fontSize: 12 }}>
+                  <td style={{ padding: '8px 12px', color: 'var(--accent-warning)', fontSize: 12 }}>
                     {r.warnings?.length > 0 ? r.warnings.join(', ') : '--'}
                   </td>
                 </tr>
@@ -184,7 +184,7 @@ function ImportPreviewModal({
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
             <button
               onClick={onClose}
-              style={{ padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 14, cursor: 'pointer', backgroundColor: '#fff', color: '#374151' }}
+              style={{ padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}
             >
               Cancel
             </button>
@@ -193,8 +193,8 @@ function ImportPreviewModal({
               disabled={confirming}
               style={{
                 padding: '8px 18px',
-                backgroundColor: confirming ? '#a5b4fc' : '#4f46e5',
-                color: '#fff',
+                backgroundColor: confirming ? '#a5b4fc' : 'var(--accent-primary)',
+                color: 'var(--bg-primary)',
                 border: 'none',
                 borderRadius: 7,
                 fontSize: 14,
@@ -327,7 +327,7 @@ export default function NotificationRulesPage() {
     }
   };
 
-  const thStyle: React.CSSProperties = { padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 13 };
+  const thStyle: React.CSSProperties = { padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 13 };
   const tdStyle: React.CSSProperties = { padding: '10px 14px', fontSize: 13 };
 
   return (
@@ -336,11 +336,11 @@ export default function NotificationRulesPage() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
         <Link
           href="/dashboard/settings"
-          style={{ color: '#6b7280', textDecoration: 'none', display: 'flex', alignItems: 'center' }}
+          style={{ color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center' }}
         >
           <Icon path={mdiArrowLeft} size={0.9} color="currentColor" />
         </Link>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
           <Icon path={mdiBellAlert} size={1} color="#d97706" />
           Notification Rules
         </h1>
@@ -352,8 +352,8 @@ export default function NotificationRulesPage() {
               alignItems: 'center',
               gap: 6,
               padding: '8px 16px',
-              backgroundColor: '#4f46e5',
-              color: '#fff',
+              backgroundColor: 'var(--accent-primary)',
+              color: 'var(--bg-primary)',
               border: 'none',
               borderRadius: 8,
               fontSize: 14,
@@ -372,8 +372,8 @@ export default function NotificationRulesPage() {
               alignItems: 'center',
               gap: 6,
               padding: '8px 14px',
-              backgroundColor: '#fff',
-              color: '#374151',
+              backgroundColor: 'var(--bg-primary)',
+              color: 'var(--text-secondary)',
               border: '1px solid #d1d5db',
               borderRadius: 8,
               fontSize: 13,
@@ -391,8 +391,8 @@ export default function NotificationRulesPage() {
               alignItems: 'center',
               gap: 6,
               padding: '8px 14px',
-              backgroundColor: '#fff',
-              color: '#374151',
+              backgroundColor: 'var(--bg-primary)',
+              color: 'var(--text-secondary)',
               border: '1px solid #d1d5db',
               borderRadius: 8,
               fontSize: 13,
@@ -410,8 +410,8 @@ export default function NotificationRulesPage() {
               alignItems: 'center',
               gap: 6,
               padding: '8px 14px',
-              backgroundColor: '#fff',
-              color: '#374151',
+              backgroundColor: 'var(--bg-primary)',
+              color: 'var(--text-secondary)',
               border: '1px solid #d1d5db',
               borderRadius: 8,
               fontSize: 13,
@@ -431,7 +431,7 @@ export default function NotificationRulesPage() {
           />
         </div>
       </div>
-      <p style={{ margin: '0 0 20px', color: '#6b7280', fontSize: 14 }}>
+      <p style={{ margin: '0 0 20px', color: 'var(--text-muted)', fontSize: 14 }}>
         Configure when and how notifications are sent based on triggers, conditions, and actions.
       </p>
 
@@ -446,8 +446,8 @@ export default function NotificationRulesPage() {
             borderRadius: 7,
             fontSize: 13,
             outline: 'none',
-            backgroundColor: '#fff',
-            color: '#374151',
+            backgroundColor: 'var(--bg-primary)',
+            color: 'var(--text-secondary)',
           }}
         >
           <option value="">All Triggers</option>
@@ -459,12 +459,12 @@ export default function NotificationRulesPage() {
 
       {/* Table */}
       {isLoading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>Loading rules...</div>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading rules...</div>
       ) : rules.length === 0 ? (
         <div
           style={{
-            backgroundColor: '#fff',
-            border: '1px solid #e5e7eb',
+            backgroundColor: 'var(--bg-primary)',
+            border: '1px solid var(--border-primary)',
             borderRadius: 10,
             padding: '48px 24px',
             textAlign: 'center',
@@ -473,10 +473,10 @@ export default function NotificationRulesPage() {
           <div style={{ marginBottom: 12 }}>
             <Icon path={mdiBellAlert} size={2.5} color="#d1d5db" />
           </div>
-          <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: '#374151' }}>
+          <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: 'var(--text-secondary)' }}>
             No notification rules configured
           </h3>
-          <p style={{ margin: '0 0 20px', fontSize: 14, color: '#6b7280', maxWidth: 380, marginLeft: 'auto', marginRight: 'auto' }}>
+          <p style={{ margin: '0 0 20px', fontSize: 14, color: 'var(--text-muted)', maxWidth: 380, marginLeft: 'auto', marginRight: 'auto' }}>
             Create rules to automatically send notifications based on ticket events, SLA breaches, and more.
           </p>
           <Link
@@ -486,8 +486,8 @@ export default function NotificationRulesPage() {
               alignItems: 'center',
               gap: 6,
               padding: '8px 16px',
-              backgroundColor: '#4f46e5',
-              color: '#fff',
+              backgroundColor: 'var(--accent-primary)',
+              color: 'var(--bg-primary)',
               border: 'none',
               borderRadius: 8,
               fontSize: 14,
@@ -500,11 +500,11 @@ export default function NotificationRulesPage() {
           </Link>
         </div>
       ) : (
-        <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
-                <tr style={{ borderBottom: '2px solid #e5e7eb', backgroundColor: '#f9fafb' }}>
+                <tr style={{ borderBottom: '2px solid var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
                   <th style={thStyle}>#</th>
                   <th style={thStyle}>Name</th>
                   <th style={thStyle}>Trigger</th>
@@ -529,10 +529,10 @@ export default function NotificationRulesPage() {
                             width: 28,
                             height: 28,
                             borderRadius: 7,
-                            backgroundColor: '#f3f4f6',
+                            backgroundColor: 'var(--bg-tertiary)',
                             fontSize: 12,
                             fontWeight: 600,
-                            color: '#374151',
+                            color: 'var(--text-secondary)',
                           }}
                         >
                           {rule.priority}
@@ -541,12 +541,12 @@ export default function NotificationRulesPage() {
                       <td style={tdStyle}>
                         <Link
                           href={`/dashboard/settings/notification-rules/${rule.id}`}
-                          style={{ color: '#4f46e5', textDecoration: 'none', fontWeight: 500 }}
+                          style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 500 }}
                         >
                           {rule.name}
                         </Link>
                         {rule.description && (
-                          <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>{rule.description}</div>
+                          <div style={{ fontSize: 12, color: 'var(--text-placeholder)', marginTop: 2 }}>{rule.description}</div>
                         )}
                       </td>
                       <td style={tdStyle}>
@@ -564,7 +564,7 @@ export default function NotificationRulesPage() {
                           {rule.trigger.replace(/_/g, ' ')}
                         </span>
                       </td>
-                      <td style={{ ...tdStyle, color: '#6b7280', fontSize: 12 }}>
+                      <td style={{ ...tdStyle, color: 'var(--text-muted)', fontSize: 12 }}>
                         {conditionSummary(rule.conditionGroups)}
                       </td>
                       <td style={tdStyle}>
@@ -578,7 +578,7 @@ export default function NotificationRulesPage() {
                                 alignItems: 'center',
                                 padding: '2px 6px',
                                 borderRadius: 6,
-                                backgroundColor: '#f3f4f6',
+                                backgroundColor: 'var(--bg-tertiary)',
                                 fontSize: 11,
                                 gap: 3,
                               }}
@@ -598,7 +598,7 @@ export default function NotificationRulesPage() {
                             borderRadius: 11,
                             border: 'none',
                             cursor: 'pointer',
-                            backgroundColor: rule.isActive ? '#4f46e5' : '#d1d5db',
+                            backgroundColor: rule.isActive ? 'var(--accent-primary)' : 'var(--border-secondary)',
                             position: 'relative',
                             transition: 'background-color 0.2s',
                           }}
@@ -611,7 +611,7 @@ export default function NotificationRulesPage() {
                               width: 18,
                               height: 18,
                               borderRadius: 9,
-                              backgroundColor: '#fff',
+                              backgroundColor: 'var(--bg-primary)',
                               transition: 'left 0.2s',
                               boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
                             }}
@@ -636,8 +636,8 @@ export default function NotificationRulesPage() {
                               borderRadius: 6,
                               fontSize: 12,
                               cursor: 'pointer',
-                              backgroundColor: '#fff',
-                              color: '#374151',
+                              backgroundColor: 'var(--bg-primary)',
+                              color: 'var(--text-secondary)',
                               textDecoration: 'none',
                             }}
                           >
@@ -655,8 +655,8 @@ export default function NotificationRulesPage() {
                               borderRadius: 6,
                               fontSize: 12,
                               cursor: 'pointer',
-                              backgroundColor: '#fff',
-                              color: '#374151',
+                              backgroundColor: 'var(--bg-primary)',
+                              color: 'var(--text-secondary)',
                             }}
                           >
                             <Icon path={mdiContentCopy} size={0.6} color="currentColor" />
@@ -672,8 +672,8 @@ export default function NotificationRulesPage() {
                               borderRadius: 6,
                               fontSize: 12,
                               cursor: 'pointer',
-                              backgroundColor: '#fff',
-                              color: '#dc2626',
+                              backgroundColor: 'var(--bg-primary)',
+                              color: 'var(--accent-danger)',
                             }}
                           >
                             <Icon path={mdiTrashCan} size={0.6} color="currentColor" />

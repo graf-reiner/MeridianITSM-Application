@@ -141,8 +141,8 @@ const SETTINGS_SECTIONS = [
 export default function SettingsPage() {
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
-      <h1 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700, color: '#111827' }}>Settings</h1>
-      <p style={{ margin: '0 0 32px', color: '#6b7280', fontSize: 14 }}>
+      <h1 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>Settings</h1>
+      <p style={{ margin: '0 0 32px', color: 'var(--text-muted)', fontSize: 14 }}>
         Configure your ITSM workspace settings.
       </p>
 
@@ -153,8 +153,8 @@ export default function SettingsPage() {
             href={section.href}
             style={{
               display: 'block',
-              backgroundColor: '#fff',
-              border: '1px solid #e5e7eb',
+              backgroundColor: 'var(--bg-primary)',
+              border: '1px solid var(--border-primary)',
               borderRadius: 12,
               padding: 20,
               textDecoration: 'none',
@@ -176,8 +176,8 @@ export default function SettingsPage() {
             >
               <Icon path={section.icon} size={1.1} color={section.color} />
             </div>
-            <h3 style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 600, color: '#111827' }}>{section.label}</h3>
-            <p style={{ margin: 0, fontSize: 13, color: '#6b7280' }}>{section.description}</p>
+            <h3 style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>{section.label}</h3>
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)' }}>{section.description}</p>
           </Link>
         ))}
       </div>

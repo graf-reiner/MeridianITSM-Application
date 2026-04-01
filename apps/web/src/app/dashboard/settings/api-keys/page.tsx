@@ -93,7 +93,7 @@ function CreateApiKeyModal({
   const inputStyle = {
     width: '100%',
     padding: '8px 10px',
-    border: '1px solid #d1d5db',
+    border: '1px solid var(--border-secondary)',
     borderRadius: 7,
     fontSize: 14,
     outline: 'none',
@@ -104,7 +104,7 @@ function CreateApiKeyModal({
     marginBottom: 4,
     fontSize: 13,
     fontWeight: 600,
-    color: '#374151',
+    color: 'var(--text-secondary)',
   };
 
   return (
@@ -122,7 +122,7 @@ function CreateApiKeyModal({
     >
       <div
         style={{
-          backgroundColor: '#fff',
+          backgroundColor: 'var(--bg-primary)',
           borderRadius: 12,
           width: '100%',
           maxWidth: 480,
@@ -133,13 +133,13 @@ function CreateApiKeyModal({
         <div
           style={{
             padding: '20px 24px',
-            borderBottom: '1px solid #e5e7eb',
+            borderBottom: '1px solid var(--border-primary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
           }}
         >
-          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: '#111827' }}>
+          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>
             Create API Key
           </h2>
           <button
@@ -151,7 +151,7 @@ function CreateApiKeyModal({
               border: 'none',
               background: 'none',
               cursor: 'pointer',
-              color: '#6b7280',
+              color: 'var(--text-muted)',
             }}
           >
             <Icon path={mdiClose} size={0.9} color="currentColor" />
@@ -183,7 +183,7 @@ function CreateApiKeyModal({
                     gap: 8,
                     cursor: 'pointer',
                     fontSize: 14,
-                    color: '#374151',
+                    color: 'var(--text-secondary)',
                   }}
                 >
                   <input
@@ -196,7 +196,7 @@ function CreateApiKeyModal({
                     style={{
                       fontFamily: 'monospace',
                       fontSize: 13,
-                      backgroundColor: '#f3f4f6',
+                      backgroundColor: 'var(--bg-tertiary)',
                       padding: '1px 6px',
                       borderRadius: 4,
                     }}
@@ -225,11 +225,11 @@ function CreateApiKeyModal({
             <div
               style={{
                 padding: '8px 12px',
-                backgroundColor: '#fef2f2',
+                backgroundColor: 'var(--badge-red-bg-subtle)',
                 border: '1px solid #fecaca',
                 borderRadius: 7,
                 marginBottom: 14,
-                color: '#dc2626',
+                color: 'var(--accent-danger)',
                 fontSize: 13,
               }}
             >
@@ -246,8 +246,8 @@ function CreateApiKeyModal({
                 borderRadius: 7,
                 fontSize: 14,
                 cursor: 'pointer',
-                backgroundColor: '#fff',
-                color: '#374151',
+                backgroundColor: 'var(--bg-primary)',
+                color: 'var(--text-secondary)',
               }}
             >
               Cancel
@@ -257,8 +257,8 @@ function CreateApiKeyModal({
               disabled={isSubmitting || scopes.size === 0}
               style={{
                 padding: '8px 18px',
-                backgroundColor: isSubmitting || scopes.size === 0 ? '#a5b4fc' : '#4f46e5',
-                color: '#fff',
+                backgroundColor: isSubmitting || scopes.size === 0 ? '#a5b4fc' : 'var(--accent-primary)',
+                color: 'var(--bg-primary)',
                 border: 'none',
                 borderRadius: 7,
                 fontSize: 14,
@@ -295,7 +295,7 @@ function KeyCreatedBanner({
   return (
     <div
       style={{
-        backgroundColor: '#fef3c7',
+        backgroundColor: 'var(--badge-yellow-bg)',
         border: '2px solid #f59e0b',
         borderRadius: 10,
         padding: '14px 16px',
@@ -351,8 +351,8 @@ function KeyCreatedBanner({
             alignItems: 'center',
             gap: 4,
             padding: '8px 14px',
-            backgroundColor: copied ? '#059669' : '#4f46e5',
-            color: '#fff',
+            backgroundColor: copied ? 'var(--accent-success)' : 'var(--accent-primary)',
+            color: 'var(--bg-primary)',
             border: 'none',
             borderRadius: 7,
             fontSize: 13,
@@ -434,7 +434,7 @@ export default function ApiKeysSettingsPage() {
       >
         <Link
           href="/dashboard/settings"
-          style={{ color: '#6b7280', textDecoration: 'none', display: 'flex', alignItems: 'center' }}
+          style={{ color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center' }}
         >
           <Icon path={mdiArrowLeft} size={0.9} color="currentColor" />
         </Link>
@@ -443,7 +443,7 @@ export default function ApiKeysSettingsPage() {
             margin: 0,
             fontSize: 22,
             fontWeight: 600,
-            color: '#111827',
+            color: 'var(--text-primary)',
             display: 'flex',
             alignItems: 'center',
             gap: 8,
@@ -460,8 +460,8 @@ export default function ApiKeysSettingsPage() {
               alignItems: 'center',
               gap: 6,
               padding: '8px 16px',
-              backgroundColor: '#4f46e5',
-              color: '#fff',
+              backgroundColor: 'var(--accent-primary)',
+              color: 'var(--bg-primary)',
               border: 'none',
               borderRadius: 8,
               fontSize: 14,
@@ -474,7 +474,7 @@ export default function ApiKeysSettingsPage() {
           </button>
         </div>
       </div>
-      <p style={{ margin: '0 0 24px', color: '#6b7280', fontSize: 14 }}>
+      <p style={{ margin: '0 0 24px', color: 'var(--text-muted)', fontSize: 14 }}>
         Create API keys for external integrations. Keys are shown once on creation.
       </p>
 
@@ -485,14 +485,14 @@ export default function ApiKeysSettingsPage() {
 
       {/* Keys Table */}
       {isLoading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
           Loading API keys...
         </div>
       ) : apiKeys.length === 0 && !createdKey ? (
         <div
           style={{
-            backgroundColor: '#fff',
-            border: '1px solid #e5e7eb',
+            backgroundColor: 'var(--bg-primary)',
+            border: '1px solid var(--border-primary)',
             borderRadius: 10,
             padding: '48px 24px',
             textAlign: 'center',
@@ -501,14 +501,14 @@ export default function ApiKeysSettingsPage() {
           <div style={{ marginBottom: 12 }}>
             <Icon path={mdiKeyVariant} size={2.5} color="#d1d5db" />
           </div>
-          <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: '#374151' }}>
+          <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: 'var(--text-secondary)' }}>
             No API keys
           </h3>
           <p
             style={{
               margin: '0 0 20px',
               fontSize: 14,
-              color: '#6b7280',
+              color: 'var(--text-muted)',
               maxWidth: 380,
               marginLeft: 'auto',
               marginRight: 'auto',
@@ -524,8 +524,8 @@ export default function ApiKeysSettingsPage() {
               alignItems: 'center',
               gap: 6,
               padding: '8px 16px',
-              backgroundColor: '#4f46e5',
-              color: '#fff',
+              backgroundColor: 'var(--accent-primary)',
+              color: 'var(--bg-primary)',
               border: 'none',
               borderRadius: 8,
               fontSize: 14,
@@ -540,21 +540,21 @@ export default function ApiKeysSettingsPage() {
       ) : (
         <div
           style={{
-            backgroundColor: '#fff',
-            border: '1px solid #e5e7eb',
+            backgroundColor: 'var(--bg-primary)',
+            border: '1px solid var(--border-primary)',
             borderRadius: 10,
             overflow: 'hidden',
           }}
         >
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
-              <tr style={{ backgroundColor: '#f3f4f6' }}>
+              <tr style={{ backgroundColor: 'var(--bg-tertiary)' }}>
                 <th
                   style={{
                     padding: '8px 16px',
                     textAlign: 'left',
                     fontWeight: 600,
-                    color: '#374151',
+                    color: 'var(--text-secondary)',
                   }}
                 >
                   Name
@@ -564,7 +564,7 @@ export default function ApiKeysSettingsPage() {
                     padding: '8px 16px',
                     textAlign: 'left',
                     fontWeight: 600,
-                    color: '#374151',
+                    color: 'var(--text-secondary)',
                   }}
                 >
                   Prefix
@@ -574,7 +574,7 @@ export default function ApiKeysSettingsPage() {
                     padding: '8px 16px',
                     textAlign: 'left',
                     fontWeight: 600,
-                    color: '#374151',
+                    color: 'var(--text-secondary)',
                   }}
                 >
                   Scopes
@@ -584,7 +584,7 @@ export default function ApiKeysSettingsPage() {
                     padding: '8px 16px',
                     textAlign: 'left',
                     fontWeight: 600,
-                    color: '#374151',
+                    color: 'var(--text-secondary)',
                   }}
                 >
                   Rate Limit
@@ -594,7 +594,7 @@ export default function ApiKeysSettingsPage() {
                     padding: '8px 16px',
                     textAlign: 'left',
                     fontWeight: 600,
-                    color: '#374151',
+                    color: 'var(--text-secondary)',
                   }}
                 >
                   Last Used
@@ -604,7 +604,7 @@ export default function ApiKeysSettingsPage() {
                     padding: '8px 16px',
                     textAlign: 'left',
                     fontWeight: 600,
-                    color: '#374151',
+                    color: 'var(--text-secondary)',
                   }}
                 >
                   Created
@@ -614,7 +614,7 @@ export default function ApiKeysSettingsPage() {
                     padding: '8px 16px',
                     textAlign: 'left',
                     fontWeight: 600,
-                    color: '#374151',
+                    color: 'var(--text-secondary)',
                   }}
                 >
                   Actions
@@ -626,7 +626,7 @@ export default function ApiKeysSettingsPage() {
                 const isConfirmingRevoke = confirmRevokeId === key.id;
                 return (
                   <tr key={key.id} style={{ borderTop: '1px solid #f3f4f6' }}>
-                    <td style={{ padding: '10px 16px', fontWeight: 500, color: '#111827' }}>
+                    <td style={{ padding: '10px 16px', fontWeight: 500, color: 'var(--text-primary)' }}>
                       {key.name}
                     </td>
                     <td style={{ padding: '10px 16px' }}>
@@ -634,10 +634,10 @@ export default function ApiKeysSettingsPage() {
                         style={{
                           fontFamily: 'monospace',
                           fontSize: 12,
-                          backgroundColor: '#f3f4f6',
+                          backgroundColor: 'var(--bg-tertiary)',
                           padding: '2px 6px',
                           borderRadius: 4,
-                          color: '#374151',
+                          color: 'var(--text-secondary)',
                         }}
                       >
                         {key.prefix}...
@@ -650,8 +650,8 @@ export default function ApiKeysSettingsPage() {
                             key={scope}
                             style={{
                               padding: '1px 6px',
-                              backgroundColor: '#e0e7ff',
-                              color: '#4f46e5',
+                              backgroundColor: 'var(--badge-indigo-bg)',
+                              color: 'var(--accent-primary)',
                               borderRadius: 4,
                               fontSize: 11,
                               fontFamily: 'monospace',
@@ -662,19 +662,19 @@ export default function ApiKeysSettingsPage() {
                         ))}
                       </div>
                     </td>
-                    <td style={{ padding: '10px 16px', color: '#6b7280', fontSize: 13 }}>
+                    <td style={{ padding: '10px 16px', color: 'var(--text-muted)', fontSize: 13 }}>
                       {key.rateLimit !== null ? `${key.rateLimit}/min` : '100/min'}
                     </td>
-                    <td style={{ padding: '10px 16px', color: '#6b7280', fontSize: 13 }}>
+                    <td style={{ padding: '10px 16px', color: 'var(--text-muted)', fontSize: 13 }}>
                       {formatDate(key.lastUsedAt)}
                     </td>
-                    <td style={{ padding: '10px 16px', color: '#6b7280', fontSize: 13 }}>
+                    <td style={{ padding: '10px 16px', color: 'var(--text-muted)', fontSize: 13 }}>
                       {formatDate(key.createdAt)}
                     </td>
                     <td style={{ padding: '10px 16px' }}>
                       {isConfirmingRevoke ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: 12, color: '#374151', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                             Revoke key ending in ...{key.prefix}? Any integrations using this key
                             will stop working immediately.
                           </span>
@@ -683,8 +683,8 @@ export default function ApiKeysSettingsPage() {
                             disabled={revoking}
                             style={{
                               padding: '3px 10px',
-                              backgroundColor: '#dc2626',
-                              color: '#fff',
+                              backgroundColor: 'var(--accent-danger)',
+                              color: 'var(--bg-primary)',
                               border: 'none',
                               borderRadius: 6,
                               fontSize: 12,
@@ -701,7 +701,7 @@ export default function ApiKeysSettingsPage() {
                               padding: '3px 8px',
                               border: 'none',
                               background: 'none',
-                              color: '#6b7280',
+                              color: 'var(--text-muted)',
                               fontSize: 12,
                               cursor: 'pointer',
                               textDecoration: 'underline',
@@ -719,8 +719,8 @@ export default function ApiKeysSettingsPage() {
                             borderRadius: 6,
                             fontSize: 12,
                             cursor: 'pointer',
-                            backgroundColor: '#fff',
-                            color: '#dc2626',
+                            backgroundColor: 'var(--bg-primary)',
+                            color: 'var(--accent-danger)',
                           }}
                         >
                           Revoke

@@ -54,13 +54,13 @@ interface GeneratedToken {
 
 function AgentStatusBadge({ status }: { status: string }) {
   const styles: Record<string, { bg: string; text: string; label: string }> = {
-    ACTIVE: { bg: '#d1fae5', text: '#065f46', label: 'Online' },
-    ONLINE: { bg: '#d1fae5', text: '#065f46', label: 'Online' },
-    OFFLINE: { bg: '#f3f4f6', text: '#6b7280', label: 'Offline' },
-    STALE: { bg: '#fef3c7', text: '#92400e', label: 'Stale — not seen in 24h' },
-    DEREGISTERED: { bg: '#fee2e2', text: '#991b1b', label: 'Deregistered' },
+    ACTIVE:       { bg: 'var(--badge-green-bg)',  text: '#065f46', label: 'Online' },
+    ONLINE:       { bg: 'var(--badge-green-bg)',  text: '#065f46', label: 'Online' },
+    OFFLINE:      { bg: 'var(--bg-tertiary)',      text: '#6b7280', label: 'Offline' },
+    STALE:        { bg: 'var(--badge-yellow-bg)', text: '#92400e', label: 'Stale — not seen in 24h' },
+    DEREGISTERED: { bg: 'var(--badge-red-bg)',    text: '#991b1b', label: 'Deregistered' },
   };
-  const s = styles[status] ?? { bg: '#f3f4f6', text: '#6b7280', label: status };
+  const s = styles[status] ?? { bg: 'var(--bg-tertiary)', text: '#6b7280', label: status };
   return (
     <span
       title={status === 'STALE' ? 'Not seen in 24h' : undefined}
@@ -152,7 +152,7 @@ function GenerateTokenModal({
   const inputStyle = {
     width: '100%',
     padding: '8px 10px',
-    border: '1px solid #d1d5db',
+    border: '1px solid var(--border-secondary)',
     borderRadius: 7,
     fontSize: 14,
     outline: 'none',
@@ -163,7 +163,7 @@ function GenerateTokenModal({
     marginBottom: 4,
     fontSize: 13,
     fontWeight: 600,
-    color: '#374151',
+    color: 'var(--text-secondary)',
   };
 
   return (
@@ -181,7 +181,7 @@ function GenerateTokenModal({
     >
       <div
         style={{
-          backgroundColor: '#fff',
+          backgroundColor: 'var(--bg-primary)',
           borderRadius: 12,
           width: '100%',
           maxWidth: 500,
@@ -189,8 +189,8 @@ function GenerateTokenModal({
           maxHeight: '90vh',
         }}
       >
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb' }}>
-          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: '#111827' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-primary)' }}>
+          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>
             Generate Enrollment Token
           </h2>
         </div>
@@ -206,7 +206,7 @@ function GenerateTokenModal({
                 onChange={(e) => setExpiresAt(e.target.value)}
                 style={inputStyle}
               />
-              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#6b7280' }}>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
                 Leave blank for no expiry.
               </p>
             </div>
@@ -221,7 +221,7 @@ function GenerateTokenModal({
                 placeholder="Unlimited"
                 style={inputStyle}
               />
-              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#6b7280' }}>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
                 Leave blank for unlimited enrollments.
               </p>
             </div>
@@ -229,7 +229,7 @@ function GenerateTokenModal({
               <div
                 style={{
                   padding: '8px 12px',
-                  backgroundColor: '#fef2f2',
+                  backgroundColor: 'var(--badge-red-bg-subtle)',
                   border: '1px solid #fecaca',
                   borderRadius: 7,
                   marginBottom: 14,
@@ -246,12 +246,12 @@ function GenerateTokenModal({
                 onClick={onClose}
                 style={{
                   padding: '8px 16px',
-                  border: '1px solid #d1d5db',
+                  border: '1px solid var(--border-secondary)',
                   borderRadius: 7,
                   fontSize: 14,
                   cursor: 'pointer',
-                  backgroundColor: '#fff',
-                  color: '#374151',
+                  backgroundColor: 'var(--bg-primary)',
+                  color: 'var(--text-secondary)',
                 }}
               >
                 Cancel
@@ -261,7 +261,7 @@ function GenerateTokenModal({
                 disabled={isSubmitting}
                 style={{
                   padding: '8px 18px',
-                  backgroundColor: isSubmitting ? '#a5b4fc' : '#4f46e5',
+                  backgroundColor: isSubmitting ? '#a5b4fc' : 'var(--accent-primary)',
                   color: '#fff',
                   border: 'none',
                   borderRadius: 7,
@@ -279,7 +279,7 @@ function GenerateTokenModal({
             <div
               style={{
                 padding: '10px 14px',
-                backgroundColor: '#f0fdf4',
+                backgroundColor: 'var(--badge-green-bg-subtle)',
                 border: '1px solid #86efac',
                 borderRadius: 8,
                 marginBottom: 16,
@@ -301,7 +301,7 @@ function GenerateTokenModal({
                   style={{
                     ...inputStyle,
                     flex: 1,
-                    backgroundColor: '#fef3c7',
+                    backgroundColor: 'var(--badge-yellow-bg)',
                     border: '2px solid #f59e0b',
                     fontFamily: 'monospace',
                     fontSize: 13,
@@ -314,7 +314,7 @@ function GenerateTokenModal({
                     alignItems: 'center',
                     gap: 4,
                     padding: '8px 14px',
-                    backgroundColor: copied ? '#059669' : '#4f46e5',
+                    backgroundColor: copied ? '#059669' : 'var(--accent-primary)',
                     color: '#fff',
                     border: 'none',
                     borderRadius: 7,
@@ -332,15 +332,15 @@ function GenerateTokenModal({
 
             {qrDataUrl && (
               <div style={{ marginBottom: 16, textAlign: 'center' }}>
-                <p style={{ margin: '0 0 8px', fontSize: 13, color: '#374151', fontWeight: 600 }}>
+                <p style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--text-secondary)', fontWeight: 600 }}>
                   QR Code for Agent Enrollment
                 </p>
                 <img
                   src={qrDataUrl}
                   alt="QR code for agent enrollment"
-                  style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 4 }}
+                  style={{ border: '1px solid var(--border-primary)', borderRadius: 8, padding: 4 }}
                 />
-                <p style={{ margin: '6px 0 0', fontSize: 12, color: '#6b7280' }}>
+                <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
                   Scan with the MeridianITSM mobile app to enroll an agent.
                 </p>
               </div>
@@ -351,7 +351,7 @@ function GenerateTokenModal({
                 onClick={onClose}
                 style={{
                   padding: '8px 18px',
-                  backgroundColor: '#4f46e5',
+                  backgroundColor: 'var(--accent-primary)',
                   color: '#fff',
                   border: 'none',
                   borderRadius: 7,
@@ -442,10 +442,10 @@ export default function AgentsSettingsPage() {
   };
 
   const getTokenStatus = (token: EnrollmentToken): { label: string; bg: string; text: string } => {
-    if (!token.isActive) return { label: 'Revoked', bg: '#fee2e2', text: '#991b1b' };
+    if (!token.isActive) return { label: 'Revoked', bg: 'var(--badge-red-bg)', text: '#991b1b' };
     if (token.expiresAt && new Date(token.expiresAt) < new Date())
-      return { label: 'Expired', bg: '#f3f4f6', text: '#6b7280' };
-    return { label: 'Active', bg: '#d1fae5', text: '#065f46' };
+      return { label: 'Expired', bg: 'var(--bg-tertiary)', text: '#6b7280' };
+    return { label: 'Active', bg: 'var(--badge-green-bg)', text: '#065f46' };
   };
 
   const serverUrl =
@@ -465,7 +465,7 @@ export default function AgentsSettingsPage() {
       >
         <Link
           href="/dashboard/settings"
-          style={{ color: '#6b7280', textDecoration: 'none', display: 'flex', alignItems: 'center' }}
+          style={{ color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center' }}
         >
           <Icon path={mdiArrowLeft} size={0.9} color="currentColor" />
         </Link>
@@ -474,7 +474,7 @@ export default function AgentsSettingsPage() {
             margin: 0,
             fontSize: 22,
             fontWeight: 600,
-            color: '#111827',
+            color: 'var(--text-primary)',
             display: 'flex',
             alignItems: 'center',
             gap: 8,
@@ -491,7 +491,7 @@ export default function AgentsSettingsPage() {
               alignItems: 'center',
               gap: 6,
               padding: '8px 16px',
-              backgroundColor: '#4f46e5',
+              backgroundColor: 'var(--accent-primary)',
               color: '#fff',
               border: 'none',
               borderRadius: 8,
@@ -505,15 +505,15 @@ export default function AgentsSettingsPage() {
           </button>
         </div>
       </div>
-      <p style={{ margin: '0 0 24px', color: '#6b7280', fontSize: 14 }}>
+      <p style={{ margin: '0 0 24px', color: 'var(--text-muted)', fontSize: 14 }}>
         Manage enrolled inventory agents and enrollment tokens.
       </p>
 
       {/* Enrollment Tokens Section */}
       <div
         style={{
-          backgroundColor: '#fff',
-          border: '1px solid #e5e7eb',
+          backgroundColor: 'var(--bg-primary)',
+          border: '1px solid var(--border-primary)',
           borderRadius: 10,
           marginBottom: 24,
           overflow: 'hidden',
@@ -527,13 +527,13 @@ export default function AgentsSettingsPage() {
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '12px 16px',
-            backgroundColor: '#f9fafb',
+            backgroundColor: 'var(--bg-secondary)',
             border: 'none',
-            borderBottom: showTokens ? '1px solid #e5e7eb' : 'none',
+            borderBottom: showTokens ? '1px solid var(--border-primary)' : 'none',
             cursor: 'pointer',
             fontSize: 14,
             fontWeight: 600,
-            color: '#374151',
+            color: 'var(--text-secondary)',
           }}
         >
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -543,7 +543,7 @@ export default function AgentsSettingsPage() {
               style={{
                 marginLeft: 4,
                 padding: '1px 7px',
-                backgroundColor: '#e0e7ff',
+                backgroundColor: 'var(--badge-indigo-bg)',
                 color: '#4f46e5',
                 borderRadius: 9999,
                 fontSize: 12,
@@ -553,83 +553,29 @@ export default function AgentsSettingsPage() {
               {tokens.length}
             </span>
           </span>
-          <Icon path={showTokens ? mdiChevronUp : mdiChevronDown} size={0.8} color="#6b7280" />
+          <Icon path={showTokens ? mdiChevronUp : mdiChevronDown} size={0.8} color="var(--text-muted)" />
         </button>
 
         {showTokens && (
           <>
             {tokensLoading ? (
-              <div style={{ padding: 24, textAlign: 'center', color: '#6b7280' }}>
+              <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>
                 Loading tokens...
               </div>
             ) : tokens.length === 0 ? (
-              <div style={{ padding: 24, textAlign: 'center', color: '#9ca3af' }}>
+              <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-placeholder)' }}>
                 No enrollment tokens yet. Click &quot;Generate Enrollment Token&quot; to create one.
               </div>
             ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                 <thead>
-                  <tr style={{ backgroundColor: '#f3f4f6' }}>
-                    <th
-                      style={{
-                        padding: '8px 16px',
-                        textAlign: 'left',
-                        fontWeight: 600,
-                        color: '#374151',
-                      }}
-                    >
-                      Token Prefix
-                    </th>
-                    <th
-                      style={{
-                        padding: '8px 16px',
-                        textAlign: 'left',
-                        fontWeight: 600,
-                        color: '#374151',
-                      }}
-                    >
-                      Enrollments
-                    </th>
-                    <th
-                      style={{
-                        padding: '8px 16px',
-                        textAlign: 'left',
-                        fontWeight: 600,
-                        color: '#374151',
-                      }}
-                    >
-                      Created
-                    </th>
-                    <th
-                      style={{
-                        padding: '8px 16px',
-                        textAlign: 'left',
-                        fontWeight: 600,
-                        color: '#374151',
-                      }}
-                    >
-                      Expires
-                    </th>
-                    <th
-                      style={{
-                        padding: '8px 16px',
-                        textAlign: 'left',
-                        fontWeight: 600,
-                        color: '#374151',
-                      }}
-                    >
-                      Status
-                    </th>
-                    <th
-                      style={{
-                        padding: '8px 16px',
-                        textAlign: 'left',
-                        fontWeight: 600,
-                        color: '#374151',
-                      }}
-                    >
-                      Actions
-                    </th>
+                  <tr style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+                    <th style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Token Prefix</th>
+                    <th style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Enrollments</th>
+                    <th style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Created</th>
+                    <th style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Expires</th>
+                    <th style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Status</th>
+                    <th style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -637,18 +583,18 @@ export default function AgentsSettingsPage() {
                     const status = getTokenStatus(token);
                     const isConfirmingRevoke = confirmRevokeId === token.id;
                     return (
-                      <tr key={token.id} style={{ borderTop: '1px solid #f3f4f6' }}>
+                      <tr key={token.id} style={{ borderTop: '1px solid var(--bg-tertiary)' }}>
                         <td style={{ padding: '10px 16px', fontFamily: 'monospace', fontSize: 13 }}>
                           {token.prefix}...
                         </td>
-                        <td style={{ padding: '10px 16px', color: '#374151' }}>
+                        <td style={{ padding: '10px 16px', color: 'var(--text-secondary)' }}>
                           {token.enrollCount} /{' '}
                           {token.maxEnrollments != null && token.maxEnrollments >= 0 ? token.maxEnrollments : '∞'}
                         </td>
-                        <td style={{ padding: '10px 16px', color: '#6b7280', fontSize: 13 }}>
+                        <td style={{ padding: '10px 16px', color: 'var(--text-muted)', fontSize: 13 }}>
                           {formatDate(token.createdAt)}
                         </td>
-                        <td style={{ padding: '10px 16px', color: '#6b7280', fontSize: 13 }}>
+                        <td style={{ padding: '10px 16px', color: 'var(--text-muted)', fontSize: 13 }}>
                           {formatDate(token.expiresAt)}
                         </td>
                         <td style={{ padding: '10px 16px' }}>
@@ -668,7 +614,7 @@ export default function AgentsSettingsPage() {
                         <td style={{ padding: '10px 16px' }}>
                           {isConfirmingRevoke ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{ fontSize: 12, color: '#374151' }}>
+                              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                                 Revoke token? This token will immediately stop accepting new
                                 enrollments. Existing enrolled agents are not affected.
                               </span>
@@ -695,7 +641,7 @@ export default function AgentsSettingsPage() {
                                   padding: '3px 8px',
                                   border: 'none',
                                   background: 'none',
-                                  color: '#6b7280',
+                                  color: 'var(--text-muted)',
                                   fontSize: 12,
                                   cursor: 'pointer',
                                   textDecoration: 'underline',
@@ -714,7 +660,7 @@ export default function AgentsSettingsPage() {
                                   borderRadius: 6,
                                   fontSize: 12,
                                   cursor: 'pointer',
-                                  backgroundColor: '#fff',
+                                  backgroundColor: 'var(--bg-primary)',
                                   color: '#dc2626',
                                 }}
                               >
@@ -736,27 +682,27 @@ export default function AgentsSettingsPage() {
       {/* Agents Table */}
       <div
         style={{
-          backgroundColor: '#fff',
-          border: '1px solid #e5e7eb',
+          backgroundColor: 'var(--bg-primary)',
+          border: '1px solid var(--border-primary)',
           borderRadius: 10,
           overflow: 'hidden',
         }}
       >
         {agentsLoading ? (
-          <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
             Loading agents...
           </div>
         ) : agents.length === 0 ? (
           <div style={{ padding: '48px 24px', textAlign: 'center' }}>
             <div style={{ marginBottom: 12 }}>
-              <Icon path={mdiDesktopClassic} size={2.5} color="#d1d5db" />
+              <Icon path={mdiDesktopClassic} size={2.5} color="var(--border-secondary)" />
             </div>
             <h3
-              style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: '#374151' }}
+              style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: 'var(--text-secondary)' }}
             >
               No agents enrolled
             </h3>
-            <p style={{ margin: '0 0 20px', fontSize: 14, color: '#6b7280', maxWidth: 380, marginLeft: 'auto', marginRight: 'auto' }}>
+            <p style={{ margin: '0 0 20px', fontSize: 14, color: 'var(--text-muted)', maxWidth: 380, marginLeft: 'auto', marginRight: 'auto' }}>
               Generate an enrollment token and run the agent installer on your endpoints. The agent
               will appear here after first check-in.
             </p>
@@ -767,7 +713,7 @@ export default function AgentsSettingsPage() {
                 alignItems: 'center',
                 gap: 6,
                 padding: '8px 16px',
-                backgroundColor: '#4f46e5',
+                backgroundColor: 'var(--accent-primary)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: 8,
@@ -783,79 +729,25 @@ export default function AgentsSettingsPage() {
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
-              <tr style={{ backgroundColor: '#f3f4f6' }}>
-                <th
-                  style={{
-                    padding: '8px 16px',
-                    textAlign: 'left',
-                    fontWeight: 600,
-                    color: '#374151',
-                  }}
-                >
-                  Hostname
-                </th>
-                <th
-                  style={{
-                    padding: '8px 16px',
-                    textAlign: 'left',
-                    fontWeight: 600,
-                    color: '#374151',
-                  }}
-                >
-                  Platform
-                </th>
-                <th
-                  style={{
-                    padding: '8px 16px',
-                    textAlign: 'left',
-                    fontWeight: 600,
-                    color: '#374151',
-                  }}
-                >
-                  Status
-                </th>
-                <th
-                  style={{
-                    padding: '8px 16px',
-                    textAlign: 'left',
-                    fontWeight: 600,
-                    color: '#374151',
-                  }}
-                >
-                  Last Heartbeat
-                </th>
-                <th
-                  style={{
-                    padding: '8px 16px',
-                    textAlign: 'left',
-                    fontWeight: 600,
-                    color: '#374151',
-                  }}
-                >
-                  Agent Version
-                </th>
-                <th
-                  style={{
-                    padding: '8px 16px',
-                    textAlign: 'left',
-                    fontWeight: 600,
-                    color: '#374151',
-                  }}
-                >
-                  Actions
-                </th>
+              <tr style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+                <th style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Hostname</th>
+                <th style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Platform</th>
+                <th style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Status</th>
+                <th style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Last Heartbeat</th>
+                <th style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Agent Version</th>
+                <th style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {agents.map((agent) => {
                 const isConfirmingDelete = confirmDeleteId === agent.id;
                 return (
-                  <tr key={agent.id} style={{ borderTop: '1px solid #f3f4f6' }}>
+                  <tr key={agent.id} style={{ borderTop: '1px solid var(--bg-tertiary)' }}>
                     <td style={{ padding: '10px 16px' }}>
                       <Link
                         href={`/dashboard/settings/agents/${agent.id}`}
                         style={{
-                          color: '#4f46e5',
+                          color: 'var(--accent-primary)',
                           textDecoration: 'none',
                           fontWeight: 500,
                         }}
@@ -863,20 +755,20 @@ export default function AgentsSettingsPage() {
                         {agent.hostname}
                       </Link>
                     </td>
-                    <td style={{ padding: '10px 16px', color: '#6b7280' }}>{agent.platform}</td>
+                    <td style={{ padding: '10px 16px', color: 'var(--text-muted)' }}>{agent.platform}</td>
                     <td style={{ padding: '10px 16px' }}>
                       <AgentStatusBadge status={agent.displayStatus ?? agent.status} />
                     </td>
-                    <td style={{ padding: '10px 16px', color: '#6b7280', fontSize: 13 }}>
+                    <td style={{ padding: '10px 16px', color: 'var(--text-muted)', fontSize: 13 }}>
                       {formatDate(agent.lastHeartbeatAt)}
                     </td>
-                    <td style={{ padding: '10px 16px', color: '#6b7280', fontSize: 13 }}>
+                    <td style={{ padding: '10px 16px', color: 'var(--text-muted)', fontSize: 13 }}>
                       {agent.agentVersion ?? '—'}
                     </td>
                     <td style={{ padding: '10px 16px' }}>
                       {isConfirmingDelete ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: 12, color: '#374151' }}>
+                          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                             Remove agent? This removes the agent record and its inventory history.
                           </span>
                           <button
@@ -902,7 +794,7 @@ export default function AgentsSettingsPage() {
                               padding: '3px 8px',
                               border: 'none',
                               background: 'none',
-                              color: '#6b7280',
+                              color: 'var(--text-muted)',
                               fontSize: 12,
                               cursor: 'pointer',
                               textDecoration: 'underline',
@@ -920,7 +812,7 @@ export default function AgentsSettingsPage() {
                             borderRadius: 6,
                             fontSize: 12,
                             cursor: 'pointer',
-                            backgroundColor: '#fff',
+                            backgroundColor: 'var(--bg-primary)',
                             color: '#dc2626',
                           }}
                         >

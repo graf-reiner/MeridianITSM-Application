@@ -151,7 +151,7 @@ function CINodeComponent({ data }: NodeProps) {
   let borderStyle = `2px solid ${borderColor}`;
   let boxShadow = 'none';
   let opacity = 1;
-  let backgroundColor = isCurrent ? '#f0f0ff' : '#fff';
+  let backgroundColor = isCurrent ? '#f0f0ff' : 'var(--bg-primary)';
 
   if (hasImpactOverlay) {
     if (isImpacted) {
@@ -185,10 +185,10 @@ function CINodeComponent({ data }: NodeProps) {
       <Handle type="target" position={Position.Top} style={{ opacity: 0 }} />
       <Icon path={icon} size={0.8} color={borderColor} />
       <div style={{ flex: 1, overflow: 'hidden' }}>
-        <div style={{ fontWeight: isCurrent ? 700 : 500, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ fontWeight: isCurrent ? 700 : 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {nodeData.label as string}
         </div>
-        <div style={{ color: '#9ca3af', fontSize: 11 }}>CI-{nodeData.ciNumber as string}</div>
+        <div style={{ color: 'var(--text-placeholder)', fontSize: 11 }}>CI-{nodeData.ciNumber as string}</div>
       </div>
       <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} />
     </div>
@@ -241,8 +241,8 @@ export default function RelationshipMap({ ci, impactData }: RelationshipMapProps
           source: rel.sourceId,
           target: rel.targetId,
           label: rel.type.replace(/_/g, ' ').toLowerCase(),
-          style: { stroke: '#9ca3af', strokeWidth: 1.5 },
-          labelStyle: { fontSize: 10, fill: '#9ca3af' },
+          style: { stroke: 'var(--text-placeholder)', strokeWidth: 1.5 },
+          labelStyle: { fontSize: 10, fill: 'var(--text-placeholder)' },
         });
       }
     }
@@ -275,7 +275,7 @@ export default function RelationshipMap({ ci, impactData }: RelationshipMapProps
       elementsSelectable
       proOptions={{ hideAttribution: true }}
     >
-      <Background color="#e5e7eb" gap={16} />
+      <Background color="var(--border-primary)" gap={16} />
       <Controls />
     </ReactFlow>
   );

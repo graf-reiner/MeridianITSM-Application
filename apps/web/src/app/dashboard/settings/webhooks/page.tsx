@@ -146,7 +146,7 @@ function WebhookFormModal({
     marginBottom: 4,
     fontSize: 13,
     fontWeight: 600,
-    color: '#374151',
+    color: 'var(--text-secondary)',
   };
 
   return (
@@ -164,7 +164,7 @@ function WebhookFormModal({
     >
       <div
         style={{
-          backgroundColor: '#fff',
+          backgroundColor: 'var(--bg-primary)',
           borderRadius: 12,
           width: '100%',
           maxWidth: 560,
@@ -175,13 +175,13 @@ function WebhookFormModal({
         <div
           style={{
             padding: '20px 24px',
-            borderBottom: '1px solid #e5e7eb',
+            borderBottom: '1px solid var(--border-primary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
           }}
         >
-          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: '#111827' }}>
+          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>
             {webhook ? 'Edit Webhook' : 'Add Webhook'}
           </h2>
           <button
@@ -193,7 +193,7 @@ function WebhookFormModal({
               border: 'none',
               background: 'none',
               cursor: 'pointer',
-              color: '#6b7280',
+              color: 'var(--text-muted)',
             }}
           >
             <Icon path={mdiClose} size={0.9} color="currentColor" />
@@ -234,7 +234,7 @@ function WebhookFormModal({
                 gap: 6,
                 maxHeight: 200,
                 overflowY: 'auto',
-                border: '1px solid #e5e7eb',
+                border: '1px solid var(--border-primary)',
                 borderRadius: 7,
                 padding: 10,
               }}
@@ -248,7 +248,7 @@ function WebhookFormModal({
                     gap: 6,
                     cursor: 'pointer',
                     fontSize: 13,
-                    color: '#374151',
+                    color: 'var(--text-secondary)',
                   }}
                 >
                   <input
@@ -297,11 +297,11 @@ function WebhookFormModal({
                       display: 'flex',
                       alignItems: 'center',
                       padding: '0 8px',
-                      border: '1px solid #e5e7eb',
+                      border: '1px solid var(--border-primary)',
                       borderRadius: 7,
-                      backgroundColor: '#fff',
+                      backgroundColor: 'var(--bg-primary)',
                       cursor: 'pointer',
-                      color: '#6b7280',
+                      color: 'var(--text-muted)',
                     }}
                   >
                     <Icon path={mdiClose} size={0.65} color="currentColor" />
@@ -318,8 +318,8 @@ function WebhookFormModal({
                   borderRadius: 6,
                   fontSize: 12,
                   cursor: 'pointer',
-                  backgroundColor: '#fff',
-                  color: '#374151',
+                  backgroundColor: 'var(--bg-primary)',
+                  color: 'var(--text-secondary)',
                 }}
               >
                 + Add Header
@@ -331,11 +331,11 @@ function WebhookFormModal({
             <div
               style={{
                 padding: '8px 12px',
-                backgroundColor: '#fef2f2',
+                backgroundColor: 'var(--badge-red-bg-subtle)',
                 border: '1px solid #fecaca',
                 borderRadius: 7,
                 marginBottom: 14,
-                color: '#dc2626',
+                color: 'var(--accent-danger)',
                 fontSize: 13,
               }}
             >
@@ -352,8 +352,8 @@ function WebhookFormModal({
                 borderRadius: 7,
                 fontSize: 14,
                 cursor: 'pointer',
-                backgroundColor: '#fff',
-                color: '#374151',
+                backgroundColor: 'var(--bg-primary)',
+                color: 'var(--text-secondary)',
               }}
             >
               Cancel
@@ -363,8 +363,8 @@ function WebhookFormModal({
               disabled={isSubmitting}
               style={{
                 padding: '8px 18px',
-                backgroundColor: isSubmitting ? '#a5b4fc' : '#4f46e5',
-                color: '#fff',
+                backgroundColor: isSubmitting ? '#a5b4fc' : 'var(--accent-primary)',
+                color: 'var(--bg-primary)',
                 border: 'none',
                 borderRadius: 7,
                 fontSize: 14,
@@ -470,12 +470,12 @@ export default function WebhooksSettingsPage() {
 
   const getStatusBadge = (webhook: Webhook) => {
     if (webhook.isAutoDisabled) {
-      return { label: 'Auto-disabled', bg: '#fee2e2', text: '#991b1b' };
+      return { label: 'Auto-disabled', bg: 'var(--badge-red-bg)', text: '#991b1b' };
     }
     if (webhook.isEnabled) {
-      return { label: 'Enabled', bg: '#d1fae5', text: '#065f46' };
+      return { label: 'Enabled', bg: 'var(--badge-green-bg)', text: '#065f46' };
     }
-    return { label: 'Disabled', bg: '#f3f4f6', text: '#6b7280' };
+    return { label: 'Disabled', bg: 'var(--bg-tertiary)', text: 'var(--text-muted)' };
   };
 
   return (
@@ -501,7 +501,7 @@ export default function WebhooksSettingsPage() {
                 borderRadius: 8,
                 fontSize: 14,
                 fontWeight: 500,
-                backgroundColor: toast.type === 'success' ? '#d1fae5' : '#fee2e2',
+                backgroundColor: toast.type === 'success' ? 'var(--badge-green-bg)' : 'var(--badge-red-bg)',
                 color: toast.type === 'success' ? '#065f46' : '#991b1b',
                 border: `1px solid ${toast.type === 'success' ? '#6ee7b7' : '#fca5a5'}`,
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
@@ -525,7 +525,7 @@ export default function WebhooksSettingsPage() {
       >
         <Link
           href="/dashboard/settings"
-          style={{ color: '#6b7280', textDecoration: 'none', display: 'flex', alignItems: 'center' }}
+          style={{ color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center' }}
         >
           <Icon path={mdiArrowLeft} size={0.9} color="currentColor" />
         </Link>
@@ -534,7 +534,7 @@ export default function WebhooksSettingsPage() {
             margin: 0,
             fontSize: 22,
             fontWeight: 600,
-            color: '#111827',
+            color: 'var(--text-primary)',
             display: 'flex',
             alignItems: 'center',
             gap: 8,
@@ -551,8 +551,8 @@ export default function WebhooksSettingsPage() {
               alignItems: 'center',
               gap: 6,
               padding: '8px 16px',
-              backgroundColor: '#4f46e5',
-              color: '#fff',
+              backgroundColor: 'var(--accent-primary)',
+              color: 'var(--bg-primary)',
               border: 'none',
               borderRadius: 8,
               fontSize: 14,
@@ -565,20 +565,20 @@ export default function WebhooksSettingsPage() {
           </button>
         </div>
       </div>
-      <p style={{ margin: '0 0 24px', color: '#6b7280', fontSize: 14 }}>
+      <p style={{ margin: '0 0 24px', color: 'var(--text-muted)', fontSize: 14 }}>
         Receive real-time event notifications when things happen in MeridianITSM.
       </p>
 
       {/* Table */}
       {isLoading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
           Loading webhooks...
         </div>
       ) : webhooks.length === 0 ? (
         <div
           style={{
-            backgroundColor: '#fff',
-            border: '1px solid #e5e7eb',
+            backgroundColor: 'var(--bg-primary)',
+            border: '1px solid var(--border-primary)',
             borderRadius: 10,
             padding: '48px 24px',
             textAlign: 'center',
@@ -587,14 +587,14 @@ export default function WebhooksSettingsPage() {
           <div style={{ marginBottom: 12 }}>
             <Icon path={mdiWebhook} size={2.5} color="#d1d5db" />
           </div>
-          <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: '#374151' }}>
+          <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: 'var(--text-secondary)' }}>
             No webhooks configured
           </h3>
           <p
             style={{
               margin: '0 0 20px',
               fontSize: 14,
-              color: '#6b7280',
+              color: 'var(--text-muted)',
               maxWidth: 400,
               marginLeft: 'auto',
               marginRight: 'auto',
@@ -610,8 +610,8 @@ export default function WebhooksSettingsPage() {
               alignItems: 'center',
               gap: 6,
               padding: '8px 16px',
-              backgroundColor: '#4f46e5',
-              color: '#fff',
+              backgroundColor: 'var(--accent-primary)',
+              color: 'var(--bg-primary)',
               border: 'none',
               borderRadius: 8,
               fontSize: 14,
@@ -634,8 +634,8 @@ export default function WebhooksSettingsPage() {
               <div
                 key={webhook.id}
                 style={{
-                  backgroundColor: '#fff',
-                  border: '1px solid #e5e7eb',
+                  backgroundColor: 'var(--bg-primary)',
+                  border: '1px solid var(--border-primary)',
                   borderRadius: 10,
                   padding: '16px',
                   overflow: 'hidden',
@@ -649,12 +649,12 @@ export default function WebhooksSettingsPage() {
                       alignItems: 'flex-start',
                       gap: 8,
                       padding: '8px 12px',
-                      backgroundColor: '#fef2f2',
+                      backgroundColor: 'var(--badge-red-bg-subtle)',
                       border: '1px solid #fecaca',
                       borderRadius: 7,
                       marginBottom: 12,
                       fontSize: 13,
-                      color: '#dc2626',
+                      color: 'var(--accent-danger)',
                     }}
                   >
                     <Icon path={mdiAlertCircle} size={0.8} color="currentColor" style={{ flexShrink: 0, marginTop: 1 }} />
@@ -689,7 +689,7 @@ export default function WebhooksSettingsPage() {
                         style={{
                           fontSize: 15,
                           fontWeight: 600,
-                          color: '#4f46e5',
+                          color: 'var(--accent-primary)',
                           textDecoration: 'none',
                         }}
                       >
@@ -712,7 +712,7 @@ export default function WebhooksSettingsPage() {
                       style={{
                         margin: '0 0 6px',
                         fontSize: 13,
-                        color: '#6b7280',
+                        color: 'var(--text-muted)',
                         fontFamily: 'monospace',
                         wordBreak: 'break-all',
                       }}
@@ -723,8 +723,8 @@ export default function WebhooksSettingsPage() {
                       <span
                         style={{
                           padding: '1px 7px',
-                          backgroundColor: '#e0e7ff',
-                          color: '#4f46e5',
+                          backgroundColor: 'var(--badge-indigo-bg)',
+                          color: 'var(--accent-primary)',
                           borderRadius: 9999,
                           fontSize: 12,
                           fontWeight: 500,
@@ -732,7 +732,7 @@ export default function WebhooksSettingsPage() {
                       >
                         {webhook.events.length} event{webhook.events.length !== 1 ? 's' : ''}
                       </span>
-                      <span style={{ fontSize: 12, color: '#9ca3af' }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-placeholder)' }}>
                         {webhook.deliveryCount} deliveries
                       </span>
                     </div>
@@ -742,7 +742,7 @@ export default function WebhooksSettingsPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     {isConfirmingDelete ? (
                       <>
-                        <span style={{ fontSize: 12, color: '#374151' }}>
+                        <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                           Delete webhook &quot;{webhook.name}&quot;? Delivery history will also be
                           removed.
                         </span>
@@ -751,8 +751,8 @@ export default function WebhooksSettingsPage() {
                           disabled={deleting}
                           style={{
                             padding: '4px 12px',
-                            backgroundColor: '#dc2626',
-                            color: '#fff',
+                            backgroundColor: 'var(--accent-danger)',
+                            color: 'var(--bg-primary)',
                             border: 'none',
                             borderRadius: 6,
                             fontSize: 12,
@@ -769,7 +769,7 @@ export default function WebhooksSettingsPage() {
                             padding: '4px 8px',
                             border: 'none',
                             background: 'none',
-                            color: '#6b7280',
+                            color: 'var(--text-muted)',
                             fontSize: 12,
                             cursor: 'pointer',
                             textDecoration: 'underline',
@@ -789,8 +789,8 @@ export default function WebhooksSettingsPage() {
                             borderRadius: 6,
                             fontSize: 13,
                             cursor: isTesting ? 'not-allowed' : 'pointer',
-                            backgroundColor: '#fff',
-                            color: '#374151',
+                            backgroundColor: 'var(--bg-primary)',
+                            color: 'var(--text-secondary)',
                             opacity: isTesting ? 0.6 : 1,
                           }}
                         >
@@ -804,8 +804,8 @@ export default function WebhooksSettingsPage() {
                             borderRadius: 6,
                             fontSize: 13,
                             cursor: 'pointer',
-                            backgroundColor: '#fff',
-                            color: webhook.isEnabled ? '#dc2626' : '#059669',
+                            backgroundColor: 'var(--bg-primary)',
+                            color: webhook.isEnabled ? 'var(--accent-danger)' : 'var(--accent-success)',
                           }}
                         >
                           {webhook.isEnabled ? 'Disable' : 'Enable'}
@@ -821,8 +821,8 @@ export default function WebhooksSettingsPage() {
                             borderRadius: 6,
                             fontSize: 13,
                             cursor: 'pointer',
-                            backgroundColor: '#fff',
-                            color: '#374151',
+                            backgroundColor: 'var(--bg-primary)',
+                            color: 'var(--text-secondary)',
                           }}
                         >
                           <Icon path={mdiPencil} size={0.65} color="currentColor" />
@@ -836,8 +836,8 @@ export default function WebhooksSettingsPage() {
                             borderRadius: 6,
                             fontSize: 13,
                             cursor: 'pointer',
-                            backgroundColor: '#fff',
-                            color: '#dc2626',
+                            backgroundColor: 'var(--bg-primary)',
+                            color: 'var(--accent-danger)',
                           }}
                         >
                           Delete

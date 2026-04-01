@@ -58,21 +58,21 @@ function getCITypeIcon(type: string): string {
 
 function getStatusStyle(status: string): { bg: string; text: string } {
   switch (status) {
-    case 'ACTIVE':       return { bg: '#d1fae5', text: '#065f46' };
-    case 'MAINTENANCE':  return { bg: '#fef3c7', text: '#92400e' };
-    case 'INACTIVE':     return { bg: '#f3f4f6', text: '#6b7280' };
-    case 'DECOMMISSIONED': return { bg: '#fee2e2', text: '#991b1b' };
-    default:             return { bg: '#f3f4f6', text: '#374151' };
+    case 'ACTIVE':       return { bg: 'var(--badge-green-bg)', text: '#065f46' };
+    case 'MAINTENANCE':  return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
+    case 'INACTIVE':     return { bg: 'var(--bg-tertiary)', text: '#6b7280' };
+    case 'DECOMMISSIONED': return { bg: 'var(--badge-red-bg)', text: '#991b1b' };
+    default:             return { bg: 'var(--bg-tertiary)', text: '#374151' };
   }
 }
 
 function getEnvStyle(env: string | null): { bg: string; text: string } {
   switch (env) {
-    case 'PRODUCTION':  return { bg: '#fee2e2', text: '#991b1b' };
-    case 'STAGING':     return { bg: '#fef3c7', text: '#92400e' };
-    case 'DEVELOPMENT': return { bg: '#dbeafe', text: '#1e40af' };
-    case 'TESTING':     return { bg: '#f3e8ff', text: '#6b21a8' };
-    default:            return { bg: '#f3f4f6', text: '#6b7280' };
+    case 'PRODUCTION':  return { bg: 'var(--badge-red-bg)', text: '#991b1b' };
+    case 'STAGING':     return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
+    case 'DEVELOPMENT': return { bg: 'var(--badge-blue-bg)', text: '#1e40af' };
+    case 'TESTING':     return { bg: 'var(--badge-purple-bg-subtle)', text: '#6b21a8' };
+    default:            return { bg: 'var(--bg-tertiary)', text: '#6b7280' };
   }
 }
 
@@ -118,8 +118,8 @@ export default function CMDBPage() {
 
       {/* ── Header ────────────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Icon path={mdiDatabase} size={1} color="#4f46e5" />
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon path={mdiDatabase} size={1} color="var(--accent-primary)" />
           CMDB — Configuration Items
         </h1>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -130,13 +130,13 @@ export default function CMDBPage() {
               alignItems: 'center',
               gap: 6,
               padding: '8px 16px',
-              backgroundColor: '#fff',
-              color: '#374151',
+              backgroundColor: 'var(--bg-primary)',
+              color: 'var(--text-secondary)',
               textDecoration: 'none',
               borderRadius: 8,
               fontSize: 14,
               fontWeight: 500,
-              border: '1px solid #d1d5db',
+              border: '1px solid var(--border-secondary)',
             }}
           >
             <Icon path={mdiUpload} size={0.8} color="currentColor" />
@@ -149,8 +149,8 @@ export default function CMDBPage() {
               alignItems: 'center',
               gap: 6,
               padding: '8px 16px',
-              backgroundColor: '#4f46e5',
-              color: '#fff',
+              backgroundColor: 'var(--accent-primary)',
+              color: 'var(--bg-primary)',
               textDecoration: 'none',
               borderRadius: 8,
               fontSize: 14,
@@ -167,7 +167,7 @@ export default function CMDBPage() {
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 200 }}>
           <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
-            <Icon path={mdiMagnify} size={0.8} color="#9ca3af" />
+            <Icon path={mdiMagnify} size={0.8} color="var(--text-placeholder)" />
           </div>
           <input
             type="search"
@@ -177,7 +177,7 @@ export default function CMDBPage() {
             style={{
               width: '100%',
               padding: '8px 10px 8px 34px',
-              border: '1px solid #d1d5db',
+              border: '1px solid var(--border-secondary)',
               borderRadius: 8,
               fontSize: 14,
               outline: 'none',
@@ -187,11 +187,11 @@ export default function CMDBPage() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Icon path={mdiFilter} size={0.75} color="#9ca3af" />
+          <Icon path={mdiFilter} size={0.75} color="var(--text-placeholder)" />
           <select
             value={type}
             onChange={(e) => { setType(e.target.value); setPage(1); }}
-            style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: '#fff' }}
+            style={{ padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}
           >
             <option value="">All Types</option>
             <option value="SERVER">Server</option>
@@ -209,7 +209,7 @@ export default function CMDBPage() {
         <select
           value={status}
           onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-          style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: '#fff' }}
+          style={{ padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}
         >
           <option value="">All Statuses</option>
           <option value="ACTIVE">Active</option>
@@ -221,7 +221,7 @@ export default function CMDBPage() {
         <select
           value={environment}
           onChange={(e) => { setEnvironment(e.target.value); setPage(1); }}
-          style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: '#fff' }}
+          style={{ padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}
         >
           <option value="">All Environments</option>
           <option value="PRODUCTION">Production</option>
@@ -233,27 +233,27 @@ export default function CMDBPage() {
 
       {/* ── Table ─────────────────────────────────────────────────────────────── */}
       {isLoading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>Loading CIs...</div>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading CIs...</div>
       ) : error ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#dc2626' }}>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--accent-danger)' }}>
           {error instanceof Error ? error.message : 'Failed to load CIs'}
         </div>
       ) : cis.length === 0 ? (
         <div style={{ padding: 60, textAlign: 'center' }}>
-          <Icon path={mdiDatabase} size={2.5} color="#d1d5db" />
-          <p style={{ margin: '16px 0 0', color: '#6b7280', fontSize: 14 }}>No configuration items found</p>
+          <Icon path={mdiDatabase} size={2.5} color="var(--border-secondary)" />
+          <p style={{ margin: '16px 0 0', color: 'var(--text-muted)', fontSize: 14 }}>No configuration items found</p>
         </div>
       ) : (
-        <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #e5e7eb', backgroundColor: '#f9fafb' }}>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>CI Number</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Name</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Type</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Status</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Environment</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Added</th>
+              <tr style={{ borderBottom: '2px solid var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>CI Number</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Name</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Type</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Status</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Environment</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Added</th>
               </tr>
             </thead>
             <tbody>
@@ -261,11 +261,11 @@ export default function CMDBPage() {
                 const statusStyle = getStatusStyle(ci.status);
                 const envStyle = getEnvStyle(ci.environment);
                 return (
-                  <tr key={ci.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <tr key={ci.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
                     <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
                       <Link
                         href={`/dashboard/cmdb/${ci.id}`}
-                        style={{ color: '#4f46e5', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}
+                        style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}
                       >
                         CI-{ci.ciNumber}
                       </Link>
@@ -273,14 +273,14 @@ export default function CMDBPage() {
                     <td style={{ padding: '10px 14px' }}>
                       <Link
                         href={`/dashboard/cmdb/${ci.id}`}
-                        style={{ color: '#111827', textDecoration: 'none', fontWeight: 500 }}
+                        style={{ color: 'var(--text-primary)', textDecoration: 'none', fontWeight: 500 }}
                       >
                         {ci.name}
                       </Link>
                     </td>
                     <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#374151', fontSize: 13 }}>
-                        <Icon path={getCITypeIcon(ci.type)} size={0.75} color="#6b7280" />
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)', fontSize: 13 }}>
+                        <Icon path={getCITypeIcon(ci.type)} size={0.75} color="var(--text-muted)" />
                         {ci.type.replace(/_/g, ' ')}
                       </span>
                     </td>
@@ -296,7 +296,7 @@ export default function CMDBPage() {
                         </span>
                       ) : '—'}
                     </td>
-                    <td style={{ padding: '10px 14px', color: '#9ca3af', fontSize: 12, whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '10px 14px', color: 'var(--text-placeholder)', fontSize: 12, whiteSpace: 'nowrap' }}>
                       {relativeTime(ci.createdAt)}
                     </td>
                   </tr>
@@ -313,17 +313,17 @@ export default function CMDBPage() {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
-            style={{ padding: '6px 14px', border: '1px solid #d1d5db', borderRadius: 6, backgroundColor: '#fff', cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.5 : 1, fontSize: 14 }}
+            style={{ padding: '6px 14px', border: '1px solid var(--border-secondary)', borderRadius: 6, backgroundColor: 'var(--bg-primary)', cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.5 : 1, fontSize: 14 }}
           >
             Previous
           </button>
-          <span style={{ fontSize: 14, color: '#6b7280' }}>
+          <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>
             Page {page} of {totalPages} ({total} CIs)
           </span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
-            style={{ padding: '6px 14px', border: '1px solid #d1d5db', borderRadius: 6, backgroundColor: '#fff', cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.5 : 1, fontSize: 14 }}
+            style={{ padding: '6px 14px', border: '1px solid var(--border-secondary)', borderRadius: 6, backgroundColor: 'var(--bg-primary)', cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.5 : 1, fontSize: 14 }}
           >
             Next
           </button>

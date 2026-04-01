@@ -261,15 +261,15 @@ export default function SecuritySettingsPage() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
         <Link
           href="/dashboard/settings"
-          style={{ color: '#6b7280', display: 'flex', alignItems: 'center' }}
+          style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}
         >
           <Icon path={mdiArrowLeft} size={0.9} />
         </Link>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827' }}>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>
           Security
         </h1>
       </div>
-      <p style={{ margin: '0 0 24px', color: '#6b7280', fontSize: 14 }}>
+      <p style={{ margin: '0 0 24px', color: 'var(--text-muted)', fontSize: 14 }}>
         Manage your two-factor authentication devices.
       </p>
 
@@ -281,12 +281,12 @@ export default function SecuritySettingsPage() {
             alignItems: 'center',
             gap: 8,
             padding: '10px 14px',
-            backgroundColor: '#fef2f2',
+            backgroundColor: 'var(--badge-red-bg-subtle)',
             border: '1px solid #fecaca',
             borderRadius: 8,
             marginBottom: 16,
             fontSize: 13,
-            color: '#dc2626',
+            color: 'var(--accent-danger)',
           }}
         >
           <Icon path={mdiAlertCircleOutline} size={0.7} />
@@ -298,7 +298,7 @@ export default function SecuritySettingsPage() {
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: '#dc2626',
+              color: 'var(--accent-danger)',
               fontSize: 16,
               lineHeight: 1,
             }}
@@ -319,17 +319,17 @@ export default function SecuritySettingsPage() {
       {enroll?.step === 'recovery-codes' && (
         <div
           style={{
-            backgroundColor: '#fff',
-            border: '1px solid #e5e7eb',
+            backgroundColor: 'var(--bg-primary)',
+            border: '1px solid var(--border-primary)',
             borderRadius: 12,
             padding: 24,
             marginBottom: 24,
           }}
         >
-          <h2 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: '#111827' }}>
+          <h2 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>
             Save Your Recovery Codes
           </h2>
-          <p style={{ margin: '0 0 16px', fontSize: 13, color: '#6b7280' }}>
+          <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-muted)' }}>
             Store these codes in a safe place. Each can be used once if you lose
             access to your MFA device.
           </p>
@@ -338,7 +338,7 @@ export default function SecuritySettingsPage() {
               display: 'grid',
               gridTemplateColumns: 'repeat(2, 1fr)',
               gap: 8,
-              backgroundColor: '#f9fafb',
+              backgroundColor: 'var(--bg-secondary)',
               borderRadius: 8,
               padding: 16,
               fontFamily: 'monospace',
@@ -347,7 +347,7 @@ export default function SecuritySettingsPage() {
             }}
           >
             {enroll.codes.map((c, i) => (
-              <div key={i} style={{ color: '#111827' }}>
+              <div key={i} style={{ color: 'var(--text-primary)' }}>
                 {c}
               </div>
             ))}
@@ -359,7 +359,7 @@ export default function SecuritySettingsPage() {
             style={{
               marginRight: 8,
               padding: '8px 16px',
-              backgroundColor: '#fff',
+              backgroundColor: 'var(--bg-primary)',
               border: '1px solid #d1d5db',
               borderRadius: 8,
               cursor: 'pointer',
@@ -372,8 +372,8 @@ export default function SecuritySettingsPage() {
             onClick={resetEnroll}
             style={{
               padding: '8px 16px',
-              backgroundColor: '#4f46e5',
-              color: '#fff',
+              backgroundColor: 'var(--accent-primary)',
+              color: 'var(--bg-primary)',
               border: 'none',
               borderRadius: 8,
               cursor: 'pointer',
@@ -390,8 +390,8 @@ export default function SecuritySettingsPage() {
       {enroll && enroll.step !== 'recovery-codes' && (
         <div
           style={{
-            backgroundColor: '#fff',
-            border: '1px solid #e5e7eb',
+            backgroundColor: 'var(--bg-primary)',
+            border: '1px solid var(--border-primary)',
             borderRadius: 12,
             padding: 24,
             marginBottom: 24,
@@ -400,7 +400,7 @@ export default function SecuritySettingsPage() {
           {/* Step: select type */}
           {enroll.step === 'select-type' && (
             <>
-              <h2 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: '#111827' }}>
+              <h2 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>
                 Add MFA Device
               </h2>
               <label
@@ -408,7 +408,7 @@ export default function SecuritySettingsPage() {
                   display: 'block',
                   fontSize: 13,
                   fontWeight: 500,
-                  color: '#374151',
+                  color: 'var(--text-secondary)',
                   marginBottom: 4,
                 }}
               >
@@ -469,16 +469,16 @@ export default function SecuritySettingsPage() {
                       alignItems: 'center',
                       gap: 8,
                       padding: 16,
-                      backgroundColor: '#f9fafb',
-                      border: '1px solid #e5e7eb',
+                      backgroundColor: 'var(--bg-secondary)',
+                      border: '1px solid var(--border-primary)',
                       borderRadius: 10,
                       cursor: 'pointer',
                       textAlign: 'center',
                     }}
                   >
                     <Icon path={icon} size={1.2} color="#4f46e5" />
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{label}</div>
-                    <div style={{ fontSize: 11, color: '#6b7280' }}>{desc}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{label}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{desc}</div>
                   </button>
                 ))}
               </div>
@@ -489,11 +489,11 @@ export default function SecuritySettingsPage() {
                   marginTop: 12,
                   padding: '8px 16px',
                   backgroundColor: 'transparent',
-                  border: '1px solid #e5e7eb',
+                  border: '1px solid var(--border-primary)',
                   borderRadius: 8,
                   cursor: 'pointer',
                   fontSize: 13,
-                  color: '#6b7280',
+                  color: 'var(--text-muted)',
                   width: '100%',
                 }}
               >
@@ -505,10 +505,10 @@ export default function SecuritySettingsPage() {
           {/* Step: TOTP QR code */}
           {enroll.step === 'totp-qr' && (
             <form onSubmit={verifyEnrollment}>
-              <h2 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: '#111827' }}>
+              <h2 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>
                 Set Up Authenticator
               </h2>
-              <p style={{ margin: '0 0 16px', fontSize: 13, color: '#6b7280' }}>
+              <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-muted)' }}>
                 Scan this QR code with your authenticator app, then enter the code.
               </p>
               <div style={{ textAlign: 'center', marginBottom: 16 }}>
@@ -519,7 +519,7 @@ export default function SecuritySettingsPage() {
                   style={{ width: 200, height: 200 }}
                 />
               </div>
-              <p style={{ fontSize: 11, color: '#9ca3af', textAlign: 'center', marginBottom: 16 }}>
+              <p style={{ fontSize: 11, color: 'var(--text-placeholder)', textAlign: 'center', marginBottom: 16 }}>
                 Manual entry key: <code style={{ wordBreak: 'break-all' }}>{enroll.secret}</code>
               </p>
               <input
@@ -550,7 +550,7 @@ export default function SecuritySettingsPage() {
                   style={{
                     flex: 1,
                     padding: '10px 16px',
-                    backgroundColor: '#fff',
+                    backgroundColor: 'var(--bg-primary)',
                     border: '1px solid #d1d5db',
                     borderRadius: 8,
                     cursor: 'pointer',
@@ -565,8 +565,8 @@ export default function SecuritySettingsPage() {
                   style={{
                     flex: 1,
                     padding: '10px 16px',
-                    backgroundColor: code.length === 6 ? '#4f46e5' : '#9ca3af',
-                    color: '#fff',
+                    backgroundColor: code.length === 6 ? 'var(--accent-primary)' : 'var(--text-placeholder)',
+                    color: 'var(--bg-primary)',
                     border: 'none',
                     borderRadius: 8,
                     cursor: code.length === 6 ? 'pointer' : 'not-allowed',
@@ -584,7 +584,7 @@ export default function SecuritySettingsPage() {
           {enroll.step === 'webauthn-register' && (
             <div style={{ textAlign: 'center', padding: 24 }}>
               <Icon path={mdiFingerprint} size={2} color="#4f46e5" />
-              <p style={{ fontSize: 14, color: '#374151', marginTop: 16 }}>
+              <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginTop: 16 }}>
                 Follow your browser&apos;s prompt to register your security key.
               </p>
               <button
@@ -592,7 +592,7 @@ export default function SecuritySettingsPage() {
                 style={{
                   marginTop: 16,
                   padding: '8px 16px',
-                  backgroundColor: '#fff',
+                  backgroundColor: 'var(--bg-primary)',
                   border: '1px solid #d1d5db',
                   borderRadius: 8,
                   cursor: 'pointer',
@@ -607,10 +607,10 @@ export default function SecuritySettingsPage() {
           {/* Step: Email/SMS code verification */}
           {enroll.step === 'code-verify' && (
             <form onSubmit={verifyEnrollment}>
-              <h2 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: '#111827' }}>
+              <h2 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>
                 Verify {enroll.type === 'email' ? 'Email' : 'Phone'}
               </h2>
-              <p style={{ margin: '0 0 16px', fontSize: 13, color: '#6b7280' }}>
+              <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-muted)' }}>
                 Enter the 6-digit code we sent to verify your {enroll.type === 'email' ? 'email address' : 'phone number'}.
               </p>
               <input
@@ -641,7 +641,7 @@ export default function SecuritySettingsPage() {
                   style={{
                     flex: 1,
                     padding: '10px 16px',
-                    backgroundColor: '#fff',
+                    backgroundColor: 'var(--bg-primary)',
                     border: '1px solid #d1d5db',
                     borderRadius: 8,
                     cursor: 'pointer',
@@ -656,8 +656,8 @@ export default function SecuritySettingsPage() {
                   style={{
                     flex: 1,
                     padding: '10px 16px',
-                    backgroundColor: code.length === 6 ? '#4f46e5' : '#9ca3af',
-                    color: '#fff',
+                    backgroundColor: code.length === 6 ? 'var(--accent-primary)' : 'var(--text-placeholder)',
+                    color: 'var(--bg-primary)',
                     border: 'none',
                     borderRadius: 8,
                     cursor: code.length === 6 ? 'pointer' : 'not-allowed',
@@ -678,8 +678,8 @@ export default function SecuritySettingsPage() {
         <>
           <div
             style={{
-              backgroundColor: '#fff',
-              border: '1px solid #e5e7eb',
+              backgroundColor: 'var(--bg-primary)',
+              border: '1px solid var(--border-primary)',
               borderRadius: 12,
               overflow: 'hidden',
             }}
@@ -693,7 +693,7 @@ export default function SecuritySettingsPage() {
                 borderBottom: '1px solid #f3f4f6',
               }}
             >
-              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#111827' }}>
+              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>
                 MFA Devices
               </h2>
               <button
@@ -703,8 +703,8 @@ export default function SecuritySettingsPage() {
                   alignItems: 'center',
                   gap: 6,
                   padding: '6px 14px',
-                  backgroundColor: '#4f46e5',
-                  color: '#fff',
+                  backgroundColor: 'var(--accent-primary)',
+                  color: 'var(--bg-primary)',
                   border: 'none',
                   borderRadius: 8,
                   cursor: 'pointer',
@@ -718,7 +718,7 @@ export default function SecuritySettingsPage() {
             </div>
 
             {devices.length === 0 ? (
-              <div style={{ padding: 32, textAlign: 'center', color: '#9ca3af', fontSize: 14 }}>
+              <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-placeholder)', fontSize: 14 }}>
                 <Icon
                   path={mdiShieldLock}
                   size={2}
@@ -760,7 +760,7 @@ export default function SecuritySettingsPage() {
                     />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>
                       {device.name}
                     </div>
                     <div
@@ -769,17 +769,17 @@ export default function SecuritySettingsPage() {
                         alignItems: 'center',
                         gap: 8,
                         fontSize: 12,
-                        color: '#6b7280',
+                        color: 'var(--text-muted)',
                       }}
                     >
                       <span>{deviceTypeLabel(device.type)}</span>
-                      <span style={{ color: '#d1d5db' }}>|</span>
+                      <span style={{ color: 'var(--border-secondary)' }}>|</span>
                       <span
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: 3,
-                          color: device.status === 'active' ? '#059669' : '#d97706',
+                          color: device.status === 'active' ? 'var(--accent-success)' : 'var(--accent-warning)',
                         }}
                       >
                         <Icon
@@ -794,7 +794,7 @@ export default function SecuritySettingsPage() {
                       </span>
                       {device.lastUsedAt && (
                         <>
-                          <span style={{ color: '#d1d5db' }}>|</span>
+                          <span style={{ color: 'var(--border-secondary)' }}>|</span>
                           <span>
                             Last used {new Date(device.lastUsedAt).toLocaleDateString()}
                           </span>
@@ -811,7 +811,7 @@ export default function SecuritySettingsPage() {
                       border: 'none',
                       cursor: 'pointer',
                       borderRadius: 6,
-                      color: '#9ca3af',
+                      color: 'var(--text-placeholder)',
                       flexShrink: 0,
                     }}
                   >
@@ -827,8 +827,8 @@ export default function SecuritySettingsPage() {
             <div
               style={{
                 marginTop: 16,
-                backgroundColor: '#fff',
-                border: '1px solid #e5e7eb',
+                backgroundColor: 'var(--bg-primary)',
+                border: '1px solid var(--border-primary)',
                 borderRadius: 12,
                 padding: '16px 20px',
               }}
@@ -839,14 +839,14 @@ export default function SecuritySettingsPage() {
                   alignItems: 'center',
                   gap: 8,
                   fontSize: 14,
-                  color: '#111827',
+                  color: 'var(--text-primary)',
                   fontWeight: 500,
                 }}
               >
                 <Icon path={mdiKeyVariant} size={0.8} color="#4f46e5" />
                 Recovery Codes
               </div>
-              <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>
+              <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>
                 {recoveryCodeCount > 0
                   ? `${recoveryCodeCount} recovery codes remaining.`
                   : 'No recovery codes remaining. Add a new MFA device to regenerate them.'}

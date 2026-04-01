@@ -164,7 +164,7 @@ function ChannelFormModal({
     marginBottom: 4,
     fontSize: 13,
     fontWeight: 600,
-    color: '#374151',
+    color: 'var(--text-secondary)',
   };
 
   return (
@@ -182,7 +182,7 @@ function ChannelFormModal({
     >
       <div
         style={{
-          backgroundColor: '#fff',
+          backgroundColor: 'var(--bg-primary)',
           borderRadius: 12,
           width: '100%',
           maxWidth: 520,
@@ -193,13 +193,13 @@ function ChannelFormModal({
         <div
           style={{
             padding: '20px 24px',
-            borderBottom: '1px solid #e5e7eb',
+            borderBottom: '1px solid var(--border-primary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
           }}
         >
-          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: '#111827' }}>
+          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>
             {channel ? 'Edit Channel' : 'Add Channel'}
           </h2>
           <button
@@ -211,7 +211,7 @@ function ChannelFormModal({
               border: 'none',
               background: 'none',
               cursor: 'pointer',
-              color: '#6b7280',
+              color: 'var(--text-muted)',
             }}
           >
             <Icon path={mdiClose} size={0.9} color="currentColor" />
@@ -235,16 +235,16 @@ function ChannelFormModal({
                       alignItems: 'center',
                       gap: 4,
                       padding: '10px 8px',
-                      border: `2px solid ${type === ct ? cfg.color : '#e5e7eb'}`,
+                      border: `2px solid ${type === ct ? cfg.color : 'var(--border-primary)'}`,
                       borderRadius: 8,
-                      backgroundColor: type === ct ? cfg.color + '0f' : '#fff',
+                      backgroundColor: type === ct ? cfg.color + '0f' : 'var(--bg-primary)',
                       cursor: 'pointer',
                       fontSize: 12,
                       fontWeight: type === ct ? 600 : 400,
-                      color: type === ct ? cfg.color : '#374151',
+                      color: type === ct ? cfg.color : 'var(--text-secondary)',
                     }}
                   >
-                    <Icon path={cfg.icon} size={1} color={type === ct ? cfg.color : '#9ca3af'} />
+                    <Icon path={cfg.icon} size={1} color={type === ct ? cfg.color : 'var(--text-placeholder)'} />
                     {cfg.label}
                   </button>
                 ),
@@ -294,11 +294,11 @@ function ChannelFormModal({
                 placeholder="https://hooks.slack.com/services/..."
                 style={{
                   ...inputStyle,
-                  borderColor: urlError ? '#fca5a5' : '#d1d5db',
+                  borderColor: urlError ? '#fca5a5' : 'var(--border-secondary)',
                 }}
               />
               {urlError && (
-                <p style={{ margin: '4px 0 0', fontSize: 12, color: '#dc2626' }}>{urlError}</p>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--accent-danger)' }}>{urlError}</p>
               )}
             </div>
           )}
@@ -316,11 +316,11 @@ function ChannelFormModal({
                 placeholder="https://outlook.office.com/webhook/..."
                 style={{
                   ...inputStyle,
-                  borderColor: urlError ? '#fca5a5' : '#d1d5db',
+                  borderColor: urlError ? '#fca5a5' : 'var(--border-secondary)',
                 }}
               />
               {urlError && (
-                <p style={{ margin: '4px 0 0', fontSize: 12, color: '#dc2626' }}>{urlError}</p>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--accent-danger)' }}>{urlError}</p>
               )}
             </div>
           )}
@@ -337,7 +337,7 @@ function ChannelFormModal({
                     gap: 8,
                     cursor: 'pointer',
                     fontSize: 14,
-                    color: '#374151',
+                    color: 'var(--text-secondary)',
                   }}
                 >
                   <input
@@ -356,11 +356,11 @@ function ChannelFormModal({
             <div
               style={{
                 padding: '8px 12px',
-                backgroundColor: '#fef2f2',
+                backgroundColor: 'var(--badge-red-bg-subtle)',
                 border: '1px solid #fecaca',
                 borderRadius: 7,
                 marginBottom: 14,
-                color: '#dc2626',
+                color: 'var(--accent-danger)',
                 fontSize: 13,
               }}
             >
@@ -377,8 +377,8 @@ function ChannelFormModal({
                 borderRadius: 7,
                 fontSize: 14,
                 cursor: 'pointer',
-                backgroundColor: '#fff',
-                color: '#374151',
+                backgroundColor: 'var(--bg-primary)',
+                color: 'var(--text-secondary)',
               }}
             >
               Cancel
@@ -388,8 +388,8 @@ function ChannelFormModal({
               disabled={isSubmitting}
               style={{
                 padding: '8px 18px',
-                backgroundColor: isSubmitting ? '#a5b4fc' : '#4f46e5',
-                color: '#fff',
+                backgroundColor: isSubmitting ? '#a5b4fc' : 'var(--accent-primary)',
+                color: 'var(--bg-primary)',
                 border: 'none',
                 borderRadius: 7,
                 fontSize: 14,
@@ -503,7 +503,7 @@ export default function AlertChannelsPage() {
                 borderRadius: 8,
                 fontSize: 14,
                 fontWeight: 500,
-                backgroundColor: toast.type === 'success' ? '#d1fae5' : '#fee2e2',
+                backgroundColor: toast.type === 'success' ? 'var(--badge-green-bg)' : 'var(--badge-red-bg)',
                 color: toast.type === 'success' ? '#065f46' : '#991b1b',
                 border: `1px solid ${toast.type === 'success' ? '#6ee7b7' : '#fca5a5'}`,
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
@@ -527,7 +527,7 @@ export default function AlertChannelsPage() {
       >
         <Link
           href="/dashboard/settings"
-          style={{ color: '#6b7280', textDecoration: 'none', display: 'flex', alignItems: 'center' }}
+          style={{ color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center' }}
         >
           <Icon path={mdiArrowLeft} size={0.9} color="currentColor" />
         </Link>
@@ -536,7 +536,7 @@ export default function AlertChannelsPage() {
             margin: 0,
             fontSize: 22,
             fontWeight: 600,
-            color: '#111827',
+            color: 'var(--text-primary)',
             display: 'flex',
             alignItems: 'center',
             gap: 8,
@@ -553,8 +553,8 @@ export default function AlertChannelsPage() {
               alignItems: 'center',
               gap: 6,
               padding: '8px 16px',
-              backgroundColor: '#4f46e5',
-              color: '#fff',
+              backgroundColor: 'var(--accent-primary)',
+              color: 'var(--bg-primary)',
               border: 'none',
               borderRadius: 8,
               fontSize: 14,
@@ -567,20 +567,20 @@ export default function AlertChannelsPage() {
           </button>
         </div>
       </div>
-      <p style={{ margin: '0 0 24px', color: '#6b7280', fontSize: 14 }}>
+      <p style={{ margin: '0 0 24px', color: 'var(--text-muted)', fontSize: 14 }}>
         Send alerts to Slack, Teams, or email when critical events occur.
       </p>
 
       {/* Channel Card Grid */}
       {isLoading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
           Loading alert channels...
         </div>
       ) : channels.length === 0 ? (
         <div
           style={{
-            backgroundColor: '#fff',
-            border: '1px solid #e5e7eb',
+            backgroundColor: 'var(--bg-primary)',
+            border: '1px solid var(--border-primary)',
             borderRadius: 10,
             padding: '48px 24px',
             textAlign: 'center',
@@ -589,14 +589,14 @@ export default function AlertChannelsPage() {
           <div style={{ marginBottom: 12 }}>
             <Icon path={mdiBellRing} size={2.5} color="#d1d5db" />
           </div>
-          <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: '#374151' }}>
+          <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: 'var(--text-secondary)' }}>
             No alert channels
           </h3>
           <p
             style={{
               margin: '0 0 20px',
               fontSize: 14,
-              color: '#6b7280',
+              color: 'var(--text-muted)',
               maxWidth: 400,
               marginLeft: 'auto',
               marginRight: 'auto',
@@ -612,8 +612,8 @@ export default function AlertChannelsPage() {
               alignItems: 'center',
               gap: 6,
               padding: '8px 16px',
-              backgroundColor: '#4f46e5',
-              color: '#fff',
+              backgroundColor: 'var(--accent-primary)',
+              color: 'var(--bg-primary)',
               border: 'none',
               borderRadius: 8,
               fontSize: 14,
@@ -642,8 +642,8 @@ export default function AlertChannelsPage() {
               <div
                 key={channel.id}
                 style={{
-                  backgroundColor: '#fff',
-                  border: '1px solid #e5e7eb',
+                  backgroundColor: 'var(--bg-primary)',
+                  border: '1px solid var(--border-primary)',
                   borderRadius: 12,
                   padding: 20,
                   display: 'flex',
@@ -681,7 +681,7 @@ export default function AlertChannelsPage() {
                           margin: 0,
                           fontSize: 15,
                           fontWeight: 600,
-                          color: '#111827',
+                          color: 'var(--text-primary)',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -695,14 +695,14 @@ export default function AlertChannelsPage() {
                           borderRadius: 9999,
                           fontSize: 11,
                           fontWeight: 500,
-                          backgroundColor: channel.isEnabled ? '#d1fae5' : '#f3f4f6',
-                          color: channel.isEnabled ? '#065f46' : '#6b7280',
+                          backgroundColor: channel.isEnabled ? 'var(--badge-green-bg)' : 'var(--bg-tertiary)',
+                          color: channel.isEnabled ? '#065f46' : 'var(--text-muted)',
                         }}
                       >
                         {channel.isEnabled ? 'Enabled' : 'Disabled'}
                       </span>
                     </div>
-                    <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6b7280' }}>
+                    <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
                       {typeCfg.label} · {channel.events.length} event
                       {channel.events.length !== 1 ? 's' : ''}
                     </p>
@@ -714,12 +714,12 @@ export default function AlertChannelsPage() {
                   <div
                     style={{
                       padding: '10px 12px',
-                      backgroundColor: '#fef2f2',
+                      backgroundColor: 'var(--badge-red-bg-subtle)',
                       border: '1px solid #fecaca',
                       borderRadius: 8,
                     }}
                   >
-                    <p style={{ margin: '0 0 8px', fontSize: 13, color: '#374151' }}>
+                    <p style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--text-secondary)' }}>
                       Remove {channel.name}? Alerts will no longer be sent to this channel.
                     </p>
                     <div style={{ display: 'flex', gap: 8 }}>
@@ -728,8 +728,8 @@ export default function AlertChannelsPage() {
                         disabled={deleting}
                         style={{
                           padding: '4px 12px',
-                          backgroundColor: '#dc2626',
-                          color: '#fff',
+                          backgroundColor: 'var(--accent-danger)',
+                          color: 'var(--bg-primary)',
                           border: 'none',
                           borderRadius: 6,
                           fontSize: 12,
@@ -745,7 +745,7 @@ export default function AlertChannelsPage() {
                           padding: '4px 8px',
                           border: 'none',
                           background: 'none',
-                          color: '#6b7280',
+                          color: 'var(--text-muted)',
                           fontSize: 12,
                           cursor: 'pointer',
                           textDecoration: 'underline',
@@ -768,8 +768,8 @@ export default function AlertChannelsPage() {
                         borderRadius: 6,
                         fontSize: 13,
                         cursor: isTesting ? 'not-allowed' : 'pointer',
-                        backgroundColor: '#fff',
-                        color: '#374151',
+                        backgroundColor: 'var(--bg-primary)',
+                        color: 'var(--text-secondary)',
                         opacity: isTesting ? 0.6 : 1,
                       }}
                     >
@@ -786,8 +786,8 @@ export default function AlertChannelsPage() {
                         borderRadius: 6,
                         fontSize: 13,
                         cursor: 'pointer',
-                        backgroundColor: '#fff',
-                        color: '#374151',
+                        backgroundColor: 'var(--bg-primary)',
+                        color: 'var(--text-secondary)',
                       }}
                     >
                       <Icon path={mdiPencil} size={0.65} color="currentColor" />
@@ -804,8 +804,8 @@ export default function AlertChannelsPage() {
                         borderRadius: 6,
                         fontSize: 13,
                         cursor: 'pointer',
-                        backgroundColor: '#fff',
-                        color: '#dc2626',
+                        backgroundColor: 'var(--bg-primary)',
+                        color: 'var(--accent-danger)',
                       }}
                     >
                       <Icon path={mdiDelete} size={0.65} color="currentColor" />

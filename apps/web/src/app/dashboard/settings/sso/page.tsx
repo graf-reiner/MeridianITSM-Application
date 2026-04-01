@@ -115,7 +115,7 @@ function SsoModal({
     marginBottom: 4,
     fontSize: 13,
     fontWeight: 600 as const,
-    color: '#374151',
+    color: 'var(--text-secondary)',
   };
 
   return (
@@ -133,7 +133,7 @@ function SsoModal({
     >
       <div
         style={{
-          backgroundColor: '#fff',
+          backgroundColor: 'var(--bg-primary)',
           borderRadius: 12,
           width: '100%',
           maxWidth: 520,
@@ -141,7 +141,7 @@ function SsoModal({
           maxHeight: '90vh',
         }}
       >
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-primary)' }}>
           <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>
             {isEdit ? 'Edit SSO Connection' : 'Create SSO Connection'}
           </h2>
@@ -172,7 +172,7 @@ function SsoModal({
               value={protocol}
               onChange={(e) => setProtocol(e.target.value)}
               disabled={isEdit}
-              style={{ ...inputStyle, backgroundColor: isEdit ? '#f3f4f6' : '#fff' }}
+              style={{ ...inputStyle, backgroundColor: isEdit ? 'var(--bg-tertiary)' : 'var(--bg-primary)' }}
             >
               <option value="oidc">OIDC</option>
               <option value="saml">SAML</option>
@@ -267,7 +267,7 @@ function SsoModal({
                   placeholder="https://idp.example.com/metadata"
                   style={inputStyle}
                 />
-                <p style={{ margin: '4px 0 0', fontSize: 12, color: '#9ca3af' }}>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-placeholder)' }}>
                   Provide a Metadata URL or paste raw XML below
                 </p>
               </div>
@@ -348,11 +348,11 @@ function SsoModal({
             <div
               style={{
                 padding: '8px 12px',
-                backgroundColor: '#fef2f2',
+                backgroundColor: 'var(--badge-red-bg-subtle)',
                 border: '1px solid #fecaca',
                 borderRadius: 7,
                 marginBottom: 14,
-                color: '#dc2626',
+                color: 'var(--accent-danger)',
                 fontSize: 13,
               }}
             >
@@ -369,8 +369,8 @@ function SsoModal({
                 borderRadius: 7,
                 fontSize: 14,
                 cursor: 'pointer',
-                backgroundColor: '#fff',
-                color: '#374151',
+                backgroundColor: 'var(--bg-primary)',
+                color: 'var(--text-secondary)',
               }}
             >
               Cancel
@@ -380,8 +380,8 @@ function SsoModal({
               disabled={isSaving}
               style={{
                 padding: '8px 18px',
-                backgroundColor: isSaving ? '#a5b4fc' : '#4f46e5',
-                color: '#fff',
+                backgroundColor: isSaving ? '#a5b4fc' : 'var(--accent-primary)',
+                color: 'var(--bg-primary)',
                 border: 'none',
                 borderRadius: 7,
                 fontSize: 14,
@@ -451,7 +451,7 @@ export default function SsoSettingsPage() {
         <Link
           href="/dashboard/settings"
           style={{
-            color: '#6b7280',
+            color: 'var(--text-muted)',
             textDecoration: 'none',
             display: 'flex',
             alignItems: 'center',
@@ -464,7 +464,7 @@ export default function SsoSettingsPage() {
             margin: 0,
             fontSize: 22,
             fontWeight: 700,
-            color: '#111827',
+            color: 'var(--text-primary)',
             display: 'flex',
             alignItems: 'center',
             gap: 8,
@@ -484,8 +484,8 @@ export default function SsoSettingsPage() {
               alignItems: 'center',
               gap: 6,
               padding: '8px 16px',
-              backgroundColor: '#4f46e5',
-              color: '#fff',
+              backgroundColor: 'var(--accent-primary)',
+              color: 'var(--bg-primary)',
               border: 'none',
               borderRadius: 8,
               fontSize: 14,
@@ -500,14 +500,14 @@ export default function SsoSettingsPage() {
       </div>
 
       {isLoading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
           Loading SSO connections...
         </div>
       ) : (
         <div
           style={{
-            backgroundColor: '#fff',
-            border: '1px solid #e5e7eb',
+            backgroundColor: 'var(--bg-primary)',
+            border: '1px solid var(--border-primary)',
             borderRadius: 10,
             overflow: 'hidden',
           }}
@@ -516,8 +516,8 @@ export default function SsoSettingsPage() {
             <thead>
               <tr
                 style={{
-                  borderBottom: '2px solid #e5e7eb',
-                  backgroundColor: '#f9fafb',
+                  borderBottom: '2px solid var(--border-primary)',
+                  backgroundColor: 'var(--bg-secondary)',
                 }}
               >
                 <th
@@ -525,7 +525,7 @@ export default function SsoSettingsPage() {
                     padding: '10px 14px',
                     textAlign: 'left',
                     fontWeight: 600,
-                    color: '#374151',
+                    color: 'var(--text-secondary)',
                   }}
                 >
                   Name
@@ -535,7 +535,7 @@ export default function SsoSettingsPage() {
                     padding: '10px 14px',
                     textAlign: 'left',
                     fontWeight: 600,
-                    color: '#374151',
+                    color: 'var(--text-secondary)',
                   }}
                 >
                   Protocol
@@ -545,7 +545,7 @@ export default function SsoSettingsPage() {
                     padding: '10px 14px',
                     textAlign: 'left',
                     fontWeight: 600,
-                    color: '#374151',
+                    color: 'var(--text-secondary)',
                   }}
                 >
                   Status
@@ -555,7 +555,7 @@ export default function SsoSettingsPage() {
                     padding: '10px 14px',
                     textAlign: 'left',
                     fontWeight: 600,
-                    color: '#374151',
+                    color: 'var(--text-secondary)',
                   }}
                 >
                   Created
@@ -565,7 +565,7 @@ export default function SsoSettingsPage() {
                     padding: '10px 14px',
                     textAlign: 'left',
                     fontWeight: 600,
-                    color: '#374151',
+                    color: 'var(--text-secondary)',
                   }}
                 >
                   Actions
@@ -584,7 +584,7 @@ export default function SsoSettingsPage() {
                         fontSize: 12,
                         fontWeight: 500,
                         backgroundColor:
-                          conn.protocol === 'oidc' ? '#dbeafe' : '#ede9fe',
+                          conn.protocol === 'oidc' ? 'var(--badge-blue-bg)' : 'var(--badge-purple-bg)',
                         color: conn.protocol === 'oidc' ? '#1e40af' : '#5b21b6',
                         textTransform: 'uppercase',
                       }}
@@ -600,14 +600,14 @@ export default function SsoSettingsPage() {
                         fontSize: 12,
                         fontWeight: 500,
                         backgroundColor:
-                          conn.status === 'active' ? '#d1fae5' : '#f3f4f6',
-                        color: conn.status === 'active' ? '#065f46' : '#6b7280',
+                          conn.status === 'active' ? 'var(--badge-green-bg)' : 'var(--bg-tertiary)',
+                        color: conn.status === 'active' ? '#065f46' : 'var(--text-muted)',
                       }}
                     >
                       {conn.status === 'active' ? 'Active' : 'Disabled'}
                     </span>
                   </td>
-                  <td style={{ padding: '10px 14px', color: '#6b7280' }}>
+                  <td style={{ padding: '10px 14px', color: 'var(--text-muted)' }}>
                     {new Date(conn.createdAt).toLocaleDateString()}
                   </td>
                   <td style={{ padding: '10px 14px' }}>
@@ -626,8 +626,8 @@ export default function SsoSettingsPage() {
                           borderRadius: 6,
                           fontSize: 12,
                           cursor: 'pointer',
-                          backgroundColor: '#fff',
-                          color: '#374151',
+                          backgroundColor: 'var(--bg-primary)',
+                          color: 'var(--text-secondary)',
                         }}
                       >
                         <Icon path={mdiPencil} size={0.65} color="currentColor" />
@@ -644,8 +644,8 @@ export default function SsoSettingsPage() {
                           borderRadius: 6,
                           fontSize: 12,
                           cursor: 'pointer',
-                          backgroundColor: '#fff',
-                          color: conn.status === 'active' ? '#d97706' : '#059669',
+                          backgroundColor: 'var(--bg-primary)',
+                          color: conn.status === 'active' ? 'var(--accent-warning)' : 'var(--accent-success)',
                         }}
                       >
                         <Icon
@@ -670,8 +670,8 @@ export default function SsoSettingsPage() {
                           borderRadius: 6,
                           fontSize: 12,
                           cursor: 'pointer',
-                          backgroundColor: '#fff',
-                          color: '#dc2626',
+                          backgroundColor: 'var(--bg-primary)',
+                          color: 'var(--accent-danger)',
                         }}
                       >
                         <Icon path={mdiTrashCan} size={0.65} color="currentColor" />
@@ -685,7 +685,7 @@ export default function SsoSettingsPage() {
                 <tr>
                   <td
                     colSpan={5}
-                    style={{ padding: 32, textAlign: 'center', color: '#9ca3af' }}
+                    style={{ padding: 32, textAlign: 'center', color: 'var(--text-placeholder)' }}
                   >
                     No SSO connections configured
                   </td>

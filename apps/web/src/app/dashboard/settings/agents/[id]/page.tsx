@@ -36,13 +36,13 @@ interface AgentDetail {
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, { bg: string; text: string }> = {
-    ACTIVE: { bg: '#d1fae5', text: '#065f46' },
-    ONLINE: { bg: '#d1fae5', text: '#065f46' },
-    STALE: { bg: '#fef3c7', text: '#92400e' },
-    OFFLINE: { bg: '#f3f4f6', text: '#6b7280' },
-    DEREGISTERED: { bg: '#fee2e2', text: '#991b1b' },
+    ACTIVE:       { bg: 'var(--badge-green-bg)',  text: '#065f46' },
+    ONLINE:       { bg: 'var(--badge-green-bg)',  text: '#065f46' },
+    STALE:        { bg: 'var(--badge-yellow-bg)', text: '#92400e' },
+    OFFLINE:      { bg: 'var(--bg-tertiary)',      text: '#6b7280' },
+    DEREGISTERED: { bg: 'var(--badge-red-bg)',    text: '#991b1b' },
   };
-  const s = styles[status] ?? { bg: '#f3f4f6', text: '#6b7280' };
+  const s = styles[status] ?? { bg: 'var(--bg-tertiary)', text: '#6b7280' };
   return (
     <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 12, fontWeight: 600, backgroundColor: s.bg, color: s.text }}>
       {status}
@@ -63,27 +63,27 @@ export default function AgentDetailPage() {
     },
   });
 
-  if (isLoading) return <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>Loading agent...</div>;
-  if (error || !agent) return <div style={{ padding: 40, textAlign: 'center', color: '#dc2626' }}>Agent not found</div>;
+  if (isLoading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading agent...</div>;
+  if (error || !agent) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--accent-danger)' }}>Agent not found</div>;
 
   const snapshot = agent.inventorySnapshots[0];
   const disks = Array.isArray(snapshot?.disks) ? snapshot.disks as Array<Record<string, unknown>> : [];
   const nics = Array.isArray(snapshot?.networkInterfaces) ? snapshot.networkInterfaces as Array<Record<string, unknown>> : [];
   const software = Array.isArray(snapshot?.installedSoftware) ? snapshot.installedSoftware as Array<Record<string, unknown>> : [];
 
-  const cardStyle = { backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20, marginBottom: 16 };
-  const labelStyle = { fontSize: 12, color: '#9ca3af', marginBottom: 2 };
-  const valueStyle = { fontSize: 14, color: '#111827', fontWeight: 500 as const };
+  const cardStyle = { backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: 20, marginBottom: 16 };
+  const labelStyle = { fontSize: 12, color: 'var(--text-placeholder)', marginBottom: 2 };
+  const valueStyle = { fontSize: 14, color: 'var(--text-primary)', fontWeight: 500 as const };
 
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
-        <Link href="/dashboard/settings/agents" style={{ color: '#6b7280', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+        <Link href="/dashboard/settings/agents" style={{ color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
           <Icon path={mdiArrowLeft} size={0.9} color="currentColor" />
         </Link>
         <Icon path={mdiDesktopClassic} size={1.1} color="#0891b2" />
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827' }}>{agent.hostname}</h1>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>{agent.hostname}</h1>
         <StatusBadge status={agent.displayStatus} />
       </div>
 
@@ -108,12 +108,12 @@ export default function AgentDetailPage() {
       </div>
 
       {!snapshot ? (
-        <div style={{ ...cardStyle, textAlign: 'center', color: '#9ca3af' }}>No inventory snapshots yet.</div>
+        <div style={{ ...cardStyle, textAlign: 'center', color: 'var(--text-placeholder)' }}>No inventory snapshots yet.</div>
       ) : (
         <>
           {/* OS & Hardware */}
           <div style={cardStyle}>
-            <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
               <Icon path={mdiMemory} size={0.85} color="#4f46e5" /> System Info
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
@@ -129,23 +129,23 @@ export default function AgentDetailPage() {
           {/* Disks */}
           {disks.length > 0 && (
             <div style={cardStyle}>
-              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Icon path={mdiHarddisk} size={0.85} color="#059669" /> Disks ({disks.length})
               </h3>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
-                  <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
-                    <th style={{ padding: '6px 10px', textAlign: 'left', color: '#6b7280' }}>Drive</th>
-                    <th style={{ padding: '6px 10px', textAlign: 'left', color: '#6b7280' }}>Label</th>
-                    <th style={{ padding: '6px 10px', textAlign: 'right', color: '#6b7280' }}>Size (GB)</th>
-                    <th style={{ padding: '6px 10px', textAlign: 'right', color: '#6b7280' }}>Free (GB)</th>
+                  <tr style={{ borderBottom: '2px solid var(--border-primary)' }}>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Drive</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Label</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'right', color: 'var(--text-muted)' }}>Size (GB)</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'right', color: 'var(--text-muted)' }}>Free (GB)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {disks.map((d, i) => (
-                    <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <tr key={i} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
                       <td style={{ padding: '6px 10px' }}>{String(d.name ?? d.drive ?? d.mountPoint ?? '')}</td>
-                      <td style={{ padding: '6px 10px', color: '#6b7280' }}>{String(d.label ?? d.fileSystem ?? '')}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(d.label ?? d.fileSystem ?? '')}</td>
                       <td style={{ padding: '6px 10px', textAlign: 'right' }}>{d.sizeGb != null ? Number(d.sizeGb).toFixed(1) : '\u2014'}</td>
                       <td style={{ padding: '6px 10px', textAlign: 'right' }}>{d.freeGb != null ? Number(d.freeGb).toFixed(1) : '\u2014'}</td>
                     </tr>
@@ -158,23 +158,23 @@ export default function AgentDetailPage() {
           {/* Network */}
           {nics.length > 0 && (
             <div style={cardStyle}>
-              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Icon path={mdiLan} size={0.85} color="#0891b2" /> Network Interfaces ({nics.length})
               </h3>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
-                  <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
-                    <th style={{ padding: '6px 10px', textAlign: 'left', color: '#6b7280' }}>Name</th>
-                    <th style={{ padding: '6px 10px', textAlign: 'left', color: '#6b7280' }}>IP Address</th>
-                    <th style={{ padding: '6px 10px', textAlign: 'left', color: '#6b7280' }}>MAC</th>
+                  <tr style={{ borderBottom: '2px solid var(--border-primary)' }}>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Name</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>IP Address</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>MAC</th>
                   </tr>
                 </thead>
                 <tbody>
                   {nics.map((n, i) => (
-                    <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <tr key={i} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
                       <td style={{ padding: '6px 10px' }}>{String(n.name ?? '')}</td>
                       <td style={{ padding: '6px 10px', fontFamily: 'monospace', fontSize: 12 }}>{String(n.ipAddress ?? n.ip ?? '')}</td>
-                      <td style={{ padding: '6px 10px', fontFamily: 'monospace', fontSize: 12, color: '#6b7280' }}>{String(n.macAddress ?? n.mac ?? '')}</td>
+                      <td style={{ padding: '6px 10px', fontFamily: 'monospace', fontSize: 12, color: 'var(--text-muted)' }}>{String(n.macAddress ?? n.mac ?? '')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -185,24 +185,24 @@ export default function AgentDetailPage() {
           {/* Installed Software */}
           {software.length > 0 && (
             <div style={cardStyle}>
-              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Icon path={mdiPackageVariantClosed} size={0.85} color="#7c3aed" /> Installed Software ({software.length})
               </h3>
               <div style={{ maxHeight: 400, overflow: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                  <thead style={{ position: 'sticky', top: 0, backgroundColor: '#fff' }}>
-                    <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
-                      <th style={{ padding: '6px 10px', textAlign: 'left', color: '#6b7280' }}>Name</th>
-                      <th style={{ padding: '6px 10px', textAlign: 'left', color: '#6b7280' }}>Version</th>
-                      <th style={{ padding: '6px 10px', textAlign: 'left', color: '#6b7280' }}>Publisher</th>
+                  <thead style={{ position: 'sticky', top: 0, backgroundColor: 'var(--bg-primary)' }}>
+                    <tr style={{ borderBottom: '2px solid var(--border-primary)' }}>
+                      <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Name</th>
+                      <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Version</th>
+                      <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Publisher</th>
                     </tr>
                   </thead>
                   <tbody>
                     {software.map((s, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                      <tr key={i} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
                         <td style={{ padding: '6px 10px' }}>{String(s.name ?? '')}</td>
-                        <td style={{ padding: '6px 10px', color: '#6b7280' }}>{String(s.version ?? '')}</td>
-                        <td style={{ padding: '6px 10px', color: '#9ca3af' }}>{String(s.publisher ?? s.vendor ?? '')}</td>
+                        <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(s.version ?? '')}</td>
+                        <td style={{ padding: '6px 10px', color: 'var(--text-placeholder)' }}>{String(s.publisher ?? s.vendor ?? '')}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -214,21 +214,21 @@ export default function AgentDetailPage() {
           {/* Snapshot History */}
           {agent.inventorySnapshots.length > 1 && (
             <div style={cardStyle}>
-              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: '#111827' }}>Snapshot History</h3>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>Snapshot History</h3>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
-                  <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
-                    <th style={{ padding: '6px 10px', textAlign: 'left', color: '#6b7280' }}>Collected</th>
-                    <th style={{ padding: '6px 10px', textAlign: 'left', color: '#6b7280' }}>OS</th>
-                    <th style={{ padding: '6px 10px', textAlign: 'left', color: '#6b7280' }}>Hostname</th>
+                  <tr style={{ borderBottom: '2px solid var(--border-primary)' }}>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Collected</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>OS</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Hostname</th>
                   </tr>
                 </thead>
                 <tbody>
                   {agent.inventorySnapshots.map((s) => (
-                    <tr key={s.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <tr key={s.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
                       <td style={{ padding: '6px 10px' }}>{new Date(s.collectedAt).toLocaleString()}</td>
-                      <td style={{ padding: '6px 10px', color: '#6b7280' }}>{s.operatingSystem ?? '\u2014'}</td>
-                      <td style={{ padding: '6px 10px', color: '#6b7280' }}>{s.hostname}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{s.operatingSystem ?? '\u2014'}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{s.hostname}</td>
                     </tr>
                   ))}
                 </tbody>

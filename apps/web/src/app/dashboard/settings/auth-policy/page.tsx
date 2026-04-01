@@ -147,11 +147,11 @@ export default function AuthPolicySettingsPage() {
     marginBottom: 4,
     fontSize: 13,
     fontWeight: 600 as const,
-    color: '#374151',
+    color: 'var(--text-secondary)',
   };
   const sectionStyle = {
-    backgroundColor: '#fff',
-    border: '1px solid #e5e7eb',
+    backgroundColor: 'var(--bg-primary)',
+    border: '1px solid var(--border-primary)',
     borderRadius: 10,
     padding: 24,
     marginBottom: 20,
@@ -160,13 +160,13 @@ export default function AuthPolicySettingsPage() {
     margin: '0 0 16px',
     fontSize: 16,
     fontWeight: 700 as const,
-    color: '#111827',
+    color: 'var(--text-primary)',
   };
 
   if (isLoading) {
     return (
       <div style={{ maxWidth: 700, margin: '0 auto' }}>
-        <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
           Loading auth settings...
         </div>
       </div>
@@ -187,7 +187,7 @@ export default function AuthPolicySettingsPage() {
         <Link
           href="/dashboard/settings"
           style={{
-            color: '#6b7280',
+            color: 'var(--text-muted)',
             textDecoration: 'none',
             display: 'flex',
             alignItems: 'center',
@@ -200,7 +200,7 @@ export default function AuthPolicySettingsPage() {
             margin: 0,
             fontSize: 22,
             fontWeight: 700,
-            color: '#111827',
+            color: 'var(--text-primary)',
             display: 'flex',
             alignItems: 'center',
             gap: 8,
@@ -291,7 +291,7 @@ export default function AuthPolicySettingsPage() {
               style={{
                 margin: '4px 0 0 26px',
                 fontSize: 12,
-                color: '#d97706',
+                color: 'var(--accent-warning)',
               }}
             >
               When enabled, local auth is hidden for non-admin users
@@ -497,7 +497,7 @@ export default function AuthPolicySettingsPage() {
                 onChange={(e) => setPasswordMaxAgeDays(Number(e.target.value))}
                 style={{ ...inputStyle, maxWidth: 160 }}
               />
-              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#9ca3af' }}>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-placeholder)' }}>
                 Set to 0 to disable password expiration
               </p>
             </div>
@@ -509,7 +509,7 @@ export default function AuthPolicySettingsPage() {
           <div
             style={{
               padding: '8px 12px',
-              backgroundColor: '#f0fdf4',
+              backgroundColor: 'var(--badge-green-bg-subtle)',
               border: '1px solid #bbf7d0',
               borderRadius: 7,
               marginBottom: 14,
@@ -524,11 +524,11 @@ export default function AuthPolicySettingsPage() {
           <div
             style={{
               padding: '8px 12px',
-              backgroundColor: '#fef2f2',
+              backgroundColor: 'var(--badge-red-bg-subtle)',
               border: '1px solid #fecaca',
               borderRadius: 7,
               marginBottom: 14,
-              color: '#dc2626',
+              color: 'var(--accent-danger)',
               fontSize: 13,
             }}
           >
@@ -544,8 +544,8 @@ export default function AuthPolicySettingsPage() {
             disabled={mutation.isPending}
             style={{
               padding: '10px 24px',
-              backgroundColor: mutation.isPending ? '#a5b4fc' : '#4f46e5',
-              color: '#fff',
+              backgroundColor: mutation.isPending ? '#a5b4fc' : 'var(--accent-primary)',
+              color: 'var(--bg-primary)',
               border: 'none',
               borderRadius: 8,
               fontSize: 14,

@@ -71,13 +71,13 @@ function GroupModal({ group, onClose, onSaved }: { group: Group | null; onClose:
     }
   };
 
-  const inputStyle = { width: '100%', padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 14, outline: 'none', boxSizing: 'border-box' as const };
-  const labelStyle = { display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 600 as const, color: '#374151' };
+  const inputStyle = { width: '100%', padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 14, outline: 'none', boxSizing: 'border-box' as const };
+  const labelStyle = { display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 600 as const, color: 'var(--text-secondary)' };
 
   return (
     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div style={{ backgroundColor: '#fff', borderRadius: 12, width: '100%', maxWidth: 480, overflow: 'auto', maxHeight: '90vh' }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb' }}>
+      <div style={{ backgroundColor: 'var(--bg-primary)', borderRadius: 12, width: '100%', maxWidth: 480, overflow: 'auto', maxHeight: '90vh' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-primary)' }}>
           <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>{group ? 'Edit Group' : 'Create Group'}</h2>
         </div>
         <form onSubmit={(e) => void handleSubmit(e)} style={{ padding: 24 }}>
@@ -88,16 +88,16 @@ function GroupModal({ group, onClose, onSaved }: { group: Group | null; onClose:
           <div style={{ marginBottom: 16 }}>
             <label htmlFor="groupEmail" style={labelStyle}>Group Email</label>
             <input id="groupEmail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} placeholder="network-team@company.com" />
-            <p style={{ margin: '4px 0 0', fontSize: 12, color: '#9ca3af' }}>Optional shared mailbox for the group</p>
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-placeholder)' }}>Optional shared mailbox for the group</p>
           </div>
           <div style={{ marginBottom: 20 }}>
             <label htmlFor="groupDesc" style={labelStyle}>Description</label>
             <RichTextField value={description} onChange={setDescription} placeholder="What this group is responsible for..." minHeight={80} compact />
           </div>
-          {error && <div style={{ padding: '8px 12px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, marginBottom: 14, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+          {error && <div style={{ padding: '8px 12px', backgroundColor: 'var(--badge-red-bg-subtle)', border: '1px solid #fecaca', borderRadius: 7, marginBottom: 14, color: '#dc2626', fontSize: 13 }}>{error}</div>}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <button type="button" onClick={onClose} style={{ padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 14, cursor: 'pointer', backgroundColor: '#fff', color: '#374151' }}>Cancel</button>
-            <button type="submit" disabled={isSaving} style={{ padding: '8px 18px', backgroundColor: isSaving ? '#a5b4fc' : '#4f46e5', color: '#fff', border: 'none', borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: isSaving ? 'not-allowed' : 'pointer' }}>
+            <button type="button" onClick={onClose} style={{ padding: '8px 16px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>Cancel</button>
+            <button type="submit" disabled={isSaving} style={{ padding: '8px 18px', backgroundColor: isSaving ? '#a5b4fc' : 'var(--accent-primary)', color: '#fff', border: 'none', borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: isSaving ? 'not-allowed' : 'pointer' }}>
               {isSaving ? 'Saving...' : group ? 'Save Changes' : 'Create Group'}
             </button>
           </div>
@@ -160,14 +160,14 @@ function MembersPanel({ group, onClose }: { group: Group; onClose: () => void })
     void qc.invalidateQueries({ queryKey: ['settings-groups'] });
   };
 
-  const inputStyle = { width: '100%', padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 14, outline: 'none', boxSizing: 'border-box' as const };
+  const inputStyle = { width: '100%', padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 14, outline: 'none', boxSizing: 'border-box' as const };
 
   return (
     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div style={{ backgroundColor: '#fff', borderRadius: 12, width: '100%', maxWidth: 560, overflow: 'auto', maxHeight: '90vh' }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ backgroundColor: 'var(--bg-primary)', borderRadius: 12, width: '100%', maxWidth: 560, overflow: 'auto', maxHeight: '90vh' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-primary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>Members &mdash; {group.name}</h2>
-          <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: 20, cursor: 'pointer', color: '#6b7280', padding: '0 4px' }}>&times;</button>
+          <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--text-muted)', padding: '0 4px' }}>&times;</button>
         </div>
         <div style={{ padding: 24 }}>
           {/* Add member */}
@@ -181,7 +181,7 @@ function MembersPanel({ group, onClose }: { group: Group; onClose: () => void })
             <button
               onClick={() => void handleAdd()}
               disabled={!addUserId || isAdding}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 14px', backgroundColor: !addUserId || isAdding ? '#d1d5db' : '#4f46e5', color: '#fff', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: !addUserId || isAdding ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 14px', backgroundColor: !addUserId || isAdding ? 'var(--border-secondary)' : 'var(--accent-primary)', color: '#fff', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: !addUserId || isAdding ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
             >
               <Icon path={mdiAccountPlus} size={0.7} color="currentColor" />
               Add
@@ -190,20 +190,20 @@ function MembersPanel({ group, onClose }: { group: Group; onClose: () => void })
 
           {/* Member list */}
           {isLoading ? (
-            <div style={{ padding: 20, textAlign: 'center', color: '#6b7280' }}>Loading members...</div>
+            <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>Loading members...</div>
           ) : (members ?? []).length === 0 ? (
-            <div style={{ padding: 20, textAlign: 'center', color: '#9ca3af', fontSize: 14 }}>No members yet. Add users above.</div>
+            <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-placeholder)', fontSize: 14 }}>No members yet. Add users above.</div>
           ) : (
-            <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ border: '1px solid var(--border-primary)', borderRadius: 8, overflow: 'hidden' }}>
               {(members ?? []).map((m, i) => (
-                <div key={m.id} style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', borderBottom: i < (members!.length - 1) ? '1px solid #f3f4f6' : 'none' }}>
+                <div key={m.id} style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', borderBottom: i < (members!.length - 1) ? '1px solid var(--bg-tertiary)' : 'none' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>
                       {m.user.displayName || `${m.user.firstName} ${m.user.lastName}`}
                     </div>
-                    <div style={{ fontSize: 12, color: '#6b7280' }}>{m.user.email}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{m.user.email}</div>
                   </div>
-                  <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 500, backgroundColor: m.user.status === 'ACTIVE' ? '#d1fae5' : '#f3f4f6', color: m.user.status === 'ACTIVE' ? '#065f46' : '#6b7280', marginRight: 8 }}>
+                  <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 500, backgroundColor: m.user.status === 'ACTIVE' ? 'var(--badge-green-bg)' : 'var(--bg-tertiary)', color: m.user.status === 'ACTIVE' ? '#065f46' : '#6b7280', marginRight: 8 }}>
                     {m.user.status}
                   </span>
                   <button
@@ -252,17 +252,17 @@ export default function GroupsSettingsPage() {
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
-        <Link href="/dashboard/settings" style={{ color: '#6b7280', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+        <Link href="/dashboard/settings" style={{ color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
           <Icon path={mdiArrowLeft} size={0.9} color="currentColor" />
         </Link>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
           <Icon path={mdiAccountMultiple} size={1} color="#059669" />
           Groups
         </h1>
         <div style={{ marginLeft: 'auto' }}>
           <button
             onClick={() => { setEditGroup(null); setShowModal(true); }}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', backgroundColor: '#4f46e5', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', backgroundColor: 'var(--accent-primary)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
           >
             <Icon path={mdiPlus} size={0.8} color="currentColor" />
             New Group
@@ -271,29 +271,29 @@ export default function GroupsSettingsPage() {
       </div>
 
       {isLoading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>Loading groups...</div>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading groups...</div>
       ) : (
-        <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #e5e7eb', backgroundColor: '#f9fafb' }}>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Name</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Email</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Description</th>
-                <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: '#374151' }}>Members</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Actions</th>
+              <tr style={{ borderBottom: '2px solid var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Name</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Email</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Description</th>
+                <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: 'var(--text-secondary)' }}>Members</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {groups.map((group) => (
-                <tr key={group.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                <tr key={group.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
                   <td style={{ padding: '10px 14px', fontWeight: 500 }}>{group.name}</td>
-                  <td style={{ padding: '10px 14px', color: '#6b7280' }}>{group.email || '\u2014'}</td>
-                  <td style={{ padding: '10px 14px', color: '#6b7280', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{group.description || '\u2014'}</td>
+                  <td style={{ padding: '10px 14px', color: 'var(--text-muted)' }}>{group.email || '\u2014'}</td>
+                  <td style={{ padding: '10px 14px', color: 'var(--text-muted)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{group.description || '\u2014'}</td>
                   <td style={{ padding: '10px 14px', textAlign: 'center' }}>
                     <button
                       onClick={() => setMembersGroup(group)}
-                      style={{ padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, backgroundColor: '#ede9fe', color: '#5b21b6', border: 'none', cursor: 'pointer' }}
+                      style={{ padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, backgroundColor: 'var(--badge-purple-bg)', color: '#5b21b6', border: 'none', cursor: 'pointer' }}
                     >
                       {group._count?.userGroupMembers ?? 0}
                     </button>
@@ -302,21 +302,21 @@ export default function GroupsSettingsPage() {
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button
                         onClick={() => setMembersGroup(group)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: '#fff', color: '#374151' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}
                       >
                         <Icon path={mdiAccountPlus} size={0.65} color="currentColor" />
                         Members
                       </button>
                       <button
                         onClick={() => { setEditGroup(group); setShowModal(true); }}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: '#fff', color: '#374151' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}
                       >
                         <Icon path={mdiPencil} size={0.65} color="currentColor" />
                         Edit
                       </button>
                       <button
                         onClick={() => void handleDelete(group)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', border: '1px solid #fecaca', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: '#fff', color: '#dc2626' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', border: '1px solid #fecaca', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: '#dc2626' }}
                       >
                         <Icon path={mdiTrashCan} size={0.65} color="currentColor" />
                         Delete
@@ -326,7 +326,7 @@ export default function GroupsSettingsPage() {
                 </tr>
               ))}
               {groups.length === 0 && (
-                <tr><td colSpan={5} style={{ padding: 32, textAlign: 'center', color: '#9ca3af' }}>No groups found. Create one to organize your team.</td></tr>
+                <tr><td colSpan={5} style={{ padding: 32, textAlign: 'center', color: 'var(--text-placeholder)' }}>No groups found. Create one to organize your team.</td></tr>
               )}
             </tbody>
           </table>

@@ -27,11 +27,11 @@ interface CABMeetingListResponse {
 
 function getStatusStyle(status: string): { bg: string; text: string } {
   switch (status) {
-    case 'SCHEDULED':   return { bg: '#dbeafe', text: '#1e40af' };
-    case 'IN_PROGRESS': return { bg: '#fef3c7', text: '#92400e' };
-    case 'COMPLETED':   return { bg: '#d1fae5', text: '#065f46' };
-    case 'CANCELLED':   return { bg: '#f3f4f6', text: '#9ca3af' };
-    default:            return { bg: '#f3f4f6', text: '#374151' };
+    case 'SCHEDULED':   return { bg: 'var(--badge-blue-bg)', text: '#1e40af' };
+    case 'IN_PROGRESS': return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
+    case 'COMPLETED':   return { bg: 'var(--badge-green-bg)', text: '#065f46' };
+    case 'CANCELLED':   return { bg: 'var(--bg-tertiary)', text: '#9ca3af' };
+    default:            return { bg: 'var(--bg-tertiary)', text: '#374151' };
   }
 }
 
@@ -80,12 +80,12 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
     }
   };
 
-  const inputStyle = { width: '100%', padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' as const };
-  const labelStyle = { display: 'block' as const, fontSize: 13, fontWeight: 500 as const, color: '#374151', marginBottom: 4 };
+  const inputStyle = { width: '100%', padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' as const };
+  const labelStyle = { display: 'block' as const, fontSize: 13, fontWeight: 500 as const, color: 'var(--text-secondary)', marginBottom: 4 };
 
   return (
     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div style={{ backgroundColor: '#fff', borderRadius: 12, padding: 24, width: '100%', maxWidth: 520, maxHeight: '90vh', overflow: 'auto' }}>
+      <div style={{ backgroundColor: 'var(--bg-primary)', borderRadius: 12, padding: 24, width: '100%', maxWidth: 520, maxHeight: '90vh', overflow: 'auto' }}>
         <h2 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700 }}>New CAB Meeting</h2>
         <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>Title *</label>
@@ -113,12 +113,12 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
           <label style={labelStyle}>Notes</label>
           <RichTextField value={form.notes} onChange={(val) => setForm((f) => ({ ...f, notes: val }))} placeholder="" minHeight={80} compact />
         </div>
-        {error && <p style={{ color: '#dc2626', fontSize: 13, margin: '0 0 12px' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--accent-danger)', fontSize: 13, margin: '0 0 12px' }}>{error}</p>}
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => void handleSave()} disabled={saving} style={{ flex: 1, padding: '9px 0', backgroundColor: '#4f46e5', color: '#fff', border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
+          <button onClick={() => void handleSave()} disabled={saving} style={{ flex: 1, padding: '9px 0', backgroundColor: 'var(--accent-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
             {saving ? 'Creating...' : 'Create Meeting'}
           </button>
-          <button onClick={onClose} style={{ padding: '9px 16px', backgroundColor: '#fff', color: '#374151', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 14, cursor: 'pointer' }}>
+          <button onClick={onClose} style={{ padding: '9px 16px', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 14, cursor: 'pointer' }}>
             Cancel
           </button>
         </div>
@@ -154,8 +154,8 @@ export default function CABPage() {
 
       {/* ── Header ────────────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Icon path={mdiAccountGroup} size={1} color="#4f46e5" />
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon path={mdiAccountGroup} size={1} color="var(--accent-primary)" />
           CAB Meetings
         </h1>
         <button
@@ -165,8 +165,8 @@ export default function CABPage() {
             alignItems: 'center',
             gap: 6,
             padding: '8px 16px',
-            backgroundColor: '#4f46e5',
-            color: '#fff',
+            backgroundColor: 'var(--accent-primary)',
+            color: 'var(--bg-primary)',
             border: 'none',
             borderRadius: 8,
             fontSize: 14,
@@ -181,55 +181,55 @@ export default function CABPage() {
 
       {/* ── Table ─────────────────────────────────────────────────────────────── */}
       {isLoading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>Loading meetings...</div>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading meetings...</div>
       ) : error ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#dc2626' }}>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--accent-danger)' }}>
           {error instanceof Error ? error.message : 'Failed to load meetings'}
         </div>
       ) : meetings.length === 0 ? (
         <div style={{ padding: 60, textAlign: 'center' }}>
-          <Icon path={mdiAccountGroup} size={2.5} color="#d1d5db" />
-          <p style={{ margin: '16px 0 0', color: '#6b7280', fontSize: 14 }}>No CAB meetings scheduled</p>
+          <Icon path={mdiAccountGroup} size={2.5} color="var(--border-secondary)" />
+          <p style={{ margin: '16px 0 0', color: 'var(--text-muted)', fontSize: 14 }}>No CAB meetings scheduled</p>
           <button
             onClick={() => setShowCreate(true)}
-            style={{ marginTop: 12, padding: '8px 16px', backgroundColor: '#4f46e5', color: '#fff', border: 'none', borderRadius: 6, fontSize: 14, cursor: 'pointer' }}
+            style={{ marginTop: 12, padding: '8px 16px', backgroundColor: 'var(--accent-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: 6, fontSize: 14, cursor: 'pointer' }}
           >
             Schedule First Meeting
           </button>
         </div>
       ) : (
-        <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #e5e7eb', backgroundColor: '#f9fafb' }}>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Title</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Scheduled For</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Status</th>
-                <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Attendees</th>
-                <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Changes</th>
+              <tr style={{ borderBottom: '2px solid var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Title</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Scheduled For</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Status</th>
+                <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Attendees</th>
+                <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Changes</th>
               </tr>
             </thead>
             <tbody>
               {meetings.map((meeting) => {
                 const statusStyle = getStatusStyle(meeting.status);
                 return (
-                  <tr key={meeting.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <tr key={meeting.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
                     <td style={{ padding: '10px 14px' }}>
                       <Link
                         href={`/dashboard/cab/${meeting.id}`}
-                        style={{ color: '#111827', textDecoration: 'none', fontWeight: 500 }}
+                        style={{ color: 'var(--text-primary)', textDecoration: 'none', fontWeight: 500 }}
                       >
                         {meeting.title}
                       </Link>
                       {meeting.location && (
-                        <span style={{ display: 'block', fontSize: 12, color: '#9ca3af', marginTop: 2 }}>
+                        <span style={{ display: 'block', fontSize: 12, color: 'var(--text-placeholder)', marginTop: 2 }}>
                           {meeting.location}
                         </span>
                       )}
                     </td>
-                    <td style={{ padding: '10px 14px', color: '#374151', fontSize: 13, whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 13, whiteSpace: 'nowrap' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <Icon path={mdiCalendar} size={0.7} color="#9ca3af" />
+                        <Icon path={mdiCalendar} size={0.7} color="var(--text-placeholder)" />
                         {formatDateTime(meeting.scheduledFor)}
                       </span>
                     </td>
@@ -238,10 +238,10 @@ export default function CABPage() {
                         {meeting.status}
                       </span>
                     </td>
-                    <td style={{ padding: '10px 14px', textAlign: 'center', color: '#6b7280', fontSize: 13 }}>
+                    <td style={{ padding: '10px 14px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
                       {meeting._count?.attendees ?? '—'}
                     </td>
-                    <td style={{ padding: '10px 14px', textAlign: 'center', color: '#6b7280', fontSize: 13 }}>
+                    <td style={{ padding: '10px 14px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
                       {meeting._count?.changes ?? '—'}
                     </td>
                   </tr>
