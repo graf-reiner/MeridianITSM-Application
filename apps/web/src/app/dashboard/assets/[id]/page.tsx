@@ -45,12 +45,12 @@ const ASSET_STATUSES = ['IN_STOCK', 'DEPLOYED', 'IN_REPAIR', 'RETIRED', 'DISPOSE
 
 function getStatusStyle(status: string): { bg: string; text: string } {
   switch (status) {
-    case 'DEPLOYED':  return { bg: '#d1fae5', text: '#065f46' };
-    case 'IN_STOCK':  return { bg: '#dbeafe', text: '#1e40af' };
-    case 'IN_REPAIR': return { bg: '#fef3c7', text: '#92400e' };
-    case 'RETIRED':   return { bg: '#f3f4f6', text: '#6b7280' };
-    case 'DISPOSED':  return { bg: '#f3f4f6', text: '#9ca3af' };
-    default:          return { bg: '#f3f4f6', text: '#374151' };
+    case 'DEPLOYED':  return { bg: 'var(--badge-green-bg)', text: '#065f46' };
+    case 'IN_STOCK':  return { bg: 'var(--badge-blue-bg)', text: '#1e40af' };
+    case 'IN_REPAIR': return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
+    case 'RETIRED':   return { bg: 'var(--bg-tertiary)', text: '#6b7280' };
+    case 'DISPOSED':  return { bg: 'var(--bg-tertiary)', text: '#9ca3af' };
+    default:          return { bg: 'var(--bg-tertiary)', text: '#374151' };
   }
 }
 
@@ -65,12 +65,12 @@ function formatCurrency(value: number | null): string {
 }
 
 function getWarrantyStyle(warrantyExpiry: string | null): { color: string; label: string } {
-  if (!warrantyExpiry) return { color: '#9ca3af', label: '—' };
+  if (!warrantyExpiry) return { color: 'var(--text-placeholder)', label: '—' };
   const now = Date.now();
   const expiry = new Date(warrantyExpiry).getTime();
   const daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
-  if (daysLeft < 0) return { color: '#dc2626', label: `Expired ${formatDate(warrantyExpiry)}` };
-  if (daysLeft < 30) return { color: '#d97706', label: `Expires ${formatDate(warrantyExpiry)} (${daysLeft}d)` };
+  if (daysLeft < 0) return { color: 'var(--accent-danger)', label: `Expired ${formatDate(warrantyExpiry)}` };
+  if (daysLeft < 30) return { color: 'var(--accent-warning)', label: `Expires ${formatDate(warrantyExpiry)} (${daysLeft}d)` };
   return { color: '#16a34a', label: formatDate(warrantyExpiry) };
 }
 
@@ -85,7 +85,7 @@ function StatusLifecycle({ current }: { current: string }) {
         return (
           <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             {idx > 0 && (
-              <div style={{ width: 16, height: 2, backgroundColor: '#d1d5db', flexShrink: 0 }} />
+              <div style={{ width: 16, height: 2, backgroundColor: 'var(--border-secondary)', flexShrink: 0 }} />
             )}
             <span
               style={{
@@ -93,8 +93,8 @@ function StatusLifecycle({ current }: { current: string }) {
                 borderRadius: 12,
                 fontSize: 12,
                 fontWeight: isActive ? 700 : 400,
-                backgroundColor: isActive ? style.bg : '#f9fafb',
-                color: isActive ? style.text : '#9ca3af',
+                backgroundColor: isActive ? style.bg : 'var(--bg-secondary)',
+                color: isActive ? style.text : 'var(--text-placeholder)',
                 border: isActive ? `2px solid ${style.text}` : '2px solid transparent',
                 whiteSpace: 'nowrap',
               }}
@@ -153,18 +153,18 @@ function EditAssetForm({ asset, onCancel, onSaved }: {
 
   const field = (label: string, key: keyof typeof form, type = 'text') => (
     <div style={{ marginBottom: 12 }}>
-      <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#374151', marginBottom: 4 }}>{label}</label>
+      <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 4 }}>{label}</label>
       <input
         type={type}
         value={String(form[key])}
         onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-        style={{ width: '100%', padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }}
+        style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }}
       />
     </div>
   );
 
   return (
-    <div style={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: 20, marginTop: 16 }}>
+    <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: 8, padding: 20, marginTop: 16 }}>
       <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600 }}>Edit Asset</h3>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0 16px' }}>
         {field('Manufacturer', 'manufacturer')}
@@ -175,18 +175,18 @@ function EditAssetForm({ asset, onCancel, onSaved }: {
         {field('CPU Model', 'cpuModel')}
         {field('RAM (GB)', 'ramGb', 'number')}
         <div style={{ marginBottom: 12 }}>
-          <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#374151', marginBottom: 4 }}>Status</label>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 4 }}>Status</label>
           <select
             value={form.status}
             onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
-            style={{ width: '100%', padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 14, backgroundColor: '#fff' }}
+            style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 14, backgroundColor: 'var(--bg-primary)' }}
           >
             {ASSET_STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
           </select>
         </div>
       </div>
       <div style={{ marginBottom: 12 }}>
-        <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#374151', marginBottom: 4 }}>Notes</label>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 4 }}>Notes</label>
         <RichTextField
           value={form.notes}
           onChange={(val) => setForm((f) => ({ ...f, notes: val }))}
@@ -195,19 +195,19 @@ function EditAssetForm({ asset, onCancel, onSaved }: {
           compact
         />
       </div>
-      {error && <p style={{ color: '#dc2626', fontSize: 13, margin: '0 0 12px' }}>{error}</p>}
+      {error && <p style={{ color: 'var(--accent-danger)', fontSize: 13, margin: '0 0 12px' }}>{error}</p>}
       <div style={{ display: 'flex', gap: 8 }}>
         <button
           onClick={() => void handleSave()}
           disabled={saving}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', backgroundColor: '#4f46e5', color: '#fff', border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', backgroundColor: 'var(--accent-primary)', color: '#fff', border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}
         >
           <Icon path={mdiCheck} size={0.8} color="currentColor" />
           {saving ? 'Saving...' : 'Save'}
         </button>
         <button
           onClick={onCancel}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', backgroundColor: '#fff', color: '#374151', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 14, fontWeight: 500, cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 14, fontWeight: 500, cursor: 'pointer' }}
         >
           <Icon path={mdiClose} size={0.8} color="currentColor" />
           Cancel
@@ -242,10 +242,10 @@ export default function AssetDetailPage() {
   };
 
   if (isLoading) {
-    return <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>Loading asset...</div>;
+    return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading asset...</div>;
   }
   if (error || !asset) {
-    return <div style={{ padding: 40, textAlign: 'center', color: '#dc2626' }}>
+    return <div style={{ padding: 40, textAlign: 'center', color: 'var(--accent-danger)' }}>
       {error instanceof Error ? error.message : 'Asset not found'}
     </div>;
   }
@@ -260,15 +260,15 @@ export default function AssetDetailPage() {
       <div style={{ marginBottom: 20 }}>
         <button
           onClick={() => router.back()}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 14, padding: 0, marginBottom: 12 }}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14, padding: 0, marginBottom: 12 }}
         >
           <Icon path={mdiArrowLeft} size={0.8} color="currentColor" />
           Back to Assets
         </button>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Icon path={mdiDesktopClassic} size={1} color="#4f46e5" />
+            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Icon path={mdiDesktopClassic} size={1} color="var(--accent-primary)" />
               {asset.assetTag}
             </h1>
             <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -280,7 +280,7 @@ export default function AssetDetailPage() {
           {!editing && (
             <button
               onClick={() => setEditing(true)}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', backgroundColor: '#fff', color: '#374151', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer' }}
             >
               <Icon path={mdiPencil} size={0.8} color="currentColor" />
               Edit
@@ -290,7 +290,7 @@ export default function AssetDetailPage() {
 
         {/* Status Lifecycle */}
         <div style={{ marginTop: 12 }}>
-          <p style={{ margin: '0 0 4px', fontSize: 12, color: '#9ca3af', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lifecycle</p>
+          <p style={{ margin: '0 0 4px', fontSize: 12, color: 'var(--text-placeholder)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lifecycle</p>
           <StatusLifecycle current={asset.status} />
         </div>
       </div>
@@ -308,8 +308,8 @@ export default function AssetDetailPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16, marginTop: editing ? 16 : 0 }}>
 
         {/* Asset Details Card */}
-        <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 20 }}>
-          <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: '#111827' }}>Hardware Details</h2>
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
+          <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Hardware Details</h2>
           {[
             ['Manufacturer', asset.manufacturer],
             ['Model', asset.model],
@@ -319,42 +319,42 @@ export default function AssetDetailPage() {
             ['CPU', asset.cpuModel],
             ['RAM', asset.ramGb ? `${asset.ramGb} GB` : null],
           ].map(([label, value]) => (
-            <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f3f4f6', fontSize: 14 }}>
-              <span style={{ color: '#6b7280', flexShrink: 0, marginRight: 8 }}>{label}</span>
-              <span style={{ color: '#111827', textAlign: 'right', wordBreak: 'break-word' }}>{(value as string | null) ?? '—'}</span>
+            <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14 }}>
+              <span style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: 8 }}>{label}</span>
+              <span style={{ color: 'var(--text-primary)', textAlign: 'right', wordBreak: 'break-word' }}>{(value as string | null) ?? '—'}</span>
             </div>
           ))}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Assignment Card */}
-          <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 20 }}>
-            <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: '#111827' }}>Assignment</h2>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f3f4f6', fontSize: 14 }}>
-              <span style={{ color: '#6b7280' }}>Assigned To</span>
-              <span style={{ color: '#111827' }}>
+          <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
+            <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Assignment</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14 }}>
+              <span style={{ color: 'var(--text-muted)' }}>Assigned To</span>
+              <span style={{ color: 'var(--text-primary)' }}>
                 {asset.assignedTo ? `${asset.assignedTo.firstName} ${asset.assignedTo.lastName}` : '—'}
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 14 }}>
-              <span style={{ color: '#6b7280' }}>Site</span>
-              <span style={{ color: '#111827' }}>{asset.site?.name ?? '—'}</span>
+              <span style={{ color: 'var(--text-muted)' }}>Site</span>
+              <span style={{ color: 'var(--text-primary)' }}>{asset.site?.name ?? '—'}</span>
             </div>
           </div>
 
           {/* Purchase Card */}
-          <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 20 }}>
-            <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: '#111827' }}>Purchase & Warranty</h2>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f3f4f6', fontSize: 14 }}>
-              <span style={{ color: '#6b7280' }}>Purchase Date</span>
-              <span style={{ color: '#111827' }}>{formatDate(asset.purchaseDate)}</span>
+          <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
+            <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Purchase & Warranty</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14 }}>
+              <span style={{ color: 'var(--text-muted)' }}>Purchase Date</span>
+              <span style={{ color: 'var(--text-primary)' }}>{formatDate(asset.purchaseDate)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f3f4f6', fontSize: 14 }}>
-              <span style={{ color: '#6b7280' }}>Purchase Cost</span>
-              <span style={{ color: '#111827' }}>{formatCurrency(asset.purchaseCost)}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14 }}>
+              <span style={{ color: 'var(--text-muted)' }}>Purchase Cost</span>
+              <span style={{ color: 'var(--text-primary)' }}>{formatCurrency(asset.purchaseCost)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 14 }}>
-              <span style={{ color: '#6b7280' }}>Warranty</span>
+              <span style={{ color: 'var(--text-muted)' }}>Warranty</span>
               <span style={{ color: warrantyInfo.color, fontWeight: 500 }}>{warrantyInfo.label}</span>
             </div>
           </div>
@@ -363,9 +363,9 @@ export default function AssetDetailPage() {
 
       {/* ── Notes ─────────────────────────────────────────────────────────────── */}
       {asset.notes && (
-        <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 20, marginTop: 16 }}>
-          <h2 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600, color: '#111827' }}>Notes</h2>
-          <p style={{ margin: 0, fontSize: 14, color: '#374151', whiteSpace: 'pre-wrap' }}>{asset.notes}</p>
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20, marginTop: 16 }}>
+          <h2 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Notes</h2>
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>{asset.notes}</p>
         </div>
       )}
     </div>

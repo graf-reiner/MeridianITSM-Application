@@ -60,12 +60,12 @@ export default function NewArticlePage() {
   const inputStyle = {
     width: '100%',
     padding: '9px 12px',
-    border: '1px solid #d1d5db',
+    border: '1px solid var(--border-secondary)',
     borderRadius: 8,
     fontSize: 14,
     outline: 'none',
     boxSizing: 'border-box' as const,
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--bg-primary)',
   };
 
   const labelStyle = {
@@ -73,20 +73,20 @@ export default function NewArticlePage() {
     marginBottom: 5,
     fontSize: 13,
     fontWeight: 600 as const,
-    color: '#374151',
+    color: 'var(--text-secondary)',
   };
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <Link href="/dashboard/knowledge" style={{ display: 'flex', alignItems: 'center', color: '#6b7280', textDecoration: 'none' }}>
+        <Link href="/dashboard/knowledge" style={{ display: 'flex', alignItems: 'center', color: 'var(--text-muted)', textDecoration: 'none' }}>
           <Icon path={mdiArrowLeft} size={0.9} color="currentColor" />
         </Link>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827' }}>New Article</h1>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>New Article</h1>
       </div>
 
       <form onSubmit={(e) => void handleSubmit(e)}>
-        <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 28, marginBottom: 16 }}>
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: 28, marginBottom: 16 }}>
 
           {/* Title */}
           <div style={{ marginBottom: 18 }}>
@@ -124,7 +124,7 @@ export default function NewArticlePage() {
                 placeholder="tag1, tag2, tag3"
                 style={inputStyle}
               />
-              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#9ca3af' }}>Comma-separated</p>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-placeholder)' }}>Comma-separated</p>
             </div>
             <div>
               <label style={labelStyle}>Visibility</label>
@@ -151,7 +151,7 @@ export default function NewArticlePage() {
         </div>
 
         {submitError && (
-          <div style={{ padding: '10px 14px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, marginBottom: 16, color: '#dc2626', fontSize: 14 }}>
+          <div style={{ padding: '10px 14px', backgroundColor: 'var(--badge-red-bg-subtle)', border: '1px solid var(--badge-red-bg-strong)', borderRadius: 8, marginBottom: 16, color: 'var(--accent-danger)', fontSize: 14 }}>
             {submitError}
           </div>
         )}
@@ -163,13 +163,13 @@ export default function NewArticlePage() {
               display: 'inline-flex',
               alignItems: 'center',
               padding: '10px 20px',
-              border: '1px solid #d1d5db',
+              border: '1px solid var(--border-secondary)',
               borderRadius: 8,
               fontSize: 14,
               fontWeight: 500,
-              color: '#374151',
+              color: 'var(--text-secondary)',
               textDecoration: 'none',
-              backgroundColor: '#fff',
+              backgroundColor: 'var(--bg-primary)',
             }}
           >
             Cancel
@@ -181,7 +181,7 @@ export default function NewArticlePage() {
               display: 'inline-flex',
               alignItems: 'center',
               padding: '10px 24px',
-              backgroundColor: isSubmitting || !title.trim() ? '#a5b4fc' : '#4f46e5',
+              backgroundColor: isSubmitting || !title.trim() ? 'var(--badge-indigo-bg)' : 'var(--accent-primary)',
               color: '#fff',
               border: 'none',
               borderRadius: 8,

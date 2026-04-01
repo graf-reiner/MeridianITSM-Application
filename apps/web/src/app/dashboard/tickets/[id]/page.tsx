@@ -60,24 +60,24 @@ interface SlaStatus {
 
 function getStatusStyle(s: string) {
   switch (s) {
-    case 'NEW': return { bg: '#dbeafe', text: '#1e40af' };
-    case 'OPEN': return { bg: '#d1fae5', text: '#065f46' };
-    case 'IN_PROGRESS': return { bg: '#fef3c7', text: '#92400e' };
-    case 'PENDING': return { bg: '#ffedd5', text: '#9a3412' };
-    case 'RESOLVED': return { bg: '#f3f4f6', text: '#374151' };
-    case 'CLOSED': return { bg: '#f3f4f6', text: '#6b7280' };
-    case 'CANCELLED': return { bg: '#fee2e2', text: '#991b1b' };
-    default: return { bg: '#f3f4f6', text: '#374151' };
+    case 'NEW': return { bg: 'var(--badge-blue-bg)', text: '#1e40af' };
+    case 'OPEN': return { bg: 'var(--badge-green-bg)', text: '#065f46' };
+    case 'IN_PROGRESS': return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
+    case 'PENDING': return { bg: 'var(--badge-orange-bg)', text: '#9a3412' };
+    case 'RESOLVED': return { bg: 'var(--bg-tertiary)', text: '#374151' };
+    case 'CLOSED': return { bg: 'var(--bg-tertiary)', text: '#6b7280' };
+    case 'CANCELLED': return { bg: 'var(--badge-red-bg)', text: '#991b1b' };
+    default: return { bg: 'var(--bg-tertiary)', text: '#374151' };
   }
 }
 
 function getPriorityStyle(p: string) {
   switch (p) {
-    case 'CRITICAL': return { bg: '#fee2e2', text: '#991b1b' };
-    case 'HIGH': return { bg: '#ffedd5', text: '#9a3412' };
-    case 'MEDIUM': return { bg: '#fef3c7', text: '#92400e' };
-    case 'LOW': return { bg: '#f3f4f6', text: '#374151' };
-    default: return { bg: '#f3f4f6', text: '#374151' };
+    case 'CRITICAL': return { bg: 'var(--badge-red-bg)', text: '#991b1b' };
+    case 'HIGH': return { bg: 'var(--badge-orange-bg)', text: '#9a3412' };
+    case 'MEDIUM': return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
+    case 'LOW': return { bg: 'var(--bg-tertiary)', text: '#374151' };
+    default: return { bg: 'var(--bg-tertiary)', text: '#374151' };
   }
 }
 
@@ -339,13 +339,13 @@ export default function TicketDetailPage() {
     }
   };
 
-  if (isLoading) return <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>Loading ticket...</div>;
+  if (isLoading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading ticket...</div>;
   if (error || !ticket) {
     return (
-      <div style={{ padding: 40, textAlign: 'center', color: '#dc2626' }}>
+      <div style={{ padding: 40, textAlign: 'center', color: 'var(--accent-danger)' }}>
         {error instanceof Error ? error.message : 'Ticket not found'}
         <div style={{ marginTop: 16 }}>
-          <Link href="/dashboard/tickets" style={{ color: '#4f46e5', textDecoration: 'none' }}>Back to tickets</Link>
+          <Link href="/dashboard/tickets" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>Back to tickets</Link>
         </div>
       </div>
     );
@@ -360,18 +360,18 @@ export default function TicketDetailPage() {
 
       {/* ── Back link ─────────────────────────────────────────────────────────── */}
       <div style={{ marginBottom: 16 }}>
-        <Link href="/dashboard/tickets" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#6b7280', textDecoration: 'none', fontSize: 14 }}>
+        <Link href="/dashboard/tickets" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', textDecoration: 'none', fontSize: 14 }}>
           <Icon path={mdiArrowLeft} size={0.8} color="currentColor" />
           Back to tickets
         </Link>
       </div>
 
       {/* ── Header ────────────────────────────────────────────────────────────── */}
-      <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 24, marginBottom: 16 }}>
+      <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: 24, marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#9ca3af' }}>{ticket.ticketNumber}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-placeholder)' }}>{ticket.ticketNumber}</span>
               <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 12, fontWeight: 500, backgroundColor: statusStyle.bg, color: statusStyle.text }}>
                 {ticket.status.replace(/_/g, ' ')}
               </span>
@@ -387,9 +387,9 @@ export default function TicketDetailPage() {
                 />
               )}
             </div>
-            <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700, color: '#111827' }}>{ticket.title}</h1>
+            <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>{ticket.title}</h1>
             {ticket.description && (
-              <p style={{ margin: 0, fontSize: 14, color: '#6b7280', lineHeight: 1.6 }}>{ticket.description}</p>
+              <p style={{ margin: 0, fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>{ticket.description}</p>
             )}
           </div>
 
@@ -400,7 +400,7 @@ export default function TicketDetailPage() {
                 onChange={(e) => { if (e.target.value) void handleStatusChange(e.target.value); e.target.value = ''; }}
                 disabled={statusUpdating}
                 defaultValue=""
-                style={{ padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13, cursor: 'pointer', backgroundColor: '#fff' }}
+                style={{ padding: '8px 12px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 13, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}
               >
                 <option value="" disabled>Change status...</option>
                 {transitions.map((s) => (
@@ -418,7 +418,7 @@ export default function TicketDetailPage() {
         {/* ── Tabs ────────────────────────────────────────────────────────────── */}
         <div>
           {/* Tab Bar */}
-          <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #e5e7eb', marginBottom: 16, backgroundColor: '#fff', borderRadius: '12px 12px 0 0', border: '1px solid #e5e7eb', borderBottomColor: 'transparent' }}>
+          <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border-primary)', marginBottom: 16, backgroundColor: 'var(--bg-primary)', borderRadius: '12px 12px 0 0', border: '1px solid var(--border-primary)', borderBottomColor: 'transparent' }}>
             {(['comments', 'activity', 'attachments'] as const).map((tab) => (
               <button
                 key={tab}
@@ -430,8 +430,8 @@ export default function TicketDetailPage() {
                   cursor: 'pointer',
                   fontSize: 14,
                   fontWeight: activeTab === tab ? 600 : 400,
-                  color: activeTab === tab ? '#4f46e5' : '#6b7280',
-                  borderBottom: activeTab === tab ? '2px solid #4f46e5' : '2px solid transparent',
+                  color: activeTab === tab ? 'var(--accent-primary)' : 'var(--text-muted)',
+                  borderBottom: activeTab === tab ? '2px solid var(--accent-primary)' : '2px solid transparent',
                   marginBottom: -1,
                   textTransform: 'capitalize',
                 }}
@@ -442,7 +442,7 @@ export default function TicketDetailPage() {
           </div>
 
           {/* Tab Content */}
-          <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '0 0 12px 12px', padding: 20 }}>
+          <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '0 0 12px 12px', padding: 20 }}>
 
             {/* Comments */}
             {activeTab === 'comments' && (
@@ -450,21 +450,21 @@ export default function TicketDetailPage() {
                 {/* Comment list */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
                   {(commentsData?.comments ?? []).length === 0 && (
-                    <p style={{ color: '#9ca3af', fontSize: 14, margin: 0 }}>No comments yet.</p>
+                    <p style={{ color: 'var(--text-placeholder)', fontSize: 14, margin: 0 }}>No comments yet.</p>
                   )}
                   {(commentsData?.comments ?? []).map((comment) => (
                     <div
                       key={comment.id}
                       style={{
                         padding: '12px 14px',
-                        backgroundColor: comment.visibility === 'INTERNAL' ? '#fffbeb' : '#f9fafb',
-                        border: `1px solid ${comment.visibility === 'INTERNAL' ? '#fde68a' : '#f3f4f6'}`,
+                        backgroundColor: comment.visibility === 'INTERNAL' ? '#fffbeb' : 'var(--bg-secondary)',
+                        border: `1px solid ${comment.visibility === 'INTERNAL' ? '#fde68a' : 'var(--bg-tertiary)'}`,
                         borderRadius: 8,
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                        <Icon path={mdiAccountCircle} size={0.75} color="#9ca3af" />
-                        <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
+                        <Icon path={mdiAccountCircle} size={0.75} color="var(--text-placeholder)" />
+                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
                           {comment.author ? `${comment.author.firstName} ${comment.author.lastName}` : 'Unknown'}
                         </span>
                         {comment.visibility === 'INTERNAL' && (
@@ -472,13 +472,13 @@ export default function TicketDetailPage() {
                             Internal
                           </span>
                         )}
-                        <span style={{ marginLeft: 'auto', fontSize: 12, color: '#9ca3af' }}>
+                        <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-placeholder)' }}>
                           {formatDate(comment.createdAt)}
                         </span>
                       </div>
-                      <p style={{ margin: 0, fontSize: 14, color: '#374151', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{comment.body}</p>
+                      <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{comment.body}</p>
                       {comment.timeSpentMinutes != null && comment.timeSpentMinutes > 0 && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 12, color: '#9ca3af' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 12, color: 'var(--text-placeholder)' }}>
                           <Icon path={mdiClockOutline} size={0.6} color="currentColor" />
                           {comment.timeSpentMinutes} min
                         </div>
@@ -488,7 +488,7 @@ export default function TicketDetailPage() {
                 </div>
 
                 {/* Comment form */}
-                <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: 16 }}>
+                <div style={{ borderTop: '1px solid var(--bg-tertiary)', paddingTop: 16 }}>
                   <RichTextField
                     value={commentBody}
                     onChange={setCommentBody}
@@ -500,7 +500,7 @@ export default function TicketDetailPage() {
                     <select
                       value={commentVisibility}
                       onChange={(e) => setCommentVisibility(e.target.value as 'PUBLIC' | 'INTERNAL')}
-                      style={{ padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13, cursor: 'pointer', backgroundColor: '#fff' }}
+                      style={{ padding: '7px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 13, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}
                     >
                       <option value="PUBLIC">Public</option>
                       <option value="INTERNAL">Internal</option>
@@ -513,7 +513,7 @@ export default function TicketDetailPage() {
                         alignItems: 'center',
                         gap: 6,
                         padding: '8px 16px',
-                        backgroundColor: commentSubmitting || !commentBody.trim() ? '#a5b4fc' : '#4f46e5',
+                        backgroundColor: commentSubmitting || !commentBody.trim() ? 'var(--badge-indigo-bg)' : 'var(--accent-primary)',
                         color: '#fff',
                         border: 'none',
                         borderRadius: 8,
@@ -526,7 +526,7 @@ export default function TicketDetailPage() {
                       {commentSubmitting ? 'Posting...' : 'Post'}
                     </button>
                   </div>
-                  {commentError && <p style={{ color: '#dc2626', fontSize: 13, marginTop: 8 }}>{commentError}</p>}
+                  {commentError && <p style={{ color: 'var(--accent-danger)', fontSize: 13, marginTop: 8 }}>{commentError}</p>}
                 </div>
               </div>
             )}
@@ -535,12 +535,12 @@ export default function TicketDetailPage() {
             {activeTab === 'activity' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {(activitiesData?.activities ?? []).length === 0 ? (
-                  <p style={{ color: '#9ca3af', fontSize: 14, margin: 0 }}>No activity yet.</p>
+                  <p style={{ color: 'var(--text-placeholder)', fontSize: 14, margin: 0 }}>No activity yet.</p>
                 ) : (
                   (activitiesData?.activities ?? []).map((act) => (
                     <div key={act.id} style={{ display: 'flex', gap: 10, fontSize: 13 }}>
-                      <span style={{ color: '#9ca3af', flexShrink: 0 }}>{formatDate(act.createdAt)}</span>
-                      <span style={{ color: '#374151' }}>
+                      <span style={{ color: 'var(--text-placeholder)', flexShrink: 0 }}>{formatDate(act.createdAt)}</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>
                         <strong>{act.actor ? `${act.actor.firstName} ${act.actor.lastName}` : 'System'}</strong>
                         {' — '}{act.action.replace(/_/g, ' ')}
                       </span>
@@ -554,21 +554,21 @@ export default function TicketDetailPage() {
             {activeTab === 'attachments' && (
               <div>
                 {(attachmentsData?.attachments ?? []).length === 0 ? (
-                  <p style={{ color: '#9ca3af', fontSize: 14, margin: 0 }}>No attachments yet.</p>
+                  <p style={{ color: 'var(--text-placeholder)', fontSize: 14, margin: 0 }}>No attachments yet.</p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {(attachmentsData?.attachments ?? []).map((att) => (
-                      <div key={att.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', backgroundColor: '#f9fafb', border: '1px solid #f3f4f6', borderRadius: 8 }}>
-                        <Icon path={mdiPaperclip} size={0.75} color="#9ca3af" />
+                      <div key={att.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--bg-tertiary)', borderRadius: 8 }}>
+                        <Icon path={mdiPaperclip} size={0.75} color="var(--text-placeholder)" />
                         <a
                           href={`/api/v1/tickets/${ticketId}/attachments/${att.id}/url`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ flex: 1, color: '#4f46e5', fontSize: 13, textDecoration: 'none' }}
+                          style={{ flex: 1, color: 'var(--accent-primary)', fontSize: 13, textDecoration: 'none' }}
                         >
                           {att.filename}
                         </a>
-                        <span style={{ fontSize: 12, color: '#9ca3af' }}>{Math.round(att.size / 1024)} KB</span>
+                        <span style={{ fontSize: 12, color: 'var(--text-placeholder)' }}>{Math.round(att.size / 1024)} KB</span>
                       </div>
                     ))}
                   </div>
@@ -580,17 +580,17 @@ export default function TicketDetailPage() {
 
         {/* ── Sidebar ─────────────────────────────────────────────────────────── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 18 }}>
-            <h3 style={{ margin: '0 0 14px', fontSize: 13, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Details</h3>
+          <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: 18 }}>
+            <h3 style={{ margin: '0 0 14px', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Details</h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>
               {/* Assignee — editable */}
               <div>
-                <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>Assignee</span>
+                <span style={{ color: 'var(--text-placeholder)', display: 'block', marginBottom: 2 }}>Assignee</span>
                 <select
                   value={editAssignee}
                   onChange={(e) => setEditAssignee(e.target.value)}
-                  style={{ width: '100%', padding: '5px 8px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, backgroundColor: '#fff', cursor: 'pointer' }}
+                  style={{ width: '100%', padding: '5px 8px', border: '1px solid var(--border-primary)', borderRadius: 6, fontSize: 13, backgroundColor: 'var(--bg-primary)', cursor: 'pointer' }}
                 >
                   <option value="">Unassigned</option>
                   {(usersData ?? []).map((u) => (
@@ -601,11 +601,11 @@ export default function TicketDetailPage() {
 
               {/* Assigned Group — editable */}
               <div>
-                <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>Assigned Group</span>
+                <span style={{ color: 'var(--text-placeholder)', display: 'block', marginBottom: 2 }}>Assigned Group</span>
                 <select
                   value={editGroup}
                   onChange={(e) => setEditGroup(e.target.value)}
-                  style={{ width: '100%', padding: '5px 8px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, backgroundColor: '#fff', cursor: 'pointer' }}
+                  style={{ width: '100%', padding: '5px 8px', border: '1px solid var(--border-primary)', borderRadius: 6, fontSize: 13, backgroundColor: 'var(--bg-primary)', cursor: 'pointer' }}
                 >
                   <option value="">— None —</option>
                   {(groupsData ?? []).map((g) => (
@@ -616,19 +616,19 @@ export default function TicketDetailPage() {
 
               {/* Requester — read-only */}
               <div>
-                <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>Requester</span>
-                <span style={{ color: '#374151', fontWeight: 500 }}>
+                <span style={{ color: 'var(--text-placeholder)', display: 'block', marginBottom: 2 }}>Requester</span>
+                <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
                   {ticket.requester ? `${ticket.requester.firstName} ${ticket.requester.lastName}` : '—'}
                 </span>
               </div>
 
               {/* Queue — editable */}
               <div>
-                <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>Queue</span>
+                <span style={{ color: 'var(--text-placeholder)', display: 'block', marginBottom: 2 }}>Queue</span>
                 <select
                   value={editQueue}
                   onChange={(e) => setEditQueue(e.target.value)}
-                  style={{ width: '100%', padding: '5px 8px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, backgroundColor: '#fff', cursor: 'pointer' }}
+                  style={{ width: '100%', padding: '5px 8px', border: '1px solid var(--border-primary)', borderRadius: 6, fontSize: 13, backgroundColor: 'var(--bg-primary)', cursor: 'pointer' }}
                 >
                   <option value="">— None —</option>
                   {(queuesData ?? []).map((q) => (
@@ -639,11 +639,11 @@ export default function TicketDetailPage() {
 
               {/* Category — editable */}
               <div>
-                <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>Category</span>
+                <span style={{ color: 'var(--text-placeholder)', display: 'block', marginBottom: 2 }}>Category</span>
                 <select
                   value={editCategory}
                   onChange={(e) => setEditCategory(e.target.value)}
-                  style={{ width: '100%', padding: '5px 8px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, backgroundColor: '#fff', cursor: 'pointer' }}
+                  style={{ width: '100%', padding: '5px 8px', border: '1px solid var(--border-primary)', borderRadius: 6, fontSize: 13, backgroundColor: 'var(--bg-primary)', cursor: 'pointer' }}
                 >
                   <option value="">— None —</option>
                   {(categoriesData ?? []).map((c) => (
@@ -654,11 +654,11 @@ export default function TicketDetailPage() {
 
               {/* SLA Policy — editable */}
               <div>
-                <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>SLA Policy</span>
+                <span style={{ color: 'var(--text-placeholder)', display: 'block', marginBottom: 2 }}>SLA Policy</span>
                 <select
                   value={editSla}
                   onChange={(e) => setEditSla(e.target.value)}
-                  style={{ width: '100%', padding: '5px 8px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, backgroundColor: '#fff', cursor: 'pointer' }}
+                  style={{ width: '100%', padding: '5px 8px', border: '1px solid var(--border-primary)', borderRadius: 6, fontSize: 13, backgroundColor: 'var(--bg-primary)', cursor: 'pointer' }}
                 >
                   <option value="">— None —</option>
                   {(slaPoliciesData ?? []).map((s) => (
@@ -669,11 +669,11 @@ export default function TicketDetailPage() {
 
               {/* Priority — editable */}
               <div>
-                <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>Priority</span>
+                <span style={{ color: 'var(--text-placeholder)', display: 'block', marginBottom: 2 }}>Priority</span>
                 <select
                   value={editPriority}
                   onChange={(e) => setEditPriority(e.target.value)}
-                  style={{ width: '100%', padding: '5px 8px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, backgroundColor: '#fff', cursor: 'pointer' }}
+                  style={{ width: '100%', padding: '5px 8px', border: '1px solid var(--border-primary)', borderRadius: 6, fontSize: 13, backgroundColor: 'var(--bg-primary)', cursor: 'pointer' }}
                 >
                   <option value="LOW">Low</option>
                   <option value="MEDIUM">Medium</option>
@@ -684,11 +684,11 @@ export default function TicketDetailPage() {
 
               {/* Type — editable */}
               <div>
-                <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>Type</span>
+                <span style={{ color: 'var(--text-placeholder)', display: 'block', marginBottom: 2 }}>Type</span>
                 <select
                   value={editType}
                   onChange={(e) => setEditType(e.target.value)}
-                  style={{ width: '100%', padding: '5px 8px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, backgroundColor: '#fff', cursor: 'pointer' }}
+                  style={{ width: '100%', padding: '5px 8px', border: '1px solid var(--border-primary)', borderRadius: 6, fontSize: 13, backgroundColor: 'var(--bg-primary)', cursor: 'pointer' }}
                 >
                   <option value="INCIDENT">Incident</option>
                   <option value="SERVICE_REQUEST">Service Request</option>
@@ -698,12 +698,12 @@ export default function TicketDetailPage() {
               </div>
 
               <div>
-                <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>Created</span>
-                <span style={{ color: '#374151' }}>{formatDate(ticket.createdAt)}</span>
+                <span style={{ color: 'var(--text-placeholder)', display: 'block', marginBottom: 2 }}>Created</span>
+                <span style={{ color: 'var(--text-secondary)' }}>{formatDate(ticket.createdAt)}</span>
               </div>
               <div>
-                <span style={{ color: '#9ca3af', display: 'block', marginBottom: 2 }}>Updated</span>
-                <span style={{ color: '#374151' }}>{formatDate(ticket.updatedAt)}</span>
+                <span style={{ color: 'var(--text-placeholder)', display: 'block', marginBottom: 2 }}>Updated</span>
+                <span style={{ color: 'var(--text-secondary)' }}>{formatDate(ticket.updatedAt)}</span>
               </div>
             </div>
           </div>

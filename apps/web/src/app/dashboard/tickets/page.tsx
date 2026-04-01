@@ -29,24 +29,24 @@ interface TicketListResponse {
 
 function getStatusStyle(status: string): { bg: string; text: string } {
   switch (status) {
-    case 'NEW': return { bg: '#dbeafe', text: '#1e40af' };
-    case 'OPEN': return { bg: '#d1fae5', text: '#065f46' };
-    case 'IN_PROGRESS': return { bg: '#fef3c7', text: '#92400e' };
-    case 'PENDING': return { bg: '#ffedd5', text: '#9a3412' };
-    case 'RESOLVED': return { bg: '#f3f4f6', text: '#374151' };
-    case 'CLOSED': return { bg: '#f3f4f6', text: '#6b7280' };
-    case 'CANCELLED': return { bg: '#fee2e2', text: '#991b1b' };
-    default: return { bg: '#f3f4f6', text: '#374151' };
+    case 'NEW': return { bg: 'var(--badge-blue-bg)', text: '#1e40af' };
+    case 'OPEN': return { bg: 'var(--badge-green-bg)', text: '#065f46' };
+    case 'IN_PROGRESS': return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
+    case 'PENDING': return { bg: 'var(--badge-orange-bg)', text: '#9a3412' };
+    case 'RESOLVED': return { bg: 'var(--bg-tertiary)', text: '#374151' };
+    case 'CLOSED': return { bg: 'var(--bg-tertiary)', text: '#6b7280' };
+    case 'CANCELLED': return { bg: 'var(--badge-red-bg)', text: '#991b1b' };
+    default: return { bg: 'var(--bg-tertiary)', text: '#374151' };
   }
 }
 
 function getPriorityStyle(priority: string): { bg: string; text: string } {
   switch (priority) {
-    case 'CRITICAL': return { bg: '#fee2e2', text: '#991b1b' };
-    case 'HIGH': return { bg: '#ffedd5', text: '#9a3412' };
-    case 'MEDIUM': return { bg: '#fef3c7', text: '#92400e' };
-    case 'LOW': return { bg: '#f3f4f6', text: '#374151' };
-    default: return { bg: '#f3f4f6', text: '#374151' };
+    case 'CRITICAL': return { bg: 'var(--badge-red-bg)', text: '#991b1b' };
+    case 'HIGH': return { bg: 'var(--badge-orange-bg)', text: '#9a3412' };
+    case 'MEDIUM': return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
+    case 'LOW': return { bg: 'var(--bg-tertiary)', text: '#374151' };
+    default: return { bg: 'var(--bg-tertiary)', text: '#374151' };
   }
 }
 
@@ -109,8 +109,8 @@ export default function DashboardTicketsPage() {
 
       {/* ── Header ────────────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Icon path={mdiTicket} size={1} color="#4f46e5" />
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon path={mdiTicket} size={1} color="var(--accent-primary)" />
           Tickets
         </h1>
         <Link
@@ -120,7 +120,7 @@ export default function DashboardTicketsPage() {
             alignItems: 'center',
             gap: 6,
             padding: '8px 16px',
-            backgroundColor: '#4f46e5',
+            backgroundColor: 'var(--accent-primary)',
             color: '#fff',
             textDecoration: 'none',
             borderRadius: 8,
@@ -138,7 +138,7 @@ export default function DashboardTicketsPage() {
         {/* Search */}
         <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 200 }}>
           <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
-            <Icon path={mdiMagnify} size={0.8} color="#9ca3af" />
+            <Icon path={mdiMagnify} size={0.8} color="var(--text-placeholder)" />
           </div>
           <input
             type="search"
@@ -148,7 +148,7 @@ export default function DashboardTicketsPage() {
             style={{
               width: '100%',
               padding: '8px 10px 8px 34px',
-              border: '1px solid #d1d5db',
+              border: '1px solid var(--border-secondary)',
               borderRadius: 8,
               fontSize: 14,
               outline: 'none',
@@ -159,11 +159,11 @@ export default function DashboardTicketsPage() {
 
         {/* Status filter */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Icon path={mdiFilter} size={0.75} color="#9ca3af" />
+          <Icon path={mdiFilter} size={0.75} color="var(--text-placeholder)" />
           <select
             value={status}
             onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-            style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: '#fff' }}
+            style={{ padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}
           >
             <option value="">All Statuses</option>
             <option value="NEW">New</option>
@@ -180,7 +180,7 @@ export default function DashboardTicketsPage() {
         <select
           value={priority}
           onChange={(e) => { setPriority(e.target.value); setPage(1); }}
-          style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: '#fff' }}
+          style={{ padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}
         >
           <option value="">All Priorities</option>
           <option value="CRITICAL">Critical</option>
@@ -192,29 +192,29 @@ export default function DashboardTicketsPage() {
 
       {/* ── Table ─────────────────────────────────────────────────────────────── */}
       {isLoading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>Loading tickets...</div>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading tickets...</div>
       ) : error ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#dc2626' }}>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--accent-danger)' }}>
           {error instanceof Error ? error.message : 'Failed to load tickets'}
         </div>
       ) : tickets.length === 0 ? (
         <div style={{ padding: 60, textAlign: 'center' }}>
-          <Icon path={mdiTicket} size={2.5} color="#d1d5db" />
-          <p style={{ margin: '16px 0 0', color: '#6b7280', fontSize: 14 }}>No tickets found</p>
+          <Icon path={mdiTicket} size={2.5} color="var(--border-secondary)" />
+          <p style={{ margin: '16px 0 0', color: 'var(--text-muted)', fontSize: 14 }}>No tickets found</p>
         </div>
       ) : (
-        <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #e5e7eb', backgroundColor: '#f9fafb' }}>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Number</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Title</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Status</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Priority</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Assignee</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Category</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Created</th>
-                <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>SLA</th>
+              <tr style={{ borderBottom: '2px solid var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Number</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Title</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Status</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Priority</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Assignee</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Category</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Created</th>
+                <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>SLA</th>
               </tr>
             </thead>
             <tbody>
@@ -222,11 +222,11 @@ export default function DashboardTicketsPage() {
                 const statusStyle = getStatusStyle(ticket.status);
                 const priorityStyle = getPriorityStyle(ticket.priority);
                 return (
-                  <tr key={ticket.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <tr key={ticket.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
                     <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
                       <Link
                         href={`/dashboard/tickets/${ticket.id}`}
-                        style={{ color: '#4f46e5', textDecoration: 'none', fontWeight: 500, fontSize: 13 }}
+                        style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 500, fontSize: 13 }}
                       >
                         {ticket.ticketNumber}
                       </Link>
@@ -234,7 +234,7 @@ export default function DashboardTicketsPage() {
                     <td style={{ padding: '10px 14px' }}>
                       <Link
                         href={`/dashboard/tickets/${ticket.id}`}
-                        style={{ color: '#111827', textDecoration: 'none', fontWeight: 500 }}
+                        style={{ color: 'var(--text-primary)', textDecoration: 'none', fontWeight: 500 }}
                       >
                         {ticket.title}
                       </Link>
@@ -249,13 +249,13 @@ export default function DashboardTicketsPage() {
                         {ticket.priority}
                       </span>
                     </td>
-                    <td style={{ padding: '10px 14px', color: '#6b7280', fontSize: 13, whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 13, whiteSpace: 'nowrap' }}>
                       {ticket.assignee ? `${ticket.assignee.firstName} ${ticket.assignee.lastName}` : '—'}
                     </td>
-                    <td style={{ padding: '10px 14px', color: '#6b7280', fontSize: 13 }}>
+                    <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 13 }}>
                       {ticket.category?.name ?? '—'}
                     </td>
-                    <td style={{ padding: '10px 14px', color: '#9ca3af', fontSize: 12, whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '10px 14px', color: 'var(--text-placeholder)', fontSize: 12, whiteSpace: 'nowrap' }}>
                       {relativeTime(ticket.createdAt)}
                     </td>
                     <td style={{ padding: '10px 14px', textAlign: 'center' }}>
@@ -275,17 +275,17 @@ export default function DashboardTicketsPage() {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
-            style={{ padding: '6px 14px', border: '1px solid #d1d5db', borderRadius: 6, backgroundColor: '#fff', cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.5 : 1, fontSize: 14 }}
+            style={{ padding: '6px 14px', border: '1px solid var(--border-secondary)', borderRadius: 6, backgroundColor: 'var(--bg-primary)', cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.5 : 1, fontSize: 14 }}
           >
             Previous
           </button>
-          <span style={{ fontSize: 14, color: '#6b7280' }}>
+          <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>
             Page {page} of {totalPages} ({total} tickets)
           </span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
-            style={{ padding: '6px 14px', border: '1px solid #d1d5db', borderRadius: 6, backgroundColor: '#fff', cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.5 : 1, fontSize: 14 }}
+            style={{ padding: '6px 14px', border: '1px solid var(--border-secondary)', borderRadius: 6, backgroundColor: 'var(--bg-primary)', cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.5 : 1, fontSize: 14 }}
           >
             Next
           </button>

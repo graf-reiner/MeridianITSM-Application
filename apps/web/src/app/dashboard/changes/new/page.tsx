@@ -110,7 +110,7 @@ export default function NewChangePage() {
   const inputStyle = {
     width: '100%',
     padding: '8px 10px',
-    border: '1px solid #d1d5db',
+    border: '1px solid var(--border-secondary)',
     borderRadius: 6,
     fontSize: 14,
     boxSizing: 'border-box' as const,
@@ -121,11 +121,11 @@ export default function NewChangePage() {
     display: 'block' as const,
     fontSize: 13,
     fontWeight: 500 as const,
-    color: '#374151',
+    color: 'var(--text-secondary)',
     marginBottom: 4,
   };
 
-  const errorStyle = { fontSize: 12, color: '#dc2626', marginTop: 4 };
+  const errorStyle = { fontSize: 12, color: 'var(--accent-danger)', marginTop: 4 };
 
   return (
     <div style={{ maxWidth: 760, margin: '0 auto' }}>
@@ -134,19 +134,19 @@ export default function NewChangePage() {
       <div style={{ marginBottom: 24 }}>
         <Link
           href="/dashboard/changes"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#6b7280', textDecoration: 'none', fontSize: 14, marginBottom: 12 }}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', textDecoration: 'none', fontSize: 14, marginBottom: 12 }}
         >
           <Icon path={mdiArrowLeft} size={0.8} color="currentColor" />
           Back to Changes
         </Link>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Icon path={mdiSwapHorizontal} size={1} color="#4f46e5" />
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon path={mdiSwapHorizontal} size={1} color="var(--accent-primary)" />
           New Change Request
         </h1>
       </div>
 
       <form onSubmit={(e) => { void handleSubmit(onSubmit)(e); }}>
-        <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 24 }}>
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 24 }}>
 
           {/* ── Change Type (controls field visibility) ────────────────────────── */}
           <div style={{ marginBottom: 20 }}>
@@ -164,18 +164,18 @@ export default function NewChangePage() {
                       flexDirection: 'column',
                       alignItems: 'center',
                       padding: '12px 8px',
-                      border: `2px solid ${isSelected ? (isEmergencyOption ? '#dc2626' : '#4f46e5') : '#d1d5db'}`,
+                      border: `2px solid ${isSelected ? (isEmergencyOption ? 'var(--accent-danger)' : 'var(--accent-primary)') : 'var(--border-secondary)'}`,
                       borderRadius: 8,
                       cursor: 'pointer',
-                      backgroundColor: isSelected ? (isEmergencyOption ? '#fff1f2' : '#eef2ff') : '#fff',
+                      backgroundColor: isSelected ? (isEmergencyOption ? '#fff1f2' : 'var(--badge-indigo-bg)') : 'var(--bg-primary)',
                       transition: 'all 0.15s',
                     }}
                   >
                     <input type="radio" value={t} {...register('type')} style={{ display: 'none' }} />
-                    <span style={{ fontSize: 13, fontWeight: 700, color: isSelected ? (isEmergencyOption ? '#dc2626' : '#4f46e5') : '#374151' }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: isSelected ? (isEmergencyOption ? 'var(--accent-danger)' : 'var(--accent-primary)') : 'var(--text-secondary)' }}>
                       {t}
                     </span>
-                    <span style={{ fontSize: 11, color: '#9ca3af', marginTop: 2, textAlign: 'center' }}>
+                    <span style={{ fontSize: 11, color: 'var(--text-placeholder)', marginTop: 2, textAlign: 'center' }}>
                       {t === 'STANDARD' && 'Auto-approved, low-risk'}
                       {t === 'NORMAL' && 'Full approval workflow'}
                       {t === 'EMERGENCY' && 'Urgent, no scheduling'}
@@ -187,7 +187,7 @@ export default function NewChangePage() {
 
             {/* EMERGENCY banner */}
             {isEmergency && (
-              <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', backgroundColor: '#fee2e2', borderRadius: 6, border: '1px solid #fca5a5' }}>
+              <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', backgroundColor: 'var(--badge-red-bg)', borderRadius: 6, border: '1px solid #fca5a5' }}>
                 <Icon path={mdiAlertCircle} size={0.9} color="#dc2626" />
                 <span style={{ fontSize: 13, color: '#991b1b', fontWeight: 500 }}>
                   Emergency changes skip scheduling and implementation plan — expedited approval path
@@ -197,7 +197,7 @@ export default function NewChangePage() {
 
             {/* STANDARD banner */}
             {showApprovalNote && (
-              <div style={{ marginTop: 10, padding: '10px 14px', backgroundColor: '#d1fae5', borderRadius: 6, border: '1px solid #6ee7b7' }}>
+              <div style={{ marginTop: 10, padding: '10px 14px', backgroundColor: 'var(--badge-green-bg)', borderRadius: 6, border: '1px solid #6ee7b7' }}>
                 <span style={{ fontSize: 13, color: '#065f46', fontWeight: 500 }}>
                   Standard changes are pre-approved — no approval chain required
                 </span>
@@ -205,7 +205,7 @@ export default function NewChangePage() {
             )}
           </div>
 
-          <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '20px 0' }} />
+          <hr style={{ border: 'none', borderTop: '1px solid var(--bg-tertiary)', margin: '20px 0' }} />
 
           {/* ── Core Fields ────────────────────────────────────────────────────── */}
           <div style={{ marginBottom: 16 }}>
@@ -214,7 +214,7 @@ export default function NewChangePage() {
               type="text"
               placeholder="Brief description of the change"
               {...register('title')}
-              style={{ ...inputStyle, borderColor: errors.title ? '#dc2626' : '#d1d5db' }}
+              style={{ ...inputStyle, borderColor: errors.title ? 'var(--accent-danger)' : 'var(--border-secondary)' }}
             />
             {errors.title && <p style={errorStyle}>{errors.title.message}</p>}
           </div>
@@ -234,7 +234,7 @@ export default function NewChangePage() {
             <label style={labelStyle}>Risk Level *</label>
             <select
               {...register('riskLevel')}
-              style={{ ...inputStyle, backgroundColor: '#fff', cursor: 'pointer' }}
+              style={{ ...inputStyle, backgroundColor: 'var(--bg-primary)', cursor: 'pointer' }}
             >
               <option value="LOW">Low</option>
               <option value="MEDIUM">Medium</option>
@@ -246,8 +246,8 @@ export default function NewChangePage() {
           {/* ── Scheduling (hidden for EMERGENCY) ─────────────────────────────── */}
           {showScheduling && (
             <>
-              <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '20px 0' }} />
-              <h3 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: '#374151' }}>Schedule</h3>
+              <hr style={{ border: 'none', borderTop: '1px solid var(--bg-tertiary)', margin: '20px 0' }} />
+              <h3 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: 'var(--text-secondary)' }}>Schedule</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                 <div>
                   <label style={labelStyle}>Scheduled Start</label>
@@ -272,8 +272,8 @@ export default function NewChangePage() {
           {/* ── Plans (hidden for EMERGENCY) ──────────────────────────────────── */}
           {showImplementationPlan && (
             <>
-              <hr style={{ border: 'none', borderTop: '1px solid #f3f4f6', margin: '20px 0' }} />
-              <h3 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: '#374151' }}>Implementation Details</h3>
+              <hr style={{ border: 'none', borderTop: '1px solid var(--bg-tertiary)', margin: '20px 0' }} />
+              <h3 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: 'var(--text-secondary)' }}>Implementation Details</h3>
               <div style={{ marginBottom: 16 }}>
                 <label style={labelStyle}>Implementation Plan</label>
                 <RichTextField
@@ -311,7 +311,7 @@ export default function NewChangePage() {
 
         {/* ── Actions ───────────────────────────────────────────────────────────── */}
         {serverError && (
-          <div style={{ marginTop: 12, padding: '10px 14px', backgroundColor: '#fee2e2', borderRadius: 6, fontSize: 13, color: '#991b1b' }}>
+          <div style={{ marginTop: 12, padding: '10px 14px', backgroundColor: 'var(--badge-red-bg)', borderRadius: 6, fontSize: 13, color: '#991b1b' }}>
             {serverError}
           </div>
         )}
@@ -324,7 +324,7 @@ export default function NewChangePage() {
               alignItems: 'center',
               gap: 6,
               padding: '10px 20px',
-              backgroundColor: '#4f46e5',
+              backgroundColor: 'var(--accent-primary)',
               color: '#fff',
               border: 'none',
               borderRadius: 8,
@@ -343,10 +343,10 @@ export default function NewChangePage() {
               display: 'inline-flex',
               alignItems: 'center',
               padding: '10px 20px',
-              backgroundColor: '#fff',
-              color: '#374151',
+              backgroundColor: 'var(--bg-primary)',
+              color: 'var(--text-secondary)',
               textDecoration: 'none',
-              border: '1px solid #d1d5db',
+              border: '1px solid var(--border-secondary)',
               borderRadius: 8,
               fontSize: 14,
               fontWeight: 500,

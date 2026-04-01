@@ -88,27 +88,27 @@ const TRANSITIONS: Record<string, string[]> = {
 
 function getStatusStyle(status: string): { bg: string; text: string } {
   switch (status) {
-    case 'DRAFT':              return { bg: '#f3f4f6', text: '#6b7280' };
-    case 'SUBMITTED':          return { bg: '#dbeafe', text: '#1e40af' };
-    case 'PENDING_APPROVAL':   return { bg: '#fef3c7', text: '#92400e' };
-    case 'APPROVED':           return { bg: '#d1fae5', text: '#065f46' };
-    case 'REJECTED':           return { bg: '#fee2e2', text: '#991b1b' };
-    case 'SCHEDULED':          return { bg: '#e0e7ff', text: '#3730a3' };
+    case 'DRAFT':              return { bg: 'var(--bg-tertiary)', text: '#6b7280' };
+    case 'SUBMITTED':          return { bg: 'var(--badge-blue-bg)', text: '#1e40af' };
+    case 'PENDING_APPROVAL':   return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
+    case 'APPROVED':           return { bg: 'var(--badge-green-bg)', text: '#065f46' };
+    case 'REJECTED':           return { bg: 'var(--badge-red-bg)', text: '#991b1b' };
+    case 'SCHEDULED':          return { bg: 'var(--badge-indigo-bg)', text: '#3730a3' };
     case 'IN_PROGRESS':        return { bg: '#fef9c3', text: '#854d0e' };
-    case 'COMPLETED':          return { bg: '#d1fae5', text: '#065f46' };
-    case 'FAILED':             return { bg: '#fee2e2', text: '#991b1b' };
-    case 'CANCELLED':          return { bg: '#f3f4f6', text: '#9ca3af' };
-    default:                   return { bg: '#f3f4f6', text: '#374151' };
+    case 'COMPLETED':          return { bg: 'var(--badge-green-bg)', text: '#065f46' };
+    case 'FAILED':             return { bg: 'var(--badge-red-bg)', text: '#991b1b' };
+    case 'CANCELLED':          return { bg: 'var(--bg-tertiary)', text: '#9ca3af' };
+    default:                   return { bg: 'var(--bg-tertiary)', text: '#374151' };
   }
 }
 
 function getRiskStyle(risk: string): { bg: string; text: string } {
   switch (risk) {
-    case 'LOW':      return { bg: '#d1fae5', text: '#065f46' };
-    case 'MEDIUM':   return { bg: '#fef3c7', text: '#92400e' };
-    case 'HIGH':     return { bg: '#fee2e2', text: '#991b1b' };
+    case 'LOW':      return { bg: 'var(--badge-green-bg)', text: '#065f46' };
+    case 'MEDIUM':   return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
+    case 'HIGH':     return { bg: 'var(--badge-red-bg)', text: '#991b1b' };
     case 'CRITICAL': return { bg: '#450a0a', text: '#fca5a5' };
-    default:         return { bg: '#f3f4f6', text: '#374151' };
+    default:         return { bg: 'var(--bg-tertiary)', text: '#374151' };
   }
 }
 
@@ -173,8 +173,8 @@ function ApprovalPanel({
   if (approvals.length === 0) return null;
 
   return (
-    <div style={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 10, padding: 20, marginBottom: 20 }}>
-      <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: '#111827' }}>Approval Chain</h2>
+    <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20, marginBottom: 20 }}>
+      <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Approval Chain</h2>
 
       {/* Approval chain list */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: isCurrentUserApprover ? 16 : 0 }}>
@@ -194,8 +194,8 @@ function ApprovalPanel({
                   alignItems: 'center',
                   gap: 10,
                   padding: '8px 12px',
-                  backgroundColor: '#fff',
-                  border: '1px solid #e5e7eb',
+                  backgroundColor: 'var(--bg-primary)',
+                  border: '1px solid var(--border-primary)',
                   borderRadius: 6,
                 }}
               >
@@ -204,7 +204,7 @@ function ApprovalPanel({
                   {isApproved && <Icon path={mdiCheckCircle} size={0.85} color="#16a34a" />}
                   {isRejected && <Icon path={mdiCloseCircle} size={0.85} color="#dc2626" />}
                 </span>
-                <span style={{ flex: 1, fontSize: 14, color: '#374151' }}>
+                <span style={{ flex: 1, fontSize: 14, color: 'var(--text-secondary)' }}>
                   {approval.approver
                     ? `${approval.approver.firstName} ${approval.approver.lastName}`
                     : 'Unknown approver'}
@@ -214,13 +214,13 @@ function ApprovalPanel({
                   borderRadius: 10,
                   fontSize: 12,
                   fontWeight: 500,
-                  backgroundColor: isPending ? '#fef3c7' : isApproved ? '#d1fae5' : '#fee2e2',
+                  backgroundColor: isPending ? 'var(--badge-yellow-bg)' : isApproved ? 'var(--badge-green-bg)' : 'var(--badge-red-bg)',
                   color: isPending ? '#92400e' : isApproved ? '#065f46' : '#991b1b',
                 }}>
                   {isPending ? 'Pending' : (approval.decision ?? approval.status)}
                 </span>
                 {approval.comments && (
-                  <span style={{ fontSize: 12, color: '#6b7280', fontStyle: 'italic', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     &quot;{approval.comments}&quot;
                   </span>
                 )}
@@ -231,8 +231,8 @@ function ApprovalPanel({
 
       {/* Approve/Reject buttons for current user */}
       {isCurrentUserApprover && (
-        <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 16, marginTop: 8 }}>
-          <p style={{ margin: '0 0 12px', fontSize: 13, color: '#374151', fontWeight: 500 }}>
+        <div style={{ borderTop: '1px solid var(--border-primary)', paddingTop: 16, marginTop: 8 }}>
+          <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>
             Your action is required:
           </p>
           <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
@@ -243,7 +243,7 @@ function ApprovalPanel({
                 alignItems: 'center',
                 gap: 6,
                 padding: '8px 16px',
-                backgroundColor: decision === 'APPROVED' ? '#16a34a' : '#fff',
+                backgroundColor: decision === 'APPROVED' ? '#16a34a' : 'var(--bg-primary)',
                 color: decision === 'APPROVED' ? '#fff' : '#16a34a',
                 border: '2px solid #16a34a',
                 borderRadius: 6,
@@ -262,7 +262,7 @@ function ApprovalPanel({
                 alignItems: 'center',
                 gap: 6,
                 padding: '8px 16px',
-                backgroundColor: decision === 'REJECTED' ? '#dc2626' : '#fff',
+                backgroundColor: decision === 'REJECTED' ? '#dc2626' : 'var(--bg-primary)',
                 color: decision === 'REJECTED' ? '#fff' : '#dc2626',
                 border: '2px solid #dc2626',
                 borderRadius: 6,
@@ -279,7 +279,7 @@ function ApprovalPanel({
           {decision && (
             <>
               <div style={{ marginBottom: 10 }}>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#374151', marginBottom: 4 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 4 }}>
                   Comments {decision === 'REJECTED' ? '(required)' : '(optional)'}
                 </label>
                 <RichTextField
@@ -290,7 +290,7 @@ function ApprovalPanel({
                   compact
                 />
               </div>
-              {error && <p style={{ color: '#dc2626', fontSize: 13, margin: '0 0 8px' }}>{error}</p>}
+              {error && <p style={{ color: 'var(--accent-danger)', fontSize: 13, margin: '0 0 8px' }}>{error}</p>}
               <button
                 onClick={() => void handleDecision()}
                 disabled={submitting}
@@ -360,10 +360,10 @@ export default function ChangeDetailPage() {
   };
 
   if (isLoading) {
-    return <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>Loading change...</div>;
+    return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading change...</div>;
   }
   if (error || !change) {
-    return <div style={{ padding: 40, textAlign: 'center', color: '#dc2626' }}>
+    return <div style={{ padding: 40, textAlign: 'center', color: 'var(--accent-danger)' }}>
       {error instanceof Error ? error.message : 'Change not found'}
     </div>;
   }
@@ -380,7 +380,7 @@ export default function ChangeDetailPage() {
       <div style={{ marginBottom: 20 }}>
         <button
           onClick={() => router.back()}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 14, padding: 0, marginBottom: 12 }}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14, padding: 0, marginBottom: 12 }}
         >
           <Icon path={mdiArrowLeft} size={0.8} color="currentColor" />
           Back to Changes
@@ -388,19 +388,19 @@ export default function ChangeDetailPage() {
 
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Icon path={mdiSwapHorizontal} size={1} color="#4f46e5" />
+            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Icon path={mdiSwapHorizontal} size={1} color="var(--accent-primary)" />
               {change.title}
             </h1>
             <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>CHG-{change.changeNumber}</span>
+              <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>CHG-{change.changeNumber}</span>
               {isEmergency && (
-                <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 13, fontWeight: 700, backgroundColor: '#fee2e2', color: '#991b1b' }}>
+                <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 13, fontWeight: 700, backgroundColor: 'var(--badge-red-bg)', color: '#991b1b' }}>
                   EMERGENCY
                 </span>
               )}
               {!isEmergency && (
-                <span style={{ padding: '3px 8px', borderRadius: 12, fontSize: 12, fontWeight: 500, backgroundColor: '#f3f4f6', color: '#374151' }}>
+                <span style={{ padding: '3px 8px', borderRadius: 12, fontSize: 12, fontWeight: 500, backgroundColor: 'var(--bg-tertiary)', color: '#374151' }}>
                   {change.type}
                 </span>
               )}
@@ -425,9 +425,9 @@ export default function ChangeDetailPage() {
                     disabled={transitioning}
                     style={{
                       padding: '7px 14px',
-                      backgroundColor: isDanger ? '#fff' : '#4f46e5',
-                      color: isDanger ? '#dc2626' : '#fff',
-                      border: isDanger ? '1px solid #dc2626' : 'none',
+                      backgroundColor: isDanger ? 'var(--bg-primary)' : 'var(--accent-primary)',
+                      color: isDanger ? 'var(--accent-danger)' : '#fff',
+                      border: isDanger ? '1px solid var(--accent-danger)' : 'none',
                       borderRadius: 6,
                       fontSize: 13,
                       fontWeight: 500,
@@ -459,40 +459,40 @@ export default function ChangeDetailPage() {
 
         {/* Left: Description + Plans */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 20 }}>
+          <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
             <h2 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600 }}>Description</h2>
-            <p style={{ margin: 0, fontSize: 14, color: '#374151', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{change.description}</p>
+            <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{change.description}</p>
           </div>
 
           {change.implementationPlan && (
-            <details open style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10 }}>
+            <details open style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10 }}>
               <summary style={{ padding: '14px 20px', fontSize: 15, fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}>
                 Implementation Plan
               </summary>
               <div style={{ padding: '0 20px 20px' }}>
-                <p style={{ margin: 0, fontSize: 14, color: '#374151', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{change.implementationPlan}</p>
+                <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{change.implementationPlan}</p>
               </div>
             </details>
           )}
 
           {change.backoutPlan && (
-            <details style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10 }}>
+            <details style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10 }}>
               <summary style={{ padding: '14px 20px', fontSize: 15, fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}>
                 Backout Plan
               </summary>
               <div style={{ padding: '0 20px 20px' }}>
-                <p style={{ margin: 0, fontSize: 14, color: '#374151', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{change.backoutPlan}</p>
+                <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{change.backoutPlan}</p>
               </div>
             </details>
           )}
 
           {change.testingPlan && (
-            <details style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10 }}>
+            <details style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10 }}>
               <summary style={{ padding: '14px 20px', fontSize: 15, fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}>
                 Testing Plan
               </summary>
               <div style={{ padding: '0 20px 20px' }}>
-                <p style={{ margin: 0, fontSize: 14, color: '#374151', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{change.testingPlan}</p>
+                <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{change.testingPlan}</p>
               </div>
             </details>
           )}
@@ -502,49 +502,49 @@ export default function ChangeDetailPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* Info */}
-          <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 20 }}>
+          <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
             <h2 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600 }}>Details</h2>
             {[
               ['Requested By', change.requestedBy ? `${change.requestedBy.firstName} ${change.requestedBy.lastName}` : null],
               ['Created', formatDateTime(change.createdAt)],
               ['Updated', formatDateTime(change.updatedAt)],
             ].map(([label, value]) => (
-              <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #f3f4f6', fontSize: 14 }}>
-                <span style={{ color: '#6b7280' }}>{label}</span>
-                <span style={{ color: '#111827' }}>{(value as string | null) ?? '—'}</span>
+              <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14 }}>
+                <span style={{ color: 'var(--text-muted)' }}>{label}</span>
+                <span style={{ color: 'var(--text-primary)' }}>{(value as string | null) ?? '—'}</span>
               </div>
             ))}
           </div>
 
           {/* Schedule */}
           {(change.scheduledStart || change.scheduledEnd) && (
-            <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 20 }}>
+            <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
               <h2 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600 }}>Schedule</h2>
               <div style={{ fontSize: 14 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #f3f4f6' }}>
-                  <span style={{ color: '#6b7280' }}>Start</span>
-                  <span style={{ color: '#111827' }}>{formatDateTime(change.scheduledStart)}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--bg-tertiary)' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Start</span>
+                  <span style={{ color: 'var(--text-primary)' }}>{formatDateTime(change.scheduledStart)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0' }}>
-                  <span style={{ color: '#6b7280' }}>End</span>
-                  <span style={{ color: '#111827' }}>{formatDateTime(change.scheduledEnd)}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>End</span>
+                  <span style={{ color: 'var(--text-primary)' }}>{formatDateTime(change.scheduledEnd)}</span>
                 </div>
               </div>
             </div>
           )}
 
           {/* Linked Assets */}
-          <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 20 }}>
+          <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
             <h2 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600 }}>Linked Assets ({change.assets.length})</h2>
             {change.assets.length === 0 ? (
-              <p style={{ margin: 0, fontSize: 13, color: '#9ca3af' }}>No assets linked</p>
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--text-placeholder)' }}>No assets linked</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {change.assets.map((la) => (
                   <Link
                     key={la.id}
                     href={`/dashboard/assets/${la.asset.id}`}
-                    style={{ fontSize: 13, color: '#4f46e5', textDecoration: 'none' }}
+                    style={{ fontSize: 13, color: 'var(--accent-primary)', textDecoration: 'none' }}
                   >
                     {la.asset.assetTag} {la.asset.model ? `— ${la.asset.model}` : ''}
                   </Link>
@@ -554,14 +554,14 @@ export default function ChangeDetailPage() {
           </div>
 
           {/* Linked Applications */}
-          <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 20 }}>
+          <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
             <h2 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600 }}>Linked Applications ({change.applications.length})</h2>
             {change.applications.length === 0 ? (
-              <p style={{ margin: 0, fontSize: 13, color: '#9ca3af' }}>No applications linked</p>
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--text-placeholder)' }}>No applications linked</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {change.applications.map((la) => (
-                  <span key={la.id} style={{ fontSize: 13, color: '#374151' }}>
+                  <span key={la.id} style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
                     {la.application.name}
                   </span>
                 ))}
@@ -573,7 +573,7 @@ export default function ChangeDetailPage() {
 
       {/* ── Activity Trail ─────────────────────────────────────────────────────── */}
       {change.activities.length > 0 && (
-        <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 20, marginTop: 16 }}>
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20, marginTop: 16 }}>
           <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600 }}>Activity Trail</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             {change.activities.map((activity, idx) => (
@@ -583,24 +583,24 @@ export default function ChangeDetailPage() {
                   display: 'flex',
                   gap: 12,
                   padding: '10px 0',
-                  borderBottom: idx < change.activities.length - 1 ? '1px solid #f3f4f6' : 'none',
+                  borderBottom: idx < change.activities.length - 1 ? '1px solid var(--bg-tertiary)' : 'none',
                 }}
               >
-                <div style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', backgroundColor: '#4f46e5', marginTop: 5 }} />
+                <div style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-primary)', marginTop: 5 }} />
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 14, color: '#374151', fontWeight: 500 }}>
+                    <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500 }}>
                       {activity.activityType.replace(/_/g, ' ')}
                     </span>
-                    <span style={{ fontSize: 12, color: '#9ca3af', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-placeholder)', whiteSpace: 'nowrap' }}>
                       {formatDateTime(activity.createdAt)}
                     </span>
                   </div>
                   {activity.description && (
-                    <p style={{ margin: '2px 0 0', fontSize: 13, color: '#6b7280' }}>{activity.description}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>{activity.description}</p>
                   )}
                   {activity.performedBy && (
-                    <p style={{ margin: '2px 0 0', fontSize: 12, color: '#9ca3af' }}>
+                    <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-placeholder)' }}>
                       by {activity.performedBy.firstName} {activity.performedBy.lastName}
                     </p>
                   )}

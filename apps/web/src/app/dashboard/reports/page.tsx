@@ -64,8 +64,8 @@ function StatCard({
   return (
     <div
       style={{
-        backgroundColor: '#fff',
-        border: '1px solid #e5e7eb',
+        backgroundColor: 'var(--bg-primary)',
+        border: '1px solid var(--border-primary)',
         borderRadius: 12,
         padding: '18px 20px',
         display: 'flex',
@@ -88,8 +88,8 @@ function StatCard({
         <Icon path={icon} size={1.1} color={color} />
       </div>
       <div>
-        <p style={{ margin: 0, fontSize: 13, color: '#6b7280', fontWeight: 500 }}>{label}</p>
-        <p style={{ margin: '2px 0 0', fontSize: 26, fontWeight: 700, color: '#111827' }}>{value.toLocaleString()}</p>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>{label}</p>
+        <p style={{ margin: '2px 0 0', fontSize: 26, fontWeight: 700, color: 'var(--text-primary)' }}>{value.toLocaleString()}</p>
       </div>
     </div>
   );
@@ -120,12 +120,12 @@ export default function ReportsPage() {
   });
 
   if (isLoading) {
-    return <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>Loading reports...</div>;
+    return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading reports...</div>;
   }
 
   if (error || !stats) {
     return (
-      <div style={{ padding: 40, textAlign: 'center', color: '#dc2626' }}>
+      <div style={{ padding: 40, textAlign: 'center', color: 'var(--accent-danger)' }}>
         {error instanceof Error ? error.message : 'Failed to load dashboard data'}
       </div>
     );
@@ -136,15 +136,15 @@ export default function ReportsPage() {
 
       {/* ── Header ────────────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Icon path={mdiChartBar} size={1} color="#4f46e5" />
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon path={mdiChartBar} size={1} color="var(--accent-primary)" />
           Reports
         </h1>
         <div style={{ display: 'flex', gap: 8 }}>
           <a
             href="/api/v1/reports/tickets?format=csv"
             download
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13, fontWeight: 500, color: '#374151', textDecoration: 'none', backgroundColor: '#fff' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', textDecoration: 'none', backgroundColor: 'var(--bg-primary)' }}
           >
             <Icon path={mdiDownload} size={0.8} color="currentColor" />
             Export Tickets CSV
@@ -152,7 +152,7 @@ export default function ReportsPage() {
           <a
             href="/api/v1/reports/sla-compliance"
             download
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13, fontWeight: 500, color: '#374151', textDecoration: 'none', backgroundColor: '#fff' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', textDecoration: 'none', backgroundColor: 'var(--bg-primary)' }}
           >
             <Icon path={mdiDownload} size={0.8} color="currentColor" />
             SLA Report
@@ -162,31 +162,31 @@ export default function ReportsPage() {
 
       {/* ── Stats Cards ───────────────────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16, marginBottom: 32 }}>
-        <StatCard label="Total Tickets" value={stats.totalTickets} icon={mdiTicketOutline} color="#4f46e5" bg="#eef2ff" />
-        <StatCard label="Open Tickets" value={stats.openTickets} icon={mdiTicketOutline} color="#0891b2" bg="#e0f2fe" />
-        <StatCard label="Resolved Today" value={stats.resolvedToday} icon={mdiCheckCircle} color="#059669" bg="#d1fae5" />
-        <StatCard label="SLA Breached" value={stats.overdueTickets} icon={mdiAlertCircle} color="#dc2626" bg="#fee2e2" />
+        <StatCard label="Total Tickets" value={stats.totalTickets} icon={mdiTicketOutline} color="#4f46e5" bg="var(--badge-indigo-bg)" />
+        <StatCard label="Open Tickets" value={stats.openTickets} icon={mdiTicketOutline} color="#0891b2" bg="var(--badge-blue-bg-subtle)" />
+        <StatCard label="Resolved Today" value={stats.resolvedToday} icon={mdiCheckCircle} color="#059669" bg="var(--badge-green-bg)" />
+        <StatCard label="SLA Breached" value={stats.overdueTickets} icon={mdiAlertCircle} color="#dc2626" bg="var(--badge-red-bg)" />
       </div>
 
       {/* ── Charts row ────────────────────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 32 }}>
 
         {/* Ticket volume line chart */}
-        <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '20px 24px' }}>
-          <h2 style={{ margin: '0 0 20px', fontSize: 15, fontWeight: 600, color: '#111827' }}>Ticket Volume (last 30 days)</h2>
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: '20px 24px' }}>
+          <h2 style={{ margin: '0 0 20px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Ticket Volume (last 30 days)</h2>
           {stats.volumeByDay.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={stats.volumeByDay} margin={{ top: 4, right: 12, bottom: 0, left: -20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--bg-tertiary)" />
                 <XAxis
                   dataKey="day"
-                  tick={{ fontSize: 11, fill: '#9ca3af' }}
+                  tick={{ fontSize: 11, fill: 'var(--text-placeholder)' }}
                   tickFormatter={(v: string) => {
                     const d = new Date(v);
                     return `${d.getMonth() + 1}/${d.getDate()}`;
                   }}
                 />
-                <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} allowDecimals={false} />
+                <YAxis tick={{ fontSize: 11, fill: 'var(--text-placeholder)' }} allowDecimals={false} />
                 <Tooltip
                   contentStyle={{ fontSize: 12, borderRadius: 6 }}
                   labelFormatter={(v: unknown) => {
@@ -194,35 +194,35 @@ export default function ReportsPage() {
                     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                   }}
                 />
-                <Line type="monotone" dataKey="count" stroke="#4f46e5" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="count" stroke="var(--accent-primary)" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: 14 }}>
+            <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-placeholder)', fontSize: 14 }}>
               No data yet
             </div>
           )}
         </div>
 
         {/* Priority bar chart */}
-        <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '20px 24px' }}>
-          <h2 style={{ margin: '0 0 20px', fontSize: 15, fontWeight: 600, color: '#111827' }}>Tickets by Priority</h2>
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: '20px 24px' }}>
+          <h2 style={{ margin: '0 0 20px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Tickets by Priority</h2>
           {stats.volumeByPriority.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={stats.volumeByPriority} margin={{ top: 4, right: 8, bottom: 0, left: -20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                <XAxis dataKey="priority" tick={{ fontSize: 11, fill: '#9ca3af' }} />
-                <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} allowDecimals={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--bg-tertiary)" />
+                <XAxis dataKey="priority" tick={{ fontSize: 11, fill: 'var(--text-placeholder)' }} />
+                <YAxis tick={{ fontSize: 11, fill: 'var(--text-placeholder)' }} allowDecimals={false} />
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 6 }} />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                   {stats.volumeByPriority.map((entry) => (
-                    <Cell key={entry.priority} fill={PRIORITY_COLORS[entry.priority] ?? '#6b7280'} />
+                    <Cell key={entry.priority} fill={PRIORITY_COLORS[entry.priority] ?? 'var(--text-muted)'} />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: 14 }}>
+            <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-placeholder)', fontSize: 14 }}>
               No data yet
             </div>
           )}
@@ -233,8 +233,8 @@ export default function ReportsPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
 
         {/* Top categories pie chart */}
-        <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '20px 24px' }}>
-          <h2 style={{ margin: '0 0 20px', fontSize: 15, fontWeight: 600, color: '#111827' }}>Top Categories</h2>
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: '20px 24px' }}>
+          <h2 style={{ margin: '0 0 20px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Top Categories</h2>
           {stats.topCategories.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
@@ -259,29 +259,29 @@ export default function ReportsPage() {
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: 14 }}>
+            <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-placeholder)', fontSize: 14 }}>
               No category data yet
             </div>
           )}
         </div>
 
         {/* Recent activity feed */}
-        <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '20px 24px' }}>
-          <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: '#111827' }}>Recent Activity</h2>
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: '20px 24px' }}>
+          <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Recent Activity</h2>
           {stats.recentActivity.length === 0 ? (
-            <p style={{ color: '#9ca3af', fontSize: 14 }}>No recent activity</p>
+            <p style={{ color: 'var(--text-placeholder)', fontSize: 14 }}>No recent activity</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {stats.recentActivity.map((act) => (
                 <div key={act.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                  <Icon path={mdiClockOutline} size={0.7} color="#d1d5db" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <Icon path={mdiClockOutline} size={0.7} color="var(--border-secondary)" style={{ flexShrink: 0, marginTop: 2 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontSize: 13, color: '#374151', lineHeight: 1.4 }}>
+                    <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
                       <strong>{act.actorId ? 'User' : 'System'}</strong>
                       {' '}{act.activityType.replace(/_/g, ' ').toLowerCase()}
-                      {act.fieldName && <span style={{ color: '#6b7280' }}> ({act.fieldName})</span>}
+                      {act.fieldName && <span style={{ color: 'var(--text-muted)' }}> ({act.fieldName})</span>}
                     </p>
-                    <p style={{ margin: '2px 0 0', fontSize: 11, color: '#9ca3af' }}>
+                    <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--text-placeholder)' }}>
                       {new Date(act.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>

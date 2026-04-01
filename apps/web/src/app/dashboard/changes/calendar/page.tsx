@@ -23,11 +23,11 @@ interface CalendarChange {
 
 function getRiskColor(risk: string): { bg: string; text: string; border: string } {
   switch (risk) {
-    case 'LOW':      return { bg: '#d1fae5', text: '#065f46', border: '#16a34a' };
-    case 'MEDIUM':   return { bg: '#fef3c7', text: '#92400e', border: '#d97706' };
-    case 'HIGH':     return { bg: '#fee2e2', text: '#991b1b', border: '#dc2626' };
+    case 'LOW':      return { bg: 'var(--badge-green-bg)', text: '#065f46', border: '#16a34a' };
+    case 'MEDIUM':   return { bg: 'var(--badge-yellow-bg)', text: '#92400e', border: '#d97706' };
+    case 'HIGH':     return { bg: 'var(--badge-red-bg)', text: '#991b1b', border: '#dc2626' };
     case 'CRITICAL': return { bg: '#450a0a', text: '#fca5a5', border: '#dc2626' };
-    default:         return { bg: '#f3f4f6', text: '#374151', border: '#d1d5db' };
+    default:         return { bg: 'var(--bg-tertiary)', text: '#374151', border: 'var(--border-secondary)' };
   }
 }
 
@@ -121,8 +121,8 @@ export default function ChangeCalendarPage() {
 
       {/* ── Header ────────────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Icon path={mdiCalendar} size={1} color="#4f46e5" />
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon path={mdiCalendar} size={1} color="var(--accent-primary)" />
           Change Calendar
         </h1>
         <Link
@@ -132,13 +132,13 @@ export default function ChangeCalendarPage() {
             alignItems: 'center',
             gap: 6,
             padding: '8px 16px',
-            backgroundColor: '#fff',
-            color: '#374151',
+            backgroundColor: 'var(--bg-primary)',
+            color: 'var(--text-secondary)',
             textDecoration: 'none',
             borderRadius: 8,
             fontSize: 14,
             fontWeight: 500,
-            border: '1px solid #d1d5db',
+            border: '1px solid var(--border-secondary)',
           }}
         >
           <Icon path={mdiViewList} size={0.8} color="currentColor" />
@@ -150,20 +150,20 @@ export default function ChangeCalendarPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 16 }}>
         <button
           onClick={prevMonth}
-          style={{ display: 'flex', alignItems: 'center', padding: '6px', background: '#fff', border: '1px solid #d1d5db', borderRadius: 6, cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', padding: '6px', background: 'var(--bg-primary)', border: '1px solid var(--border-secondary)', borderRadius: 6, cursor: 'pointer' }}
           aria-label="Previous month"
         >
-          <Icon path={mdiChevronLeft} size={1} color="#374151" />
+          <Icon path={mdiChevronLeft} size={1} color="var(--text-secondary)" />
         </button>
-        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600, color: '#111827', minWidth: 200, textAlign: 'center' }}>
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600, color: 'var(--text-primary)', minWidth: 200, textAlign: 'center' }}>
           {MONTH_NAMES[month]} {year}
         </h2>
         <button
           onClick={nextMonth}
-          style={{ display: 'flex', alignItems: 'center', padding: '6px', background: '#fff', border: '1px solid #d1d5db', borderRadius: 6, cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', padding: '6px', background: 'var(--bg-primary)', border: '1px solid var(--border-secondary)', borderRadius: 6, cursor: 'pointer' }}
           aria-label="Next month"
         >
-          <Icon path={mdiChevronRight} size={1} color="#374151" />
+          <Icon path={mdiChevronRight} size={1} color="var(--text-secondary)" />
         </button>
       </div>
 
@@ -174,7 +174,7 @@ export default function ChangeCalendarPage() {
           return (
             <span
               key={risk}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#6b7280' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)' }}
             >
               <span style={{ width: 12, height: 12, borderRadius: 2, backgroundColor: style.bg, border: `2px solid ${style.border}`, display: 'inline-block' }} />
               {risk}
@@ -185,15 +185,15 @@ export default function ChangeCalendarPage() {
 
       {/* ── Calendar Grid ─────────────────────────────────────────────────────── */}
       {isLoading ? (
-        <div style={{ padding: 60, textAlign: 'center', color: '#6b7280' }}>Loading calendar...</div>
+        <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)' }}>Loading calendar...</div>
       ) : (
-        <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, overflow: 'hidden' }}>
           {/* Day headers */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '2px solid #e5e7eb', backgroundColor: '#f9fafb' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '2px solid var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
             {DAY_NAMES.map((day) => (
               <div
                 key={day}
-                style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                style={{ padding: '8px 4px', textAlign: 'center', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}
               >
                 {day}
               </div>
@@ -212,10 +212,10 @@ export default function ChangeCalendarPage() {
                   key={idx}
                   style={{
                     minHeight: 100,
-                    borderRight: (idx + 1) % 7 !== 0 ? '1px solid #e5e7eb' : 'none',
-                    borderBottom: idx < days.length - 7 ? '1px solid #e5e7eb' : 'none',
+                    borderRight: (idx + 1) % 7 !== 0 ? '1px solid var(--border-primary)' : 'none',
+                    borderBottom: idx < days.length - 7 ? '1px solid var(--border-primary)' : 'none',
                     padding: '6px 4px',
-                    backgroundColor: isThisMonth ? '#fff' : '#fafafa',
+                    backgroundColor: isThisMonth ? 'var(--bg-primary)' : 'var(--bg-secondary)',
                   }}
                 >
                   {/* Day number */}
@@ -230,8 +230,8 @@ export default function ChangeCalendarPage() {
                         borderRadius: '50%',
                         fontSize: 13,
                         fontWeight: isTodayDay ? 700 : 400,
-                        color: isTodayDay ? '#fff' : isThisMonth ? '#374151' : '#d1d5db',
-                        backgroundColor: isTodayDay ? '#4f46e5' : 'transparent',
+                        color: isTodayDay ? '#fff' : isThisMonth ? 'var(--text-secondary)' : 'var(--border-secondary)',
+                        backgroundColor: isTodayDay ? 'var(--accent-primary)' : 'transparent',
                       }}
                     >
                       {day.getDate()}
@@ -253,7 +253,7 @@ export default function ChangeCalendarPage() {
                             borderRadius: 3,
                             fontSize: 11,
                             fontWeight: isEmergency ? 700 : 500,
-                            backgroundColor: isEmergency ? '#fee2e2' : riskStyle.bg,
+                            backgroundColor: isEmergency ? 'var(--badge-red-bg)' : riskStyle.bg,
                             color: isEmergency ? '#991b1b' : riskStyle.text,
                             borderLeft: `3px solid ${isEmergency ? '#dc2626' : riskStyle.border}`,
                             textDecoration: 'none',
@@ -268,7 +268,7 @@ export default function ChangeCalendarPage() {
                       );
                     })}
                     {dayChanges.length > 3 && (
-                      <span style={{ fontSize: 11, color: '#9ca3af', paddingLeft: 6 }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-placeholder)', paddingLeft: 6 }}>
                         +{dayChanges.length - 3} more
                       </span>
                     )}

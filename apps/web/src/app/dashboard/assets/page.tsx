@@ -28,12 +28,12 @@ interface AssetListResponse {
 
 function getStatusStyle(status: string): { bg: string; text: string } {
   switch (status) {
-    case 'DEPLOYED':    return { bg: '#d1fae5', text: '#065f46' };
-    case 'IN_STOCK':    return { bg: '#dbeafe', text: '#1e40af' };
-    case 'IN_REPAIR':   return { bg: '#fef3c7', text: '#92400e' };
-    case 'RETIRED':     return { bg: '#f3f4f6', text: '#6b7280' };
-    case 'DISPOSED':    return { bg: '#f3f4f6', text: '#9ca3af' };
-    default:            return { bg: '#f3f4f6', text: '#374151' };
+    case 'DEPLOYED':    return { bg: 'var(--badge-green-bg)', text: '#065f46' };
+    case 'IN_STOCK':    return { bg: 'var(--badge-blue-bg)', text: '#1e40af' };
+    case 'IN_REPAIR':   return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
+    case 'RETIRED':     return { bg: 'var(--bg-tertiary)', text: '#6b7280' };
+    case 'DISPOSED':    return { bg: 'var(--bg-tertiary)', text: '#9ca3af' };
+    default:            return { bg: 'var(--bg-tertiary)', text: '#374151' };
   }
 }
 
@@ -73,8 +73,8 @@ export default function AssetsPage() {
 
       {/* ── Header ────────────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Icon path={mdiDesktopClassic} size={1} color="#4f46e5" />
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon path={mdiDesktopClassic} size={1} color="var(--accent-primary)" />
           Assets
         </h1>
         <Link
@@ -84,7 +84,7 @@ export default function AssetsPage() {
             alignItems: 'center',
             gap: 6,
             padding: '8px 16px',
-            backgroundColor: '#4f46e5',
+            backgroundColor: 'var(--accent-primary)',
             color: '#fff',
             textDecoration: 'none',
             borderRadius: 8,
@@ -101,7 +101,7 @@ export default function AssetsPage() {
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 200 }}>
           <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
-            <Icon path={mdiMagnify} size={0.8} color="#9ca3af" />
+            <Icon path={mdiMagnify} size={0.8} color="var(--text-placeholder)" />
           </div>
           <input
             type="search"
@@ -111,7 +111,7 @@ export default function AssetsPage() {
             style={{
               width: '100%',
               padding: '8px 10px 8px 34px',
-              border: '1px solid #d1d5db',
+              border: '1px solid var(--border-secondary)',
               borderRadius: 8,
               fontSize: 14,
               outline: 'none',
@@ -121,11 +121,11 @@ export default function AssetsPage() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Icon path={mdiFilter} size={0.75} color="#9ca3af" />
+          <Icon path={mdiFilter} size={0.75} color="var(--text-placeholder)" />
           <select
             value={status}
             onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-            style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: '#fff' }}
+            style={{ padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}
           >
             <option value="">All Statuses</option>
             <option value="IN_STOCK">In Stock</option>
@@ -139,43 +139,43 @@ export default function AssetsPage() {
 
       {/* ── Table ─────────────────────────────────────────────────────────────── */}
       {isLoading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>Loading assets...</div>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading assets...</div>
       ) : error ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#dc2626' }}>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--accent-danger)' }}>
           {error instanceof Error ? error.message : 'Failed to load assets'}
         </div>
       ) : assets.length === 0 ? (
         <div style={{ padding: 60, textAlign: 'center' }}>
-          <Icon path={mdiDesktopClassic} size={2.5} color="#d1d5db" />
-          <p style={{ margin: '16px 0 0', color: '#6b7280', fontSize: 14 }}>No assets found</p>
+          <Icon path={mdiDesktopClassic} size={2.5} color="var(--border-secondary)" />
+          <p style={{ margin: '16px 0 0', color: 'var(--text-muted)', fontSize: 14 }}>No assets found</p>
         </div>
       ) : (
-        <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #e5e7eb', backgroundColor: '#f9fafb' }}>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Asset Tag</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Make / Model</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Status</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Assigned To</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Site</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Warranty Expiry</th>
+              <tr style={{ borderBottom: '2px solid var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Asset Tag</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Make / Model</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Status</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Assigned To</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Site</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Warranty Expiry</th>
               </tr>
             </thead>
             <tbody>
               {assets.map((asset) => {
                 const style = getStatusStyle(asset.status);
                 return (
-                  <tr key={asset.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <tr key={asset.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
                     <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
                       <Link
                         href={`/dashboard/assets/${asset.id}`}
-                        style={{ color: '#4f46e5', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}
+                        style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}
                       >
                         {asset.assetTag}
                       </Link>
                     </td>
-                    <td style={{ padding: '10px 14px', color: '#374151' }}>
+                    <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>
                       {[asset.manufacturer, asset.model].filter(Boolean).join(' ') || '—'}
                     </td>
                     <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
@@ -183,13 +183,13 @@ export default function AssetsPage() {
                         {asset.status.replace(/_/g, ' ')}
                       </span>
                     </td>
-                    <td style={{ padding: '10px 14px', color: '#6b7280', fontSize: 13, whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 13, whiteSpace: 'nowrap' }}>
                       {asset.assignedTo ? `${asset.assignedTo.firstName} ${asset.assignedTo.lastName}` : '—'}
                     </td>
-                    <td style={{ padding: '10px 14px', color: '#6b7280', fontSize: 13 }}>
+                    <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 13 }}>
                       {asset.site?.name ?? '—'}
                     </td>
-                    <td style={{ padding: '10px 14px', color: '#6b7280', fontSize: 13, whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 13, whiteSpace: 'nowrap' }}>
                       {formatDate(asset.warrantyExpiry)}
                     </td>
                   </tr>
@@ -206,17 +206,17 @@ export default function AssetsPage() {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
-            style={{ padding: '6px 14px', border: '1px solid #d1d5db', borderRadius: 6, backgroundColor: '#fff', cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.5 : 1, fontSize: 14 }}
+            style={{ padding: '6px 14px', border: '1px solid var(--border-secondary)', borderRadius: 6, backgroundColor: 'var(--bg-primary)', cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.5 : 1, fontSize: 14 }}
           >
             Previous
           </button>
-          <span style={{ fontSize: 14, color: '#6b7280' }}>
+          <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>
             Page {page} of {totalPages} ({total} assets)
           </span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
-            style={{ padding: '6px 14px', border: '1px solid #d1d5db', borderRadius: 6, backgroundColor: '#fff', cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.5 : 1, fontSize: 14 }}
+            style={{ padding: '6px 14px', border: '1px solid var(--border-secondary)', borderRadius: 6, backgroundColor: 'var(--bg-primary)', cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.5 : 1, fontSize: 14 }}
           >
             Next
           </button>

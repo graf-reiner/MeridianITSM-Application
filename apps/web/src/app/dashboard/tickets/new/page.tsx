@@ -144,12 +144,12 @@ export default function NewTicketPage() {
   const inputStyle = {
     width: '100%',
     padding: '9px 12px',
-    border: '1px solid #d1d5db',
+    border: '1px solid var(--border-secondary)',
     borderRadius: 8,
     fontSize: 14,
     outline: 'none',
     boxSizing: 'border-box' as const,
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--bg-primary)',
   };
 
   const labelStyle = {
@@ -157,21 +157,21 @@ export default function NewTicketPage() {
     marginBottom: 5,
     fontSize: 13,
     fontWeight: 600,
-    color: '#374151',
+    color: 'var(--text-secondary)',
   };
 
-  const errorStyle = { color: '#dc2626', fontSize: 12, marginTop: 4 };
+  const errorStyle = { color: 'var(--accent-danger)', fontSize: 12, marginTop: 4 };
 
   return (
     <div style={{ maxWidth: 720, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <Link href="/dashboard/tickets" style={{ display: 'flex', alignItems: 'center', color: '#6b7280', textDecoration: 'none' }}>
+        <Link href="/dashboard/tickets" style={{ display: 'flex', alignItems: 'center', color: 'var(--text-muted)', textDecoration: 'none' }}>
           <Icon path={mdiArrowLeft} size={0.9} color="currentColor" />
         </Link>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827' }}>New Ticket</h1>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>New Ticket</h1>
       </div>
 
-      <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 28 }}>
+      <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: 28 }}>
         <form onSubmit={(e) => { void handleSubmit(onSubmit)(e); }}>
 
           {/* Title */}
@@ -275,7 +275,7 @@ export default function NewTicketPage() {
           </div>
 
           {submitError && (
-            <div style={{ padding: '10px 14px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, marginBottom: 16, color: '#dc2626', fontSize: 14 }}>
+            <div style={{ padding: '10px 14px', backgroundColor: 'var(--badge-red-bg-subtle)', border: '1px solid var(--badge-red-bg-strong)', borderRadius: 8, marginBottom: 16, color: 'var(--accent-danger)', fontSize: 14 }}>
               {submitError}
             </div>
           )}
@@ -287,13 +287,13 @@ export default function NewTicketPage() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 padding: '10px 20px',
-                border: '1px solid #d1d5db',
+                border: '1px solid var(--border-secondary)',
                 borderRadius: 8,
                 fontSize: 14,
                 fontWeight: 500,
-                color: '#374151',
+                color: 'var(--text-secondary)',
                 textDecoration: 'none',
-                backgroundColor: '#fff',
+                backgroundColor: 'var(--bg-primary)',
               }}
             >
               Cancel
@@ -306,7 +306,7 @@ export default function NewTicketPage() {
                 alignItems: 'center',
                 gap: 8,
                 padding: '10px 24px',
-                backgroundColor: isSubmitting ? '#a5b4fc' : '#4f46e5',
+                backgroundColor: isSubmitting ? 'var(--badge-indigo-bg)' : 'var(--accent-primary)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: 8,

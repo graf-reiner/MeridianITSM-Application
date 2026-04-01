@@ -30,11 +30,11 @@ interface ArticleListResponse {
 
 function getStatusStyle(s: string) {
   switch (s) {
-    case 'PUBLISHED': return { bg: '#d1fae5', text: '#065f46' };
-    case 'IN_REVIEW': return { bg: '#dbeafe', text: '#1e40af' };
-    case 'DRAFT': return { bg: '#f3f4f6', text: '#374151' };
-    case 'RETIRED': return { bg: '#fee2e2', text: '#991b1b' };
-    default: return { bg: '#f3f4f6', text: '#374151' };
+    case 'PUBLISHED': return { bg: 'var(--badge-green-bg)', text: '#065f46' };
+    case 'IN_REVIEW': return { bg: 'var(--badge-blue-bg)', text: '#1e40af' };
+    case 'DRAFT': return { bg: 'var(--bg-tertiary)', text: '#374151' };
+    case 'RETIRED': return { bg: 'var(--badge-red-bg)', text: '#991b1b' };
+    default: return { bg: 'var(--bg-tertiary)', text: '#374151' };
   }
 }
 
@@ -78,8 +78,8 @@ export default function DashboardKnowledgePage() {
 
       {/* ── Header ────────────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Icon path={mdiBookOpenVariant} size={1} color="#4f46e5" />
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon path={mdiBookOpenVariant} size={1} color="var(--accent-primary)" />
           Knowledge Base
         </h1>
         <Link
@@ -89,7 +89,7 @@ export default function DashboardKnowledgePage() {
             alignItems: 'center',
             gap: 6,
             padding: '8px 16px',
-            backgroundColor: '#4f46e5',
+            backgroundColor: 'var(--accent-primary)',
             color: '#fff',
             textDecoration: 'none',
             borderRadius: 8,
@@ -106,20 +106,20 @@ export default function DashboardKnowledgePage() {
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 200 }}>
           <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
-            <Icon path={mdiMagnify} size={0.8} color="#9ca3af" />
+            <Icon path={mdiMagnify} size={0.8} color="var(--text-placeholder)" />
           </div>
           <input
             type="search"
             placeholder="Search articles..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            style={{ width: '100%', padding: '8px 10px 8px 34px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '8px 10px 8px 34px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
           />
         </div>
         <select
           value={status}
           onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-          style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: '#fff' }}
+          style={{ padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}
         >
           <option value="">All Statuses</option>
           <option value="DRAFT">Draft</option>
@@ -130,7 +130,7 @@ export default function DashboardKnowledgePage() {
         <select
           value={visibility}
           onChange={(e) => { setVisibility(e.target.value); setPage(1); }}
-          style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: '#fff' }}
+          style={{ padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}
         >
           <option value="">All Visibility</option>
           <option value="PUBLIC">Public</option>
@@ -140,41 +140,41 @@ export default function DashboardKnowledgePage() {
 
       {/* ── Table ─────────────────────────────────────────────────────────────── */}
       {isLoading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>Loading articles...</div>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading articles...</div>
       ) : error ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#dc2626' }}>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--accent-danger)' }}>
           {error instanceof Error ? error.message : 'Failed to load articles'}
         </div>
       ) : articles.length === 0 ? (
         <div style={{ padding: 60, textAlign: 'center' }}>
-          <Icon path={mdiBookOpenVariant} size={2.5} color="#d1d5db" />
-          <p style={{ margin: '16px 0 0', color: '#6b7280', fontSize: 14 }}>No articles found</p>
+          <Icon path={mdiBookOpenVariant} size={2.5} color="var(--border-secondary)" />
+          <p style={{ margin: '16px 0 0', color: 'var(--text-muted)', fontSize: 14 }}>No articles found</p>
         </div>
       ) : (
-        <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #e5e7eb', backgroundColor: '#f9fafb' }}>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Title</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Status</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Visibility</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Author</th>
-                <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Views</th>
-                <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Helpful</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Updated</th>
+              <tr style={{ borderBottom: '2px solid var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Title</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Status</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Visibility</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Author</th>
+                <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Views</th>
+                <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Helpful</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Updated</th>
               </tr>
             </thead>
             <tbody>
               {articles.map((article) => {
                 const statusStyle = getStatusStyle(article.status);
                 return (
-                  <tr key={article.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <tr key={article.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
                     <td style={{ padding: '10px 14px' }}>
-                      <Link href={`/dashboard/knowledge/${article.id}`} style={{ color: '#111827', textDecoration: 'none', fontWeight: 500 }}>
+                      <Link href={`/dashboard/knowledge/${article.id}`} style={{ color: 'var(--text-primary)', textDecoration: 'none', fontWeight: 500 }}>
                         {article.title}
                       </Link>
                       {article.summary && (
-                        <p style={{ margin: '2px 0 0', fontSize: 12, color: '#9ca3af', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 320 }}>
+                        <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-placeholder)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 320 }}>
                           {article.summary}
                         </p>
                       )}
@@ -184,25 +184,25 @@ export default function DashboardKnowledgePage() {
                         {article.status.replace(/_/g, ' ')}
                       </span>
                     </td>
-                    <td style={{ padding: '10px 14px', fontSize: 13, color: '#6b7280' }}>
+                    <td style={{ padding: '10px 14px', fontSize: 13, color: 'var(--text-muted)' }}>
                       {article.visibility}
                     </td>
-                    <td style={{ padding: '10px 14px', fontSize: 13, color: '#6b7280', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '10px 14px', fontSize: 13, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                       {article.author ? `${article.author.firstName} ${article.author.lastName}` : '—'}
                     </td>
                     <td style={{ padding: '10px 14px', textAlign: 'center' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#6b7280' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, color: 'var(--text-muted)' }}>
                         <Icon path={mdiEye} size={0.6} color="currentColor" />
                         {article.viewCount}
                       </span>
                     </td>
                     <td style={{ padding: '10px 14px', textAlign: 'center' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#6b7280' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, color: 'var(--text-muted)' }}>
                         <Icon path={mdiThumbUpOutline} size={0.6} color="currentColor" />
                         {article.helpfulCount}
                       </span>
                     </td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, color: '#9ca3af', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-placeholder)', whiteSpace: 'nowrap' }}>
                       {relativeTime(article.updatedAt)}
                     </td>
                   </tr>
@@ -219,15 +219,15 @@ export default function DashboardKnowledgePage() {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
-            style={{ padding: '6px 14px', border: '1px solid #d1d5db', borderRadius: 6, backgroundColor: '#fff', cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.5 : 1, fontSize: 14 }}
+            style={{ padding: '6px 14px', border: '1px solid var(--border-secondary)', borderRadius: 6, backgroundColor: 'var(--bg-primary)', cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.5 : 1, fontSize: 14 }}
           >
             Previous
           </button>
-          <span style={{ fontSize: 14, color: '#6b7280' }}>Page {page} of {totalPages}</span>
+          <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>Page {page} of {totalPages}</span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
-            style={{ padding: '6px 14px', border: '1px solid #d1d5db', borderRadius: 6, backgroundColor: '#fff', cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.5 : 1, fontSize: 14 }}
+            style={{ padding: '6px 14px', border: '1px solid var(--border-secondary)', borderRadius: 6, backgroundColor: 'var(--bg-primary)', cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.5 : 1, fontSize: 14 }}
           >
             Next
           </button>
