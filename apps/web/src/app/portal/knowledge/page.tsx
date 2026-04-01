@@ -50,7 +50,7 @@ function SafeHtml({ html }: { html: string }) {
 
   return (
     <div
-      style={{ fontSize: 14, color: '#374151', lineHeight: 1.7 }}
+      style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.7 }}
       // sanitized by DOMPurify with explicit allowlist — XSS safe
       dangerouslySetInnerHTML={{ __html: sanitized }} // eslint-disable-line react/no-danger
     />
@@ -106,7 +106,7 @@ function ArticleModal({
     >
       <div
         style={{
-          backgroundColor: '#fff',
+          backgroundColor: 'var(--bg-primary)',
           borderRadius: 12,
           width: '100%',
           maxWidth: 760,
@@ -121,8 +121,8 @@ function ArticleModal({
           style={{
             position: 'sticky',
             top: 0,
-            backgroundColor: '#fff',
-            borderBottom: '1px solid #e5e7eb',
+            backgroundColor: 'var(--bg-primary)',
+            borderBottom: '1px solid var(--border-primary)',
             padding: '16px 24px',
             display: 'flex',
             alignItems: 'flex-start',
@@ -131,7 +131,7 @@ function ArticleModal({
             zIndex: 1,
           }}
         >
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#111827', lineHeight: 1.3 }}>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3 }}>
             {article.title}
           </h2>
           <button
@@ -141,7 +141,7 @@ function ArticleModal({
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: '#6b7280',
+              color: 'var(--text-muted)',
               padding: 4,
               borderRadius: 6,
             }}
@@ -160,7 +160,7 @@ function ArticleModal({
             gap: 16,
             flexWrap: 'wrap',
             fontSize: 12,
-            color: '#9ca3af',
+            color: 'var(--text-placeholder)',
           }}
         >
           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -194,7 +194,7 @@ function ArticleModal({
             gap: 12,
           }}
         >
-          <p style={{ margin: 0, fontSize: 14, color: '#6b7280', fontWeight: 500 }}>
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--text-muted)', fontWeight: 500 }}>
             Was this article helpful?
           </p>
           <button
@@ -207,8 +207,8 @@ function ArticleModal({
               padding: '6px 14px',
               border: '1px solid #d1d5db',
               borderRadius: 8,
-              backgroundColor: voted === 'helpful' ? '#d1fae5' : '#fff',
-              color: voted === 'helpful' ? '#065f46' : '#374151',
+              backgroundColor: voted === 'helpful' ? 'var(--badge-green-bg)' : 'var(--bg-primary)',
+              color: voted === 'helpful' ? '#065f46' : 'var(--text-secondary)',
               cursor: voted !== null ? 'default' : 'pointer',
               fontSize: 13,
               fontWeight: 500,
@@ -227,8 +227,8 @@ function ArticleModal({
               padding: '6px 14px',
               border: '1px solid #d1d5db',
               borderRadius: 8,
-              backgroundColor: voted === 'not_helpful' ? '#fee2e2' : '#fff',
-              color: voted === 'not_helpful' ? '#991b1b' : '#374151',
+              backgroundColor: voted === 'not_helpful' ? 'var(--badge-red-bg)' : 'var(--bg-primary)',
+              color: voted === 'not_helpful' ? '#991b1b' : 'var(--text-secondary)',
               cursor: voted !== null ? 'default' : 'pointer',
               fontSize: 13,
               fontWeight: 500,
@@ -238,7 +238,7 @@ function ArticleModal({
             No
           </button>
           {voted && (
-            <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>
+            <p style={{ margin: 0, fontSize: 12, color: 'var(--text-muted)' }}>
               Thank you for your feedback!
             </p>
           )}
@@ -292,10 +292,10 @@ export default function PortalKnowledgePage() {
 
       {/* ── Header ────────────────────────────────────────────────────────────── */}
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, color: '#111827' }}>
+        <h1 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>
           Knowledge Base
         </h1>
-        <p style={{ margin: 0, color: '#6b7280', fontSize: 14 }}>
+        <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 14 }}>
           Browse guides and answers to common questions
         </p>
       </div>
@@ -325,7 +325,7 @@ export default function PortalKnowledgePage() {
             borderRadius: 10,
             fontSize: 15,
             outline: 'none',
-            backgroundColor: '#fff',
+            backgroundColor: 'var(--bg-primary)',
             boxSizing: 'border-box',
           }}
         />
@@ -333,15 +333,15 @@ export default function PortalKnowledgePage() {
 
       {/* ── Article List ──────────────────────────────────────────────────────── */}
       {isLoading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
           Loading articles...
         </div>
       ) : error ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#dc2626' }}>{error}</div>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--accent-danger)' }}>{error}</div>
       ) : articles.length === 0 ? (
         <div style={{ padding: 60, textAlign: 'center' }}>
           <Icon path={mdiBookOpenVariant} size={2.5} color="#d1d5db" />
-          <p style={{ margin: '16px 0 0', color: '#6b7280', fontSize: 14 }}>
+          <p style={{ margin: '16px 0 0', color: 'var(--text-muted)', fontSize: 14 }}>
             {debouncedSearch
               ? `No articles found for "${debouncedSearch}"`
               : 'No articles available yet'}
@@ -357,8 +357,8 @@ export default function PortalKnowledgePage() {
               style={{
                 display: 'block',
                 width: '100%',
-                backgroundColor: '#fff',
-                border: '1px solid #e5e7eb',
+                backgroundColor: 'var(--bg-primary)',
+                border: '1px solid var(--border-primary)',
                 borderRadius: 10,
                 padding: '16px 18px',
                 textAlign: 'left',
@@ -366,7 +366,7 @@ export default function PortalKnowledgePage() {
                 transition: 'border-color 0.15s ease',
               }}
             >
-              <h3 style={{ margin: '0 0 6px', fontSize: 15, fontWeight: 600, color: '#111827' }}>
+              <h3 style={{ margin: '0 0 6px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>
                 {article.title}
               </h3>
 
@@ -375,7 +375,7 @@ export default function PortalKnowledgePage() {
                   style={{
                     margin: '0 0 10px',
                     fontSize: 13,
-                    color: '#6b7280',
+                    color: 'var(--text-muted)',
                     lineHeight: 1.5,
                     display: '-webkit-box',
                     WebkitLineClamp: 2,
@@ -396,9 +396,9 @@ export default function PortalKnowledgePage() {
                         style={{
                           padding: '2px 8px',
                           borderRadius: 12,
-                          backgroundColor: '#f3f4f6',
+                          backgroundColor: 'var(--bg-tertiary)',
                           fontSize: 11,
-                          color: '#6b7280',
+                          color: 'var(--text-muted)',
                           fontWeight: 500,
                         }}
                       >
@@ -407,7 +407,7 @@ export default function PortalKnowledgePage() {
                     ))}
                   </div>
                 )}
-                <div style={{ display: 'flex', gap: 12, marginLeft: 'auto', fontSize: 11, color: '#9ca3af' }}>
+                <div style={{ display: 'flex', gap: 12, marginLeft: 'auto', fontSize: 11, color: 'var(--text-placeholder)' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                     <Icon path={mdiEye} size={0.6} color="currentColor" />
                     {article.viewCount}

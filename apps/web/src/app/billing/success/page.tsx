@@ -1,5 +1,7 @@
 'use client';
 
+import ThemeProvider from '@/components/ThemeProvider';
+
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
@@ -46,39 +48,43 @@ export default function BillingSuccessPage() {
 
   if (isLoading) {
     return (
-      <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ fontSize: 18, color: '#6b7280' }}>Confirming your subscription...</p>
-        </div>
-      </main>
+      <ThemeProvider>
+        <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: 18, color: 'var(--text-muted)' }}>Confirming your subscription...</p>
+          </div>
+        </main>
+      </ThemeProvider>
     );
   }
 
   if (error) {
     return (
-      <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center', maxWidth: 480 }}>
-          <h1 style={{ color: '#dc2626' }}>Something went wrong</h1>
-          <p style={{ color: '#6b7280' }}>{error}</p>
-          <p style={{ fontSize: 14, color: '#9ca3af' }}>
-            Your payment may have still been processed. Please contact support if this issue persists.
-          </p>
-          <Link
-            href="/dashboard"
-            style={{
-              display: 'inline-block',
-              marginTop: 16,
-              padding: '10px 20px',
-              backgroundColor: '#6366f1',
-              color: '#fff',
-              borderRadius: 6,
-              textDecoration: 'none',
-            }}
-          >
-            Go to dashboard
-          </Link>
-        </div>
-      </main>
+      <ThemeProvider>
+        <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ textAlign: 'center', maxWidth: 480 }}>
+            <h1 style={{ color: 'var(--accent-danger)' }}>Something went wrong</h1>
+            <p style={{ color: 'var(--text-muted)' }}>{error}</p>
+            <p style={{ fontSize: 14, color: 'var(--text-placeholder)' }}>
+              Your payment may have still been processed. Please contact support if this issue persists.
+            </p>
+            <Link
+              href="/dashboard"
+              style={{
+                display: 'inline-block',
+                marginTop: 16,
+                padding: '10px 20px',
+                backgroundColor: 'var(--accent-primary-hover)',
+                color: 'var(--bg-primary)',
+                borderRadius: 6,
+                textDecoration: 'none',
+              }}
+            >
+              Go to dashboard
+            </Link>
+          </div>
+        </main>
+      </ThemeProvider>
     );
   }
 
@@ -87,34 +93,36 @@ export default function BillingSuccessPage() {
     : 'your plan';
 
   return (
-    <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ textAlign: 'center', maxWidth: 480, padding: '0 24px' }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>&#10003;</div>
-        <h1 style={{ marginBottom: 8 }}>Subscription activated!</h1>
-        <p style={{ color: '#6b7280', marginBottom: 4 }}>
-          You are now on the <strong>{planLabel}</strong> plan.
-        </p>
-        {syncResult?.status && syncResult.status !== 'active' && (
-          <p style={{ fontSize: 14, color: '#9ca3af', marginBottom: 16 }}>
-            Subscription status: {syncResult.status}
+    <ThemeProvider>
+      <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center', maxWidth: 480, padding: '0 24px' }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>&#10003;</div>
+          <h1 style={{ marginBottom: 8 }}>Subscription activated!</h1>
+          <p style={{ color: 'var(--text-muted)', marginBottom: 4 }}>
+            You are now on the <strong>{planLabel}</strong> plan.
           </p>
-        )}
-        <Link
-          href="/dashboard"
-          style={{
-            display: 'inline-block',
-            marginTop: 24,
-            padding: '12px 28px',
-            backgroundColor: '#6366f1',
-            color: '#fff',
-            borderRadius: 6,
-            textDecoration: 'none',
-            fontWeight: 500,
-          }}
-        >
-          Go to dashboard
-        </Link>
-      </div>
-    </main>
+          {syncResult?.status && syncResult.status !== 'active' && (
+            <p style={{ fontSize: 14, color: 'var(--text-placeholder)', marginBottom: 16 }}>
+              Subscription status: {syncResult.status}
+            </p>
+          )}
+          <Link
+            href="/dashboard"
+            style={{
+              display: 'inline-block',
+              marginTop: 24,
+              padding: '12px 28px',
+              backgroundColor: 'var(--accent-primary-hover)',
+              color: 'var(--bg-primary)',
+              borderRadius: 6,
+              textDecoration: 'none',
+              fontWeight: 500,
+            }}
+          >
+            Go to dashboard
+          </Link>
+        </div>
+      </main>
+    </ThemeProvider>
   );
 }

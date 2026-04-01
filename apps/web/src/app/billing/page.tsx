@@ -1,5 +1,7 @@
 'use client';
 
+import ThemeProvider from '@/components/ThemeProvider';
+
 import { useState, useEffect, useCallback } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -71,7 +73,7 @@ function UpdatePaymentMethodForm({ onSuccess, onCancel }: { onSuccess: () => voi
   return (
     <form onSubmit={handleSubmit} style={{ maxWidth: 480 }}>
       <PaymentElement />
-      {errorMessage && <p style={{ color: '#dc2626', marginTop: 8, fontSize: 14 }}>{errorMessage}</p>}
+      {errorMessage && <p style={{ color: 'var(--accent-danger)', marginTop: 8, fontSize: 14 }}>{errorMessage}</p>}
       <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
         <button type="button" onClick={onCancel} style={{ flex: 1, padding: '8px 16px' }}>
           Cancel
@@ -82,8 +84,8 @@ function UpdatePaymentMethodForm({ onSuccess, onCancel }: { onSuccess: () => voi
           style={{
             flex: 2,
             padding: '8px 16px',
-            backgroundColor: '#6366f1',
-            color: '#fff',
+            backgroundColor: 'var(--accent-primary-hover)',
+            color: 'var(--bg-primary)',
             border: 'none',
             borderRadius: 6,
             cursor: isLoading ? 'not-allowed' : 'pointer',
@@ -116,9 +118,9 @@ function CancelModal({ onConfirm, onClose, isLoading }: {
         zIndex: 50,
       }}
     >
-      <div style={{ backgroundColor: '#fff', borderRadius: 12, padding: 32, maxWidth: 440, width: '100%' }}>
+      <div style={{ backgroundColor: 'var(--bg-primary)', borderRadius: 12, padding: 32, maxWidth: 440, width: '100%' }}>
         <h2 style={{ marginTop: 0 }}>Cancel subscription?</h2>
-        <p style={{ color: '#6b7280' }}>
+        <p style={{ color: 'var(--text-muted)' }}>
           Your subscription will remain active until the end of the current billing period.
           You will not be charged again after cancellation.
         </p>
@@ -132,8 +134,8 @@ function CancelModal({ onConfirm, onClose, isLoading }: {
             style={{
               flex: 1,
               padding: '10px 16px',
-              backgroundColor: '#dc2626',
-              color: '#fff',
+              backgroundColor: 'var(--accent-danger)',
+              color: 'var(--bg-primary)',
               border: 'none',
               borderRadius: 6,
               cursor: isLoading ? 'not-allowed' : 'pointer',
@@ -231,20 +233,23 @@ export default function BillingPage() {
 
   if (planLoading) {
     return (
-      <main style={{ padding: 32 }}>
-        <p>Loading billing information...</p>
-      </main>
+      <ThemeProvider>
+        <main style={{ padding: 32 }}>
+          <p>Loading billing information...</p>
+        </main>
+      </ThemeProvider>
     );
   }
 
   return (
+    <ThemeProvider>
     <main style={{ padding: 32, maxWidth: 800, margin: '0 auto' }}>
       <h1 style={{ marginBottom: 32 }}>Billing</h1>
 
       {/* ── Current Plan ── */}
       <section style={{ marginBottom: 40 }}>
         <h2 style={{ marginBottom: 16 }}>Current plan</h2>
-        <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 20 }}>
+        <div style={{ border: '1px solid var(--border-primary)', borderRadius: 8, padding: 20 }}>
           {plan ? (
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
@@ -258,9 +263,9 @@ export default function BillingPage() {
                     fontSize: 12,
                     fontWeight: 500,
                     backgroundColor:
-                      plan.status === 'ACTIVE' ? '#d1fae5' :
-                      plan.status === 'TRIALING' ? '#dbeafe' :
-                      plan.status === 'PAST_DUE' ? '#fef3c7' : '#fee2e2',
+                      plan.status === 'ACTIVE' ? 'var(--badge-green-bg)' :
+                      plan.status === 'TRIALING' ? 'var(--badge-blue-bg)' :
+                      plan.status === 'PAST_DUE' ? 'var(--badge-yellow-bg)' : 'var(--badge-red-bg)',
                     color:
                       plan.status === 'ACTIVE' ? '#065f46' :
                       plan.status === 'TRIALING' ? '#1e40af' :
@@ -271,18 +276,18 @@ export default function BillingPage() {
                 </span>
               </div>
               {isTrial() && plan.trialEnd && (
-                <p style={{ color: '#6b7280', fontSize: 14, margin: 0 }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: 0 }}>
                   Trial ends: {new Date(plan.trialEnd).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                 </p>
               )}
               {cancelSuccess || plan.cancelAtPeriodEnd ? (
-                <p style={{ color: '#dc2626', fontSize: 14, marginTop: 8 }}>
+                <p style={{ color: 'var(--accent-danger)', fontSize: 14, marginTop: 8 }}>
                   Subscription scheduled for cancellation at end of billing period.
                 </p>
               ) : null}
             </>
           ) : (
-            <p style={{ color: '#6b7280' }}>No active subscription.</p>
+            <p style={{ color: 'var(--text-muted)' }}>No active subscription.</p>
           )}
         </div>
       </section>
@@ -297,11 +302,11 @@ export default function BillingPage() {
               { label: 'Agents', current: usage.currentAgents, max: plan.limits.maxAgents },
               { label: 'Sites', current: usage.currentSites, max: plan.limits.maxSites },
             ].map(({ label, current, max }) => (
-              <div key={label} style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 16 }}>
-                <p style={{ margin: '0 0 4px', color: '#6b7280', fontSize: 13 }}>{label}</p>
+              <div key={label} style={{ border: '1px solid var(--border-primary)', borderRadius: 8, padding: 16 }}>
+                <p style={{ margin: '0 0 4px', color: 'var(--text-muted)', fontSize: 13 }}>{label}</p>
                 <p style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>
                   {current}
-                  <span style={{ fontSize: 14, fontWeight: 400, color: '#9ca3af' }}>
+                  <span style={{ fontSize: 14, fontWeight: 400, color: 'var(--text-placeholder)' }}>
                     {' '}/ {max === -1 ? 'unlimited' : max}
                   </span>
                 </p>
@@ -315,15 +320,15 @@ export default function BillingPage() {
       <section style={{ marginBottom: 40 }}>
         <h2 style={{ marginBottom: 16 }}>Invoice history</h2>
         {invoicesLoading ? (
-          <p style={{ color: '#6b7280' }}>Loading invoices...</p>
+          <p style={{ color: 'var(--text-muted)' }}>Loading invoices...</p>
         ) : invoicesError ? (
-          <p style={{ color: '#dc2626' }}>{invoicesError}</p>
+          <p style={{ color: 'var(--accent-danger)' }}>{invoicesError}</p>
         ) : invoices.length === 0 ? (
-          <p style={{ color: '#6b7280' }}>No invoices yet.</p>
+          <p style={{ color: 'var(--text-muted)' }}>No invoices yet.</p>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #e5e7eb', textAlign: 'left' }}>
+              <tr style={{ borderBottom: '2px solid var(--border-primary)', textAlign: 'left' }}>
                 <th style={{ padding: '8px 12px', fontWeight: 600 }}>Date</th>
                 <th style={{ padding: '8px 12px', fontWeight: 600 }}>Invoice</th>
                 <th style={{ padding: '8px 12px', fontWeight: 600 }}>Amount</th>
@@ -335,7 +340,7 @@ export default function BillingPage() {
               {invoices.map((inv) => (
                 <tr key={inv.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
                   <td style={{ padding: '10px 12px' }}>{formatDate(inv.created)}</td>
-                  <td style={{ padding: '10px 12px', color: '#6b7280' }}>{inv.number ?? inv.id}</td>
+                  <td style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>{inv.number ?? inv.id}</td>
                   <td style={{ padding: '10px 12px' }}>{formatCurrency(inv.amountDue, inv.currency)}</td>
                   <td style={{ padding: '10px 12px' }}>
                     <span
@@ -344,8 +349,8 @@ export default function BillingPage() {
                         borderRadius: 12,
                         fontSize: 12,
                         fontWeight: 500,
-                        backgroundColor: inv.status === 'paid' ? '#d1fae5' : inv.status === 'open' ? '#fef3c7' : '#f3f4f6',
-                        color: inv.status === 'paid' ? '#065f46' : inv.status === 'open' ? '#92400e' : '#374151',
+                        backgroundColor: inv.status === 'paid' ? 'var(--badge-green-bg)' : inv.status === 'open' ? 'var(--badge-yellow-bg)' : 'var(--bg-tertiary)',
+                        color: inv.status === 'paid' ? '#065f46' : inv.status === 'open' ? '#92400e' : 'var(--text-secondary)',
                       }}
                     >
                       {inv.status ?? 'unknown'}
@@ -357,7 +362,7 @@ export default function BillingPage() {
                         href={inv.pdfUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ color: '#6366f1', fontSize: 13, marginRight: 8 }}
+                        style={{ color: 'var(--accent-primary-hover)', fontSize: 13, marginRight: 8 }}
                       >
                         PDF
                       </a>
@@ -367,7 +372,7 @@ export default function BillingPage() {
                         href={inv.hostedInvoiceUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ color: '#6366f1', fontSize: 13 }}
+                        style={{ color: 'var(--accent-primary-hover)', fontSize: 13 }}
                       >
                         View
                       </a>
@@ -398,7 +403,7 @@ export default function BillingPage() {
               border: '1px solid #d1d5db',
               borderRadius: 6,
               cursor: 'pointer',
-              backgroundColor: '#fff',
+              backgroundColor: 'var(--bg-primary)',
             }}
           >
             Update payment method
@@ -409,11 +414,11 @@ export default function BillingPage() {
       {/* ── Cancel Subscription ── */}
       {plan && !plan.cancelAtPeriodEnd && !cancelSuccess && (
         <section style={{ marginBottom: 40 }}>
-          <h2 style={{ marginBottom: 8, color: '#dc2626' }}>Cancel subscription</h2>
-          <p style={{ color: '#6b7280', fontSize: 14, marginBottom: 16 }}>
+          <h2 style={{ marginBottom: 8, color: 'var(--accent-danger)' }}>Cancel subscription</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 16 }}>
             Your access will continue until the end of the current billing period.
           </p>
-          {cancelError && <p style={{ color: '#dc2626', marginBottom: 8 }}>{cancelError}</p>}
+          {cancelError && <p style={{ color: 'var(--accent-danger)', marginBottom: 8 }}>{cancelError}</p>}
           <button
             onClick={() => setShowCancelModal(true)}
             style={{
@@ -421,8 +426,8 @@ export default function BillingPage() {
               border: '1px solid #dc2626',
               borderRadius: 6,
               cursor: 'pointer',
-              backgroundColor: '#fff',
-              color: '#dc2626',
+              backgroundColor: 'var(--bg-primary)',
+              color: 'var(--accent-danger)',
             }}
           >
             Cancel subscription
@@ -438,5 +443,6 @@ export default function BillingPage() {
         />
       )}
     </main>
+    </ThemeProvider>
   );
 }

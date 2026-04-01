@@ -25,14 +25,14 @@ interface TicketStats {
 
 function getStatusColor(status: string): { bg: string; text: string } {
   switch (status) {
-    case 'NEW': return { bg: '#dbeafe', text: '#1e40af' };
-    case 'OPEN': return { bg: '#d1fae5', text: '#065f46' };
-    case 'IN_PROGRESS': return { bg: '#fef3c7', text: '#92400e' };
-    case 'PENDING': return { bg: '#ffedd5', text: '#9a3412' };
-    case 'RESOLVED': return { bg: '#f3f4f6', text: '#374151' };
-    case 'CLOSED': return { bg: '#f3f4f6', text: '#374151' };
-    case 'CANCELLED': return { bg: '#fee2e2', text: '#991b1b' };
-    default: return { bg: '#f3f4f6', text: '#374151' };
+    case 'NEW': return { bg: 'var(--badge-blue-bg)', text: '#1e40af' };
+    case 'OPEN': return { bg: 'var(--badge-green-bg)', text: '#065f46' };
+    case 'IN_PROGRESS': return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
+    case 'PENDING': return { bg: 'var(--badge-orange-bg)', text: '#9a3412' };
+    case 'RESOLVED': return { bg: 'var(--bg-tertiary)', text: 'var(--text-secondary)' };
+    case 'CLOSED': return { bg: 'var(--bg-tertiary)', text: 'var(--text-secondary)' };
+    case 'CANCELLED': return { bg: 'var(--badge-red-bg)', text: '#991b1b' };
+    default: return { bg: 'var(--bg-tertiary)', text: 'var(--text-secondary)' };
   }
 }
 
@@ -92,10 +92,10 @@ export default function PortalHomePage() {
 
       {/* ── Greeting ──────────────────────────────────────────────────────────── */}
       <div style={{ marginBottom: 32 }}>
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#111827' }}>
+        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: 'var(--text-primary)' }}>
           Welcome back
         </h1>
-        <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: 15 }}>
+        <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: 15 }}>
           How can we help you today?
         </p>
       </div>
@@ -111,32 +111,32 @@ export default function PortalHomePage() {
       >
         <div
           style={{
-            backgroundColor: '#fff',
-            border: '1px solid #e5e7eb',
+            backgroundColor: 'var(--bg-primary)',
+            border: '1px solid var(--border-primary)',
             borderRadius: 12,
             padding: 20,
           }}
         >
-          <p style={{ margin: '0 0 6px', fontSize: 13, color: '#6b7280', fontWeight: 500 }}>
+          <p style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>
             Open Tickets
           </p>
-          <p style={{ margin: 0, fontSize: 32, fontWeight: 700, color: '#111827' }}>
+          <p style={{ margin: 0, fontSize: 32, fontWeight: 700, color: 'var(--text-primary)' }}>
             {isLoading ? '—' : stats.open}
           </p>
         </div>
 
         <div
           style={{
-            backgroundColor: '#fff',
-            border: '1px solid #e5e7eb',
+            backgroundColor: 'var(--bg-primary)',
+            border: '1px solid var(--border-primary)',
             borderRadius: 12,
             padding: 20,
           }}
         >
-          <p style={{ margin: '0 0 6px', fontSize: 13, color: '#6b7280', fontWeight: 500 }}>
+          <p style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>
             Pending Tickets
           </p>
-          <p style={{ margin: 0, fontSize: 32, fontWeight: 700, color: '#111827' }}>
+          <p style={{ margin: 0, fontSize: 32, fontWeight: 700, color: 'var(--text-primary)' }}>
             {isLoading ? '—' : stats.pending}
           </p>
         </div>
@@ -151,8 +151,8 @@ export default function PortalHomePage() {
             alignItems: 'center',
             gap: 8,
             padding: '10px 20px',
-            backgroundColor: '#4f46e5',
-            color: '#fff',
+            backgroundColor: 'var(--accent-primary)',
+            color: 'var(--bg-primary)',
             textDecoration: 'none',
             borderRadius: 8,
             fontSize: 14,
@@ -170,8 +170,8 @@ export default function PortalHomePage() {
             alignItems: 'center',
             gap: 8,
             padding: '10px 20px',
-            backgroundColor: '#fff',
-            color: '#374151',
+            backgroundColor: 'var(--bg-primary)',
+            color: 'var(--text-secondary)',
             textDecoration: 'none',
             borderRadius: 8,
             fontSize: 14,
@@ -187,8 +187,8 @@ export default function PortalHomePage() {
       {/* ── Recent Tickets ────────────────────────────────────────────────────── */}
       <div
         style={{
-          backgroundColor: '#fff',
-          border: '1px solid #e5e7eb',
+          backgroundColor: 'var(--bg-primary)',
+          border: '1px solid var(--border-primary)',
           borderRadius: 12,
           overflow: 'hidden',
         }}
@@ -202,27 +202,27 @@ export default function PortalHomePage() {
             borderBottom: '1px solid #f3f4f6',
           }}
         >
-          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#111827' }}>
+          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>
             Recent Tickets
           </h2>
           <Link
             href="/portal/tickets"
-            style={{ fontSize: 13, color: '#4f46e5', textDecoration: 'none', fontWeight: 500 }}
+            style={{ fontSize: 13, color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 500 }}
           >
             View all
           </Link>
         </div>
 
         {isLoading ? (
-          <div style={{ padding: 32, textAlign: 'center', color: '#6b7280' }}>
+          <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>
             Loading tickets...
           </div>
         ) : error ? (
-          <div style={{ padding: 32, textAlign: 'center', color: '#dc2626' }}>{error}</div>
+          <div style={{ padding: 32, textAlign: 'center', color: 'var(--accent-danger)' }}>{error}</div>
         ) : tickets.length === 0 ? (
           <div style={{ padding: 40, textAlign: 'center' }}>
             <Icon path={mdiTicketOutline} size={2} color="#d1d5db" />
-            <p style={{ margin: '12px 0 0', color: '#6b7280', fontSize: 14 }}>
+            <p style={{ margin: '12px 0 0', color: 'var(--text-muted)', fontSize: 14 }}>
               No tickets yet. Submit your first request!
             </p>
           </div>
@@ -249,10 +249,10 @@ export default function PortalHomePage() {
                     }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ margin: '0 0 2px', fontSize: 14, fontWeight: 500, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <p style={{ margin: '0 0 2px', fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {ticket.title}
                       </p>
-                      <p style={{ margin: 0, fontSize: 12, color: '#9ca3af' }}>
+                      <p style={{ margin: 0, fontSize: 12, color: 'var(--text-placeholder)' }}>
                         {ticket.ticketNumber}
                       </p>
                     </div>
@@ -271,7 +271,7 @@ export default function PortalHomePage() {
                       {ticket.status.replace(/_/g, ' ')}
                     </span>
 
-                    <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#9ca3af' }}>
+                    <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-placeholder)' }}>
                       <Icon path={mdiClockOutline} size={0.6} color="currentColor" />
                       {relativeTime(ticket.createdAt)}
                     </span>

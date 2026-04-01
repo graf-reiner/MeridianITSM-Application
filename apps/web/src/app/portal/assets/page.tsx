@@ -28,12 +28,12 @@ interface AssetListResponse {
 
 function getStatusBadge(status: Asset['status']): { bg: string; text: string; label: string } {
   switch (status) {
-    case 'DEPLOYED':  return { bg: '#d1fae5', text: '#065f46', label: 'Deployed' };
-    case 'IN_STOCK':  return { bg: '#dbeafe', text: '#1e40af', label: 'In Stock' };
-    case 'IN_REPAIR': return { bg: '#fef3c7', text: '#92400e', label: 'In Repair' };
-    case 'RETIRED':   return { bg: '#f3f4f6', text: '#6b7280', label: 'Retired' };
-    case 'DISPOSED':  return { bg: '#fee2e2', text: '#991b1b', label: 'Disposed' };
-    default:          return { bg: '#f3f4f6', text: '#374151', label: status };
+    case 'DEPLOYED':  return { bg: 'var(--badge-green-bg)', text: '#065f46', label: 'Deployed' };
+    case 'IN_STOCK':  return { bg: 'var(--badge-blue-bg)', text: '#1e40af', label: 'In Stock' };
+    case 'IN_REPAIR': return { bg: 'var(--badge-yellow-bg)', text: '#92400e', label: 'In Repair' };
+    case 'RETIRED':   return { bg: 'var(--bg-tertiary)', text: 'var(--text-muted)', label: 'Retired' };
+    case 'DISPOSED':  return { bg: 'var(--badge-red-bg)', text: '#991b1b', label: 'Disposed' };
+    default:          return { bg: 'var(--bg-tertiary)', text: 'var(--text-secondary)', label: status };
   }
 }
 
@@ -65,8 +65,8 @@ function AssetCardSkeleton() {
   return (
     <div
       style={{
-        backgroundColor: '#fff',
-        border: '1px solid #e5e7eb',
+        backgroundColor: 'var(--bg-primary)',
+        border: '1px solid var(--border-primary)',
         borderRadius: 12,
         padding: '20px 24px',
         display: 'flex',
@@ -75,13 +75,13 @@ function AssetCardSkeleton() {
         animation: 'pulse 1.5s ease-in-out infinite',
       }}
     >
-      <div style={{ width: 44, height: 44, backgroundColor: '#f3f4f6', borderRadius: 10, flexShrink: 0 }} />
+      <div style={{ width: 44, height: 44, backgroundColor: 'var(--bg-tertiary)', borderRadius: 10, flexShrink: 0 }} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ width: 100, height: 14, backgroundColor: '#f3f4f6', borderRadius: 4 }} />
-        <div style={{ width: 200, height: 12, backgroundColor: '#f3f4f6', borderRadius: 4 }} />
-        <div style={{ width: 120, height: 12, backgroundColor: '#f3f4f6', borderRadius: 4 }} />
+        <div style={{ width: 100, height: 14, backgroundColor: 'var(--bg-tertiary)', borderRadius: 4 }} />
+        <div style={{ width: 200, height: 12, backgroundColor: 'var(--bg-tertiary)', borderRadius: 4 }} />
+        <div style={{ width: 120, height: 12, backgroundColor: 'var(--bg-tertiary)', borderRadius: 4 }} />
       </div>
-      <div style={{ width: 70, height: 22, backgroundColor: '#f3f4f6', borderRadius: 20 }} />
+      <div style={{ width: 70, height: 22, backgroundColor: 'var(--bg-tertiary)', borderRadius: 20 }} />
     </div>
   );
 }
@@ -96,8 +96,8 @@ function AssetCard({ asset }: { asset: Asset }) {
   return (
     <div
       style={{
-        backgroundColor: '#fff',
-        border: '1px solid #e5e7eb',
+        backgroundColor: 'var(--bg-primary)',
+        border: '1px solid var(--border-primary)',
         borderRadius: 12,
         padding: '20px 24px',
         display: 'flex',
@@ -110,7 +110,7 @@ function AssetCard({ asset }: { asset: Asset }) {
         (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 6px rgba(79,70,229,0.08)';
       }}
       onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = '#e5e7eb';
+        (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border-primary)';
         (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
       }}
     >
@@ -119,7 +119,7 @@ function AssetCard({ asset }: { asset: Asset }) {
         style={{
           width: 44,
           height: 44,
-          backgroundColor: '#e0e7ff',
+          backgroundColor: 'var(--badge-indigo-bg)',
           borderRadius: 10,
           display: 'flex',
           alignItems: 'center',
@@ -133,7 +133,7 @@ function AssetCard({ asset }: { asset: Asset }) {
       {/* Details */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
-          <span style={{ fontWeight: 700, fontSize: 15, color: '#111827', fontFamily: 'monospace' }}>
+          <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', fontFamily: 'monospace' }}>
             {asset.assetTag ?? '—'}
           </span>
           {/* Status badge */}
@@ -154,19 +154,19 @@ function AssetCard({ asset }: { asset: Asset }) {
         </div>
 
         {/* Manufacturer + model */}
-        <p style={{ margin: '0 0 4px', fontSize: 14, color: '#374151' }}>
+        <p style={{ margin: '0 0 4px', fontSize: 14, color: 'var(--text-secondary)' }}>
           {[asset.manufacturer, asset.model].filter(Boolean).join(' ') || 'Unknown device'}
         </p>
 
         {/* Hostname */}
         {asset.hostname && (
-          <p style={{ margin: '0 0 4px', fontSize: 13, color: '#6b7280' }}>
+          <p style={{ margin: '0 0 4px', fontSize: 13, color: 'var(--text-muted)' }}>
             {asset.hostname}
           </p>
         )}
 
         {/* Warranty */}
-        <p style={{ margin: 0, fontSize: 12, color: '#9ca3af' }}>
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--text-placeholder)' }}>
           {warrantyDate ? `Warranty expires ${warrantyDate}` : 'No warranty info'}
         </p>
       </div>
@@ -180,8 +180,8 @@ function EmptyState() {
   return (
     <div
       style={{
-        backgroundColor: '#fff',
-        border: '1px solid #e5e7eb',
+        backgroundColor: 'var(--bg-primary)',
+        border: '1px solid var(--border-primary)',
         borderRadius: 16,
         padding: '60px 40px',
         textAlign: 'center',
@@ -191,7 +191,7 @@ function EmptyState() {
         style={{
           width: 72,
           height: 72,
-          backgroundColor: '#e0e7ff',
+          backgroundColor: 'var(--badge-indigo-bg)',
           borderRadius: '50%',
           display: 'flex',
           alignItems: 'center',
@@ -202,13 +202,13 @@ function EmptyState() {
         <Icon path={mdiLaptop} size={1.6} color="#4f46e5" />
       </div>
 
-      <h2 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 700, color: '#111827' }}>
+      <h2 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
         No assets assigned to you
       </h2>
       <p
         style={{
           margin: 0,
-          color: '#6b7280',
+          color: 'var(--text-muted)',
           fontSize: 14,
           maxWidth: 380,
           marginLeft: 'auto',
@@ -248,10 +248,10 @@ export default function PortalAssetsPage() {
 
       {/* ── Header ────────────────────────────────────────────────────────────── */}
       <div style={{ marginBottom: 32 }}>
-        <h1 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, color: '#111827' }}>
+        <h1 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>
           My Assets
         </h1>
-        <p style={{ margin: 0, color: '#6b7280', fontSize: 14 }}>
+        <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 14 }}>
           Hardware and software assigned to you
         </p>
       </div>
@@ -268,8 +268,8 @@ export default function PortalAssetsPage() {
           style={{
             padding: '40px 24px',
             textAlign: 'center',
-            color: '#dc2626',
-            backgroundColor: '#fff',
+            color: 'var(--accent-danger)',
+            backgroundColor: 'var(--bg-primary)',
             border: '1px solid #fecaca',
             borderRadius: 12,
           }}
@@ -285,7 +285,7 @@ export default function PortalAssetsPage() {
           ))}
 
           {/* Asset count */}
-          <p style={{ margin: '8px 0 0', fontSize: 13, color: '#9ca3af', textAlign: 'center' }}>
+          <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--text-placeholder)', textAlign: 'center' }}>
             {data?.total === 1 ? '1 asset assigned to you' : `${data?.total ?? 0} assets assigned to you`}
           </p>
         </div>

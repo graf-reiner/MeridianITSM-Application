@@ -55,14 +55,14 @@ interface SlaStatus {
 
 function getStatusStyle(status: string): { bg: string; text: string } {
   switch (status) {
-    case 'NEW': return { bg: '#dbeafe', text: '#1e40af' };
-    case 'OPEN': return { bg: '#d1fae5', text: '#065f46' };
-    case 'IN_PROGRESS': return { bg: '#fef3c7', text: '#92400e' };
-    case 'PENDING': return { bg: '#ffedd5', text: '#9a3412' };
-    case 'RESOLVED': return { bg: '#f3f4f6', text: '#374151' };
-    case 'CLOSED': return { bg: '#f3f4f6', text: '#6b7280' };
-    case 'CANCELLED': return { bg: '#fee2e2', text: '#991b1b' };
-    default: return { bg: '#f3f4f6', text: '#374151' };
+    case 'NEW': return { bg: 'var(--badge-blue-bg)', text: '#1e40af' };
+    case 'OPEN': return { bg: 'var(--badge-green-bg)', text: '#065f46' };
+    case 'IN_PROGRESS': return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
+    case 'PENDING': return { bg: 'var(--badge-orange-bg)', text: '#9a3412' };
+    case 'RESOLVED': return { bg: 'var(--bg-tertiary)', text: 'var(--text-secondary)' };
+    case 'CLOSED': return { bg: 'var(--bg-tertiary)', text: 'var(--text-muted)' };
+    case 'CANCELLED': return { bg: 'var(--badge-red-bg)', text: '#991b1b' };
+    default: return { bg: 'var(--bg-tertiary)', text: 'var(--text-secondary)' };
   }
 }
 
@@ -89,28 +89,28 @@ function SlaIndicator({ slaStatus }: { slaStatus: SlaStatus | null }) {
 
   let icon = mdiCheckCircleOutline;
   let color = '#16a34a';
-  let bg = '#dcfce7';
+  let bg = 'var(--badge-green-bg)';
   let message = 'We aim to respond on time';
 
   if (slaStatus.status === 'WARNING') {
     icon = mdiAlertCircleOutline;
-    color = '#d97706';
-    bg = '#fef3c7';
+    color = 'var(--accent-warning)';
+    bg = 'var(--badge-yellow-bg)';
     message = 'Response time approaching deadline';
   } else if (slaStatus.status === 'CRITICAL') {
     icon = mdiAlertCircleOutline;
-    color = '#dc2626';
-    bg = '#fee2e2';
+    color = 'var(--accent-danger)';
+    bg = 'var(--badge-red-bg)';
     message = 'Response time near limit';
   } else if (slaStatus.status === 'BREACHED') {
     icon = mdiCloseCircleOutline;
-    color = '#dc2626';
-    bg = '#fee2e2';
+    color = 'var(--accent-danger)';
+    bg = 'var(--badge-red-bg)';
     message = 'Response time exceeded';
   } else if (slaStatus.status === 'PAUSED') {
     icon = mdiInformationOutline;
-    color = '#6b7280';
-    bg = '#f3f4f6';
+    color = 'var(--text-muted)';
+    bg = 'var(--bg-tertiary)';
     message = 'SLA paused — awaiting your response';
   }
 
@@ -135,7 +135,7 @@ function SlaIndicator({ slaStatus }: { slaStatus: SlaStatus | null }) {
       <Icon path={icon} size={0.9} color={color} />
       <div>
         <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color }}>{message}</p>
-        <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6b7280' }}>{targetText}</p>
+        <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>{targetText}</p>
       </div>
     </div>
   );
@@ -236,7 +236,7 @@ export default function PortalTicketDetailPage({
 
   if (isLoading) {
     return (
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: '40px 0', textAlign: 'center', color: '#6b7280' }}>
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: '40px 0', textAlign: 'center', color: 'var(--text-muted)' }}>
         Loading ticket...
       </div>
     );
@@ -245,8 +245,8 @@ export default function PortalTicketDetailPage({
   if (error || !ticket) {
     return (
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
-        <p style={{ color: '#dc2626' }}>{error ?? 'Ticket not found'}</p>
-        <Link href="/portal/tickets" style={{ color: '#4f46e5', textDecoration: 'none', fontSize: 14 }}>
+        <p style={{ color: 'var(--accent-danger)' }}>{error ?? 'Ticket not found'}</p>
+        <Link href="/portal/tickets" style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontSize: 14 }}>
           Back to My Tickets
         </Link>
       </div>
@@ -265,7 +265,7 @@ export default function PortalTicketDetailPage({
           display: 'inline-flex',
           alignItems: 'center',
           gap: 4,
-          color: '#6b7280',
+          color: 'var(--text-muted)',
           textDecoration: 'none',
           fontSize: 13,
           marginBottom: 16,
@@ -278,8 +278,8 @@ export default function PortalTicketDetailPage({
       {/* ── Ticket Header ─────────────────────────────────────────────────────── */}
       <div
         style={{
-          backgroundColor: '#fff',
-          border: '1px solid #e5e7eb',
+          backgroundColor: 'var(--bg-primary)',
+          border: '1px solid var(--border-primary)',
           borderRadius: 12,
           padding: '20px 24px',
           marginBottom: 20,
@@ -287,10 +287,10 @@ export default function PortalTicketDetailPage({
       >
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
           <div>
-            <p style={{ margin: '0 0 4px', fontSize: 12, color: '#9ca3af', fontFamily: 'monospace' }}>
+            <p style={{ margin: '0 0 4px', fontSize: 12, color: 'var(--text-placeholder)', fontFamily: 'monospace' }}>
               {ticket.ticketNumber}
             </p>
-            <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#111827', lineHeight: 1.3 }}>
+            <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3 }}>
               {ticket.title}
             </h1>
           </div>
@@ -307,18 +307,18 @@ export default function PortalTicketDetailPage({
             >
               {ticket.status.replace(/_/g, ' ')}
             </span>
-            <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 500, backgroundColor: '#f3f4f6', color: '#374151' }}>
+            <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 500, backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
               {ticket.priority}
             </span>
           </div>
         </div>
 
-        <div style={{ fontSize: 12, color: '#9ca3af', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 12, color: 'var(--text-placeholder)', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
           {ticket.category && (
-            <span>Category: <strong style={{ color: '#6b7280' }}>{ticket.category.name}</strong></span>
+            <span>Category: <strong style={{ color: 'var(--text-muted)' }}>{ticket.category.name}</strong></span>
           )}
-          <span>Opened: <strong style={{ color: '#6b7280' }}>{formatDateTime(ticket.createdAt)}</strong></span>
-          <span>Updated: <strong style={{ color: '#6b7280' }}>{formatDateTime(ticket.updatedAt)}</strong></span>
+          <span>Opened: <strong style={{ color: 'var(--text-muted)' }}>{formatDateTime(ticket.createdAt)}</strong></span>
+          <span>Updated: <strong style={{ color: 'var(--text-muted)' }}>{formatDateTime(ticket.updatedAt)}</strong></span>
         </div>
 
         {/* Description */}
@@ -328,7 +328,7 @@ export default function PortalTicketDetailPage({
             paddingTop: 16,
             borderTop: '1px solid #f3f4f6',
             fontSize: 14,
-            color: '#374151',
+            color: 'var(--text-secondary)',
             lineHeight: 1.6,
             whiteSpace: 'pre-wrap',
           }}
@@ -344,14 +344,14 @@ export default function PortalTicketDetailPage({
       {attachments.length > 0 && (
         <div
           style={{
-            backgroundColor: '#fff',
-            border: '1px solid #e5e7eb',
+            backgroundColor: 'var(--bg-primary)',
+            border: '1px solid var(--border-primary)',
             borderRadius: 12,
             padding: '16px 20px',
             marginBottom: 20,
           }}
         >
-          <h2 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <h2 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
             <Icon path={mdiAttachment} size={0.8} color="#6b7280" />
             Attachments ({attachments.length})
           </h2>
@@ -364,14 +364,14 @@ export default function PortalTicketDetailPage({
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '8px 10px',
-                  backgroundColor: '#f9fafb',
+                  backgroundColor: 'var(--bg-secondary)',
                   borderRadius: 6,
                   border: '1px solid #f3f4f6',
                 }}
               >
                 <div>
-                  <span style={{ fontSize: 13, color: '#111827', fontWeight: 500 }}>{att.filename}</span>
-                  <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 8 }}>{formatFileSize(att.size)}</span>
+                  <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>{att.filename}</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-placeholder)', marginLeft: 8 }}>{formatFileSize(att.size)}</span>
                 </div>
                 <a
                   href={`/api/v1/tickets/${id}/attachments/${att.id}/url`}
@@ -382,11 +382,11 @@ export default function PortalTicketDetailPage({
                     alignItems: 'center',
                     gap: 4,
                     padding: '4px 10px',
-                    backgroundColor: '#fff',
+                    backgroundColor: 'var(--bg-primary)',
                     border: '1px solid #d1d5db',
                     borderRadius: 6,
                     textDecoration: 'none',
-                    color: '#374151',
+                    color: 'var(--text-secondary)',
                     fontSize: 12,
                   }}
                 >
@@ -402,21 +402,21 @@ export default function PortalTicketDetailPage({
       {/* ── Comments ──────────────────────────────────────────────────────────── */}
       <div
         style={{
-          backgroundColor: '#fff',
-          border: '1px solid #e5e7eb',
+          backgroundColor: 'var(--bg-primary)',
+          border: '1px solid var(--border-primary)',
           borderRadius: 12,
           overflow: 'hidden',
         }}
       >
         <div style={{ padding: '16px 20px', borderBottom: '1px solid #f3f4f6' }}>
-          <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#111827' }}>
+          <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>
             Conversation ({comments.length})
           </h2>
         </div>
 
         {/* Comment list */}
         {comments.length === 0 ? (
-          <div style={{ padding: '32px 20px', textAlign: 'center', color: '#9ca3af', fontSize: 13 }}>
+          <div style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--text-placeholder)', fontSize: 13 }}>
             No messages yet. Add a comment below.
           </div>
         ) : (
@@ -429,13 +429,13 @@ export default function PortalTicketDetailPage({
                       width: 32,
                       height: 32,
                       borderRadius: '50%',
-                      backgroundColor: '#e0e7ff',
+                      backgroundColor: 'var(--badge-indigo-bg)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontSize: 13,
                       fontWeight: 700,
-                      color: '#4f46e5',
+                      color: 'var(--accent-primary)',
                       flexShrink: 0,
                     }}
                   >
@@ -445,22 +445,22 @@ export default function PortalTicketDetailPage({
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
                         {comment.author
                           ? `${comment.author.firstName} ${comment.author.lastName}`
                           : 'Support Team'}
                       </span>
-                      <span style={{ fontSize: 11, color: '#9ca3af' }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-placeholder)' }}>
                         {formatDateTime(comment.createdAt)}
                       </span>
                     </div>
                     <div
                       style={{
                         fontSize: 14,
-                        color: '#374151',
+                        color: 'var(--text-secondary)',
                         lineHeight: 1.6,
                         whiteSpace: 'pre-wrap',
-                        backgroundColor: '#f9fafb',
+                        backgroundColor: 'var(--bg-secondary)',
                         padding: '10px 12px',
                         borderRadius: 8,
                         border: '1px solid #f3f4f6',
@@ -480,7 +480,7 @@ export default function PortalTicketDetailPage({
           <div style={{ padding: '16px 20px', borderTop: '1px solid #f3f4f6' }}>
             <label
               htmlFor="comment-body"
-              style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 8 }}
+              style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8 }}
             >
               Add a reply
             </label>
@@ -492,7 +492,7 @@ export default function PortalTicketDetailPage({
               compact
             />
             {commentError && (
-              <p style={{ margin: '0 0 8px', fontSize: 12, color: '#ef4444' }}>{commentError}</p>
+              <p style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--accent-danger)' }}>{commentError}</p>
             )}
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button
@@ -504,8 +504,8 @@ export default function PortalTicketDetailPage({
                   alignItems: 'center',
                   gap: 6,
                   padding: '8px 18px',
-                  backgroundColor: isSubmittingComment || !commentBody.trim() ? '#a5b4fc' : '#4f46e5',
-                  color: '#fff',
+                  backgroundColor: isSubmittingComment || !commentBody.trim() ? '#a5b4fc' : 'var(--accent-primary)',
+                  color: 'var(--bg-primary)',
                   border: 'none',
                   borderRadius: 8,
                   cursor: isSubmittingComment || !commentBody.trim() ? 'not-allowed' : 'pointer',

@@ -23,24 +23,24 @@ type StatusFilter = 'all' | 'open' | 'resolved' | 'closed';
 
 function getStatusStyle(status: string): { bg: string; text: string } {
   switch (status) {
-    case 'NEW': return { bg: '#dbeafe', text: '#1e40af' };
-    case 'OPEN': return { bg: '#d1fae5', text: '#065f46' };
-    case 'IN_PROGRESS': return { bg: '#fef3c7', text: '#92400e' };
-    case 'PENDING': return { bg: '#ffedd5', text: '#9a3412' };
-    case 'RESOLVED': return { bg: '#f3f4f6', text: '#374151' };
-    case 'CLOSED': return { bg: '#f3f4f6', text: '#6b7280' };
-    case 'CANCELLED': return { bg: '#fee2e2', text: '#991b1b' };
-    default: return { bg: '#f3f4f6', text: '#374151' };
+    case 'NEW': return { bg: 'var(--badge-blue-bg)', text: '#1e40af' };
+    case 'OPEN': return { bg: 'var(--badge-green-bg)', text: '#065f46' };
+    case 'IN_PROGRESS': return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
+    case 'PENDING': return { bg: 'var(--badge-orange-bg)', text: '#9a3412' };
+    case 'RESOLVED': return { bg: 'var(--bg-tertiary)', text: 'var(--text-secondary)' };
+    case 'CLOSED': return { bg: 'var(--bg-tertiary)', text: 'var(--text-muted)' };
+    case 'CANCELLED': return { bg: 'var(--badge-red-bg)', text: '#991b1b' };
+    default: return { bg: 'var(--bg-tertiary)', text: 'var(--text-secondary)' };
   }
 }
 
 function getPriorityStyle(priority: string): { bg: string; text: string } {
   switch (priority) {
-    case 'CRITICAL': return { bg: '#fee2e2', text: '#991b1b' };
-    case 'HIGH': return { bg: '#ffedd5', text: '#9a3412' };
-    case 'MEDIUM': return { bg: '#fef3c7', text: '#92400e' };
-    case 'LOW': return { bg: '#f3f4f6', text: '#374151' };
-    default: return { bg: '#f3f4f6', text: '#374151' };
+    case 'CRITICAL': return { bg: 'var(--badge-red-bg)', text: '#991b1b' };
+    case 'HIGH': return { bg: 'var(--badge-orange-bg)', text: '#9a3412' };
+    case 'MEDIUM': return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
+    case 'LOW': return { bg: 'var(--bg-tertiary)', text: 'var(--text-secondary)' };
+    default: return { bg: 'var(--bg-tertiary)', text: 'var(--text-secondary)' };
   }
 }
 
@@ -132,7 +132,7 @@ export default function PortalTicketsPage() {
           gap: 12,
         }}
       >
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827' }}>My Tickets</h1>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>My Tickets</h1>
         <Link
           href="/portal/tickets/new"
           style={{
@@ -140,8 +140,8 @@ export default function PortalTicketsPage() {
             alignItems: 'center',
             gap: 6,
             padding: '8px 16px',
-            backgroundColor: '#4f46e5',
-            color: '#fff',
+            backgroundColor: 'var(--accent-primary)',
+            color: 'var(--bg-primary)',
             textDecoration: 'none',
             borderRadius: 8,
             fontSize: 14,
@@ -159,7 +159,7 @@ export default function PortalTicketsPage() {
           display: 'flex',
           gap: 4,
           marginBottom: 16,
-          borderBottom: '1px solid #e5e7eb',
+          borderBottom: '1px solid var(--border-primary)',
           paddingBottom: 0,
         }}
       >
@@ -177,7 +177,7 @@ export default function PortalTicketsPage() {
               cursor: 'pointer',
               fontSize: 14,
               fontWeight: activeFilter === tab.id ? 600 : 400,
-              color: activeFilter === tab.id ? '#4f46e5' : '#6b7280',
+              color: activeFilter === tab.id ? 'var(--accent-primary)' : 'var(--text-muted)',
               borderBottom: activeFilter === tab.id ? '2px solid #4f46e5' : '2px solid transparent',
               marginBottom: -1,
             }}
@@ -189,15 +189,15 @@ export default function PortalTicketsPage() {
 
       {/* ── Ticket List ───────────────────────────────────────────────────────── */}
       {isLoading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
           Loading tickets...
         </div>
       ) : error ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#dc2626' }}>{error}</div>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--accent-danger)' }}>{error}</div>
       ) : filteredTickets.length === 0 ? (
         <div style={{ padding: 60, textAlign: 'center' }}>
           <Icon path={mdiTicketOutline} size={2.5} color="#d1d5db" />
-          <p style={{ margin: '16px 0 0', color: '#6b7280', fontSize: 14 }}>
+          <p style={{ margin: '16px 0 0', color: 'var(--text-muted)', fontSize: 14 }}>
             {activeFilter === 'all'
               ? 'No tickets yet. Submit your first request!'
               : `No ${activeFilter} tickets.`}
@@ -209,8 +209,8 @@ export default function PortalTicketsPage() {
                 display: 'inline-block',
                 marginTop: 16,
                 padding: '8px 20px',
-                backgroundColor: '#4f46e5',
-                color: '#fff',
+                backgroundColor: 'var(--accent-primary)',
+                color: 'var(--bg-primary)',
                 textDecoration: 'none',
                 borderRadius: 8,
                 fontSize: 14,
@@ -232,8 +232,8 @@ export default function PortalTicketsPage() {
                 href={`/portal/tickets/${ticket.id}`}
                 style={{
                   display: 'block',
-                  backgroundColor: '#fff',
-                  border: '1px solid #e5e7eb',
+                  backgroundColor: 'var(--bg-primary)',
+                  border: '1px solid var(--border-primary)',
                   borderRadius: 10,
                   padding: '14px 18px',
                   textDecoration: 'none',
@@ -248,7 +248,7 @@ export default function PortalTicketsPage() {
                         margin: '0 0 4px',
                         fontSize: 15,
                         fontWeight: 500,
-                        color: '#111827',
+                        color: 'var(--text-primary)',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -256,7 +256,7 @@ export default function PortalTicketsPage() {
                     >
                       {ticket.title}
                     </p>
-                    <p style={{ margin: 0, fontSize: 12, color: '#9ca3af' }}>
+                    <p style={{ margin: 0, fontSize: 12, color: 'var(--text-placeholder)' }}>
                       {ticket.ticketNumber}
                     </p>
                   </div>
@@ -294,7 +294,7 @@ export default function PortalTicketsPage() {
                         alignItems: 'center',
                         gap: 3,
                         fontSize: 12,
-                        color: '#9ca3af',
+                        color: 'var(--text-placeholder)',
                       }}
                     >
                       <Icon path={mdiClockOutline} size={0.6} color="currentColor" />
@@ -318,7 +318,7 @@ export default function PortalTicketsPage() {
               padding: '6px 14px',
               border: '1px solid #d1d5db',
               borderRadius: 6,
-              backgroundColor: '#fff',
+              backgroundColor: 'var(--bg-primary)',
               cursor: page === 1 ? 'not-allowed' : 'pointer',
               opacity: page === 1 ? 0.5 : 1,
               fontSize: 14,
@@ -326,7 +326,7 @@ export default function PortalTicketsPage() {
           >
             Previous
           </button>
-          <span style={{ padding: '6px 12px', fontSize: 14, color: '#6b7280' }}>
+          <span style={{ padding: '6px 12px', fontSize: 14, color: 'var(--text-muted)' }}>
             Page {page} of {totalPages}
           </span>
           <button
@@ -336,7 +336,7 @@ export default function PortalTicketsPage() {
               padding: '6px 14px',
               border: '1px solid #d1d5db',
               borderRadius: 6,
-              backgroundColor: '#fff',
+              backgroundColor: 'var(--bg-primary)',
               cursor: page === totalPages ? 'not-allowed' : 'pointer',
               opacity: page === totalPages ? 0.5 : 1,
               fontSize: 14,

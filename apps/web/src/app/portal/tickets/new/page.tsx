@@ -51,9 +51,9 @@ function CategoryCard({
         alignItems: 'flex-start',
         gap: 6,
         padding: 16,
-        border: `2px solid ${isSelected ? '#4f46e5' : '#e5e7eb'}`,
+        border: `2px solid ${isSelected ? 'var(--accent-primary)' : 'var(--border-primary)'}`,
         borderRadius: 10,
-        backgroundColor: isSelected ? '#eef2ff' : '#fff',
+        backgroundColor: isSelected ? '#eef2ff' : 'var(--bg-primary)',
         cursor: 'pointer',
         textAlign: 'left',
         transition: 'border-color 0.15s ease, background-color 0.15s ease',
@@ -70,7 +70,7 @@ function CategoryCard({
           width: 32,
           height: 32,
           borderRadius: 8,
-          backgroundColor: category.color ?? '#e0e7ff',
+          backgroundColor: category.color ?? 'var(--badge-indigo-bg)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -79,9 +79,9 @@ function CategoryCard({
       >
         {category.icon ?? '🎫'}
       </div>
-      <span style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>{category.name}</span>
+      <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{category.name}</span>
       {category.description && (
-        <span style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.4 }}>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4 }}>
           {category.description}
         </span>
       )}
@@ -180,7 +180,7 @@ export default function NewRequestPage() {
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: '#6b7280',
+              color: 'var(--text-muted)',
               fontSize: 13,
               padding: 0,
               marginBottom: 12,
@@ -190,10 +190,10 @@ export default function NewRequestPage() {
             Back to categories
           </button>
         )}
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827' }}>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>
           Submit New Request
         </h1>
-        <p style={{ margin: '6px 0 0', color: '#6b7280', fontSize: 14 }}>
+        <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: 14 }}>
           {step === 1
             ? 'Step 1 of 2: Choose a category for your request'
             : `Step 2 of 2: Describe your request${selectedCategory ? ` — ${selectedCategory.name}` : ''}`}
@@ -209,7 +209,7 @@ export default function NewRequestPage() {
               height: 4,
               flex: 1,
               borderRadius: 2,
-              backgroundColor: s <= step ? '#4f46e5' : '#e5e7eb',
+              backgroundColor: s <= step ? 'var(--accent-primary)' : 'var(--border-primary)',
               transition: 'background-color 0.2s ease',
             }}
           />
@@ -220,13 +220,13 @@ export default function NewRequestPage() {
       {step === 1 && (
         <div>
           {categoriesLoading ? (
-            <p style={{ color: '#6b7280', textAlign: 'center', padding: 32 }}>
+            <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 32 }}>
               Loading categories...
             </p>
           ) : categories.length === 0 ? (
             // Fallback: no categories — skip to step 2 with no category
             <div style={{ textAlign: 'center', padding: 40 }}>
-              <p style={{ color: '#6b7280', marginBottom: 16 }}>
+              <p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>
                 No categories configured. You can still submit a general request.
               </p>
               <button
@@ -237,8 +237,8 @@ export default function NewRequestPage() {
                 }}
                 style={{
                   padding: '10px 24px',
-                  backgroundColor: '#4f46e5',
-                  color: '#fff',
+                  backgroundColor: 'var(--accent-primary)',
+                  color: 'var(--bg-primary)',
                   border: 'none',
                   borderRadius: 8,
                   cursor: 'pointer',
@@ -281,9 +281,9 @@ export default function NewRequestPage() {
           <div style={{ marginBottom: 20 }}>
             <label
               htmlFor="title"
-              style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 6 }}
+              style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}
             >
-              Title <span style={{ color: '#ef4444' }}>*</span>
+              Title <span style={{ color: 'var(--accent-danger)' }}>*</span>
             </label>
             <input
               id="title"
@@ -293,7 +293,7 @@ export default function NewRequestPage() {
               style={{
                 width: '100%',
                 padding: '10px 12px',
-                border: `1px solid ${errors.title ? '#ef4444' : '#d1d5db'}`,
+                border: `1px solid ${errors.title ? 'var(--accent-danger)' : 'var(--border-secondary)'}`,
                 borderRadius: 8,
                 fontSize: 14,
                 outline: 'none',
@@ -301,7 +301,7 @@ export default function NewRequestPage() {
               }}
             />
             {errors.title && (
-              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#ef4444' }}>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--accent-danger)' }}>
                 {errors.title.message}
               </p>
             )}
@@ -311,9 +311,9 @@ export default function NewRequestPage() {
           <div style={{ marginBottom: 20 }}>
             <label
               htmlFor="description"
-              style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 6 }}
+              style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}
             >
-              Description <span style={{ color: '#ef4444' }}>*</span>
+              Description <span style={{ color: 'var(--accent-danger)' }}>*</span>
             </label>
             <RichTextField
               value={watch('description') ?? ''}
@@ -322,7 +322,7 @@ export default function NewRequestPage() {
               minHeight={120}
             />
             {errors.description && (
-              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#ef4444' }}>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--accent-danger)' }}>
                 {errors.description.message}
               </p>
             )}
@@ -332,7 +332,7 @@ export default function NewRequestPage() {
           <div style={{ marginBottom: 28 }}>
             <label
               htmlFor="priority"
-              style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 6 }}
+              style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}
             >
               Priority
             </label>
@@ -346,7 +346,7 @@ export default function NewRequestPage() {
                 borderRadius: 8,
                 fontSize: 14,
                 outline: 'none',
-                backgroundColor: '#fff',
+                backgroundColor: 'var(--bg-primary)',
                 boxSizing: 'border-box',
               }}
             >
@@ -356,7 +356,7 @@ export default function NewRequestPage() {
               <option value="CRITICAL">Critical — Completely blocked, urgent help needed</option>
             </select>
             {errors.priority && (
-              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#ef4444' }}>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--accent-danger)' }}>
                 {errors.priority.message}
               </p>
             )}
@@ -367,7 +367,7 @@ export default function NewRequestPage() {
             <div
               style={{
                 padding: '10px 14px',
-                backgroundColor: '#fee2e2',
+                backgroundColor: 'var(--badge-red-bg)',
                 border: '1px solid #fca5a5',
                 borderRadius: 8,
                 marginBottom: 16,
@@ -388,10 +388,10 @@ export default function NewRequestPage() {
                 padding: '10px 20px',
                 border: '1px solid #d1d5db',
                 borderRadius: 8,
-                backgroundColor: '#fff',
+                backgroundColor: 'var(--bg-primary)',
                 cursor: 'pointer',
                 fontSize: 14,
-                color: '#374151',
+                color: 'var(--text-secondary)',
               }}
             >
               Back
@@ -401,8 +401,8 @@ export default function NewRequestPage() {
               disabled={isSubmitting}
               style={{
                 padding: '10px 28px',
-                backgroundColor: isSubmitting ? '#a5b4fc' : '#4f46e5',
-                color: '#fff',
+                backgroundColor: isSubmitting ? '#a5b4fc' : 'var(--accent-primary)',
+                color: 'var(--bg-primary)',
                 border: 'none',
                 borderRadius: 8,
                 cursor: isSubmitting ? 'not-allowed' : 'pointer',
