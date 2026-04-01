@@ -471,6 +471,7 @@ model User {
   status                  UserStatus @default(ACTIVE)
   notificationPreferences Json?
   pushPreferences         Json?
+  themePreference         String     @default("system")
   siteId                  String?    @db.Uuid
   createdAt               DateTime   @default(now())
   updatedAt               DateTime   @updatedAt
