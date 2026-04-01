@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Icon from '@mdi/react';
+import ThemeProvider from '@/components/ThemeProvider';
+import ThemeToggle from '@/components/ThemeToggle';
 import {
   mdiHome,
   mdiTicketOutline,
@@ -51,8 +53,8 @@ function NavLink({ item, isActive, onClick }: { item: NavItem; isActive: boolean
         textDecoration: 'none',
         fontSize: 14,
         fontWeight: isActive ? 600 : 400,
-        backgroundColor: isActive ? '#e0e7ff' : 'transparent',
-        color: isActive ? '#4f46e5' : '#374151',
+        backgroundColor: isActive ? 'color-mix(in srgb, var(--accent-primary) 12%, transparent)' : 'transparent',
+        color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)',
         transition: 'background-color 0.15s ease, color 0.15s ease',
       }}
     >
@@ -110,9 +112,9 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       style={{
         width: mobile ? '100%' : 240,
         height: mobile ? 'auto' : '100%',
-        backgroundColor: '#fff',
-        borderRight: mobile ? 'none' : '1px solid #e5e7eb',
-        borderTop: mobile ? '1px solid #e5e7eb' : 'none',
+        backgroundColor: 'var(--bg-primary)',
+        borderRight: mobile ? 'none' : '1px solid var(--border-primary)',
+        borderTop: mobile ? '1px solid var(--border-primary)' : 'none',
         display: 'flex',
         flexDirection: mobile ? 'row' : 'column',
         padding: mobile ? '8px' : '16px 12px',
@@ -128,8 +130,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     >
       {!mobile && (
         <div style={{ marginBottom: 24, padding: '4px 16px' }}>
-          <span style={{ fontWeight: 700, fontSize: 18, color: '#4f46e5' }}>MeridianITSM</span>
-          <p style={{ margin: '2px 0 0', fontSize: 11, color: '#9ca3af', fontWeight: 400 }}>Self-Service Portal</p>
+          <span style={{ fontWeight: 700, fontSize: 18, color: 'var(--accent-primary)' }}>MeridianITSM</span>
+          <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--text-placeholder)', fontWeight: 400 }}>Self-Service Portal</p>
         </div>
       )}
       {navItems.map((item) =>
@@ -147,7 +149,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               textDecoration: 'none',
               fontSize: 10,
               fontWeight: isActive(item.href) ? 600 : 400,
-              color: isActive(item.href) ? '#4f46e5' : '#6b7280',
+              color: isActive(item.href) ? 'var(--accent-primary)' : 'var(--text-muted)',
               flex: 1,
             }}
           >
@@ -167,7 +169,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   );
 
   return (
-    <div style={{ display: 'flex', height: '100vh', backgroundColor: '#f9fafb', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <ThemeProvider>
+    <div style={{ display: 'flex', height: '100vh', backgroundColor: 'var(--bg-secondary)', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
 
       {/* ── Desktop Sidebar ───────────────────────────────────────────────────── */}
       <div
@@ -175,8 +178,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           display: 'flex',
           flexDirection: 'column',
           width: 240,
-          backgroundColor: '#fff',
-          borderRight: '1px solid #e5e7eb',
+          backgroundColor: 'var(--bg-primary)',
+          borderRight: '1px solid var(--border-primary)',
           flexShrink: 0,
         }}
         className="portal-sidebar-desktop"
@@ -190,7 +193,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.4)',
+            backgroundColor: 'var(--shadow-md)',
             zIndex: 30,
           }}
           onClick={() => setSidebarOpen(false)}
@@ -203,8 +206,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         {/* ── Top Header ──────────────────────────────────────────────────────── */}
         <header
           style={{
-            backgroundColor: '#fff',
-            borderBottom: '1px solid #e5e7eb',
+            backgroundColor: 'var(--bg-primary)',
+            borderBottom: '1px solid var(--border-primary)',
             height: 56,
             display: 'flex',
             alignItems: 'center',
@@ -222,7 +225,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               border: 'none',
               cursor: 'pointer',
               padding: 4,
-              color: '#374151',
+              color: 'var(--text-secondary)',
             }}
             className="portal-menu-button"
             aria-label="Toggle menu"
@@ -240,7 +243,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               border: 'none',
               cursor: 'pointer',
               padding: '6px',
-              color: '#374151',
+              color: 'var(--text-secondary)',
               borderRadius: 6,
               marginRight: 8,
             }}
@@ -253,8 +256,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                   position: 'absolute',
                   top: 2,
                   right: 2,
-                  backgroundColor: '#ef4444',
-                  color: '#fff',
+                  backgroundColor: 'var(--accent-danger)',
+                  color: 'var(--bg-primary)',
                   borderRadius: '50%',
                   width: 16,
                   height: 16,
@@ -283,7 +286,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                 cursor: 'pointer',
                 padding: '6px 8px',
                 borderRadius: 6,
-                color: '#374151',
+                color: 'var(--text-secondary)',
                 fontSize: 14,
               }}
               aria-label="User menu"
@@ -303,15 +306,16 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                     right: 0,
                     top: '100%',
                     marginTop: 4,
-                    backgroundColor: '#fff',
-                    border: '1px solid #e5e7eb',
+                    backgroundColor: 'var(--bg-primary)',
+                    border: '1px solid var(--border-primary)',
                     borderRadius: 8,
-                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                    boxShadow: '0 4px 6px -1px var(--shadow-sm)',
                     minWidth: 160,
                     zIndex: 20,
                     overflow: 'hidden',
                   }}
                 >
+                  <ThemeToggle />
                   <button
                     onClick={() => {
                       setUserMenuOpen(false);
@@ -328,7 +332,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                       cursor: 'pointer',
                       textAlign: 'left',
                       fontSize: 14,
-                      color: '#dc2626',
+                      color: 'var(--accent-danger)',
                     }}
                   >
                     <Icon path={mdiLogout} size={0.8} color="currentColor" />
@@ -359,5 +363,6 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         }
       `}</style>
     </div>
+    </ThemeProvider>
   );
 }

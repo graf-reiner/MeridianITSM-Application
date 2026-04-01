@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Icon from '@mdi/react';
+import ThemeProvider from '@/components/ThemeProvider';
+import ThemeToggle from '@/components/ThemeToggle';
 import {
   mdiViewDashboard,
   mdiTicketOutline,
@@ -70,7 +72,7 @@ function NavLink({ item, isActive, onClick }: { item: NavItem; isActive: boolean
         fontSize: 14,
         fontWeight: isActive ? 600 : 400,
         backgroundColor: isActive ? '#e0f2fe' : 'transparent',
-        color: isActive ? '#0284c7' : '#374151',
+        color: isActive ? 'var(--accent-brand)' : 'var(--text-secondary)',
         transition: 'background-color 0.15s ease, color 0.15s ease',
       }}
     >
@@ -122,7 +124,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', backgroundColor: '#f9fafb', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ display: 'flex', height: '100vh', backgroundColor: 'var(--bg-secondary)', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
 
       {/* ── Desktop Sidebar ───────────────────────────────────────────────────── */}
       <div
@@ -130,8 +132,8 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           display: 'flex',
           flexDirection: 'column',
           width: 240,
-          backgroundColor: '#fff',
-          borderRight: '1px solid #e5e7eb',
+          backgroundColor: 'var(--bg-primary)',
+          borderRight: '1px solid var(--border-primary)',
           flexShrink: 0,
         }}
         className="dashboard-sidebar-desktop"
@@ -162,7 +164,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
             style={{
               position: 'fixed',
               inset: 0,
-              backgroundColor: 'rgba(0,0,0,0.4)',
+              backgroundColor: 'var(--shadow-md)',
               zIndex: 30,
             }}
             onClick={() => setSidebarOpen(false)}
@@ -174,9 +176,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
               left: 0,
               bottom: 0,
               width: 260,
-              backgroundColor: '#fff',
+              backgroundColor: 'var(--bg-primary)',
               zIndex: 31,
-              boxShadow: '4px 0 12px rgba(0,0,0,0.15)',
+              boxShadow: '4px 0 12px var(--shadow-sm)',
               display: 'flex',
               flexDirection: 'column',
               overflowY: 'auto',
@@ -192,7 +194,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
               </div>
               <button
                 onClick={() => setSidebarOpen(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#6b7280' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--text-muted)' }}
                 aria-label="Close menu"
               >
                 <Icon path={mdiClose} size={1} color="currentColor" />
@@ -218,8 +220,8 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         {/* ── Top Header ────────────────────────────────────────────────────── */}
         <header
           style={{
-            backgroundColor: '#fff',
-            borderBottom: '1px solid #e5e7eb',
+            backgroundColor: 'var(--bg-primary)',
+            borderBottom: '1px solid var(--border-primary)',
             height: 56,
             display: 'flex',
             alignItems: 'center',
@@ -236,7 +238,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
               border: 'none',
               cursor: 'pointer',
               padding: 4,
-              color: '#374151',
+              color: 'var(--text-secondary)',
             }}
             className="dashboard-menu-button"
             aria-label="Toggle menu"
@@ -254,7 +256,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
               border: 'none',
               cursor: 'pointer',
               padding: '6px',
-              color: '#374151',
+              color: 'var(--text-secondary)',
               borderRadius: 6,
               marginRight: 8,
             }}
@@ -267,7 +269,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                   position: 'absolute',
                   top: 2,
                   right: 2,
-                  backgroundColor: '#ef4444',
+                  backgroundColor: 'var(--accent-danger)',
                   color: '#fff',
                   borderRadius: '50%',
                   width: 16,
@@ -297,7 +299,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                 cursor: 'pointer',
                 padding: '6px 8px',
                 borderRadius: 6,
-                color: '#374151',
+                color: 'var(--text-secondary)',
                 fontSize: 14,
               }}
               aria-label="User menu"
@@ -317,15 +319,16 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                     right: 0,
                     top: '100%',
                     marginTop: 4,
-                    backgroundColor: '#fff',
-                    border: '1px solid #e5e7eb',
+                    backgroundColor: 'var(--bg-primary)',
+                    border: '1px solid var(--border-primary)',
                     borderRadius: 8,
-                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                    boxShadow: '0 4px 6px -1px var(--shadow-sm)',
                     minWidth: 180,
                     zIndex: 20,
                     overflow: 'hidden',
                   }}
                 >
+                  <ThemeToggle />
                   <Link
                     href="/dashboard/settings/security"
                     onClick={() => setUserMenuOpen(false)}
@@ -337,15 +340,15 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                       padding: '10px 14px',
                       background: 'none',
                       border: 'none',
-                      borderBottom: '1px solid #f3f4f6',
+                      borderBottom: '1px solid var(--bg-tertiary)',
                       cursor: 'pointer',
                       textDecoration: 'none',
                       textAlign: 'left',
                       fontSize: 14,
-                      color: '#374151',
+                      color: 'var(--text-secondary)',
                     }}
                   >
-                    <Icon path={mdiShieldLock} size={0.8} color="#6b7280" />
+                    <Icon path={mdiShieldLock} size={0.8} color="var(--text-muted)" />
                     Security &amp; MFA
                   </Link>
                   <button
@@ -364,7 +367,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                       cursor: 'pointer',
                       textAlign: 'left',
                       fontSize: 14,
-                      color: '#dc2626',
+                      color: 'var(--accent-danger)',
                     }}
                   >
                     <Icon path={mdiLogout} size={0.8} color="currentColor" />
@@ -394,8 +397,10 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <QueryClientProvider client={queryClient}>
-      <DashboardInner>{children}</DashboardInner>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <DashboardInner>{children}</DashboardInner>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
