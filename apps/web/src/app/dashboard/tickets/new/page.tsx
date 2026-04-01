@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Icon from '@mdi/react';
 import { mdiArrowLeft } from '@mdi/js';
 import Link from 'next/link';
+import RichTextField from '@/components/RichTextField';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -58,6 +59,8 @@ export default function NewTicketPage() {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<CreateTicketForm>({
     resolver: zodResolver(createTicketSchema),
@@ -78,24 +81,25 @@ export default function NewTicketPage() {
         fetch('/api/v1/settings/groups', { credentials: 'include' }),
       ]);
       if (catRes.ok) {
-        const data = (await catRes.json()) as { categories: SelectOption[] };
-        setCategories(data.categories ?? []);
+        const json = await catRes.json();
+        setCategories(Array.isArray(json) ? json : json.categories ?? []);
       }
       if (queueRes.ok) {
-        const data = (await queueRes.json()) as { queues: SelectOption[] };
-        setQueues(data.queues ?? []);
+        const json = await queueRes.json();
+        setQueues(Array.isArray(json) ? json : json.queues ?? []);
       }
       if (slaRes.ok) {
-        const data = (await slaRes.json()) as { policies: SelectOption[] };
-        setSlaPolicies(data.policies ?? []);
+        const json = await slaRes.json();
+        setSlaPolicies(Array.isArray(json) ? json : json.policies ?? []);
       }
       if (userRes.ok) {
-        const data = (await userRes.json()) as { users: UserOption[] };
-        setUsers(data.users ?? []);
+        const json = await userRes.json();
+        const list = Array.isArray(json) ? json : json.data ?? json.users ?? [];
+        setUsers(list);
       }
       if (groupRes.ok) {
-        const data = (await groupRes.json()) as { groups: GroupOption[] };
-        setGroups(data.groups ?? []);
+        const json = await groupRes.json();
+        setGroups(Array.isArray(json) ? json : json.groups ?? []);
       }
     }
     void loadOptions();
@@ -185,11 +189,11 @@ export default function NewTicketPage() {
           {/* Description */}
           <div style={{ marginBottom: 18 }}>
             <label style={labelStyle}>Description</label>
-            <textarea
-              {...register('description')}
+            <RichTextField
+              value={watch('description') ?? ''}
+              onChange={(html) => setValue('description', html, { shouldValidate: true })}
               placeholder="Detailed description of the issue..."
-              rows={5}
-              style={{ ...inputStyle, resize: 'vertical' }}
+              minHeight={120}
             />
           </div>
 

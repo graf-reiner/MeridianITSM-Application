@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiArrowLeft, mdiPaperclip, mdiSend, mdiAccountCircle, mdiClockOutline } from '@mdi/js';
+import RichTextField from '@/components/RichTextField';
 import SlaCountdown from '../../../../components/SlaCountdown';
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import { UnsavedChangesToast } from '@/components/UnsavedChangesToast';
@@ -122,9 +123,15 @@ export default function TicketDetailPage() {
     queryFn: async () => {
       const res = await fetch(`/api/v1/tickets/${ticketId}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to load ticket');
-      const data = await res.json();
-      // API may return ticket directly or wrapped in { ticket: ... }
-      return (data.ticket ?? data) as TicketDetail;
+      const raw = await res.json();
+      const data = raw.ticket ?? raw;
+      // Normalize API field names to match interface
+      return {
+        ...data,
+        assignee: data.assignee ?? data.assignedTo ?? null,
+        requester: data.requester ?? data.requestedBy ?? null,
+        slaPolicy: data.slaPolicy ?? data.sla ?? null,
+      } as TicketDetail;
     },
   });
 
@@ -482,21 +489,12 @@ export default function TicketDetailPage() {
 
                 {/* Comment form */}
                 <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: 16 }}>
-                  <textarea
+                  <RichTextField
                     value={commentBody}
-                    onChange={(e) => setCommentBody(e.target.value)}
+                    onChange={setCommentBody}
                     placeholder="Add a comment..."
-                    rows={4}
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: 8,
-                      fontSize: 14,
-                      resize: 'vertical',
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                    }}
+                    minHeight={100}
+                    compact
                   />
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
                     <select

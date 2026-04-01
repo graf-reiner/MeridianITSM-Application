@@ -13,6 +13,7 @@ import {
   mdiInformationOutline,
   mdiDownload,
 } from '@mdi/js';
+import RichTextField from '@/components/RichTextField';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -483,24 +484,12 @@ export default function PortalTicketDetailPage({
             >
               Add a reply
             </label>
-            <textarea
-              id="comment-body"
-              rows={3}
-              placeholder="Type your message here..."
+            <RichTextField
               value={commentBody}
-              onChange={(e) => setCommentBody(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: 8,
-                fontSize: 14,
-                outline: 'none',
-                resize: 'vertical',
-                boxSizing: 'border-box',
-                fontFamily: 'inherit',
-                marginBottom: 8,
-              }}
+              onChange={setCommentBody}
+              placeholder="Type your message here..."
+              minHeight={80}
+              compact
             />
             {commentError && (
               <p style={{ margin: '0 0 8px', fontSize: 12, color: '#ef4444' }}>{commentError}</p>

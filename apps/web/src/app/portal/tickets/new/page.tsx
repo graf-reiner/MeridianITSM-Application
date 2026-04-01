@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Icon from '@mdi/react';
 import { mdiChevronLeft, mdiCheckCircle } from '@mdi/js';
+import RichTextField from '@/components/RichTextField';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -102,6 +103,7 @@ export default function NewRequestPage() {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<SubmitRequestFormData>({
     resolver: zodResolver(submitRequestSchema),
@@ -313,22 +315,11 @@ export default function NewRequestPage() {
             >
               Description <span style={{ color: '#ef4444' }}>*</span>
             </label>
-            <textarea
-              id="description"
-              rows={5}
+            <RichTextField
+              value={watch('description') ?? ''}
+              onChange={(html) => setValue('description', html, { shouldValidate: true })}
               placeholder="Describe your request in detail. Include any relevant information, error messages, or steps to reproduce."
-              {...register('description')}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: `1px solid ${errors.description ? '#ef4444' : '#d1d5db'}`,
-                borderRadius: 8,
-                fontSize: 14,
-                outline: 'none',
-                resize: 'vertical',
-                boxSizing: 'border-box',
-                fontFamily: 'inherit',
-              }}
+              minHeight={120}
             />
             {errors.description && (
               <p style={{ margin: '4px 0 0', fontSize: 12, color: '#ef4444' }}>
