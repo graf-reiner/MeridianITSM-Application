@@ -12,6 +12,7 @@ import {
   mdiCheck,
   mdiClose,
 } from '@mdi/js';
+import RichTextField from '@/components/RichTextField';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -186,11 +187,12 @@ function EditAssetForm({ asset, onCancel, onSaved }: {
       </div>
       <div style={{ marginBottom: 12 }}>
         <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#374151', marginBottom: 4 }}>Notes</label>
-        <textarea
+        <RichTextField
           value={form.notes}
-          onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-          rows={3}
-          style={{ width: '100%', padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 14, boxSizing: 'border-box', resize: 'vertical' }}
+          onChange={(val) => setForm((f) => ({ ...f, notes: val }))}
+          placeholder=""
+          minHeight={80}
+          compact
         />
       </div>
       {error && <p style={{ color: '#dc2626', fontSize: 13, margin: '0 0 12px' }}>{error}</p>}

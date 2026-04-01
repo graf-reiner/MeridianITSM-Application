@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiArrowLeft, mdiAccountMultiple, mdiPlus, mdiPencil, mdiTrashCan, mdiAccountPlus, mdiAccountMinus } from '@mdi/js';
+import RichTextField from '@/components/RichTextField';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -91,7 +92,7 @@ function GroupModal({ group, onClose, onSaved }: { group: Group | null; onClose:
           </div>
           <div style={{ marginBottom: 20 }}>
             <label htmlFor="groupDesc" style={labelStyle}>Description</label>
-            <textarea id="groupDesc" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical' }} placeholder="What this group is responsible for..." />
+            <RichTextField value={description} onChange={setDescription} placeholder="What this group is responsible for..." minHeight={80} compact />
           </div>
           {error && <div style={{ padding: '8px 12px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, marginBottom: 14, color: '#dc2626', fontSize: 13 }}>{error}</div>}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>

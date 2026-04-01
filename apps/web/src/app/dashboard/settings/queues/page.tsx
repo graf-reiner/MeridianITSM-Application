@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiArrowLeft, mdiTrayFull, mdiPlus, mdiPencil, mdiTrashCan } from '@mdi/js';
+import RichTextField from '@/components/RichTextField';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -110,13 +111,12 @@ function QueueModal({ queue, users, groups, onClose, onSaved }: { queue: Queue |
           </div>
           <div style={{ marginBottom: 20 }}>
             <label htmlFor="assignmentRules" style={labelStyle}>Assignment Rules (JSON)</label>
-            <textarea
-              id="assignmentRules"
+            <RichTextField
               value={assignmentRules}
-              onChange={(e) => setAssignmentRules(e.target.value)}
-              placeholder={'{"priority": "CRITICAL", "assignTo": "user-id"}'}
-              rows={4}
-              style={{ ...inputStyle, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }}
+              onChange={setAssignmentRules}
+              placeholder='{"priority": "CRITICAL", "assignTo": "user-id"}'
+              minHeight={100}
+              compact
             />
             <p style={{ margin: '4px 0 0', fontSize: 12, color: '#9ca3af' }}>Optional JSON rules for automatic assignment logic</p>
           </div>

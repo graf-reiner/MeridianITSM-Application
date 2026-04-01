@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Icon from '@mdi/react';
 import { mdiAccountGroup, mdiPlus, mdiCalendar } from '@mdi/js';
+import RichTextField from '@/components/RichTextField';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -110,7 +111,7 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
         </div>
         <div style={{ marginBottom: 16 }}>
           <label style={labelStyle}>Notes</label>
-          <textarea rows={3} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} style={{ ...inputStyle, resize: 'vertical' }} />
+          <RichTextField value={form.notes} onChange={(val) => setForm((f) => ({ ...f, notes: val }))} placeholder="" minHeight={80} compact />
         </div>
         {error && <p style={{ color: '#dc2626', fontSize: 13, margin: '0 0 12px' }}>{error}</p>}
         <div style={{ display: 'flex', gap: 8 }}>

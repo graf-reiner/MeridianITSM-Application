@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiArrowLeft, mdiTag, mdiPlus, mdiPencil, mdiTrashCan, mdiChevronRight } from '@mdi/js';
+import RichTextField from '@/components/RichTextField';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -85,7 +86,7 @@ function CategoryModal({
           </div>
           <div style={{ marginBottom: 16 }}>
             <label htmlFor="description" style={labelStyle}>Description</label>
-            <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
+            <RichTextField value={description} onChange={setDescription} placeholder="" minHeight={60} compact />
           </div>
           <div style={{ marginBottom: 16 }}>
             <label htmlFor="parentCategory" style={labelStyle}>Parent Category</label>

@@ -12,6 +12,7 @@ import {
   mdiClose,
   mdiTrashCan,
 } from '@mdi/js';
+import RichTextField from '@/components/RichTextField';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -403,12 +404,12 @@ function ActionCard({
           </div>
           <div style={{ marginTop: 12 }}>
             <label style={labelStyle}>Message Template</label>
-            <textarea
+            <RichTextField
               value={action.messageTemplate ?? ''}
-              onChange={(e) => update({ messageTemplate: e.target.value })}
-              rows={3}
+              onChange={(val) => update({ messageTemplate: val })}
               placeholder="Use {{ticket.id}}, {{ticket.subject}}, etc."
-              style={{ ...inputStyle, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }}
+              minHeight={80}
+              compact
             />
           </div>
         </>
@@ -432,12 +433,12 @@ function ActionCard({
           </div>
           <div style={{ marginTop: 12 }}>
             <label style={labelStyle}>Message Template</label>
-            <textarea
+            <RichTextField
               value={action.messageTemplate ?? ''}
-              onChange={(e) => update({ messageTemplate: e.target.value })}
-              rows={3}
+              onChange={(val) => update({ messageTemplate: val })}
               placeholder="Use {{ticket.id}}, {{ticket.subject}}, etc."
-              style={{ ...inputStyle, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }}
+              minHeight={80}
+              compact
             />
           </div>
         </>
@@ -513,12 +514,12 @@ function ActionCard({
           {action.type === 'webhook_wait' && (
             <div style={{ marginTop: 12 }}>
               <label style={labelStyle}>Response Mapping (JSON)</label>
-              <textarea
+              <RichTextField
                 value={action.responseMapping ?? ''}
-                onChange={(e) => update({ responseMapping: e.target.value })}
-                rows={3}
+                onChange={(val) => update({ responseMapping: val })}
                 placeholder='{"fieldName": "$.response.field"}'
-                style={{ ...inputStyle, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }}
+                minHeight={80}
+                compact
               />
             </div>
           )}
@@ -623,14 +624,18 @@ export default function NotificationRuleEditorPage() {
   const [loaded, setLoaded] = useState(isNew);
 
   // Fetch existing rule
-  const { data: ruleData } = useQuery({
+  const { data: ruleData, error: ruleError, isLoading: ruleLoading } = useQuery({
     queryKey: ['notification-rule', ruleId],
     queryFn: async () => {
       const res = await fetch(`/api/v1/settings/notification-rules/${ruleId}`, { credentials: 'include' });
-      if (!res.ok) throw new Error('Failed to load rule');
-      return res.json() as Promise<{ rule: Record<string, unknown> }>;
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Failed to load rule (${res.status}): ${text}`);
+      }
+      return res.json() as Promise<Record<string, unknown>>;
     },
     enabled: !isNew,
+    retry: false,
   });
 
   // Fetch supporting data
@@ -693,8 +698,8 @@ export default function NotificationRuleEditorPage() {
 
   // Populate form from fetched rule
   useEffect(() => {
-    if (!isNew && ruleData?.rule && !loaded) {
-      const r = ruleData.rule;
+    if (!isNew && ruleData && !loaded) {
+      const r = ruleData;
       setName((r.name as string) ?? '');
       setDescription((r.description as string) ?? '');
       setTrigger((r.trigger as string) ?? 'TICKET_CREATED');
@@ -804,6 +809,20 @@ export default function NotificationRuleEditorPage() {
   };
 
   if (!isNew && !loaded) {
+    if (ruleError) {
+      return (
+        <div style={{ maxWidth: 900, margin: '0 auto', padding: 40 }}>
+          <div style={{ padding: '12px 16px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, color: '#dc2626', fontSize: 14 }}>
+            Failed to load rule: {ruleError.message}
+          </div>
+          <div style={{ marginTop: 16, textAlign: 'center' }}>
+            <Link href="/dashboard/settings/notification-rules" style={{ color: '#4f46e5', textDecoration: 'none', fontSize: 14 }}>
+              &larr; Back to Notification Rules
+            </Link>
+          </div>
+        </div>
+      );
+    }
     return (
       <div style={{ maxWidth: 900, margin: '0 auto', padding: 40, textAlign: 'center', color: '#6b7280' }}>
         Loading rule...
@@ -835,7 +854,7 @@ export default function NotificationRuleEditorPage() {
         </div>
         <div style={{ marginBottom: 16 }}>
           <label htmlFor="rule-desc" style={labelStyle}>Description</label>
-          <textarea id="rule-desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} style={{ ...inputStyle, resize: 'vertical' }} placeholder="Optional description of this rule" />
+          <RichTextField value={description} onChange={setDescription} placeholder="Optional description of this rule" minHeight={60} compact />
         </div>
         <div style={{ display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
