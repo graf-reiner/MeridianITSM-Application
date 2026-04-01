@@ -489,6 +489,7 @@ model User {
   notifications       Notification[]
   deviceTokens        DeviceToken[]
   auditLogs           AuditLog[]
+  ticketActivities    TicketActivity[]  @relation("TicketActivityActor")
   passwordResetTokens  PasswordResetToken[]
   userGroupMembers     UserGroupMember[]
   apiKeys              ApiKey[]
@@ -738,6 +739,7 @@ model TicketActivity {
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
   ticket Ticket @relation(fields: [ticketId], references: [id])
+  actor  User?  @relation("TicketActivityActor", fields: [actorId], references: [id])
 
   @@index([tenantId])
   @@index([tenantId, ticketId])

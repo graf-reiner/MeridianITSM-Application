@@ -482,16 +482,30 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
     const pageSize = Math.min(100, Math.max(1, parseInt(query.pageSize ?? '50', 10)));
     const skip = (page - 1) * pageSize;
 
-    const [activities, total] = await Promise.all([
+    const [rawActivities, total] = await Promise.all([
       prisma.ticketActivity.findMany({
         where: { tenantId, ticketId },
         orderBy: { createdAt: 'desc' },
         skip,
         take: pageSize,
+        include: {
+          actor: { select: { firstName: true, lastName: true } },
+        },
       }),
       prisma.ticketActivity.count({ where: { tenantId, ticketId } }),
     ]);
 
-    return reply.status(200).send({ data: activities, total, page, pageSize });
+    const activities = rawActivities.map((a) => ({
+      id: a.id,
+      action: a.activityType,
+      actor: a.actor ?? null,
+      createdAt: a.createdAt,
+      meta: a.metadata ?? null,
+      fieldName: a.fieldName ?? null,
+      oldValue: a.oldValue ?? null,
+      newValue: a.newValue ?? null,
+    }));
+
+    return reply.status(200).send({ activities, total, page, pageSize });
   });
 }
