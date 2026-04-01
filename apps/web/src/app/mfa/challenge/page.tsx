@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import ThemeProvider from '@/components/ThemeProvider';
 import Icon from '@mdi/react';
 import {
   mdiShieldLock,
@@ -183,13 +184,14 @@ export default function MfaChallengePage() {
   // ─── Render ─────────────────────────────────────────────────────────────
 
   return (
+    <ThemeProvider>
     <div
       style={{
         minHeight: '100vh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#f9fafb',
+        backgroundColor: 'var(--bg-secondary)',
         padding: 16,
       }}
     >
@@ -197,8 +199,8 @@ export default function MfaChallengePage() {
         style={{
           width: '100%',
           maxWidth: 420,
-          backgroundColor: '#fff',
-          border: '1px solid #e5e7eb',
+          backgroundColor: 'var(--bg-primary)',
+          border: '1px solid var(--border-primary)',
           borderRadius: 16,
           padding: 32,
         }}
@@ -210,19 +212,19 @@ export default function MfaChallengePage() {
               width: 56,
               height: 56,
               borderRadius: 14,
-              backgroundColor: '#eef2ff',
+              backgroundColor: 'var(--badge-indigo-bg)',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               marginBottom: 16,
             }}
           >
-            <Icon path={mdiShieldLock} size={1.4} color="#4f46e5" />
+            <Icon path={mdiShieldLock} size={1.4} color="var(--accent-primary)" />
           </div>
-          <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700, color: '#111827' }}>
+          <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>
             Two-Factor Authentication
           </h1>
-          <p style={{ margin: 0, fontSize: 14, color: '#6b7280' }}>
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--text-muted)' }}>
             Verify your identity to continue
           </p>
         </div>
@@ -235,12 +237,12 @@ export default function MfaChallengePage() {
               alignItems: 'center',
               gap: 8,
               padding: '10px 14px',
-              backgroundColor: '#fef2f2',
-              border: '1px solid #fecaca',
+              backgroundColor: 'var(--badge-red-bg-subtle)',
+              border: '1px solid var(--badge-red-bg-strong)',
               borderRadius: 8,
               marginBottom: 16,
               fontSize: 13,
-              color: '#dc2626',
+              color: 'var(--accent-danger)',
             }}
           >
             <Icon path={mdiAlertCircleOutline} size={0.7} />
@@ -251,15 +253,15 @@ export default function MfaChallengePage() {
         {/* Loading */}
         {view.kind === 'loading' && (
           <div style={{ textAlign: 'center', padding: 32 }}>
-            <Icon path={mdiLoading} size={1.2} color="#6b7280" spin />
+            <Icon path={mdiLoading} size={1.2} color="var(--text-muted)" spin />
           </div>
         )}
 
         {/* Error state */}
         {view.kind === 'error' && (
           <div style={{ textAlign: 'center', padding: 16 }}>
-            <p style={{ color: '#dc2626', marginBottom: 16 }}>{view.message}</p>
-            <a href="/login" style={{ color: '#4f46e5', fontSize: 14 }}>
+            <p style={{ color: 'var(--accent-danger)', marginBottom: 16 }}>{view.message}</p>
+            <a href="/login" style={{ color: 'var(--accent-primary)', fontSize: 14 }}>
               Return to login
             </a>
           </div>
@@ -278,8 +280,8 @@ export default function MfaChallengePage() {
                     alignItems: 'center',
                     gap: 12,
                     padding: '12px 16px',
-                    backgroundColor: '#fff',
-                    border: '1px solid #e5e7eb',
+                    backgroundColor: 'var(--bg-primary)',
+                    border: '1px solid var(--border-primary)',
                     borderRadius: 10,
                     cursor: 'pointer',
                     textAlign: 'left',
@@ -290,13 +292,13 @@ export default function MfaChallengePage() {
                   <Icon
                     path={methodIcon(m.type)}
                     size={1}
-                    color="#4f46e5"
+                    color="var(--accent-primary)"
                   />
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
                       {m.name}
                     </div>
-                    <div style={{ fontSize: 12, color: '#6b7280' }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                       {methodLabel(m.type)}
                     </div>
                   </div>
@@ -316,7 +318,7 @@ export default function MfaChallengePage() {
                   border: 'none',
                   cursor: 'pointer',
                   fontSize: 13,
-                  color: '#6b7280',
+                  color: 'var(--text-muted)',
                   textDecoration: 'underline',
                 }}
               >
@@ -329,7 +331,7 @@ export default function MfaChallengePage() {
         {/* TOTP code entry */}
         {view.kind === 'totp' && (
           <form onSubmit={handleCodeSubmit}>
-            <p style={{ fontSize: 14, color: '#374151', marginBottom: 16 }}>
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 16 }}>
               Enter the 6-digit code from your authenticator app.
             </p>
             <input
@@ -348,7 +350,7 @@ export default function MfaChallengePage() {
                 fontFamily: 'monospace',
                 textAlign: 'center',
                 letterSpacing: '0.3em',
-                border: '1px solid #d1d5db',
+                border: '1px solid var(--border-secondary)',
                 borderRadius: 10,
                 outline: 'none',
                 marginBottom: 16,
@@ -362,7 +364,7 @@ export default function MfaChallengePage() {
               style={{
                 width: '100%',
                 padding: '12px 16px',
-                backgroundColor: code.length === 6 ? '#4f46e5' : '#9ca3af',
+                backgroundColor: code.length === 6 ? 'var(--accent-primary)' : 'var(--text-placeholder)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: 10,
@@ -380,8 +382,8 @@ export default function MfaChallengePage() {
         {/* WebAuthn waiting */}
         {view.kind === 'webauthn' && (
           <div style={{ textAlign: 'center', padding: 16 }}>
-            <Icon path={mdiFingerprint} size={2} color="#4f46e5" />
-            <p style={{ fontSize: 14, color: '#374151', marginTop: 16 }}>
+            <Icon path={mdiFingerprint} size={2} color="var(--accent-primary)" />
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginTop: 16 }}>
               Follow your browser&apos;s prompt to verify with your security key.
             </p>
             <div style={{ textAlign: 'left' }}>
@@ -394,7 +396,7 @@ export default function MfaChallengePage() {
         {/* Email / SMS code entry */}
         {view.kind === 'code' && (
           <form onSubmit={handleCodeSubmit}>
-            <p style={{ fontSize: 14, color: '#374151', marginBottom: 16 }}>
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 16 }}>
               Enter the 6-digit code sent to{' '}
               <strong>{view.maskedContact}</strong>.
             </p>
@@ -414,7 +416,7 @@ export default function MfaChallengePage() {
                 fontFamily: 'monospace',
                 textAlign: 'center',
                 letterSpacing: '0.3em',
-                border: '1px solid #d1d5db',
+                border: '1px solid var(--border-secondary)',
                 borderRadius: 10,
                 outline: 'none',
                 marginBottom: 16,
@@ -428,7 +430,7 @@ export default function MfaChallengePage() {
               style={{
                 width: '100%',
                 padding: '12px 16px',
-                backgroundColor: code.length === 6 ? '#4f46e5' : '#9ca3af',
+                backgroundColor: code.length === 6 ? 'var(--accent-primary)' : 'var(--text-placeholder)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: 10,
@@ -446,7 +448,7 @@ export default function MfaChallengePage() {
         {/* Recovery code entry */}
         {view.kind === 'recovery' && (
           <form onSubmit={handleCodeSubmit}>
-            <p style={{ fontSize: 14, color: '#374151', marginBottom: 16 }}>
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 16 }}>
               Enter one of your recovery codes.
             </p>
             <input
@@ -462,7 +464,7 @@ export default function MfaChallengePage() {
                 fontFamily: 'monospace',
                 textAlign: 'center',
                 letterSpacing: '0.2em',
-                border: '1px solid #d1d5db',
+                border: '1px solid var(--border-secondary)',
                 borderRadius: 10,
                 outline: 'none',
                 marginBottom: 16,
@@ -476,7 +478,7 @@ export default function MfaChallengePage() {
               style={{
                 width: '100%',
                 padding: '12px 16px',
-                backgroundColor: code.trim() ? '#4f46e5' : '#9ca3af',
+                backgroundColor: code.trim() ? 'var(--accent-primary)' : 'var(--text-placeholder)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: 10,
@@ -492,6 +494,7 @@ export default function MfaChallengePage() {
         )}
       </div>
     </div>
+    </ThemeProvider>
   );
 }
 
@@ -564,7 +567,7 @@ function TrustCheckbox({
         gap: 8,
         marginBottom: 16,
         fontSize: 13,
-        color: '#374151',
+        color: 'var(--text-secondary)',
         cursor: 'pointer',
         userSelect: 'none',
       }}
@@ -573,7 +576,7 @@ function TrustCheckbox({
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        style={{ width: 16, height: 16, accentColor: '#4f46e5', cursor: 'pointer' }}
+        style={{ width: 16, height: 16, accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
       />
       Trust this device for 30 days
     </label>
@@ -591,11 +594,11 @@ function BackButton({ onBack }: { onBack: () => void }) {
         marginTop: 12,
         padding: '10px 16px',
         backgroundColor: 'transparent',
-        border: '1px solid #e5e7eb',
+        border: '1px solid var(--border-primary)',
         borderRadius: 10,
         cursor: 'pointer',
         fontSize: 13,
-        color: '#6b7280',
+        color: 'var(--text-muted)',
       }}
     >
       Back to method selection

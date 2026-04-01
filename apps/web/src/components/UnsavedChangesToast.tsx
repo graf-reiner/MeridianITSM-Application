@@ -16,11 +16,11 @@ export function UnsavedChangesToast({ visible, onSave, onDiscard, saving }: Unsa
       bottom: 24,
       left: '50%',
       transform: 'translateX(-50%)',
-      backgroundColor: '#1e293b',
+      backgroundColor: 'var(--card-bg)',
       color: '#fff',
       padding: '12px 20px',
       borderRadius: 12,
-      boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+      boxShadow: '0 8px 24px var(--shadow-md)',
       display: 'flex',
       alignItems: 'center',
       gap: 16,
@@ -34,8 +34,8 @@ export function UnsavedChangesToast({ visible, onSave, onDiscard, saving }: Unsa
         style={{
           padding: '6px 14px',
           backgroundColor: 'transparent',
-          color: '#94a3b8',
-          border: '1px solid #475569',
+          color: 'var(--text-placeholder)',
+          border: '1px solid var(--border-secondary)',
           borderRadius: 6,
           fontSize: 13,
           cursor: 'pointer',
@@ -48,7 +48,7 @@ export function UnsavedChangesToast({ visible, onSave, onDiscard, saving }: Unsa
         disabled={saving}
         style={{
           padding: '6px 14px',
-          backgroundColor: '#2563eb',
+          backgroundColor: 'var(--accent-primary)',
           color: '#fff',
           border: 'none',
           borderRadius: 6,

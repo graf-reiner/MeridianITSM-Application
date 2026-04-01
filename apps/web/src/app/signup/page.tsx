@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { SubscribeFlow } from './CheckoutForm';
+import ThemeProvider from '@/components/ThemeProvider';
 
 interface PlanCard {
   tier: 'STARTER' | 'PROFESSIONAL' | 'BUSINESS' | 'ENTERPRISE';
@@ -81,23 +82,26 @@ export default function SignupPage() {
 
   if (step === 'checkout' && selectedPlan) {
     return (
+      <ThemeProvider>
       <main style={{ minHeight: '100vh', padding: '48px 24px', maxWidth: 600, margin: '0 auto' }}>
         <h1 style={{ marginBottom: 8 }}>Subscribe to {selectedPlan.displayName}</h1>
-        <p style={{ marginBottom: 24, color: '#6b7280' }}>{selectedPlan.monthlyPriceLabel}</p>
+        <p style={{ marginBottom: 24, color: 'var(--text-muted)' }}>{selectedPlan.monthlyPriceLabel}</p>
         <SubscribeFlow
           priceId={selectedPlan.priceId}
           amount={selectedPlan.monthlyPriceCents}
           onBack={() => setStep('account-details')}
         />
       </main>
+      </ThemeProvider>
     );
   }
 
   if (step === 'account-details' && selectedPlan) {
     return (
+      <ThemeProvider>
       <main style={{ minHeight: '100vh', padding: '48px 24px', maxWidth: 480, margin: '0 auto' }}>
         <h1 style={{ marginBottom: 4 }}>Create your account</h1>
-        <p style={{ color: '#6b7280', marginBottom: 24 }}>
+        <p style={{ color: 'var(--text-muted)', marginBottom: 24 }}>
           Plan: <strong>{selectedPlan.displayName}</strong> — {selectedPlan.monthlyPriceLabel}
         </p>
         <form onSubmit={handleAccountDetailsSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -112,7 +116,7 @@ export default function SignupPage() {
               value={tenantName}
               onChange={(e) => setTenantName(e.target.value)}
               placeholder="Acme IT Services"
-              style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6 }}
+              style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border-secondary)', borderRadius: 6 }}
             />
           </div>
           <div>
@@ -126,7 +130,7 @@ export default function SignupPage() {
               value={adminEmail}
               onChange={(e) => setAdminEmail(e.target.value)}
               placeholder="admin@example.com"
-              style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6 }}
+              style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border-secondary)', borderRadius: 6 }}
             />
           </div>
           <div>
@@ -141,7 +145,7 @@ export default function SignupPage() {
               value={adminPassword}
               onChange={(e) => setAdminPassword(e.target.value)}
               placeholder="Minimum 8 characters"
-              style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6 }}
+              style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border-secondary)', borderRadius: 6 }}
             />
           </div>
           <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
@@ -153,7 +157,7 @@ export default function SignupPage() {
               style={{
                 flex: 2,
                 padding: '10px 16px',
-                backgroundColor: '#6366f1',
+                backgroundColor: 'var(--accent-primary-hover)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: 6,
@@ -165,15 +169,17 @@ export default function SignupPage() {
           </div>
         </form>
       </main>
+      </ThemeProvider>
     );
   }
 
   // Step 1: Plan selection
   return (
+    <ThemeProvider>
     <main style={{ minHeight: '100vh', padding: '48px 24px' }}>
       <div style={{ maxWidth: 960, margin: '0 auto' }}>
         <h1 style={{ textAlign: 'center', marginBottom: 8 }}>Choose your plan</h1>
-        <p style={{ textAlign: 'center', color: '#6b7280', marginBottom: 40 }}>
+        <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: 40 }}>
           Start free for 14 days. No credit card required until your trial ends.
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 24 }}>
@@ -181,7 +187,7 @@ export default function SignupPage() {
             <div
               key={plan.tier}
               style={{
-                border: '1px solid #e5e7eb',
+                border: '1px solid var(--border-primary)',
                 borderRadius: 12,
                 padding: 24,
                 display: 'flex',
@@ -191,7 +197,7 @@ export default function SignupPage() {
             >
               <h2 style={{ margin: 0, fontSize: 20 }}>{plan.displayName}</h2>
               <p style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>{plan.monthlyPriceLabel}</p>
-              <ul style={{ paddingLeft: 20, margin: 0, color: '#374151', fontSize: 14 }}>
+              <ul style={{ paddingLeft: 20, margin: 0, color: 'var(--text-secondary)', fontSize: 14 }}>
                 {plan.features.map((f) => (
                   <li key={f} style={{ marginBottom: 4 }}>
                     {f}
@@ -203,7 +209,7 @@ export default function SignupPage() {
                 style={{
                   marginTop: 'auto',
                   padding: '10px 16px',
-                  backgroundColor: '#6366f1',
+                  backgroundColor: 'var(--accent-primary-hover)',
                   color: '#fff',
                   border: 'none',
                   borderRadius: 6,
@@ -218,5 +224,6 @@ export default function SignupPage() {
         </div>
       </div>
     </main>
+    </ThemeProvider>
   );
 }

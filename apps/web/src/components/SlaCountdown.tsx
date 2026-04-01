@@ -33,15 +33,15 @@ function getColorBand(elapsedPercentage: number): {
   isBreached: boolean;
 } {
   if (elapsedPercentage >= 100) {
-    return { bg: '#fee2e2', text: '#b91c1c', label: 'BREACHED', isBreached: true };
+    return { bg: 'var(--badge-red-bg)', text: '#b91c1c', label: 'BREACHED', isBreached: true };
   }
   if (elapsedPercentage >= 90) {
-    return { bg: '#fef2f2', text: '#dc2626', label: '', isBreached: false };
+    return { bg: 'var(--badge-red-bg-subtle)', text: '#dc2626', label: '', isBreached: false };
   }
   if (elapsedPercentage >= 75) {
-    return { bg: '#fefce8', text: '#ca8a04', label: '', isBreached: false };
+    return { bg: 'var(--badge-yellow-bg-subtle)', text: '#ca8a04', label: '', isBreached: false };
   }
-  return { bg: '#f0fdf4', text: '#16a34a', label: '', isBreached: false };
+  return { bg: 'var(--badge-green-bg-subtle)', text: '#16a34a', label: '', isBreached: false };
 }
 
 // ─── SlaCountdown ─────────────────────────────────────────────────────────────
@@ -86,8 +86,8 @@ export default function SlaCountdown({
           borderRadius: 6,
           fontSize: 12,
           fontWeight: 500,
-          backgroundColor: '#f3f4f6',
-          color: '#9ca3af',
+          backgroundColor: 'var(--bg-tertiary)',
+          color: 'var(--text-placeholder)',
         }}
       >
         No SLA
@@ -108,7 +108,7 @@ export default function SlaCountdown({
           borderRadius: 6,
           fontSize: 12,
           fontWeight: 500,
-          backgroundColor: '#fff7ed',
+          backgroundColor: 'var(--badge-orange-bg-subtle)',
           color: '#c2410c',
         }}
         title={pauseReason ?? 'SLA timer is paused'}

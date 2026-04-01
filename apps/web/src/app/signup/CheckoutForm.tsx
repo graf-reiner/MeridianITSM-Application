@@ -89,7 +89,7 @@ function InnerCheckoutForm({ priceId, onBack }: CheckoutFormProps) {
       <PaymentElement />
 
       {errorMessage && (
-        <p style={{ color: '#dc2626', marginTop: 12, fontSize: 14 }}>{errorMessage}</p>
+        <p style={{ color: 'var(--accent-danger)', marginTop: 12, fontSize: 14 }}>{errorMessage}</p>
       )}
 
       <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
@@ -107,7 +107,7 @@ function InnerCheckoutForm({ priceId, onBack }: CheckoutFormProps) {
           style={{
             flex: 2,
             padding: '10px 16px',
-            backgroundColor: '#6366f1',
+            backgroundColor: 'var(--accent-primary-hover)',
             color: '#fff',
             border: 'none',
             borderRadius: 6,

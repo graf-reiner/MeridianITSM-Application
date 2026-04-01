@@ -2,6 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import ThemeProvider from '@/components/ThemeProvider';
 
 export default function LoginCallbackPage() {
   const searchParams = useSearchParams();
@@ -26,8 +27,10 @@ export default function LoginCallbackPage() {
   }, [searchParams, done]);
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
+    <ThemeProvider>
+    <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-secondary)' }}>
       <p style={{ color: '#64748b', fontSize: 14 }}>Signing in...</p>
     </div>
+    </ThemeProvider>
   );
 }

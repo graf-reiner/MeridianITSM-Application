@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import ThemeProvider from '@/components/ThemeProvider';
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -43,6 +44,7 @@ export default function LoginPage() {
   }
 
   return (
+    <ThemeProvider>
     <div style={{
       display: 'flex',
       minHeight: '100vh',
@@ -75,26 +77,26 @@ export default function LoginPage() {
             backdropFilter: 'blur(10px)',
           }}
         >
-          <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4, color: '#1e293b' }}>Sign in</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4, color: 'var(--text-primary)' }}>Sign in</h2>
           <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>Enter your credentials to continue</p>
 
           {error && (
-            <div style={{ padding: '8px 12px', background: '#fef2f2', color: '#dc2626', borderRadius: 8, fontSize: 13, marginBottom: 16, border: '1px solid #fecaca' }}>
+            <div style={{ padding: '8px 12px', background: 'var(--badge-red-bg-subtle)', color: 'var(--accent-danger)', borderRadius: 8, fontSize: 13, marginBottom: 16, border: '1px solid var(--badge-red-bg-strong)' }}>
               {error}
             </div>
           )}
 
-          <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#1e293b', marginBottom: 4 }}>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 4 }}>
             Tenant
           </label>
           <input
             type="text"
             value={tenantSlug}
             onChange={(e) => setTenantSlug(e.target.value)}
-            style={{ width: '100%', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: 8, marginBottom: 16, fontSize: 14, boxSizing: 'border-box', outline: 'none' }}
+            style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border-secondary)', borderRadius: 8, marginBottom: 16, fontSize: 14, boxSizing: 'border-box', outline: 'none' }}
           />
 
-          <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#1e293b', marginBottom: 4 }}>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 4 }}>
             Email
           </label>
           <input
@@ -103,10 +105,10 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@company.com"
             required
-            style={{ width: '100%', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: 8, marginBottom: 16, fontSize: 14, boxSizing: 'border-box', outline: 'none' }}
+            style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border-secondary)', borderRadius: 8, marginBottom: 16, fontSize: 14, boxSizing: 'border-box', outline: 'none' }}
           />
 
-          <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#1e293b', marginBottom: 4 }}>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 4 }}>
             Password
           </label>
           <input
@@ -114,7 +116,7 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            style={{ width: '100%', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: 8, marginBottom: 24, fontSize: 14, boxSizing: 'border-box', outline: 'none' }}
+            style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border-secondary)', borderRadius: 8, marginBottom: 24, fontSize: 14, boxSizing: 'border-box', outline: 'none' }}
           />
 
           <button
@@ -123,7 +125,7 @@ export default function LoginPage() {
             style={{
               width: '100%',
               padding: '11px 16px',
-              background: loading ? '#93c5fd' : 'linear-gradient(135deg, #0ea5e9, #2563eb)',
+              background: loading ? '#93c5fd' : 'linear-gradient(135deg, #0ea5e9, var(--accent-primary))',
               color: '#fff',
               border: 'none',
               borderRadius: 8,
@@ -138,5 +140,6 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+    </ThemeProvider>
   );
 }

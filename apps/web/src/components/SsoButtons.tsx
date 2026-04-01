@@ -59,13 +59,13 @@ export function SsoButtons({ tenantSlug }: { tenantSlug: string }) {
           alignItems: 'center',
           gap: 12,
           marginBottom: 16,
-          color: '#94a3b8',
+          color: 'var(--text-placeholder)',
           fontSize: 13,
         }}
       >
-        <div style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
+        <div style={{ flex: 1, height: 1, backgroundColor: 'var(--border-primary)' }} />
         <span>or sign in with</span>
-        <div style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
+        <div style={{ flex: 1, height: 1, backgroundColor: 'var(--border-primary)' }} />
       </div>
       {connections.map((conn) => (
         <a
@@ -83,9 +83,9 @@ export function SsoButtons({ tenantSlug }: { tenantSlug: string }) {
             width: '100%',
             padding: '10px 16px',
             marginBottom: 8,
-            background: '#fff',
-            color: '#1e293b',
-            border: '1px solid #e2e8f0',
+            background: 'var(--bg-primary)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border-primary)',
             borderRadius: 8,
             fontSize: 14,
             fontWeight: 500,

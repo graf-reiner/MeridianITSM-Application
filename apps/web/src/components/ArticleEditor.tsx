@@ -68,7 +68,7 @@ function SafeArticleHtml({ html }: { html: string }) {
   return (
     <div
       ref={containerRef}
-      style={{ fontSize: 14, color: '#374151', lineHeight: 1.7 }}
+      style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.7 }}
     />
   );
 }
@@ -97,10 +97,10 @@ function ToolbarButton({
         justifyContent: 'center',
         padding: '4px 8px',
         border: '1px solid',
-        borderColor: isActive ? '#6366f1' : '#e5e7eb',
+        borderColor: isActive ? 'var(--accent-primary-hover)' : 'var(--border-primary)',
         borderRadius: 5,
-        backgroundColor: isActive ? '#eef2ff' : '#fff',
-        color: isActive ? '#4f46e5' : '#374151',
+        backgroundColor: isActive ? 'var(--badge-indigo-bg)' : 'var(--bg-primary)',
+        color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)',
         cursor: 'pointer',
         fontSize: 13,
         fontWeight: isActive ? 700 : 400,
@@ -173,7 +173,7 @@ export default function ArticleEditor({
   }
 
   return (
-    <div style={{ border: '1px solid #d1d5db', borderRadius: 10, overflow: 'hidden' }}>
+    <div style={{ border: '1px solid var(--border-secondary)', borderRadius: 10, overflow: 'hidden' }}>
       {/* Toolbar */}
       <div
         style={{
@@ -181,8 +181,8 @@ export default function ArticleEditor({
           flexWrap: 'wrap',
           gap: 4,
           padding: '8px 10px',
-          borderBottom: '1px solid #e5e7eb',
-          backgroundColor: '#f9fafb',
+          borderBottom: '1px solid var(--border-primary)',
+          backgroundColor: 'var(--bg-secondary)',
         }}
       >
         <ToolbarButton
@@ -199,7 +199,7 @@ export default function ArticleEditor({
         >
           <em>I</em>
         </ToolbarButton>
-        <div style={{ width: 1, backgroundColor: '#e5e7eb', margin: '0 2px' }} />
+        <div style={{ width: 1, backgroundColor: 'var(--border-primary)', margin: '0 2px' }} />
         {([1, 2, 3] as const).map((level) => (
           <ToolbarButton
             key={level}
@@ -210,7 +210,7 @@ export default function ArticleEditor({
             H{level}
           </ToolbarButton>
         ))}
-        <div style={{ width: 1, backgroundColor: '#e5e7eb', margin: '0 2px' }} />
+        <div style={{ width: 1, backgroundColor: 'var(--border-primary)', margin: '0 2px' }} />
         <ToolbarButton
           onClick={() => editor?.chain().focus().toggleBulletList().run()}
           isActive={editor?.isActive('bulletList')}
@@ -225,7 +225,7 @@ export default function ArticleEditor({
         >
           1. List
         </ToolbarButton>
-        <div style={{ width: 1, backgroundColor: '#e5e7eb', margin: '0 2px' }} />
+        <div style={{ width: 1, backgroundColor: 'var(--border-primary)', margin: '0 2px' }} />
         <ToolbarButton
           onClick={() => editor?.chain().focus().toggleCodeBlock().run()}
           isActive={editor?.isActive('codeBlock')}
@@ -240,7 +240,7 @@ export default function ArticleEditor({
         >
           &#x201C;
         </ToolbarButton>
-        <div style={{ width: 1, backgroundColor: '#e5e7eb', margin: '0 2px' }} />
+        <div style={{ width: 1, backgroundColor: 'var(--border-primary)', margin: '0 2px' }} />
         <ToolbarButton onClick={addLink} isActive={editor?.isActive('link')} title="Insert link">
           Link
         </ToolbarButton>
@@ -257,9 +257,9 @@ export default function ArticleEditor({
           minHeight: 300,
           fontSize: 14,
           lineHeight: 1.7,
-          color: '#374151',
+          color: 'var(--text-secondary)',
           cursor: 'text',
-          backgroundColor: '#fff',
+          backgroundColor: 'var(--bg-primary)',
         }}
       />
 
@@ -272,10 +272,10 @@ export default function ArticleEditor({
         .ProseMirror h3 { font-size: 1.15em; font-weight: 600; margin: 0.75em 0 0.4em; }
         .ProseMirror ul, .ProseMirror ol { padding-left: 1.5em; margin: 0 0 0.75em; }
         .ProseMirror li { margin: 0.2em 0; }
-        .ProseMirror pre { background: #f3f4f6; border-radius: 6px; padding: 12px; overflow-x: auto; font-size: 13px; }
-        .ProseMirror code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; font-size: 0.9em; }
-        .ProseMirror blockquote { border-left: 3px solid #d1d5db; margin: 0.75em 0; padding-left: 1em; color: #6b7280; }
-        .ProseMirror a { color: #4f46e5; text-decoration: underline; }
+        .ProseMirror pre { background: var(--bg-tertiary); border-radius: 6px; padding: 12px; overflow-x: auto; font-size: 13px; }
+        .ProseMirror code { background: var(--bg-tertiary); padding: 1px 4px; border-radius: 3px; font-size: 0.9em; }
+        .ProseMirror blockquote { border-left: 3px solid var(--border-secondary); margin: 0.75em 0; padding-left: 1em; color: var(--text-muted); }
+        .ProseMirror a { color: var(--accent-primary); text-decoration: underline; }
         .ProseMirror img { max-width: 100%; border-radius: 6px; }
       `}</style>
     </div>
