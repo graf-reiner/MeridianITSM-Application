@@ -15,6 +15,7 @@ import { settingsRoutes } from './settings/index.js';
 import { slaRoutes } from './sla/index.js';
 import { ticketRoutes } from './tickets/index.js';
 import { webhookRoutes } from './webhooks/index.js';
+import { preferencesRoutes } from './preferences.js';
 
 /**
  * V1 API routes — protected scope (requires JWT + tenant + RBAC).
@@ -75,4 +76,7 @@ export async function v1Routes(app: FastifyInstance): Promise<void> {
 
   // Webhook management — CRUD, test delivery endpoint (INTG-03, INTG-04, INTG-05)
   await app.register(webhookRoutes);
+
+  // User preferences — theme, notification settings
+  await app.register(preferencesRoutes);
 }
