@@ -18,7 +18,7 @@ import { externalRoutes } from './routes/external/index.js';
 import { agentRoutes } from './routes/v1/agents/index.js';
 
 export async function buildApp() {
-  const app = Fastify({ logger: true });
+  const app = Fastify({ logger: true, bodyLimit: 10 * 1024 * 1024 /* 10 MB — supports base64 image pastes in rich text */ });
 
   // Layer 1: CORS — must be first for preflight requests
   await registerCors(app);

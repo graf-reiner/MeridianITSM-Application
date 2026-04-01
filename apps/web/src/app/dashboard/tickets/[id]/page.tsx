@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiPaperclip, mdiSend, mdiAccountCircle, mdiClockOutline } from '@mdi/js';
+import { mdiArrowLeft, mdiPaperclip, mdiSend, mdiAccountCircle, mdiClockOutline, mdiCloudUploadOutline } from '@mdi/js';
 import RichTextField from '@/components/RichTextField';
 import SlaCountdown from '../../../../components/SlaCountdown';
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
@@ -165,12 +165,12 @@ export default function TicketDetailPage() {
     enabled: activeTab === 'activity',
   });
 
-  const { data: attachmentsData } = useQuery<{ attachments: Array<{ id: string; filename: string; size: number; createdAt: string }> }>({
+  const { data: attachmentsData, refetch: refetchAttachments } = useQuery<{ attachments: Array<{ id: string; filename: string; fileSize: number; createdAt: string; uploadedBy?: { firstName: string; lastName: string } }> }>({
     queryKey: ['ticket-attachments', ticketId],
     queryFn: async () => {
       const res = await fetch(`/api/v1/tickets/${ticketId}/attachments`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to load attachments');
-      return res.json() as Promise<{ attachments: Array<{ id: string; filename: string; size: number; createdAt: string }> }>;
+      return res.json();
     },
     enabled: activeTab === 'attachments',
   });
@@ -552,23 +552,73 @@ export default function TicketDetailPage() {
 
             {/* Attachments */}
             {activeTab === 'attachments' && (
-              <div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {/* Upload area */}
+                <label
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    padding: '14px 16px', border: '2px dashed var(--border-secondary)', borderRadius: 8,
+                    cursor: 'pointer', color: 'var(--text-muted)', fontSize: 13,
+                    backgroundColor: 'var(--bg-secondary)', transition: 'border-color 0.15s',
+                  }}
+                  onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = 'var(--accent-primary)'; }}
+                  onDragLeave={(e) => { e.currentTarget.style.borderColor = ''; }}
+                  onDrop={async (e) => {
+                    e.preventDefault();
+                    e.currentTarget.style.borderColor = '';
+                    const files = e.dataTransfer.files;
+                    if (!files.length) return;
+                    for (const file of Array.from(files)) {
+                      const form = new FormData();
+                      form.append('file', file);
+                      await fetch(`/api/v1/tickets/${ticketId}/attachments`, { method: 'POST', credentials: 'include', body: form });
+                    }
+                    void refetchAttachments();
+                  }}
+                >
+                  <Icon path={mdiCloudUploadOutline} size={0.9} color="currentColor" />
+                  Drop files here or click to upload (max 25 MB)
+                  <input
+                    type="file"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={async (e) => {
+                      const files = e.target.files;
+                      if (!files?.length) return;
+                      for (const file of Array.from(files)) {
+                        const form = new FormData();
+                        form.append('file', file);
+                        await fetch(`/api/v1/tickets/${ticketId}/attachments`, { method: 'POST', credentials: 'include', body: form });
+                      }
+                      e.target.value = '';
+                      void refetchAttachments();
+                    }}
+                  />
+                </label>
+
+                {/* Attachment list */}
                 {(attachmentsData?.attachments ?? []).length === 0 ? (
                   <p style={{ color: 'var(--text-placeholder)', fontSize: 14, margin: 0 }}>No attachments yet.</p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {(attachmentsData?.attachments ?? []).map((att) => (
-                      <div key={att.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--bg-tertiary)', borderRadius: 8 }}>
+                      <div key={att.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: 8 }}>
                         <Icon path={mdiPaperclip} size={0.75} color="var(--text-placeholder)" />
-                        <a
-                          href={`/api/v1/tickets/${ticketId}/attachments/${att.id}/url`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ flex: 1, color: 'var(--accent-primary)', fontSize: 13, textDecoration: 'none' }}
+                        <button
+                          onClick={async () => {
+                            const res = await fetch(`/api/v1/tickets/${ticketId}/attachments/${att.id}/url`, { credentials: 'include' });
+                            if (res.ok) { const { url } = await res.json(); window.open(url, '_blank'); }
+                          }}
+                          style={{ flex: 1, background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: 13, textDecoration: 'underline', cursor: 'pointer', textAlign: 'left', padding: 0 }}
                         >
                           {att.filename}
-                        </a>
-                        <span style={{ fontSize: 12, color: 'var(--text-placeholder)' }}>{Math.round(att.size / 1024)} KB</span>
+                        </button>
+                        <span style={{ fontSize: 12, color: 'var(--text-placeholder)', whiteSpace: 'nowrap' }}>
+                          {att.fileSize < 1024 ? `${att.fileSize} B` : att.fileSize < 1048576 ? `${Math.round(att.fileSize / 1024)} KB` : `${(att.fileSize / 1048576).toFixed(1)} MB`}
+                        </span>
+                        {att.uploadedBy && (
+                          <span style={{ fontSize: 11, color: 'var(--text-placeholder)', whiteSpace: 'nowrap' }}>{att.uploadedBy.firstName} {att.uploadedBy.lastName}</span>
+                        )}
                       </div>
                     ))}
                   </div>

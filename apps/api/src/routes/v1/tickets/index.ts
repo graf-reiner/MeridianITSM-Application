@@ -294,6 +294,24 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
     }
   });
 
+  // ─── GET /api/v1/tickets/:id/attachments — List attachments ────────────────
+
+  fastify.get('/api/v1/tickets/:id/attachments', async (request, reply) => {
+    const user = request.user as { tenantId: string };
+    const tenantId = user.tenantId;
+    const { id: ticketId } = request.params as { id: string };
+
+    const attachments = await prisma.ticketAttachment.findMany({
+      where: { tenantId, ticketId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        uploadedBy: { select: { id: true, firstName: true, lastName: true } },
+      },
+    });
+
+    return reply.status(200).send({ attachments });
+  });
+
   // ─── POST /api/v1/tickets/:id/attachments — Upload attachment ──────────────
 
   fastify.post('/api/v1/tickets/:id/attachments', async (request, reply) => {
