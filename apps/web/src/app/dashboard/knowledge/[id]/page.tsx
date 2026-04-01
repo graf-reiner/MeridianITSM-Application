@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiArrowLeft, mdiEye, mdiThumbUpOutline, mdiTagOutline } from '@mdi/js';
 import ArticleEditor from '../../../../components/ArticleEditor';
+import RichTextField from '@/components/RichTextField';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -217,12 +218,12 @@ export default function ArticleDetailPage() {
                 />
               </div>
               <div style={{ marginBottom: 16 }}>
-                <textarea
+                <RichTextField
                   value={editSummary}
-                  onChange={(e) => setEditSummary(e.target.value)}
+                  onChange={setEditSummary}
                   placeholder="Summary..."
-                  rows={2}
-                  style={{ width: '100%', padding: '9px 12px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
+                  minHeight={60}
+                  compact
                 />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>

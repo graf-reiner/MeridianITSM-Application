@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Icon from '@mdi/react';
 import { mdiSwapHorizontal, mdiArrowLeft, mdiCheck, mdiAlertCircle } from '@mdi/js';
+import RichTextField from '@/components/RichTextField';
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -36,6 +37,7 @@ export default function NewChangePage() {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<ChangeFormData>({
     resolver: zodResolver(changeSchema),
@@ -219,11 +221,11 @@ export default function NewChangePage() {
 
           <div style={{ marginBottom: 16 }}>
             <label style={labelStyle}>Description *</label>
-            <textarea
+            <RichTextField
+              value={watch('description') ?? ''}
+              onChange={(html) => setValue('description', html, { shouldValidate: true })}
               placeholder="Detailed description of what this change involves and why it is needed"
-              rows={4}
-              {...register('description')}
-              style={{ ...inputStyle, resize: 'vertical', borderColor: errors.description ? '#dc2626' : '#d1d5db' }}
+              minHeight={100}
             />
             {errors.description && <p style={errorStyle}>{errors.description.message}</p>}
           </div>
@@ -274,30 +276,32 @@ export default function NewChangePage() {
               <h3 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: '#374151' }}>Implementation Details</h3>
               <div style={{ marginBottom: 16 }}>
                 <label style={labelStyle}>Implementation Plan</label>
-                <textarea
+                <RichTextField
+                  value={watch('implementationPlan') ?? ''}
+                  onChange={(html) => setValue('implementationPlan', html)}
                   placeholder="Step-by-step implementation instructions"
-                  rows={4}
-                  {...register('implementationPlan')}
-                  style={{ ...inputStyle, resize: 'vertical' }}
+                  minHeight={100}
                 />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div>
                   <label style={labelStyle}>Backout Plan</label>
-                  <textarea
+                  <RichTextField
+                    value={watch('backoutPlan') ?? ''}
+                    onChange={(html) => setValue('backoutPlan', html)}
                     placeholder="Steps to revert the change if something goes wrong"
-                    rows={3}
-                    {...register('backoutPlan')}
-                    style={{ ...inputStyle, resize: 'vertical' }}
+                    minHeight={80}
+                    compact
                   />
                 </div>
                 <div>
                   <label style={labelStyle}>Testing Plan</label>
-                  <textarea
+                  <RichTextField
+                    value={watch('testingPlan') ?? ''}
+                    onChange={(html) => setValue('testingPlan', html)}
                     placeholder="How will you verify the change was successful?"
-                    rows={3}
-                    {...register('testingPlan')}
-                    style={{ ...inputStyle, resize: 'vertical' }}
+                    minHeight={80}
+                    compact
                   />
                 </div>
               </div>

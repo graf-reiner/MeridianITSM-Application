@@ -15,6 +15,7 @@ import {
   mdiCheckCircle,
   mdiCloseCircle,
 } from '@mdi/js';
+import RichTextField from '@/components/RichTextField';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -281,12 +282,12 @@ function ApprovalPanel({
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#374151', marginBottom: 4 }}>
                   Comments {decision === 'REJECTED' ? '(required)' : '(optional)'}
                 </label>
-                <textarea
+                <RichTextField
                   value={comments}
-                  onChange={(e) => setComments(e.target.value)}
-                  rows={2}
+                  onChange={setComments}
                   placeholder="Add comments..."
-                  style={{ width: '100%', padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 14, boxSizing: 'border-box', resize: 'vertical' }}
+                  minHeight={60}
+                  compact
                 />
               </div>
               {error && <p style={{ color: '#dc2626', fontSize: 13, margin: '0 0 8px' }}>{error}</p>}

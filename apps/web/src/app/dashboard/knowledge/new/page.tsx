@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiArrowLeft } from '@mdi/js';
 import ArticleEditor from '../../../../components/ArticleEditor';
+import RichTextField from '@/components/RichTextField';
 
 // ─── New Article Page ─────────────────────────────────────────────────────────
 
@@ -103,12 +104,12 @@ export default function NewArticlePage() {
           {/* Summary */}
           <div style={{ marginBottom: 18 }}>
             <label style={labelStyle}>Summary</label>
-            <textarea
+            <RichTextField
               value={summary}
-              onChange={(e) => setSummary(e.target.value)}
+              onChange={setSummary}
               placeholder="Brief description of this article..."
-              rows={2}
-              style={{ ...inputStyle, resize: 'vertical' }}
+              minHeight={60}
+              compact
             />
           </div>
 
