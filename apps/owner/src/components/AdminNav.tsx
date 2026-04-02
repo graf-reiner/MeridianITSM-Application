@@ -10,6 +10,7 @@ const navItems = [
   { href: '/plans', label: 'Plans', icon: '★' },
   { href: '/system', label: 'System', icon: '⚙' },
   { href: '/audit', label: 'Audit Log', icon: '≡' },
+  { href: '/settings', label: 'Settings', icon: '👤' },
 ];
 
 export default function AdminNav() {

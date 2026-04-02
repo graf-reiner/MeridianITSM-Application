@@ -1713,6 +1713,23 @@ model OwnerNote {
   @@map("owner_notes")
 }
 
+// Model 50b: OwnerSmtpConfig (GLOBAL)
+model OwnerSmtpConfig {
+  id          String   @id @default(uuid()) @db.Uuid
+  host        String
+  port        Int      @default(25)
+  secure      Boolean  @default(false)
+  username    String?
+  password    String?
+  fromEmail   String
+  fromName    String   @default("MeridianITSM")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("owner_smtp_config")
+}
+
 // ─── Supporting ───────────────────────────────────────────────────────────────
 
 // Model 51: Vendor
