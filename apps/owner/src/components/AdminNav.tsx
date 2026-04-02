@@ -42,9 +42,12 @@ export default function AdminNav() {
           marginBottom: '16px',
         }}
       >
-        <span style={{ fontSize: '14px', fontWeight: '700', letterSpacing: '0.05em', color: '#a5b4fc' }}>
-          MERIDIAN OWNER
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <img src="/images/meridian-logo.svg" alt="" width={28} height={28} />
+          <span style={{ fontSize: '14px', fontWeight: '700', letterSpacing: '0.05em', color: '#a5b4fc' }}>
+            MERIDIAN
+          </span>
+        </div>
       </div>
       <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '0 8px', flex: 1 }}>
         {navItems.map((item) => {

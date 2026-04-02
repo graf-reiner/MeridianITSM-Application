@@ -107,22 +107,7 @@ export default function OwnerLoginPage() {
       >
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 10,
-              backgroundColor: '#0284c71a',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: 12,
-            }}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="#0284c7">
-              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v4.7c0 4.83-3.4 9.36-7 10.56V3.18z" />
-            </svg>
-          </div>
+          <img src="/images/meridian-logo.svg" alt="Meridian ITSM" width={52} height={52} style={{ marginBottom: 12 }} />
           <h1 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, color: '#111827' }}>
             MeridianITSM
           </h1>

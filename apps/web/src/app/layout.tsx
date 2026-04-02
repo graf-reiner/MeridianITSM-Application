@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'MeridianITSM',
   description: 'IT Service Management Platform',
+  icons: { icon: '/images/meridian-logo.svg' },
 };
 
 // Static string literal — reads theme cookie before first paint to prevent flash
