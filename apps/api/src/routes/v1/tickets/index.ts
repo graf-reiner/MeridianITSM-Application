@@ -80,9 +80,9 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
         body.description !== undefined &&
         body.description !== null &&
         typeof body.description === 'string' &&
-        body.description.length > 10000
+        body.description.length > 5_000_000
       ) {
-        return reply.status(400).send({ error: 'description must not exceed 10000 characters' });
+        return reply.status(400).send({ error: 'description must not exceed 5MB' });
       }
 
       const ticket = await createTicket(
