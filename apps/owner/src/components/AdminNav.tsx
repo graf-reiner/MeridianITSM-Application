@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: '◉' },
@@ -14,6 +14,13 @@ const navItems = [
 
 export default function AdminNav() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  function handleLogout() {
+    localStorage.removeItem('owner_token');
+    localStorage.removeItem('owner_refresh_token');
+    router.push('/');
+  }
 
   return (
     <aside
@@ -39,7 +46,7 @@ export default function AdminNav() {
           MERIDIAN OWNER
         </span>
       </div>
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '0 8px' }}>
+      <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '0 8px', flex: 1 }}>
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
@@ -66,6 +73,28 @@ export default function AdminNav() {
           );
         })}
       </nav>
+      <div style={{ padding: '16px 8px 0', borderTop: '1px solid #312e81', marginTop: '8px' }}>
+        <button
+          onClick={handleLogout}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            padding: '10px 12px',
+            borderRadius: '6px',
+            width: '100%',
+            border: 'none',
+            background: 'none',
+            fontSize: '14px',
+            color: '#f87171',
+            cursor: 'pointer',
+            textAlign: 'left',
+          }}
+        >
+          <span style={{ fontSize: '16px' }}>⏻</span>
+          Sign out
+        </button>
+      </div>
     </aside>
   );
 }
