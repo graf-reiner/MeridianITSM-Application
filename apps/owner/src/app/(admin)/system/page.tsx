@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { ownerFetch } from '../../../lib/api';
 
 interface QueueStats {
   name: string;
@@ -14,11 +15,6 @@ interface QueueStats {
 interface SystemData {
   queues: QueueStats[];
   redisStatus: 'connected' | 'disconnected';
-}
-
-function getAuthToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('owner_access_token');
 }
 
 function getQueueColor(q: QueueStats): { bg: string; text: string; border: string } {
@@ -60,10 +56,7 @@ export default function SystemPage() {
 
   const fetchSystem = useCallback(async () => {
     try {
-      const token = getAuthToken();
-      const res = await fetch('/api/system', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await ownerFetch('/api/system');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json: SystemData = await res.json();
       setData(json);
@@ -95,13 +88,9 @@ export default function SystemPage() {
     setBroadcastResult(null);
 
     try {
-      const token = getAuthToken();
-      const res = await fetch('/api/system', {
+      const res = await ownerFetch('/api/system', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: broadcastMessage,
           expiresInMinutes: broadcastExpiry,

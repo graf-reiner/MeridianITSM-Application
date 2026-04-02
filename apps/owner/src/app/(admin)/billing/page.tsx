@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { ownerFetch } from '../../../lib/api';
 
 type SubscriptionStatus = 'ACTIVE' | 'TRIALING' | 'PAST_DUE' | 'CANCELED' | 'SUSPENDED';
 
@@ -38,11 +39,6 @@ const STATUS_COLORS: Record<SubscriptionStatus, { bg: string; text: string }> = 
   SUSPENDED: { bg: '#f3f4f6', text: '#374151' },
 };
 
-function getAuthToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('owner_access_token');
-}
-
 function formatCurrency(usd: number): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(usd);
 }
@@ -58,10 +54,7 @@ export default function BillingPage() {
     setLoading(true);
     setError(null);
     try {
-      const token = getAuthToken();
-      const res = await fetch('/api/billing', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await ownerFetch('/api/billing');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json: BillingData = await res.json();
       setData(json);
@@ -79,10 +72,8 @@ export default function BillingPage() {
   async function handleRetry(tenantId: string) {
     setRetryingId(tenantId);
     try {
-      const token = getAuthToken();
-      const res = await fetch(`/api/billing/${tenantId}/retry`, {
+      const res = await ownerFetch(`/api/billing/${tenantId}/retry`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json() as { success?: boolean; newStatus?: string; error?: string };
       if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { ownerFetch } from '../../../lib/api';
 
 type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'LOGOUT' | 'APPROVE' | 'REJECT' | 'ASSIGN' | 'ESCALATE';
 
@@ -43,11 +44,6 @@ const ACTION_COLORS: Record<AuditAction, { bg: string; text: string }> = {
 
 const ALL_ACTIONS: AuditAction[] = ['CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'APPROVE', 'REJECT', 'ASSIGN', 'ESCALATE'];
 
-function getAuthToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('owner_access_token');
-}
-
 function buildQueryString(params: Record<string, string | number | undefined>): string {
   const qs = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
@@ -75,7 +71,6 @@ export default function AuditPage() {
     setLoading(true);
     setError(null);
     try {
-      const token = getAuthToken();
       const qs = buildQueryString({
         page: currentPage,
         limit: LIMIT,
@@ -85,9 +80,7 @@ export default function AuditPage() {
         startDate: filterStartDate || undefined,
         endDate: filterEndDate || undefined,
       });
-      const res = await fetch(`/api/audit${qs}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await ownerFetch(`/api/audit${qs}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json: AuditResponse = await res.json();
       setData(json);

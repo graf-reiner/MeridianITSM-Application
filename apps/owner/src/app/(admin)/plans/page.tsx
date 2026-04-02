@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { ownerFetch } from '../../../lib/api';
 
 type SubscriptionPlanTier = 'STARTER' | 'PROFESSIONAL' | 'BUSINESS' | 'ENTERPRISE';
 
@@ -39,11 +40,6 @@ interface EditFormState {
   isPublic: boolean;
 }
 
-function getAuthToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('owner_access_token');
-}
-
 function planToFormState(plan: Plan): EditFormState {
   return {
     displayName: plan.displayName,
@@ -80,10 +76,7 @@ export default function PlansPage() {
     setLoading(true);
     setError(null);
     try {
-      const token = getAuthToken();
-      const res = await fetch('/api/plans', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await ownerFetch('/api/plans');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json() as { plans: Plan[] };
       setPlans(json.plans);
@@ -133,13 +126,9 @@ export default function PlansPage() {
     };
 
     try {
-      const token = getAuthToken();
-      const res = await fetch(`/api/plans/${planId}`, {
+      const res = await ownerFetch(`/api/plans/${planId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
       const json = await res.json() as { error?: string };

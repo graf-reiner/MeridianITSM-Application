@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { ownerFetch } from '../../../lib/api';
 
 interface Tenant {
   id: string;
@@ -51,7 +52,6 @@ export default function TenantsPage() {
 
   const fetchTenants = useCallback(async () => {
     setLoading(true);
-    const token = typeof window !== 'undefined' ? localStorage.getItem('owner_token') : null;
     const params = new URLSearchParams();
     if (debouncedSearch) params.set('search', debouncedSearch);
     if (plan) params.set('plan', plan);
@@ -59,9 +59,7 @@ export default function TenantsPage() {
     params.set('page', String(page));
 
     try {
-      const r = await fetch(`/api/tenants?${params.toString()}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const r = await ownerFetch(`/api/tenants?${params.toString()}`);
       const data = (await r.json()) as TenantsResponse;
       setTenants(data.tenants ?? []);
       setTotal(data.total ?? 0);

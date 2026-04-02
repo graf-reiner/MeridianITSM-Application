@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import { ownerFetch } from '../../../../lib/api';
 
 interface TenantDetail {
   id: string;
@@ -129,13 +130,10 @@ export default function TenantDetailPage() {
   const [extendDays, setExtendDays] = useState(7);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('owner_token') : null;
-  const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await fetch(`/api/tenants/${id}`, { headers: authHeaders });
+      const r = await ownerFetch(`/api/tenants/${id}`);
       const json = (await r.json()) as TenantDetailResponse;
       setData(json);
     } catch {
@@ -148,7 +146,7 @@ export default function TenantDetailPage() {
   const fetchNotes = useCallback(async () => {
     setNotesLoading(true);
     try {
-      const r = await fetch(`/api/tenants/${id}/notes`, { headers: authHeaders });
+      const r = await ownerFetch(`/api/tenants/${id}/notes`);
       const json = (await r.json()) as { notes: Note[] };
       setNotes(json.notes ?? []);
     } catch {
@@ -168,9 +166,9 @@ export default function TenantDetailPage() {
     setActionLoading(true);
     setMessage(null);
     try {
-      const r = await fetch(`/api/tenants/${id}/lifecycle`, {
+      const r = await ownerFetch(`/api/tenants/${id}/lifecycle`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, params }),
       });
       if (!r.ok) {
@@ -188,9 +186,8 @@ export default function TenantDetailPage() {
 
   const handleImpersonate = async () => {
     try {
-      const r = await fetch(`/api/tenants/${id}/impersonate`, {
+      const r = await ownerFetch(`/api/tenants/${id}/impersonate`, {
         method: 'POST',
-        headers: authHeaders,
       });
       if (!r.ok) throw new Error('Impersonation failed');
       const json = (await r.json()) as { impersonationToken: string; tenantSlug: string };
@@ -204,9 +201,9 @@ export default function TenantDetailPage() {
   const handleAddNote = async () => {
     if (!noteInput.trim()) return;
     try {
-      const r = await fetch(`/api/tenants/${id}/notes`, {
+      const r = await ownerFetch(`/api/tenants/${id}/notes`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: noteInput.trim(), isPrivate: notePrivate }),
       });
       if (!r.ok) throw new Error('Failed to add note');

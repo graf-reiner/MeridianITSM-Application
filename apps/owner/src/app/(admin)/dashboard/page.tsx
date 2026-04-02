@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import RevenueChart from '../../../components/RevenueChart';
+import { ownerFetch } from '../../../lib/api';
 
 interface DashboardData {
   totalTenants: number;
@@ -50,10 +51,7 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('owner_token') : null;
-    fetch('/api/dashboard', {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    })
+    ownerFetch('/api/dashboard')
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json() as Promise<DashboardData>;
