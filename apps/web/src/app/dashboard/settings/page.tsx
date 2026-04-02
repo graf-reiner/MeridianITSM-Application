@@ -19,6 +19,11 @@ import {
   mdiShieldKey,
   mdiShieldLockOutline,
   mdiBellAlert,
+  mdiMicrosoftTeams,
+  mdiSlack,
+  mdiCellphone,
+  mdiSend,
+  mdiRobot,
 } from '@mdi/js';
 
 // ─── Settings Hub ─────────────────────────────────────────────────────────────
@@ -114,6 +119,41 @@ const SETTINGS_GROUPS: SettingsGroup[] = [
         description: 'Send alerts to Slack, Teams, or email',
         icon: mdiBellRing,
         color: '#d97706',
+      },
+      {
+        href: '/dashboard/settings/teams',
+        label: 'Microsoft Teams',
+        description: 'Send ticket notifications to Teams channels',
+        icon: mdiMicrosoftTeams,
+        color: '#5059c9',
+      },
+      {
+        href: '/dashboard/settings/slack',
+        label: 'Slack',
+        description: 'Send ticket notifications to Slack channels',
+        icon: mdiSlack,
+        color: '#4a154b',
+      },
+      {
+        href: '/dashboard/settings/sms',
+        label: 'SMS',
+        description: 'Send SMS notifications via Twilio or other providers',
+        icon: mdiCellphone,
+        color: '#0891b2',
+      },
+      {
+        href: '/dashboard/settings/telegram',
+        label: 'Telegram',
+        description: 'Send notifications to Telegram chats and groups',
+        icon: mdiSend,
+        color: '#0088cc',
+      },
+      {
+        href: '/dashboard/settings/discord',
+        label: 'Discord',
+        description: 'Send notifications to Discord channels via webhooks',
+        icon: mdiRobot,
+        color: '#5865f2',
       },
     ],
   },
