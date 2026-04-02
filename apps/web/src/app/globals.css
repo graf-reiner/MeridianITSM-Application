@@ -88,3 +88,10 @@
 [data-theme="dark"] ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
 [data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
 [data-theme="dark"] ::selection { background: rgba(129, 140, 248, 0.3); color: #f9fafb; }
+
+/* Rich text content — scale images to fit */
+[dangerouslysetinnerhtml] img, div[style] img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}

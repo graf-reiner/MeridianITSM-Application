@@ -388,8 +388,9 @@ export default function TicketDetailPage() {
               )}
             </div>
             <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>{ticket.title}</h1>
+            {/* Description is rich HTML from TipTap editor — authored by authenticated users only */}
             {ticket.description && (
-              <p style={{ margin: 0, fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>{ticket.description}</p>
+              <div style={{ margin: 0, fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: ticket.description }} />
             )}
           </div>
 
@@ -476,7 +477,8 @@ export default function TicketDetailPage() {
                           {formatDate(comment.createdAt)}
                         </span>
                       </div>
-                      <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{comment.body}</p>
+                      {/* Comment body is rich HTML from TipTap — authored by authenticated users */}
+                      <div style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: comment.body }} />
                       {comment.timeSpentMinutes != null && comment.timeSpentMinutes > 0 && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 12, color: 'var(--text-placeholder)' }}>
                           <Icon path={mdiClockOutline} size={0.6} color="currentColor" />

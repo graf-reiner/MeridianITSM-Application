@@ -330,11 +330,10 @@ export default function PortalTicketDetailPage({
             fontSize: 14,
             color: 'var(--text-secondary)',
             lineHeight: 1.6,
-            whiteSpace: 'pre-wrap',
           }}
-        >
-          {ticket.description}
-        </div>
+        // Rich HTML from TipTap — authored by authenticated users only
+        dangerouslySetInnerHTML={{ __html: ticket.description ?? '' }}
+        />
       </div>
 
       {/* ── SLA Status Indicator ──────────────────────────────────────────────── */}
@@ -465,9 +464,9 @@ export default function PortalTicketDetailPage({
                         borderRadius: 8,
                         border: '1px solid #f3f4f6',
                       }}
-                    >
-                      {comment.body}
-                    </div>
+                      // Comment body is rich HTML from TipTap — authored by authenticated users
+                      dangerouslySetInnerHTML={{ __html: comment.body }}
+                    />
                   </div>
                 </div>
               </li>
