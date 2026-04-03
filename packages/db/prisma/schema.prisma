@@ -654,6 +654,7 @@ model Ticket {
   resolution     String?
   tags           String[]
   customFields   Json?
+  source         String         @default("PORTAL")
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 

@@ -16,6 +16,7 @@ interface Ticket {
   priority: string;
   assignee: { firstName: string; lastName: string } | null;
   category: { name: string } | null;
+  source: string;
   createdAt: string;
   slaElapsedPercentage?: number;
 }
@@ -213,6 +214,7 @@ export default function DashboardTicketsPage() {
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Priority</th>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Assignee</th>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Category</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Source</th>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Created</th>
                 <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>SLA</th>
               </tr>
@@ -254,6 +256,11 @@ export default function DashboardTicketsPage() {
                     </td>
                     <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 13 }}>
                       {ticket.category?.name ?? '—'}
+                    </td>
+                    <td style={{ padding: '10px 14px', fontSize: 12, whiteSpace: 'nowrap' }}>
+                      <span style={{ padding: '2px 6px', borderRadius: 10, fontSize: 11, fontWeight: 500, backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}>
+                        {ticket.source?.replace(/_/g, ' ') ?? '—'}
+                      </span>
                     </td>
                     <td style={{ padding: '10px 14px', color: 'var(--text-placeholder)', fontSize: 12, whiteSpace: 'nowrap' }}>
                       {relativeTime(ticket.createdAt)}

@@ -27,6 +27,7 @@ interface TicketDetail {
   queue: { id: string; name: string } | null;
   slaPolicy: { id: string; name: string } | null;
   assignedGroup?: { id: string; name: string } | null;
+  source: string;
   createdAt: string;
   updatedAt: string;
   customFields: Record<string, unknown> | null;
@@ -756,6 +757,38 @@ export default function TicketDetailPage() {
               <div>
                 <span style={{ color: 'var(--text-placeholder)', display: 'block', marginBottom: 2 }}>Updated</span>
                 <span style={{ color: 'var(--text-secondary)' }}>{formatDate(ticket.updatedAt)}</span>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-placeholder)', display: 'block', marginBottom: 2 }}>Source</span>
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '2px 8px',
+                  borderRadius: 12,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  backgroundColor: {
+                    PORTAL: 'var(--badge-blue-bg)',
+                    EMAIL: 'var(--badge-yellow-bg)',
+                    SERVICE_DESK: 'var(--badge-indigo-bg)',
+                    WEBHOOK: 'var(--badge-purple-bg)',
+                    SLACK: 'var(--badge-fuchsia-bg)',
+                    TEAMS: 'var(--badge-blue-bg)',
+                    API: 'var(--badge-green-bg)',
+                  }[ticket.source] ?? 'var(--bg-tertiary)',
+                  color: {
+                    PORTAL: '#1e40af',
+                    EMAIL: '#92400e',
+                    SERVICE_DESK: '#3730a3',
+                    WEBHOOK: '#5b21b6',
+                    SLACK: '#6b21a8',
+                    TEAMS: '#1e40af',
+                    API: '#065f46',
+                  }[ticket.source] ?? 'var(--text-secondary)',
+                }}>
+                  {ticket.source?.replace(/_/g, ' ') ?? 'Unknown'}
+                </span>
               </div>
             </div>
           </div>

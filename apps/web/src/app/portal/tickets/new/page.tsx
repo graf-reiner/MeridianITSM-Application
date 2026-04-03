@@ -149,6 +149,7 @@ export default function NewRequestPage() {
           type: 'SERVICE_REQUEST',
           priority: data.priority,
           categoryId: data.categoryId,
+          source: 'PORTAL',
         }),
       });
 

@@ -67,6 +67,7 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
         requestedById?: unknown;
         slaId?: unknown;
         tags?: unknown;
+        source?: unknown;
       };
 
       // Validate required fields
@@ -99,6 +100,7 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
           requestedById: typeof body.requestedById === 'string' ? body.requestedById : undefined,
           slaId: typeof body.slaId === 'string' ? body.slaId : undefined,
           tags: Array.isArray(body.tags) ? (body.tags as string[]) : undefined,
+          source: typeof body.source === 'string' ? body.source : 'SERVICE_DESK',
         },
         userId,
       );

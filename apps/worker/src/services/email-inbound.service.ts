@@ -132,6 +132,7 @@ async function createTicketFromEmail(
         categoryId: data.categoryId,
         requestedById: data.requestedById,
         assignedToId,
+        source: 'EMAIL',
       },
       select: { id: true, assignedToId: true },
     });
