@@ -43,6 +43,8 @@ export default function LoginPage() {
 
   return (
     <ThemeProvider>
+    {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <div style={{
       display: 'flex',
       minHeight: '100vh',
@@ -50,6 +52,7 @@ export default function LoginPage() {
       justifyContent: 'center',
       position: 'relative',
       overflow: 'hidden',
+      fontFamily: "'Montserrat', sans-serif",
     }}>
       {/* Video background */}
       <video
