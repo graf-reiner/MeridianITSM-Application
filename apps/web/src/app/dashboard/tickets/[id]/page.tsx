@@ -28,6 +28,7 @@ interface TicketDetail {
   slaPolicy: { id: string; name: string } | null;
   assignedGroup?: { id: string; name: string } | null;
   source: string;
+  attachments: Array<{ id: string }>;
   createdAt: string;
   updatedAt: string;
   customFields: Record<string, unknown> | null;
@@ -421,26 +422,48 @@ export default function TicketDetailPage() {
         <div>
           {/* Tab Bar */}
           <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border-primary)', marginBottom: 16, backgroundColor: 'var(--bg-primary)', borderRadius: '12px 12px 0 0', border: '1px solid var(--border-primary)', borderBottomColor: 'transparent' }}>
-            {(['comments', 'activity', 'attachments'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                style={{
-                  padding: '12px 20px',
-                  border: 'none',
-                  background: 'none',
-                  cursor: 'pointer',
-                  fontSize: 14,
-                  fontWeight: activeTab === tab ? 600 : 400,
-                  color: activeTab === tab ? 'var(--accent-primary)' : 'var(--text-muted)',
-                  borderBottom: activeTab === tab ? '2px solid var(--accent-primary)' : '2px solid transparent',
-                  marginBottom: -1,
-                  textTransform: 'capitalize',
-                }}
-              >
-                {tab}
-              </button>
-            ))}
+            {(['comments', 'activity', 'attachments'] as const).map((tab) => {
+              const hasAttachments = tab === 'attachments' && (ticket.attachments?.length ?? 0) > 0;
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  style={{
+                    padding: '12px 20px',
+                    border: 'none',
+                    background: 'none',
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    fontWeight: activeTab === tab || hasAttachments ? 600 : 400,
+                    color: activeTab === tab ? 'var(--accent-primary)' : hasAttachments ? 'var(--accent-warning)' : 'var(--text-muted)',
+                    borderBottom: activeTab === tab ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                    marginBottom: -1,
+                    textTransform: 'capitalize',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  {tab}
+                  {hasAttachments && (
+                    <span style={{
+                      backgroundColor: 'var(--accent-warning)',
+                      color: '#fff',
+                      borderRadius: '50%',
+                      width: 18,
+                      height: 18,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      {ticket.attachments.length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           {/* Tab Content */}
