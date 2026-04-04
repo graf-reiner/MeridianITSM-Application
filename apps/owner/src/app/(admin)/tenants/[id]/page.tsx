@@ -136,8 +136,9 @@ export default function TenantDetailPage() {
       const r = await ownerFetch(`/api/tenants/${id}`);
       const json = (await r.json()) as TenantDetailResponse;
       setData(json);
-    } catch {
-      // ignore
+    } catch (err) {
+      // ownerFetch throws on auth failure (redirect in progress) — let it propagate
+      if (err instanceof Error && err.message.includes('redirect')) return;
     } finally {
       setLoading(false);
     }
@@ -149,8 +150,8 @@ export default function TenantDetailPage() {
       const r = await ownerFetch(`/api/tenants/${id}/notes`);
       const json = (await r.json()) as { notes: Note[] };
       setNotes(json.notes ?? []);
-    } catch {
-      // ignore
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('redirect')) return;
     } finally {
       setNotesLoading(false);
     }
@@ -220,7 +221,12 @@ export default function TenantDetailPage() {
   }
 
   if (!data?.tenant) {
-    return <div style={{ color: '#ef4444', padding: '48px', textAlign: 'center' }}>Tenant not found</div>;
+    return (
+      <div style={{ padding: '48px', textAlign: 'center' }}>
+        <div style={{ fontSize: 16, color: '#ef4444', marginBottom: 12 }}>Tenant not found</div>
+        <a href="/tenants" style={{ color: '#4f46e5', textDecoration: 'none', fontSize: 14 }}>← Back to Tenants</a>
+      </div>
+    );
   }
 
   const { tenant, subscription, usage } = data;
