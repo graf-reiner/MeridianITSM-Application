@@ -1,6 +1,7 @@
 import { verifyOwnerToken } from '../../../lib/owner-auth';
 import { NextResponse } from 'next/server';
 import { Queue } from 'bullmq';
+import { serialize } from '../../../lib/serialize';
 
 const QUEUE_NAMES = {
   SLA_MONITOR: 'sla-monitor',
@@ -76,7 +77,7 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ queues, redisStatus });
+  return NextResponse.json(serialize({ queues, redisStatus }));
 }
 
 export async function POST(request: Request) {

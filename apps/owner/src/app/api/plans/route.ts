@@ -1,6 +1,7 @@
 import { prisma } from '@meridian/db';
 import { verifyOwnerToken } from '../../../lib/owner-auth';
 import { NextResponse } from 'next/server';
+import { serialize } from '../../../lib/serialize';
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
     orderBy: { monthlyPriceUsd: 'asc' },
   });
 
-  return NextResponse.json({
+  return NextResponse.json(serialize({
     plans: plans.map(plan => ({
       id: plan.id,
       name: plan.name,
@@ -46,5 +47,5 @@ export async function GET(request: Request) {
       createdAt: plan.createdAt,
       updatedAt: plan.updatedAt,
     })),
-  });
+  }));
 }

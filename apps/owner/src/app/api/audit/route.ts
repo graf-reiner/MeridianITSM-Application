@@ -1,6 +1,7 @@
 import { prisma } from '@meridian/db';
 import { verifyOwnerToken } from '../../../lib/owner-auth';
 import { NextResponse } from 'next/server';
+import { serialize } from '../../../lib/serialize';
 
 // Valid audit actions from the schema
 const VALID_AUDIT_ACTIONS = ['CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'APPROVE', 'REJECT', 'ASSIGN', 'ESCALATE'] as const;
@@ -64,7 +65,7 @@ export async function GET(request: Request) {
 
   const pageCount = Math.ceil(total / limit);
 
-  return NextResponse.json({
+  return NextResponse.json(serialize({
     logs: logs.map(log => ({
       id: log.id,
       tenantId: log.tenantId,
@@ -85,5 +86,5 @@ export async function GET(request: Request) {
     total,
     page,
     pageCount,
-  });
+  }));
 }
