@@ -1,6 +1,6 @@
 import { prisma } from '@meridian/db';
 import { NextResponse } from 'next/server';
-import { serialize } from '../../../lib/serialize';
+import { jsonResponse } from '../../../lib/serialize';
 
 /**
  * GET /api/dashboard
@@ -107,7 +107,7 @@ export async function GET() {
   const conversionRate =
     totalTenants > 0 ? Math.round((activeTenants / totalTenants) * 10000) / 100 : 0;
 
-  return NextResponse.json(serialize({
+  return jsonResponse({
     totalTenants,
     activeTenants,
     trialingTenants,
@@ -117,5 +117,5 @@ export async function GET() {
     conversionRate,
     recentActivity,
     mrrHistory,
-  }));
+  });
 }

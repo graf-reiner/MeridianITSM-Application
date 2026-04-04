@@ -2,7 +2,7 @@ import { prisma } from '@meridian/db';
 import { verifyOwnerToken } from '../../../../lib/owner-auth';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { serialize } from '../../../../lib/serialize';
+import { jsonResponse } from '../../../../lib/serialize';
 
 const limitsJsonSchema = z.object({
   maxUsers: z.number().int().nonnegative(),
@@ -58,7 +58,7 @@ export async function GET(
     return NextResponse.json({ error: 'Plan not found' }, { status: 404 });
   }
 
-  return NextResponse.json(serialize({
+  return jsonResponse({
     id: plan.id,
     name: plan.name,
     displayName: plan.displayName,
@@ -71,7 +71,7 @@ export async function GET(
     activeCount: plan._count.subscriptions,
     createdAt: plan.createdAt,
     updatedAt: plan.updatedAt,
-  }));
+  });
 }
 
 export async function PUT(
@@ -109,7 +109,7 @@ export async function PUT(
     },
   });
 
-  return NextResponse.json(serialize({
+  return jsonResponse({
     id: updated.id,
     name: updated.name,
     displayName: updated.displayName,
@@ -120,5 +120,5 @@ export async function PUT(
     stripePriceIdAnnual: updated.stripePriceIdAnnual,
     isPublic: updated.isPublic,
     updatedAt: updated.updatedAt,
-  }));
+  });
 }

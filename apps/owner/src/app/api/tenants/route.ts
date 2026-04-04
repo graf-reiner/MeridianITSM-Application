@@ -1,7 +1,7 @@
 import { prisma } from '@meridian/db';
 import { verifyOwnerToken } from '../../../lib/owner-auth';
 import { NextResponse } from 'next/server';
-import { serialize } from '../../../lib/serialize';
+import { jsonResponse } from '../../../lib/serialize';
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
@@ -71,5 +71,5 @@ export async function GET(request: Request) {
 
   const pageCount = Math.ceil(total / limit);
 
-  return NextResponse.json(serialize({ tenants, total, page, pageCount }));
+  return jsonResponse({ tenants, total, page, pageCount });
 }

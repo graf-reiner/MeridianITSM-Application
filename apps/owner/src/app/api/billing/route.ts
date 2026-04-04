@@ -1,7 +1,7 @@
 import { prisma } from '@meridian/db';
 import { verifyOwnerToken } from '../../../lib/owner-auth';
 import { NextResponse } from 'next/server';
-import { serialize } from '../../../lib/serialize';
+import { jsonResponse } from '../../../lib/serialize';
 
 type SubscriptionStatus = 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'SUSPENDED';
 
@@ -47,7 +47,7 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json(serialize({
+  return jsonResponse({
     overview: {
       totalMrr,
       totalArr: totalMrr * 12,
@@ -67,5 +67,5 @@ export async function GET(request: Request) {
       currentPeriodEnd: sub.currentPeriodEnd,
       cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
     })),
-  }));
+  });
 }

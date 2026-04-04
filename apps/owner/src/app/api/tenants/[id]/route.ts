@@ -1,6 +1,6 @@
 import { prisma } from '@meridian/db';
 import { NextResponse } from 'next/server';
-import { serialize } from '../../../../lib/serialize';
+import { jsonResponse } from '../../../../lib/serialize';
 
 export async function GET(
   _request: Request,
@@ -33,5 +33,5 @@ export async function GET(
     prisma.ownerNote.count({ where: { tenantId: id } }),
   ]);
 
-  return NextResponse.json(serialize({ tenant, subscription: tenant.subscription, usage, userCount, noteCount }));
+  return jsonResponse({ tenant, subscription: tenant.subscription, usage, userCount, noteCount });
 }
