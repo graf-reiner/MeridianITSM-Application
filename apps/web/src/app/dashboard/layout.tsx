@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Icon from '@mdi/react';
 import ThemeProvider from '@/components/ThemeProvider';
 import ThemeToggle from '@/components/ThemeToggle';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import {
   mdiViewDashboard,
   mdiTicketOutline,
@@ -381,7 +382,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
         {/* ── Page Content ──────────────────────────────────────────────────── */}
         <main style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
-          {children}
+          <ErrorBoundary>{children}</ErrorBoundary>
         </main>
       </div>
 

@@ -8,10 +8,12 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') ?? '/dashboard/tickets';
   const errorParam = searchParams.get('error') ?? '';
+  const signupSuccess = searchParams.get('signup') === 'success';
+  const signupTenant = searchParams.get('tenant') ?? '';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [tenantSlug, setTenantSlug] = useState('msp-default');
+  const [tenantSlug, setTenantSlug] = useState(signupTenant || 'msp-default');
   const [error, setError] = useState(errorParam);
   const [loading, setLoading] = useState(false);
 
@@ -97,6 +99,12 @@ export default function LoginPage() {
         >
           <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4, color: '#111827' }}>Sign in</h2>
           <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>Enter your credentials to continue</p>
+
+          {signupSuccess && (
+            <div style={{ padding: '8px 12px', background: '#f0fdf4', color: '#16a34a', borderRadius: 8, fontSize: 13, marginBottom: 16, border: '1px solid #bbf7d0' }}>
+              Account created! Your 14-day trial has started. Sign in below.
+            </div>
+          )}
 
           {error && (
             <div style={{ padding: '8px 12px', background: '#fef2f2', color: '#dc2626', borderRadius: 8, fontSize: 13, marginBottom: 16, border: '1px solid #fecaca' }}>

@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Icon from '@mdi/react';
 import ThemeProvider from '@/components/ThemeProvider';
 import ThemeToggle from '@/components/ThemeToggle';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import {
   mdiHome,
   mdiTicketOutline,
@@ -346,7 +347,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
         {/* ── Page Content ────────────────────────────────────────────────────── */}
         <main style={{ flex: 1, overflow: 'auto', padding: '24px', paddingBottom: 80 }}>
-          {children}
+          <ErrorBoundary fallbackUrl="/portal">{children}</ErrorBoundary>
         </main>
       </div>
 

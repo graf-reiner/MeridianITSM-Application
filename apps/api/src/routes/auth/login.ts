@@ -25,10 +25,30 @@ export async function loginRoute(app: FastifyInstance): Promise<void> {
 
     // Resolve tenant by slug — tenant is a global model (not tenant-scoped)
     const tenant = await prisma.tenant.findFirst({
-      where: { slug: tenantSlug, status: 'ACTIVE' },
+      where: { slug: tenantSlug },
+      include: { subscription: { select: { status: true } } },
     });
 
     if (!tenant) {
+      return reply.code(401).send({ error: 'Invalid credentials' });
+    }
+
+    // Block suspended tenants with a clear message
+    if (tenant.status === 'SUSPENDED') {
+      return reply.code(403).send({ error: 'Your account has been suspended. Please contact support.' });
+    }
+
+    // Block tenants whose trial has expired and have no active subscription
+    if (
+      tenant.subscription?.status === 'TRIALING' &&
+      tenant.trialEndsAt &&
+      new Date(tenant.trialEndsAt) < new Date()
+    ) {
+      return reply.code(403).send({ error: 'Your trial has expired. Please subscribe to continue using the service.' });
+    }
+
+    // Only allow ACTIVE tenants beyond this point
+    if (tenant.status !== 'ACTIVE') {
       return reply.code(401).send({ error: 'Invalid credentials' });
     }
 

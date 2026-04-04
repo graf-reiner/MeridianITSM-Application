@@ -3,6 +3,7 @@ import { loginRoute } from './login.js';
 import { formLoginRoute } from './form-login.js';
 import { refreshRoute } from './refresh.js';
 import { passwordResetRoutes } from './password-reset.js';
+import { signupRoute } from './signup.js';
 
 /**
  * Auth routes plugin — no JWT authentication required.
@@ -20,4 +21,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
 
   // Password reset — rate limited via route config (5 requests per 15 minutes)
   await app.register(passwordResetRoutes);
+
+  // Self-service signup — public, rate limited, creates tenant + trial subscription
+  await app.register(signupRoute);
 }
