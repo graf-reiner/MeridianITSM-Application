@@ -33,10 +33,11 @@ import {
 interface CINode {
   id: string;
   name: string;
-  type: string;
-  status: string;
-  ciNumber: string | number;
+  type?: string;
+  status?: string;
+  ciNumber?: string | number;
   isCurrent?: boolean;
+  [key: string]: unknown;
 }
 
 interface CIRelation {
