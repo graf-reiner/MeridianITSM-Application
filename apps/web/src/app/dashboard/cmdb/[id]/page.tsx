@@ -423,7 +423,7 @@ function InventorySnapshotSection({ ciId }: { ciId: string }) {
             {bitlocker.map((vol: Record<string, unknown>, i: number) => (
               <div key={i} style={{ marginBottom: 8 }}>
                 <InfoRow label={`Drive ${vol.driveLetter}`} value={`${vol.protectionStatus} — ${vol.encryptionMethod ?? ''} (${vol.encryptionPercentage ?? 0}%)`} />
-                {vol.recoveryKeyId && <InfoRow label="Recovery Key ID" value={vol.recoveryKeyId as string} />}
+                {typeof vol.recoveryKeyId === 'string' && vol.recoveryKeyId && <InfoRow label="Recovery Key ID" value={vol.recoveryKeyId} />}
               </div>
             ))}
           </Card>
