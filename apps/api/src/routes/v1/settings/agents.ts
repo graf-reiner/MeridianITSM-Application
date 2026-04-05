@@ -301,4 +301,61 @@ export async function agentSettingsRoutes(fastify: FastifyInstance): Promise<voi
       return reply.send(agent);
     },
   );
+
+  // ─── GET /api/v1/settings/agents/:id/inventory ──────────────────────────────
+  // Returns the latest inventory snapshot for an agent with all enriched fields.
+
+  fastify.get(
+    '/api/v1/settings/agents/:id/inventory',
+    { preHandler: [requirePermission('settings:read')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string };
+      const tenantId = user.tenantId;
+      const { id } = request.params as { id: string };
+
+      const snapshot = await prisma.inventorySnapshot.findFirst({
+        where: { agentId: id, tenantId },
+        orderBy: { collectedAt: 'desc' },
+      });
+
+      if (!snapshot) {
+        return reply.status(404).send({ error: 'No inventory snapshot found for this agent' });
+      }
+
+      return reply.send(snapshot);
+    },
+  );
+
+  // ─── GET /api/v1/cmdb/cis/:id/inventory ────────────────────────────────────
+  // Returns the latest inventory snapshot for a CI (via its linked agent).
+
+  fastify.get(
+    '/api/v1/cmdb/cis/:id/inventory',
+    { preHandler: [requirePermission('cmdb.view')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string };
+      const tenantId = user.tenantId;
+      const { id } = request.params as { id: string };
+
+      const ci = await prisma.cmdbConfigurationItem.findFirst({
+        where: { id, tenantId },
+        select: { agentId: true },
+      });
+
+      if (!ci || !ci.agentId) {
+        return reply.status(404).send({ error: 'CI not found or has no linked agent' });
+      }
+
+      const snapshot = await prisma.inventorySnapshot.findFirst({
+        where: { agentId: ci.agentId, tenantId },
+        orderBy: { collectedAt: 'desc' },
+      });
+
+      if (!snapshot) {
+        return reply.status(404).send({ error: 'No inventory snapshot found' });
+      }
+
+      return reply.send(snapshot);
+    },
+  );
 }

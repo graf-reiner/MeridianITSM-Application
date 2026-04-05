@@ -154,6 +154,14 @@ export const cmdbReconciliationWorker = new Worker(
             `;
             const ciNumber = Number(result[0].next);
 
+            const primaryIp = snapshot.networkInterfaces
+              ? extractPrimaryIp(snapshot.networkInterfaces as unknown[])
+              : null;
+
+            // Compute total disk storage from snapshot
+            const totalStorageGb = computeTotalStorageGb(snapshot.disks);
+            const isVirtual = snapshot.isVirtual ?? false;
+
             const ci = await tx.cmdbConfigurationItem.create({
               data: {
                 tenantId,
@@ -167,11 +175,13 @@ export const cmdbReconciliationWorker = new Worker(
                 classId,
                 lifecycleStatusId,
                 environmentId,
-                // Promoted columns
+                // Promoted columns from enriched snapshot
                 hostname,
-                ipAddress: snapshot.networkInterfaces
-                  ? extractPrimaryIp(snapshot.networkInterfaces as unknown[])
-                  : null,
+                fqdn: snapshot.fqdn ?? null,
+                ipAddress: primaryIp,
+                serialNumber: snapshot.serialNumber ?? null,
+                model: snapshot.model ?? null,
+                version: snapshot.osVersion ?? null,
                 // Agent link
                 agentId: agent.id,
                 // Governance
@@ -180,28 +190,39 @@ export const cmdbReconciliationWorker = new Worker(
                 firstDiscoveredAt: snapshot.collectedAt,
                 discoveredAt: snapshot.collectedAt,
                 lastSeenAt: new Date(),
-                reconciliationRank: 50, // Agent data is mid-priority
-                // Keep legacy attributesJson for additional data
+                reconciliationRank: 50,
+                // Additional data in JSON (security, software, etc.)
                 attributesJson: {
                   agentPlatform: agent.platform,
                   agentVersion: agent.agentVersion ?? null,
-                  installedSoftware: snapshot.installedSoftware,
+                  deviceType: snapshot.deviceType,
+                  biosVersion: snapshot.biosVersion,
+                  tpmVersion: snapshot.tpmVersion,
+                  secureBootEnabled: snapshot.secureBootEnabled,
+                  diskEncrypted: snapshot.diskEncrypted,
+                  antivirusProduct: snapshot.antivirusProduct,
+                  firewallEnabled: snapshot.firewallEnabled,
+                  isVirtual: snapshot.isVirtual,
+                  hypervisorType: snapshot.hypervisorType,
+                  domainName: snapshot.domainName,
                 } as never,
               },
             });
 
-            // Create server extension if it's a server/workstation class
+            // Create server extension with full hardware detail
             if (classKey === 'server' || legacyType === 'SERVER' || legacyType === 'WORKSTATION') {
               await tx.cmdbCiServer.create({
                 data: {
                   ciId: ci.id,
                   tenantId,
-                  serverType: agent.platform === 'LINUX' ? 'physical' : 'physical',
+                  serverType: isVirtual ? (snapshot.hypervisorType ?? 'virtual_machine') : 'physical',
                   operatingSystem,
                   osVersion,
                   cpuCount: snapshot.cpuCores,
                   memoryGb: snapshot.ramGb,
-                  domainName: null,
+                  storageGb: totalStorageGb,
+                  domainName: snapshot.domainName ?? null,
+                  virtualizationPlatform: snapshot.hypervisorType ?? null,
                   backupRequired: false,
                 },
               });
@@ -251,15 +272,26 @@ export const cmdbReconciliationWorker = new Worker(
             changedFields.push({ fieldName: field, oldValue: oldStr, newValue: newStr });
           };
 
-          // Compare promoted columns
+          // Compare promoted columns — enriched fields
           await trackChangeIfNotUserLocked('name', existingCi.name, hostname);
           await trackChangeIfNotUserLocked('hostname', existingCi.hostname, hostname);
+
+          if (snapshot.fqdn) {
+            await trackChangeIfNotUserLocked('fqdn', existingCi.fqdn, snapshot.fqdn);
+          }
 
           const primaryIp = snapshot.networkInterfaces
             ? extractPrimaryIp(snapshot.networkInterfaces as unknown[])
             : null;
           if (primaryIp) {
             await trackChangeIfNotUserLocked('ipAddress', existingCi.ipAddress, primaryIp);
+          }
+
+          if (snapshot.serialNumber) {
+            await trackChangeIfNotUserLocked('serialNumber', existingCi.serialNumber, snapshot.serialNumber);
+          }
+          if (snapshot.model) {
+            await trackChangeIfNotUserLocked('model', existingCi.model, snapshot.model);
           }
 
           if (changedFields.length > 0) {
@@ -294,18 +326,23 @@ export const cmdbReconciliationWorker = new Worker(
                 data: updateData as never,
               });
 
-              // Upsert server extension
+              // Upsert server extension with enriched data
               if (classKey === 'server' || legacyType === 'SERVER' || legacyType === 'WORKSTATION') {
+                const isVm = snapshot.isVirtual ?? false;
+                const totalStorageGb = computeTotalStorageGb(snapshot.disks);
                 await tx.cmdbCiServer.upsert({
                   where: { ciId: existingCi.id },
                   create: {
                     ciId: existingCi.id,
                     tenantId,
-                    serverType: 'physical',
+                    serverType: isVm ? (snapshot.hypervisorType ?? 'virtual_machine') : 'physical',
                     operatingSystem,
                     osVersion,
                     cpuCount: snapshot.cpuCores,
                     memoryGb: snapshot.ramGb,
+                    storageGb: totalStorageGb,
+                    domainName: snapshot.domainName ?? null,
+                    virtualizationPlatform: snapshot.hypervisorType ?? null,
                     backupRequired: false,
                   },
                   update: {
@@ -313,6 +350,10 @@ export const cmdbReconciliationWorker = new Worker(
                     ...(osVersion ? { osVersion } : {}),
                     ...(snapshot.cpuCores ? { cpuCount: snapshot.cpuCores } : {}),
                     ...(snapshot.ramGb ? { memoryGb: snapshot.ramGb } : {}),
+                    ...(totalStorageGb ? { storageGb: totalStorageGb } : {}),
+                    ...(snapshot.domainName ? { domainName: snapshot.domainName } : {}),
+                    ...(snapshot.hypervisorType ? { virtualizationPlatform: snapshot.hypervisorType } : {}),
+                    ...(isVm ? { serverType: snapshot.hypervisorType ?? 'virtual_machine' } : {}),
                   },
                 });
               }
@@ -397,6 +438,22 @@ export const cmdbReconciliationWorker = new Worker(
 cmdbReconciliationWorker.on('failed', (job, err) => {
   console.error(`[cmdb-reconciliation] Job ${job?.id} failed:`, err.message);
 });
+
+/**
+ * Compute total storage in GB from disks JSON data.
+ */
+function computeTotalStorageGb(disks: unknown): number | null {
+  if (!Array.isArray(disks)) return null;
+  let totalBytes = 0;
+  for (const disk of disks) {
+    if (disk && typeof disk === 'object') {
+      const obj = disk as Record<string, unknown>;
+      const size = obj.sizeBytes ?? obj.SizeBytes ?? obj.size;
+      if (typeof size === 'number') totalBytes += size;
+    }
+  }
+  return totalBytes > 0 ? Math.round(totalBytes / 1073741824 * 100) / 100 : null;
+}
 
 /**
  * Extract the primary (non-loopback) IP from network interfaces data.
