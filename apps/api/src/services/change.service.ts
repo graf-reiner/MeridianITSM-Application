@@ -264,9 +264,10 @@ export async function createChange(
 
 /**
  * Get a change by ID with full relations included.
+ * Renames Prisma relation names (changeAssets, changeApplications) to frontend-friendly names.
  */
 export async function getChange(tenantId: string, changeId: string) {
-  return prisma.change.findFirst({
+  const change = await prisma.change.findFirst({
     where: { id: changeId, tenantId },
     include: {
       approvals: {
@@ -304,6 +305,17 @@ export async function getChange(tenantId: string, changeId: string) {
       },
     },
   });
+
+  if (!change) return null;
+
+  // Transform to frontend-friendly shape: assets, applications, meetings
+  const { changeAssets, changeApplications, cabMeetingChanges, ...rest } = change;
+  return {
+    ...rest,
+    assets: changeAssets,
+    applications: changeApplications,
+    meetings: cabMeetingChanges,
+  };
 }
 
 /**
