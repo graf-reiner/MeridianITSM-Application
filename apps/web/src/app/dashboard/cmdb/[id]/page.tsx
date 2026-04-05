@@ -30,6 +30,7 @@ import {
   mdiChevronRight,
   mdiCertificate,
   mdiInformationOutline,
+  mdiMonitor,
 } from '@mdi/js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -98,6 +99,7 @@ interface CIDetail {
   manufacturer: { id: string; name: string } | null;
   supportGroup: { id: string; name: string; email: string | null } | null;
   category: { id: string; name: string } | null;
+  agentId: string | null;
   hostname: string | null;
   fqdn: string | null;
   ipAddress: string | null;
@@ -267,6 +269,263 @@ function EmptyState({ message }: { message: string }) {
 // ─── Tab definitions ─────────────────────────────────────────────────────────
 
 type Tab = 'general' | 'ownership' | 'technical' | 'service' | 'relationships' | 'governance' | 'linked';
+
+// ─── Inventory Snapshot Section (for CIs with linked agents) ─────────────────
+
+function InventorySnapshotSection({ ciId }: { ciId: string }) {
+  const { data: snapshot, isLoading } = useQuery({
+    queryKey: ['cmdb-ci-inventory', ciId],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/cmdb/cis/${ciId}/inventory`, { credentials: 'include' });
+      if (!res.ok) return null;
+      return res.json();
+    },
+  });
+
+  if (isLoading) return <div style={{ padding: 16, color: 'var(--text-muted)' }}>Loading inventory data...</div>;
+  if (!snapshot) return null;
+
+  const cpus = Array.isArray(snapshot.rawData?.hardware?.cpus) ? snapshot.rawData.hardware.cpus : [];
+  const memModules = Array.isArray(snapshot.memoryModules) ? snapshot.memoryModules : [];
+  const disks = Array.isArray(snapshot.rawData?.hardware?.disks) ? snapshot.rawData.hardware.disks : [];
+  const gpus = Array.isArray(snapshot.gpus) ? snapshot.gpus : [];
+  const network = Array.isArray(snapshot.networkInterfaces) ? snapshot.networkInterfaces : [];
+  const software = Array.isArray(snapshot.installedSoftware) ? snapshot.installedSoftware : [];
+  const services = Array.isArray(snapshot.services) ? snapshot.services : [];
+  const bitlocker = Array.isArray(snapshot.bitLockerVolumes) ? snapshot.bitLockerVolumes : [];
+  const security = snapshot.securityPosture ?? {};
+  const battery = snapshot.battery;
+
+  return (
+    <div style={{ marginTop: 24 }}>
+      <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', borderBottom: '2px solid var(--border-primary)', paddingBottom: 8 }}>
+        Agent Inventory Snapshot
+        <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-muted)', marginLeft: 12 }}>
+          Collected {snapshot.collectedAt ? new Date(snapshot.collectedAt).toLocaleString() : '—'}
+          {snapshot.scanDurationMs ? ` (${Math.round(snapshot.scanDurationMs)}ms)` : ''}
+        </span>
+      </h3>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: 16 }}>
+
+        {/* CPU Details */}
+        {cpus.length > 0 && (
+          <Card title={`CPU (${cpus.length} socket${cpus.length > 1 ? 's' : ''})`} icon={mdiServer}>
+            {cpus.map((cpu: Record<string, unknown>, i: number) => (
+              <div key={i} style={{ marginBottom: i < cpus.length - 1 ? 12 : 0, paddingBottom: i < cpus.length - 1 ? 12 : 0, borderBottom: i < cpus.length - 1 ? '1px solid var(--border-primary)' : 'none' }}>
+                <InfoRow label="Model" value={cpu.name as string} />
+                <InfoRow label="Manufacturer" value={cpu.manufacturer as string} />
+                <InfoRow label="Cores / Threads" value={`${cpu.cores ?? '?'} / ${cpu.threads ?? '?'}`} />
+                <InfoRow label="Speed" value={cpu.speedMhz ? `${cpu.speedMhz} MHz` : null} />
+                <InfoRow label="Max Speed" value={cpu.maxSpeedMhz ? `${cpu.maxSpeedMhz} MHz` : null} />
+                <InfoRow label="Socket" value={cpu.socket as string} />
+                <InfoRow label="L2 Cache" value={cpu.l2CacheKb ? `${cpu.l2CacheKb} KB` : null} />
+                <InfoRow label="L3 Cache" value={cpu.l3CacheKb ? `${cpu.l3CacheKb} KB` : null} />
+                <InfoRow label="Part Number" value={cpu.partNumber as string} />
+                <InfoRow label="Serial Number" value={cpu.serialNumber as string} />
+              </div>
+            ))}
+          </Card>
+        )}
+
+        {/* Memory Modules */}
+        {memModules.length > 0 && (
+          <Card title={`RAM (${memModules.length} module${memModules.length > 1 ? 's' : ''}, ${snapshot.ramGb ?? '?'} GB total)`} icon={mdiServer}>
+            {memModules.map((mod: Record<string, unknown>, i: number) => (
+              <div key={i} style={{ marginBottom: i < memModules.length - 1 ? 12 : 0, paddingBottom: i < memModules.length - 1 ? 12 : 0, borderBottom: i < memModules.length - 1 ? '1px solid var(--border-primary)' : 'none' }}>
+                <InfoRow label="Slot" value={mod.deviceLocator as string} />
+                <InfoRow label="Size" value={mod.capacityBytes ? `${Math.round((mod.capacityBytes as number) / 1073741824)} GB` : null} />
+                <InfoRow label="Speed" value={mod.speedMhz ? `${mod.speedMhz} MHz` : null} />
+                <InfoRow label="Type" value={mod.memoryType as string} />
+                <InfoRow label="Form Factor" value={mod.formFactor as string} />
+                <InfoRow label="Manufacturer" value={mod.manufacturer as string} />
+                <InfoRow label="Part Number" value={mod.partNumber as string} />
+                <InfoRow label="Serial" value={mod.serialNumber as string} />
+              </div>
+            ))}
+          </Card>
+        )}
+
+        {/* Disks */}
+        {disks.length > 0 && (
+          <Card title={`Storage (${disks.length} disk${disks.length > 1 ? 's' : ''})`} icon={mdiDatabase}>
+            {disks.map((disk: Record<string, unknown>, i: number) => (
+              <div key={i} style={{ marginBottom: i < disks.length - 1 ? 12 : 0, paddingBottom: i < disks.length - 1 ? 12 : 0, borderBottom: i < disks.length - 1 ? '1px solid var(--border-primary)' : 'none' }}>
+                <InfoRow label="Device" value={disk.deviceName as string} />
+                <InfoRow label="Model" value={disk.model as string} />
+                <InfoRow label="Size" value={disk.sizeBytes ? `${Math.round((disk.sizeBytes as number) / 1073741824)} GB` : null} />
+                <InfoRow label="Type" value={disk.type as string} />
+                <InfoRow label="Bus" value={disk.busType as string} />
+                <InfoRow label="SMART" value={disk.smartStatus as string} />
+                <InfoRow label="Serial" value={disk.serialNumber as string} />
+                {Array.isArray(disk.volumes) && (disk.volumes as Record<string, unknown>[]).map((vol, j) => (
+                  <div key={j} style={{ marginLeft: 16, marginTop: 4 }}>
+                    <InfoRow label={`${vol.driveLetter || vol.mountPoint}`} value={`${vol.fileSystem ?? ''} — ${vol.sizeBytes ? Math.round((vol.sizeBytes as number) / 1073741824) : '?'} GB (${vol.freeBytes ? Math.round((vol.freeBytes as number) / 1073741824) : '?'} GB free)${vol.isEncrypted ? ' 🔒' : ''}`} />
+                  </div>
+                ))}
+              </div>
+            ))}
+          </Card>
+        )}
+
+        {/* Network Adapters */}
+        {network.length > 0 && (
+          <Card title={`Network (${network.length} adapter${network.length > 1 ? 's' : ''})`} icon={mdiLanConnect}>
+            {network.filter((n: Record<string, unknown>) => {
+              const ips = n.ipAddresses as string[] ?? [];
+              return ips.length > 0 && !ips.every((ip: string) => ip.startsWith('127.') || ip === '::1');
+            }).map((nic: Record<string, unknown>, i: number) => (
+              <div key={i} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid var(--border-primary)' }}>
+                <InfoRow label="Name" value={nic.name as string} />
+                <InfoRow label="IPs" value={(nic.ipAddresses as string[] ?? []).join(', ')} />
+                <InfoRow label="MAC" value={nic.macAddress as string} />
+                <InfoRow label="Speed" value={nic.speedMbps ? `${nic.speedMbps} Mbps` : null} />
+                <InfoRow label="Gateway" value={(nic.defaultGateways as string[] ?? []).join(', ')} />
+                <InfoRow label="DNS" value={(nic.dnsServers as string[] ?? []).join(', ')} />
+                <InfoRow label="DHCP" value={nic.dhcpEnabled ? `Yes (${nic.dhcpServer ?? ''})` : 'Static'} />
+                <InfoRow label="SSID" value={nic.wirelessSsid as string} />
+              </div>
+            ))}
+          </Card>
+        )}
+
+        {/* GPUs */}
+        {gpus.length > 0 && (
+          <Card title="GPU" icon={mdiMonitor}>
+            {gpus.map((gpu: Record<string, unknown>, i: number) => (
+              <div key={i}>
+                <InfoRow label="Name" value={gpu.name as string} />
+                <InfoRow label="VRAM" value={gpu.vramBytes ? `${Math.round((gpu.vramBytes as number) / 1048576)} MB` : null} />
+                <InfoRow label="Driver" value={gpu.driverVersion as string} />
+              </div>
+            ))}
+          </Card>
+        )}
+
+        {/* Security Posture */}
+        {Object.keys(security).length > 0 && (
+          <Card title="Security Posture" icon={mdiShieldLock}>
+            <InfoRow label="Antivirus" value={security.antivirusProduct as string} />
+            <InfoRow label="AV Version" value={security.antivirusVersion as string} />
+            <InfoRow label="Real-Time Protection" value={security.realTimeProtectionEnabled ? 'Enabled' : 'Disabled'} />
+            <InfoRow label="Firewall" value={security.firewallEnabled ? 'Enabled' : 'Disabled'} />
+            <InfoRow label="Disk Encryption" value={security.diskEncryptionEnabled ? `Enabled (${security.encryptionProduct ?? ''})` : 'Disabled'} />
+            <InfoRow label="Secure Boot" value={security.secureBootEnabled ? 'Enabled' : 'Disabled'} />
+            <InfoRow label="TPM Ready" value={security.tpmReady ? 'Yes' : 'No'} />
+            <InfoRow label="Reboot Required" value={security.rebootRequired ? 'Yes' : 'No'} />
+            <InfoRow label="Pending Updates" value={security.pendingUpdateCount} />
+          </Card>
+        )}
+
+        {/* BitLocker / Encryption */}
+        {bitlocker.length > 0 && (
+          <Card title="BitLocker / Encryption" icon={mdiShieldLock}>
+            {bitlocker.map((vol: Record<string, unknown>, i: number) => (
+              <div key={i} style={{ marginBottom: 8 }}>
+                <InfoRow label={`Drive ${vol.driveLetter}`} value={`${vol.protectionStatus} — ${vol.encryptionMethod ?? ''} (${vol.encryptionPercentage ?? 0}%)`} />
+                {vol.recoveryKeyId && <InfoRow label="Recovery Key ID" value={vol.recoveryKeyId as string} />}
+              </div>
+            ))}
+          </Card>
+        )}
+
+        {/* Battery */}
+        {battery && (
+          <Card title="Battery" icon={mdiServer}>
+            <InfoRow label="Health" value={battery.healthPercent ? `${Math.round(battery.healthPercent)}%` : null} />
+            <InfoRow label="Design Capacity" value={battery.designCapacityMwh ? `${battery.designCapacityMwh} mWh` : null} />
+            <InfoRow label="Full Charge" value={battery.fullChargeCapacityMwh ? `${battery.fullChargeCapacityMwh} mWh` : null} />
+            <InfoRow label="Cycle Count" value={battery.cycleCount} />
+            <InfoRow label="State" value={battery.chargingState as string} />
+          </Card>
+        )}
+
+        {/* OS Details */}
+        <Card title="OS Details" icon={mdiCog}>
+          <InfoRow label="OS" value={snapshot.operatingSystem} />
+          <InfoRow label="Version" value={snapshot.osVersion} />
+          <InfoRow label="Build" value={snapshot.osBuild} />
+          <InfoRow label="Edition" value={snapshot.osEdition} />
+          <InfoRow label="BIOS" value={snapshot.biosVersion} />
+          <InfoRow label="TPM" value={snapshot.tpmVersion} />
+          <InfoRow label="Secure Boot" value={snapshot.secureBootEnabled != null ? (snapshot.secureBootEnabled ? 'Enabled' : 'Disabled') : null} />
+          <InfoRow label="Domain" value={snapshot.domainName} />
+          <InfoRow label="Virtual" value={snapshot.isVirtual != null ? (snapshot.isVirtual ? `Yes (${snapshot.hypervisorType ?? 'unknown'})` : 'Physical') : null} />
+          <InfoRow label="Uptime" value={snapshot.uptimeSeconds ? formatUptime(snapshot.uptimeSeconds) : null} />
+        </Card>
+
+        {/* Installed Software Summary */}
+        {software.length > 0 && (
+          <Card title={`Installed Software (${software.length})`} icon={mdiApplication}>
+            <div style={{ maxHeight: 300, overflowY: 'auto', fontSize: 12 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-primary)', textAlign: 'left' }}>
+                    <th style={{ padding: '4px 8px', fontWeight: 600 }}>Name</th>
+                    <th style={{ padding: '4px 8px', fontWeight: 600 }}>Version</th>
+                    <th style={{ padding: '4px 8px', fontWeight: 600 }}>Publisher</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {software.slice(0, 200).map((sw: Record<string, unknown>, i: number) => (
+                    <tr key={i} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                      <td style={{ padding: '3px 8px' }}>{sw.name as string}</td>
+                      <td style={{ padding: '3px 8px', color: 'var(--text-muted)' }}>{sw.version as string}</td>
+                      <td style={{ padding: '3px 8px', color: 'var(--text-muted)' }}>{sw.publisher as string}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {software.length > 200 && <div style={{ padding: 8, color: 'var(--text-muted)', textAlign: 'center' }}>...and {software.length - 200} more</div>}
+            </div>
+          </Card>
+        )}
+
+        {/* Services Summary */}
+        {services.length > 0 && (
+          <Card title={`Services (${services.length})`} icon={mdiCog}>
+            <div style={{ maxHeight: 300, overflowY: 'auto', fontSize: 12 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-primary)', textAlign: 'left' }}>
+                    <th style={{ padding: '4px 8px', fontWeight: 600 }}>Name</th>
+                    <th style={{ padding: '4px 8px', fontWeight: 600 }}>Status</th>
+                    <th style={{ padding: '4px 8px', fontWeight: 600 }}>Start Type</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {services.slice(0, 200).map((svc: Record<string, unknown>, i: number) => (
+                    <tr key={i} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                      <td style={{ padding: '3px 8px' }}>{(svc.displayName || svc.name) as string}</td>
+                      <td style={{ padding: '3px 8px' }}>
+                        <span style={{ padding: '1px 6px', borderRadius: 8, fontSize: 11, backgroundColor: (svc.status as string)?.toLowerCase() === 'running' ? 'var(--badge-green-bg)' : 'var(--bg-tertiary)', color: (svc.status as string)?.toLowerCase() === 'running' ? '#065f46' : 'var(--text-muted)' }}>
+                          {svc.status as string}
+                        </span>
+                      </td>
+                      <td style={{ padding: '3px 8px', color: 'var(--text-muted)' }}>{svc.startType as string}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {services.length > 200 && <div style={{ padding: 8, color: 'var(--text-muted)', textAlign: 'center' }}>...and {services.length - 200} more</div>}
+            </div>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function formatUptime(seconds: number): string {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const parts = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  parts.push(`${mins}m`);
+  return parts.join(' ');
+}
 
 const TAB_DEFS: { key: Tab; label: string; icon: string }[] = [
   { key: 'general', label: 'General', icon: mdiInformationOutline },
@@ -604,6 +863,9 @@ export default function CMDBDetailPage() {
             </Card>
           )}
         </div>
+
+        {/* Agent Inventory Snapshot (if CI has a linked agent) */}
+        {ci.agentId && <InventorySnapshotSection ciId={ci.id} />}
       )}
 
       {/* ── Tab: Service Context ─────────────────────────────────────────────── */}
