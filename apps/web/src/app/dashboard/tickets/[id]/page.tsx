@@ -438,13 +438,13 @@ export default function TicketDetailPage() {
                     color: activeTab === tab ? 'var(--accent-primary)' : hasAttachments ? 'var(--accent-warning)' : 'var(--text-muted)',
                     borderBottom: activeTab === tab ? '2px solid var(--accent-primary)' : '2px solid transparent',
                     marginBottom: -1,
-                    textTransform: 'capitalize',
+                    textTransform: tab === 'cis' ? 'none' : 'capitalize',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 6,
                   }}
                 >
-                  {tab}
+                  {tab === 'cis' ? 'CMDB Relationship' : tab}
                   {hasAttachments && (
                     <span style={{
                       backgroundColor: 'var(--accent-warning)',
