@@ -20,5 +20,6 @@
     <ProjectReference Include="..\InvAgent.Collectors\InvAgent.Collectors.csproj" />
     <ProjectReference Include="..\InvAgent.Privacy\InvAgent.Privacy.csproj" />
     <ProjectReference Include="..\InvAgent.Config\InvAgent.Config.csproj" />
+    <ProjectReference Include="..\InvAgent.Http\InvAgent.Http.csproj" />
   </ItemGroup>
 </Project>
