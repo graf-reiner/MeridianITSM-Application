@@ -14,6 +14,27 @@ using Microsoft.Extensions.Http.Resilience;
 using Polly;
 using Polly.Retry;
 using Polly.CircuitBreaker;
+using Serilog;
+
+// Determine platform-appropriate log path
+static string GetAgentLogPath()
+{
+    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            "Meridian", "logs", "agent-.log");
+    return "/var/log/meridian-agent/agent-.log";
+}
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+    .WriteTo.File(
+        GetAgentLogPath(),
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 7,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+    .CreateLogger();
 
 var rootCommand = new RootCommand("Meridian Inventory Agent — endpoint discovery daemon");
 
@@ -41,6 +62,9 @@ rootCommand.SetHandler(async (context) =>
     var privacyTier = context.ParseResult.GetValueForOption(privacyTierOption);
 
     var builder = Host.CreateApplicationBuilder(args);
+
+    // Use Serilog for structured logging
+    builder.Services.AddSerilog(Log.Logger);
 
     // Configuration layering: appsettings.json -> platform config -> env vars -> CLI flags
     var platformConfigPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
@@ -131,7 +155,7 @@ rootCommand.SetHandler(async (context) =>
         // Enroll if enrollment token is provided and no agent key exists yet
         if (!string.IsNullOrEmpty(cfg.EnrollmentToken) && string.IsNullOrEmpty(cfg.AgentKey))
         {
-            Console.WriteLine("Enrolling agent...");
+            Log.Information("Enrolling agent...");
             var enrollResult = await api.EnrollAsync(
                 cfg.EnrollmentToken,
                 Environment.MachineName,
@@ -139,31 +163,34 @@ rootCommand.SetHandler(async (context) =>
                 "1.0.0");
             if (enrollResult?.AgentKey != null)
             {
-                Console.WriteLine($"Enrolled successfully. AgentId: {enrollResult.AgentId}");
+                Log.Information("Enrolled successfully. AgentId: {AgentId}", enrollResult.AgentId);
                 api.SetAgentKey(enrollResult.AgentKey);
             }
             else
             {
-                Console.Error.WriteLine("Enrollment failed — server may have rejected the token.");
+                Log.Error("Enrollment failed — server may have rejected the token.");
                 host.Dispose();
+                await Log.CloseAndFlushAsync();
                 return;
             }
         }
 
         var payload = await collector.CollectAsync();
-        Console.WriteLine($"Collection complete. Hostname: {payload.Hostname}, OS: {payload.Os.Name}, Software count: {payload.Software.Count}");
+        Log.Information("Collection complete. Hostname: {Hostname}, OS: {Os}, Software count: {Count}",
+            payload.Hostname, payload.Os.Name, payload.Software.Count);
 
         try
         {
             var snapshotId = await api.SubmitInventoryAsync(payload);
-            Console.WriteLine($"Inventory submitted. SnapshotId: {snapshotId}");
+            Log.Information("Inventory submitted. SnapshotId: {SnapshotId}", snapshotId);
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Submission failed: {ex.Message}");
+            Log.Error(ex, "Submission failed: {Message}", ex.Message);
         }
 
         host.Dispose();
+        await Log.CloseAndFlushAsync();
         return;
     }
 
@@ -184,4 +211,6 @@ rootCommand.SetHandler(async (context) =>
     await fullHost.RunAsync();
 });
 
-return await rootCommand.InvokeAsync(args);
+var exitCode = await rootCommand.InvokeAsync(args);
+await Log.CloseAndFlushAsync();
+return exitCode;

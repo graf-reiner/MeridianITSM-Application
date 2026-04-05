@@ -242,4 +242,63 @@ export async function agentSettingsRoutes(fastify: FastifyInstance): Promise<voi
       return reply.send({ ok: true });
     },
   );
+
+  // ─── GET /api/v1/settings/agents/:id/metrics ───────────────────────────────────
+  // Returns metric samples for a given agent over the last N hours (default 24, max 168).
+
+  fastify.get(
+    '/api/v1/settings/agents/:id/metrics',
+    { preHandler: [requirePermission('settings:read')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string };
+      const tenantId = user.tenantId;
+      const { id: agentId } = request.params as { id: string };
+      const query = request.query as { hours?: string };
+      const hours = Math.min(168, Math.max(1, parseInt(query.hours ?? '24', 10)));
+      const since = new Date(Date.now() - hours * 3600000);
+
+      // Verify agent belongs to tenant
+      const agent = await prisma.agent.findFirst({ where: { id: agentId, tenantId }, select: { id: true } });
+      if (!agent) {
+        return reply.code(404).send({ error: 'Agent not found' });
+      }
+
+      const metrics = await prisma.metricSample.findMany({
+        where: { tenantId, agentId, timestamp: { gte: since } },
+        orderBy: { timestamp: 'asc' },
+        select: { metricType: true, metricName: true, value: true, unit: true, timestamp: true },
+      });
+
+      return reply.send({ metrics });
+    },
+  );
+
+  // ─── POST /api/v1/settings/agents/:id/status ───────────────────────────────────
+  // Change agent status: ACTIVE, SUSPENDED, or DEREGISTERED.
+
+  fastify.post(
+    '/api/v1/settings/agents/:id/status',
+    { preHandler: [requirePermission('settings:update')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string };
+      const { id } = request.params as { id: string };
+      const { status } = request.body as { status: string };
+
+      if (!['ACTIVE', 'SUSPENDED', 'DEREGISTERED'].includes(status)) {
+        return reply.status(400).send({ error: 'Invalid status. Must be ACTIVE, SUSPENDED, or DEREGISTERED.' });
+      }
+
+      const existing = await prisma.agent.findFirst({ where: { id, tenantId: user.tenantId }, select: { id: true } });
+      if (!existing) {
+        return reply.code(404).send({ error: 'Agent not found' });
+      }
+
+      const agent = await prisma.agent.update({
+        where: { id, tenantId: user.tenantId },
+        data: { status },
+      });
+
+      return reply.send(agent);
+    },
+  );
 }

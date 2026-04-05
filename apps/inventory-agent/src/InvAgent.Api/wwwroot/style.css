@@ -1,100 +1,164 @@
-/* Meridian Agent Diagnostics UI */
+/* Meridian Agent Diagnostics UI — Dark Theme */
 /* No animations, no transitions per UI-SPEC */
 
 *, *::before, *::after {
   box-sizing: border-box;
 }
 
+:root {
+  --bg-page:       #0f1117;
+  --bg-card:       #1a1d27;
+  --bg-card-inner: #1e2230;
+  --border:        #2a2f3d;
+  --border-light:  #232838;
+  --text-primary:  #e8eaf0;
+  --text-muted:    #9399a8;
+  --text-label:    #616a82;
+  --accent-blue:   #3b82f6;
+  --accent-green:  #10b981;
+  --accent-yellow: #f59e0b;
+  --accent-red:    #ef4444;
+  --btn-bg:        #2a2f3d;
+  --btn-hover:     #343a4e;
+  --btn-text:      #c9cdd9;
+  --mono:          Consolas, "Courier New", monospace;
+}
+
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 14px;
-  color: #374151;
-  background: #f9fafb;
+  color: var(--text-primary);
+  background: var(--bg-page);
   margin: 0;
   padding: 0;
+  min-height: 100vh;
 }
 
+/* ── Header ─────────────────────────────────────────────── */
+
 header {
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 16px 24px;
+  background: #13161f;
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 52px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+header .logo-mark {
+  width: 28px;
+  height: 28px;
+  background: var(--accent-blue);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  letter-spacing: -0.5px;
 }
 
 header h1 {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   margin: 0;
+  letter-spacing: -0.01em;
 }
 
+header .header-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+
+/* ── Main Layout ─────────────────────────────────────────── */
+
 main {
-  padding: 24px;
+  padding: 20px 24px;
   max-width: 960px;
   margin: 0 auto;
   display: grid;
-  gap: 16px;
+  gap: 14px;
 }
 
+/* ── Cards ───────────────────────────────────────────────── */
+
 .card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  padding: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 20px;
 }
 
 .card h2 {
-  font-size: 18px;
+  font-size: 13px;
   font-weight: 600;
-  color: #111827;
-  margin: 0 0 16px 0;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #e5e7eb;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 14px 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .card h3 {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  color: #374151;
-  margin: 16px 0 8px 0;
+  color: var(--text-primary);
+  margin: 14px 0 8px 0;
 }
+
+/* ── Status Row ──────────────────────────────────────────── */
 
 .status-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 .status-detail {
   display: flex;
   gap: 16px;
-  color: #6b7280;
-  font-size: 13px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-family: var(--mono);
   margin-bottom: 4px;
 }
 
+/* ── Status Indicators ───────────────────────────────────── */
+
 .indicator {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: #d1d5db;
+  background: var(--border);
   flex-shrink: 0;
 }
 
 .indicator.connected {
-  background: #059669;
+  background: var(--accent-green);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
 }
 
 .indicator.error {
-  background: #dc2626;
+  background: var(--accent-red);
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
 }
 
 .indicator.warning {
-  background: #d97706;
+  background: var(--accent-yellow);
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
 }
+
+/* ── Actions / Buttons ───────────────────────────────────── */
 
 .actions {
   display: flex;
@@ -105,85 +169,108 @@ main {
 }
 
 button {
-  background: #111827;
-  color: #f9fafb;
-  border: none;
-  border-radius: 4px;
-  padding: 6px 14px;
-  font-size: 13px;
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 500;
   font-family: inherit;
   cursor: pointer;
 }
 
 button:hover {
-  background: #374151;
+  background: var(--btn-hover);
+  color: var(--text-primary);
+  border-color: #3a4058;
 }
 
 button.secondary {
-  background: #ffffff;
-  color: #374151;
-  border: 1px solid #e5e7eb;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
 }
 
 button.secondary:hover {
-  background: #f9fafb;
+  background: var(--btn-bg);
+  color: var(--text-primary);
 }
+
+/* ── Tables ──────────────────────────────────────────────── */
 
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 th {
   text-align: left;
-  padding: 8px 10px;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
-  color: #6b7280;
+  padding: 7px 10px;
+  background: var(--bg-page);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-label);
   font-weight: 500;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
 }
 
 td {
   padding: 8px 10px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--border-light);
   vertical-align: top;
+  color: var(--text-primary);
+}
+
+td.mono {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 tr:last-child td {
   border-bottom: none;
 }
 
+/* ── Misc ────────────────────────────────────────────────── */
+
 .loading-text {
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 13px;
 }
 
 .badge {
-  background: #f3f4f6;
-  color: #6b7280;
-  font-size: 12px;
+  background: var(--bg-card-inner);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-family: var(--mono);
   padding: 2px 8px;
   border-radius: 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
 }
 
 .raw-json {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  border-radius: 5px;
   padding: 12px;
   font-size: 12px;
+  font-family: var(--mono);
+  color: var(--text-muted);
   overflow: auto;
   max-height: 300px;
   white-space: pre-wrap;
   word-break: break-all;
 }
 
-/* Log viewer — dark terminal style per UI-SPEC */
+/* ── Log Viewer ──────────────────────────────────────────── */
+
 .log-viewer {
-  background: #111827;
-  border-radius: 4px;
+  background: #0b0d13;
+  border: 1px solid var(--border);
+  border-radius: 5px;
   padding: 12px;
   max-height: 400px;
   overflow-y: auto;
@@ -192,46 +279,69 @@ tr:last-child td {
 
 .log-viewer pre {
   margin: 0;
-  color: #f9fafb;
-  font-family: Consolas, "Courier New", monospace;
-  font-size: 13px;
+  color: #c9cdd9;
+  font-family: var(--mono);
+  font-size: 12px;
   white-space: pre-wrap;
   word-break: break-all;
+  line-height: 1.6;
 }
 
 .result-ok {
-  color: #059669;
-  font-size: 13px;
+  color: var(--accent-green);
+  font-size: 12px;
+  font-family: var(--mono);
 }
 
 .result-error {
-  color: #dc2626;
-  font-size: 13px;
+  color: var(--accent-red);
+  font-size: 12px;
+  font-family: var(--mono);
 }
+
+/* ── Config Grid ─────────────────────────────────────────── */
 
 .config-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
 }
 
 .config-item {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  border-radius: 5px;
   padding: 10px 12px;
 }
 
 .config-item .config-label {
-  font-size: 11px;
-  color: #6b7280;
+  font-size: 10px;
+  color: var(--text-label);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   margin-bottom: 4px;
 }
 
 .config-item .config-value {
-  font-size: 14px;
-  color: #111827;
+  font-size: 13px;
+  color: var(--text-primary);
+  font-family: var(--mono);
   font-weight: 500;
+  word-break: break-all;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  main {
+    padding: 12px;
+  }
+
+  header {
+    padding: 0 14px;
+  }
+
+  .config-grid {
+    grid-template-columns: 1fr;
+  }
 }

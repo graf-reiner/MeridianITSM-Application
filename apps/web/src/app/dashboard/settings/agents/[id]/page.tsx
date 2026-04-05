@@ -1,10 +1,11 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import Link from 'next/link';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiDesktopClassic, mdiMemory, mdiHarddisk, mdiLan, mdiPackageVariantClosed } from '@mdi/js';
+import { mdiArrowLeft, mdiDesktopClassic, mdiMemory, mdiHarddisk, mdiLan, mdiPackageVariantClosed, mdiChartLine } from '@mdi/js';
 
 interface Snapshot {
   id: string;
@@ -34,6 +35,14 @@ interface AgentDetail {
   inventorySnapshots: Snapshot[];
 }
 
+interface MetricSample {
+  metricType: string;
+  metricName: string;
+  value: number;
+  unit: string | null;
+  timestamp: string;
+}
+
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, { bg: string; text: string }> = {
     ACTIVE:       { bg: 'var(--badge-green-bg)',  text: '#065f46' },
@@ -52,7 +61,11 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function AgentDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const agentId = params.id as string;
+  const queryClient = useQueryClient();
+  const [confirmDeregister, setConfirmDeregister] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   const { data: agent, isLoading, error } = useQuery<AgentDetail>({
     queryKey: ['agent-detail', agentId],
@@ -60,6 +73,41 @@ export default function AgentDetailPage() {
       const res = await fetch(`/api/v1/settings/agents/${agentId}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to load agent');
       return res.json();
+    },
+  });
+
+  const { data: metricsData } = useQuery<{ metrics: MetricSample[] }>({
+    queryKey: ['agent-metrics', agentId],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/settings/agents/${agentId}/metrics?hours=24`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load metrics');
+      return res.json();
+    },
+    enabled: !!agentId,
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: async (status: string) => {
+      const res = await fetch(`/api/v1/settings/agents/${agentId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? 'Status update failed');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      setStatusError(null);
+      setConfirmDeregister(false);
+      queryClient.invalidateQueries({ queryKey: ['agent-detail', agentId] });
+      queryClient.invalidateQueries({ queryKey: ['agents'] });
+    },
+    onError: (err: Error) => {
+      setStatusError(err.message);
     },
   });
 
@@ -71,14 +119,26 @@ export default function AgentDetailPage() {
   const nics = Array.isArray(snapshot?.networkInterfaces) ? snapshot.networkInterfaces as Array<Record<string, unknown>> : [];
   const software = Array.isArray(snapshot?.installedSoftware) ? snapshot.installedSoftware as Array<Record<string, unknown>> : [];
 
+  // Group metrics by metricName, keep latest value per name
+  const metrics = metricsData?.metrics ?? [];
+  const latestByName = metrics.reduce<Record<string, MetricSample>>((acc, m) => {
+    if (!acc[m.metricName] || new Date(m.timestamp) > new Date(acc[m.metricName].timestamp)) {
+      acc[m.metricName] = m;
+    }
+    return acc;
+  }, {});
+  const metricEntries = Object.values(latestByName);
+
   const cardStyle = { backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: 20, marginBottom: 16 };
   const labelStyle = { fontSize: 12, color: 'var(--text-placeholder)', marginBottom: 2 };
   const valueStyle = { fontSize: 14, color: 'var(--text-primary)', fontWeight: 500 as const };
 
+  const btnBase: React.CSSProperties = { padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 };
+
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
         <Link href="/dashboard/settings/agents" style={{ color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
           <Icon path={mdiArrowLeft} size={0.9} color="currentColor" />
         </Link>
@@ -86,6 +146,57 @@ export default function AgentDetailPage() {
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>{agent.hostname}</h1>
         <StatusBadge status={agent.displayStatus} />
       </div>
+
+      {/* Status Action Buttons */}
+      {agent.status !== 'DEREGISTERED' && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+          {agent.status === 'ACTIVE' && (
+            <button
+              style={{ ...btnBase, backgroundColor: '#d97706', color: '#fff' }}
+              onClick={() => statusMutation.mutate('SUSPENDED')}
+              disabled={statusMutation.isPending}
+            >
+              Suspend
+            </button>
+          )}
+          {agent.status === 'SUSPENDED' && (
+            <button
+              style={{ ...btnBase, backgroundColor: '#059669', color: '#fff' }}
+              onClick={() => statusMutation.mutate('ACTIVE')}
+              disabled={statusMutation.isPending}
+            >
+              Reactivate
+            </button>
+          )}
+          {!confirmDeregister ? (
+            <button
+              style={{ ...btnBase, backgroundColor: 'transparent', color: 'var(--accent-danger)', border: '1px solid var(--accent-danger)' }}
+              onClick={() => setConfirmDeregister(true)}
+              disabled={statusMutation.isPending}
+            >
+              Deregister
+            </button>
+          ) : (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 13, color: 'var(--accent-danger)' }}>Confirm deregister?</span>
+              <button
+                style={{ ...btnBase, backgroundColor: 'var(--accent-danger)', color: '#fff' }}
+                onClick={() => statusMutation.mutate('DEREGISTERED')}
+                disabled={statusMutation.isPending}
+              >
+                Yes, Deregister
+              </button>
+              <button
+                style={{ ...btnBase, backgroundColor: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border-primary)' }}
+                onClick={() => setConfirmDeregister(false)}
+              >
+                Cancel
+              </button>
+            </span>
+          )}
+          {statusError && <span style={{ fontSize: 12, color: 'var(--accent-danger)' }}>{statusError}</span>}
+        </div>
+      )}
 
       {/* Agent Info Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12, marginBottom: 24 }}>
@@ -237,6 +348,36 @@ export default function AgentDetailPage() {
           )}
         </>
       )}
+
+      {/* Metrics */}
+      <div style={cardStyle}>
+        <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Icon path={mdiChartLine} size={0.85} color="#0891b2" /> Metrics (Last 24h)
+        </h3>
+        {metricEntries.length === 0 ? (
+          <div style={{ color: 'var(--text-placeholder)', fontSize: 13 }}>No metrics collected yet.</div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
+            {metricEntries.map((m) => (
+              <div
+                key={m.metricName}
+                style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: 8, padding: '12px 16px' }}
+              >
+                <div style={{ fontSize: 11, color: 'var(--text-placeholder)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>
+                  {m.metricName}
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'monospace' }}>
+                  {typeof m.value === 'number' ? m.value.toFixed(m.value % 1 === 0 ? 0 : 1) : m.value}
+                  {m.unit && <span style={{ fontSize: 13, color: 'var(--text-muted)', marginLeft: 4, fontFamily: 'inherit', fontWeight: 400 }}>{m.unit}</span>}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-placeholder)', marginTop: 4 }}>
+                  {new Date(m.timestamp).toLocaleTimeString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
