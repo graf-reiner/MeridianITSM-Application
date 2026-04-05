@@ -1439,23 +1439,76 @@ model AgentEnrollmentToken {
 
 // Model 38: InventorySnapshot
 model InventorySnapshot {
-  id                String   @id @default(uuid()) @db.Uuid
-  tenantId          String   @db.Uuid
-  agentId           String   @db.Uuid
-  hostname          String?
-  operatingSystem   String?
-  osVersion         String?
-  cpuModel          String?
-  cpuCores          Int?
-  ramGb             Float?
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  agentId  String @db.Uuid
+
+  // Identity
+  hostname   String?
+  fqdn       String?
+  deviceType String?
+
+  // OS
+  operatingSystem String?
+  osVersion       String?
+  osBuild         String?
+  osEdition       String?
+
+  // CPU (quick-query fields)
+  cpuModel    String?
+  cpuCores    Int?
+  cpuThreads  Int?
+  cpuSpeedMhz Float?
+
+  // Memory
+  ramGb Float?
+
+  // Hardware identity
+  serialNumber      String?
+  manufacturer      String?
+  model             String?
+  biosVersion       String?
+  tpmVersion        String?
+  secureBootEnabled Boolean?
+
+  // Security posture (quick-query)
+  diskEncrypted    Boolean?
+  antivirusProduct String?
+  firewallEnabled  Boolean?
+
+  // Directory
+  domainName String?
+
+  // Virtualization
+  isVirtual      Boolean?
+  hypervisorType String?
+
+  // Uptime
+  lastBootTime  DateTime?
+  uptimeSeconds Float?
+
+  // Detailed JSON data (full collections)
   disks             Json?
   networkInterfaces Json?
   installedSoftware Json?
+  services          Json?
+  windowsUpdates    Json?
+  memoryModules     Json?
+  gpus              Json?
+  battery           Json?
+  monitors          Json?
+  bitLockerVolumes  Json?
+  securityPosture   Json?
+  directoryStatus   Json?
+  performance       Json?
+  virtualization    Json?
   localUsers        Json?
   rawData           Json?
-  collectedAt       DateTime
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  scanDurationMs    Float?
+
+  collectedAt DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
   agent  Agent  @relation(fields: [agentId], references: [id])

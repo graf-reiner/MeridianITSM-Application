@@ -204,40 +204,82 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
     const agent = await resolveAgent(request, reply);
     if (!agent) return;
 
-    const body = request.body as {
-      os?: string | { name?: string; version?: string; architecture?: string; buildNumber?: string };
-      hostname?: string;
-      hardware?: Record<string, unknown>;
-      software?: unknown[];
-      services?: unknown[];
-      processes?: unknown[];
-      network?: unknown[];
-      localUsers?: unknown[];
-      [key: string]: unknown;
-    };
+    const body = request.body as Record<string, unknown>;
 
     // Normalize OS field — agent sends { name, version, ... } object or a plain string
-    const osObj = typeof body.os === 'object' && body.os !== null ? body.os : null;
-    const osString = typeof body.os === 'string' ? body.os : osObj?.name ?? null;
-    const osVersion = osObj?.version ?? (body.hardware as Record<string, unknown> | undefined)?.['osVersion'] as string | null | undefined;
+    const osObj = typeof body.os === 'object' && body.os !== null ? body.os as Record<string, unknown> : null;
+    const osString = typeof body.os === 'string' ? body.os : (osObj?.name as string) ?? null;
+    const osVersion = (osObj?.version as string) ?? null;
     const hw = (body.hardware ?? {}) as Record<string, unknown>;
+    const cpus = Array.isArray(hw.cpus) ? hw.cpus as Record<string, unknown>[] : [];
+    const firstCpu = cpus[0] ?? {};
+    const totalMemBytes = typeof hw.totalMemoryBytes === 'number' ? hw.totalMemoryBytes : 0;
+    const security = (body.security ?? {}) as Record<string, unknown>;
+    const directory = (body.directory ?? {}) as Record<string, unknown>;
+    const uptime = (body.uptime ?? {}) as Record<string, unknown>;
+    const virt = (body.virtualization ?? {}) as Record<string, unknown>;
+    const perf = (body.performance ?? {}) as Record<string, unknown>;
 
-    // Create the InventorySnapshot with the full raw payload
+    // Create the InventorySnapshot with enriched fields
     const snapshot = await prisma.inventorySnapshot.create({
       data: {
         tenantId: agent.tenantId,
         agentId: agent.id,
-        hostname: body.hostname ?? agent.hostname,
+        // Identity
+        hostname: (body.hostname as string) ?? agent.hostname,
+        fqdn: (body.fqdn as string) ?? null,
+        deviceType: (body.deviceType as string) ?? null,
+        // OS
         operatingSystem: osString,
-        osVersion: osVersion ?? null,
-        cpuModel: hw['cpuModel'] as string | null | undefined,
-        cpuCores: typeof hw['cpuCores'] === 'number' ? hw['cpuCores'] : null,
-        ramGb: typeof hw['ramGb'] === 'number' ? hw['ramGb'] : null,
-        disks: hw['disks'] as never ?? null,
+        osVersion: osVersion,
+        osBuild: (osObj?.buildNumber as string) ?? null,
+        osEdition: (osObj?.edition as string) ?? null,
+        // CPU
+        cpuModel: (firstCpu.name as string) ?? null,
+        cpuCores: typeof firstCpu.cores === 'number' ? firstCpu.cores : null,
+        cpuThreads: typeof firstCpu.threads === 'number' ? firstCpu.threads : null,
+        cpuSpeedMhz: typeof firstCpu.speedMhz === 'number' ? firstCpu.speedMhz : null,
+        // Memory
+        ramGb: totalMemBytes > 0 ? Math.round(totalMemBytes / 1073741824 * 100) / 100 : null,
+        // Hardware identity
+        serialNumber: (hw.serialNumber as string) ?? null,
+        manufacturer: (hw.manufacturer as string) ?? null,
+        model: (hw.model as string) ?? null,
+        biosVersion: (hw.biosVersion as string) ?? null,
+        tpmVersion: (hw.tpmVersion as string) ?? null,
+        secureBootEnabled: typeof hw.secureBootEnabled === 'boolean' ? hw.secureBootEnabled : null,
+        // Security (quick-query)
+        diskEncrypted: typeof security.diskEncryptionEnabled === 'boolean' ? security.diskEncryptionEnabled : null,
+        antivirusProduct: (security.antivirusProduct as string) ?? null,
+        firewallEnabled: typeof security.firewallEnabled === 'boolean' ? security.firewallEnabled : null,
+        // Directory
+        domainName: (body.domainWorkgroup as string) ?? (directory.adDomainName as string) ?? null,
+        // Virtualization
+        isVirtual: typeof virt.isVirtual === 'boolean' ? virt.isVirtual : null,
+        hypervisorType: (virt.hypervisorType as string) ?? null,
+        // Uptime
+        lastBootTime: uptime.lastBootTime ? new Date(uptime.lastBootTime as string) : null,
+        uptimeSeconds: typeof uptime.uptime === 'object' && uptime.uptime !== null
+          ? (uptime.uptime as { totalSeconds?: number }).totalSeconds ?? null
+          : null,
+        // Detailed JSON collections
+        disks: hw.disks as never ?? null,
         networkInterfaces: body.network as never ?? null,
         installedSoftware: body.software as never ?? null,
+        services: body.services as never ?? null,
+        windowsUpdates: body.windowsUpdates as never ?? null,
+        memoryModules: hw.memoryModules as never ?? null,
+        gpus: hw.gpus as never ?? null,
+        battery: hw.battery as never ?? null,
+        monitors: hw.monitors as never ?? null,
+        bitLockerVolumes: body.bitLockerVolumes as never ?? null,
+        securityPosture: body.security as never ?? null,
+        directoryStatus: body.directory as never ?? null,
+        performance: body.performance as never ?? null,
+        virtualization: body.virtualization as never ?? null,
         localUsers: body.localUsers as never ?? null,
         rawData: body as never,
+        scanDurationMs: typeof body.scanDurationMs === 'number' ? body.scanDurationMs : null,
         collectedAt: new Date(),
       },
     });
