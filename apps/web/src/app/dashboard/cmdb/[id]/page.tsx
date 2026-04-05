@@ -63,8 +63,9 @@ interface CIDetail {
   targetRelations?: CIRelation[];
   sourceRels?: CIRelation[];
   targetRels?: CIRelation[];
-  changeHistory: ChangeRecord[];
-  ticketLinks: TicketLink[];
+  changeHistory?: ChangeRecord[];
+  changeRecords?: ChangeRecord[];
+  ticketLinks?: TicketLink[];
   createdAt: string;
   updatedAt: string;
 }
@@ -174,7 +175,7 @@ export default function CMDBDetailPage() {
     { key: 'details', label: 'Details', icon: mdiCog },
     { key: 'map', label: 'Relationship Map', icon: mdiLanConnect },
     { key: 'history', label: 'Change History', icon: mdiHistory },
-    { key: 'tickets', label: `Linked Tickets (${ci.ticketLinks.length})`, icon: mdiTicket },
+    { key: 'tickets', label: `Linked Tickets (${(ci.ticketLinks ?? []).length})`, icon: mdiTicket },
   ];
 
   return (
@@ -375,20 +376,20 @@ export default function CMDBDetailPage() {
       {/* ── Tab: Change History ────────────────────────────────────────────────── */}
       {activeTab === 'history' && (
         <div>
-          {ci.changeHistory.length === 0 ? (
+          {(ci.changeHistory ?? ci.changeRecords ?? []).length === 0 ? (
             <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-placeholder)', fontSize: 14 }}>
               No change history recorded
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              {ci.changeHistory.map((record, idx) => (
+              {(ci.changeHistory ?? ci.changeRecords ?? []).map((record, idx) => (
                 <div
                   key={record.id}
                   style={{
                     display: 'flex',
                     gap: 16,
                     padding: '12px 0',
-                    borderBottom: idx < ci.changeHistory.length - 1 ? '1px solid var(--bg-tertiary)' : 'none',
+                    borderBottom: idx < (ci.changeHistory ?? ci.changeRecords ?? []).length - 1 ? '1px solid var(--bg-tertiary)' : 'none',
                   }}
                 >
                   <div style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-primary)', marginTop: 6 }} />
@@ -426,7 +427,7 @@ export default function CMDBDetailPage() {
       {/* ── Tab: Linked Tickets ────────────────────────────────────────────────── */}
       {activeTab === 'tickets' && (
         <div>
-          {ci.ticketLinks.length === 0 ? (
+          {(ci.ticketLinks ?? []).length === 0 ? (
             <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-placeholder)', fontSize: 14 }}>
               No tickets linked to this CI
             </div>
@@ -441,7 +442,7 @@ export default function CMDBDetailPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {ci.ticketLinks.map((link) => (
+                  {(ci.ticketLinks ?? []).map((link) => (
                     <tr key={link.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
                       <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
                         <Link
