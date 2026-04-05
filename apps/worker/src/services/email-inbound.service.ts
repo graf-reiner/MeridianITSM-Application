@@ -100,11 +100,11 @@ async function createTicketFromEmail(
   },
 ): Promise<{ id: string; assignedToId: string | null }> {
   return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${tenantId} || '_ticket_seq'))`;
     const result = await tx.$queryRaw<[{ next: bigint }]>`
       SELECT COALESCE(MAX("ticketNumber"), 0) + 1 AS next
       FROM tickets
       WHERE "tenantId" = ${tenantId}::uuid
-      FOR UPDATE
     `;
 
     const ticketNumber = Number(result[0]!.next);

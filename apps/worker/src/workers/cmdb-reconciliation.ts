@@ -96,12 +96,12 @@ export const cmdbReconciliationWorker = new Worker(
           // ─── Create new CI ────────────────────────────────────────────────
 
           await prisma.$transaction(async (tx) => {
-            // Sequential ciNumber via FOR UPDATE lock — same pattern as cmdb.service.ts
+            // Advisory lock prevents race conditions; FOR UPDATE can't be used with aggregates
+            await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${tenantId} || '_ci_seq'))`;
             const result = await tx.$queryRaw<[{ next: bigint }]>`
               SELECT COALESCE(MAX("ciNumber"), 0) + 1 AS next
               FROM cmdb_configuration_items
               WHERE "tenantId" = ${tenantId}::uuid
-              FOR UPDATE
             `;
             const ciNumber = Number(result[0].next);
 
