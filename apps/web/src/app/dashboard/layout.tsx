@@ -8,6 +8,8 @@ import Icon from '@mdi/react';
 import ThemeProvider from '@/components/ThemeProvider';
 import ThemeToggle from '@/components/ThemeToggle';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import MobileLauncherModal from '@/components/MobileLauncherModal';
+import { clearDevicePreference } from '@/lib/device-preference';
 import {
   mdiViewDashboard,
   mdiTicketOutline,
@@ -25,6 +27,7 @@ import {
   mdiAccountGroup,
   mdiApplicationBracketsOutline,
   mdiShieldLock,
+  mdiCellphone,
 } from '@mdi/js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -353,6 +356,32 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                     Security &amp; MFA
                   </Link>
                   <button
+                    type="button"
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      clearDevicePreference();
+                      window.location.reload();
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      width: '100%',
+                      padding: '10px 14px',
+                      background: 'none',
+                      border: 'none',
+                      borderBottom: '1px solid var(--bg-tertiary)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      fontSize: 14,
+                      color: 'var(--text-secondary)',
+                    }}
+                    data-testid="user-menu-switch-to-mobile"
+                  >
+                    <Icon path={mdiCellphone} size={0.8} color="var(--text-muted)" />
+                    Switch to mobile app
+                  </button>
+                  <button
                     onClick={() => {
                       setUserMenuOpen(false);
                       void handleLogout();
@@ -392,6 +421,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           .dashboard-menu-button { display: flex !important; }
         }
       `}</style>
+      <MobileLauncherModal />
     </div>
   );
 }
