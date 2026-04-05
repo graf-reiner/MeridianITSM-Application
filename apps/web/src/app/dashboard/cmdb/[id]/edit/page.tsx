@@ -25,20 +25,22 @@ import {
 
 interface CmdbClass {
   id: string;
-  name: string;
-  slug: string;
+  className: string;
+  classKey: string;
   icon?: string;
 }
 
 interface CmdbStatus {
   id: string;
-  name: string;
+  statusName: string;
+  statusKey: string;
   statusType: string;
 }
 
 interface CmdbEnvironment {
   id: string;
-  name: string;
+  envName: string;
+  envKey: string;
 }
 
 interface CmdbVendor {
@@ -83,7 +85,7 @@ interface CIDetailFull {
   technicalOwnerId?: string;
   supportGroupId?: string;
   manufacturerId?: string;
-  cmdbClass?: CmdbClass;
+  ciClass?: CmdbClass;
   serverExt?: Record<string, unknown>;
   applicationExt?: Record<string, unknown>;
   databaseExt?: Record<string, unknown>;
@@ -329,8 +331,8 @@ export default function CMDBEditPage() {
   function populateForm(ci: CIDetailFull) {
     // Class (locked)
     setClassId(ci.classId ?? '');
-    setClassSlug(ci.cmdbClass?.slug ?? '');
-    setClassName(ci.cmdbClass?.name ?? '');
+    setClassSlug(ci.ciClass?.classKey ?? '');
+    setClassName(ci.ciClass?.className ?? '');
 
     // General
     setName(ci.name ?? '');
@@ -680,21 +682,21 @@ export default function CMDBEditPage() {
             <label style={labelStyle}>Lifecycle Status</label>
             <select style={selectStyle} value={lifecycleStatusId} onChange={(e) => setLifecycleStatusId(e.target.value)}>
               <option value="">-- Select --</option>
-              {lifecycleStatuses.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              {lifecycleStatuses.map((s) => <option key={s.id} value={s.id}>{s.statusName}</option>)}
             </select>
           </div>
           <div style={fieldGroup}>
             <label style={labelStyle}>Operational Status</label>
             <select style={selectStyle} value={operationalStatusId} onChange={(e) => setOperationalStatusId(e.target.value)}>
               <option value="">-- Select --</option>
-              {operationalStatuses.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              {operationalStatuses.map((s) => <option key={s.id} value={s.id}>{s.statusName}</option>)}
             </select>
           </div>
           <div style={fieldGroup}>
             <label style={labelStyle}>Environment</label>
             <select style={selectStyle} value={environmentId} onChange={(e) => setEnvironmentId(e.target.value)}>
               <option value="">-- Select --</option>
-              {environments.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+              {environments.map((e) => <option key={e.id} value={e.id}>{e.envName}</option>)}
             </select>
           </div>
           <div style={fieldGroup}>
@@ -767,7 +769,7 @@ export default function CMDBEditPage() {
     return (
       <div style={cardStyle}>
         <h2 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>Technical Details</h2>
-        <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--text-muted)' }}>Common technical fields and class-specific extensions for {selectedClass?.name ?? className ?? 'this CI'}.</p>
+        <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--text-muted)' }}>Common technical fields and class-specific extensions for {selectedClass?.className ?? className ?? 'this CI'}.</p>
 
         {/* Common fields */}
         <h3 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-primary)', paddingBottom: 8 }}>Common Fields</h3>

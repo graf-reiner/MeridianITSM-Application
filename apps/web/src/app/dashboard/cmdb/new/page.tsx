@@ -25,20 +25,22 @@ import {
 
 interface CmdbClass {
   id: string;
-  name: string;
-  slug: string;
+  className: string;
+  classKey: string;
   icon?: string;
 }
 
 interface CmdbStatus {
   id: string;
-  name: string;
+  statusName: string;
+  statusKey: string;
   statusType: string;
 }
 
 interface CmdbEnvironment {
   id: string;
-  name: string;
+  envName: string;
+  envKey: string;
 }
 
 interface CmdbVendor {
@@ -503,7 +505,7 @@ export default function CMDBCreatePage() {
               return (
                 <button
                   key={cls.id}
-                  onClick={() => { setClassId(cls.id); setClassSlug(cls.slug); }}
+                  onClick={() => { setClassId(cls.id); setClassSlug(cls.classKey); }}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -516,9 +518,9 @@ export default function CMDBCreatePage() {
                     textAlign: 'left',
                   }}
                 >
-                  <Icon path={getClassIcon(cls.slug)} size={1} color={selected ? 'var(--accent-primary)' : 'var(--text-muted)'} />
+                  <Icon path={getClassIcon(cls.classKey)} size={1} color={selected ? 'var(--accent-primary)' : 'var(--text-muted)'} />
                   <span style={{ fontSize: 14, fontWeight: selected ? 600 : 500, color: selected ? 'var(--accent-primary)' : 'var(--text-primary)' }}>
-                    {cls.name}
+                    {cls.className}
                   </span>
                 </button>
               );
@@ -550,21 +552,21 @@ export default function CMDBCreatePage() {
             <label style={labelStyle}>Lifecycle Status</label>
             <select style={selectStyle} value={lifecycleStatusId} onChange={(e) => setLifecycleStatusId(e.target.value)}>
               <option value="">-- Select --</option>
-              {lifecycleStatuses.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              {lifecycleStatuses.map((s) => <option key={s.id} value={s.id}>{s.statusName}</option>)}
             </select>
           </div>
           <div style={fieldGroup}>
             <label style={labelStyle}>Operational Status</label>
             <select style={selectStyle} value={operationalStatusId} onChange={(e) => setOperationalStatusId(e.target.value)}>
               <option value="">-- Select --</option>
-              {operationalStatuses.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              {operationalStatuses.map((s) => <option key={s.id} value={s.id}>{s.statusName}</option>)}
             </select>
           </div>
           <div style={fieldGroup}>
             <label style={labelStyle}>Environment</label>
             <select style={selectStyle} value={environmentId} onChange={(e) => setEnvironmentId(e.target.value)}>
               <option value="">-- Select --</option>
-              {environments.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+              {environments.map((e) => <option key={e.id} value={e.id}>{e.envName}</option>)}
             </select>
           </div>
           <div style={fieldGroup}>
@@ -636,7 +638,7 @@ export default function CMDBCreatePage() {
     return (
       <div style={cardStyle}>
         <h2 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>Technical Details</h2>
-        <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--text-muted)' }}>Common technical fields and class-specific extensions for {selectedClass?.name ?? 'this CI'}.</p>
+        <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--text-muted)' }}>Common technical fields and class-specific extensions for {selectedClass?.className ?? 'this CI'}.</p>
 
         {/* Common fields */}
         <h3 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-primary)', paddingBottom: 8 }}>Common Fields</h3>
@@ -989,8 +991,8 @@ export default function CMDBCreatePage() {
     };
     const groupLabel = (id: string) => groups.find((g) => g.id === id)?.name ?? id;
     const vendorLabel = (id: string) => vendors.find((v) => v.id === id)?.name ?? id;
-    const statusLabel = (id: string, list: CmdbStatus[]) => list.find((s) => s.id === id)?.name ?? id;
-    const envLabel = (id: string) => environments.find((e) => e.id === id)?.name ?? id;
+    const statusLabel = (id: string, list: CmdbStatus[]) => list.find((s) => s.id === id)?.statusName ?? id;
+    const envLabel = (id: string) => environments.find((e) => e.id === id)?.envName ?? id;
 
     return (
       <div>
@@ -1001,7 +1003,7 @@ export default function CMDBCreatePage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
           <ReviewSection title="General Information" entries={[
-            ['Class', selectedClass?.name ?? ''],
+            ['Class', selectedClass?.className ?? ''],
             ['Name', name],
             ['Display Name', displayName],
             ['Lifecycle Status', lifecycleStatusId ? statusLabel(lifecycleStatusId, lifecycleStatuses) : undefined],
