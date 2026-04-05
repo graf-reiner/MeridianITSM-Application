@@ -7,6 +7,8 @@ import Icon from '@mdi/react';
 import ThemeProvider from '@/components/ThemeProvider';
 import ThemeToggle from '@/components/ThemeToggle';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import MobileLauncherModal from '@/components/MobileLauncherModal';
+import { clearDevicePreference } from '@/lib/device-preference';
 import {
   mdiHome,
   mdiTicketOutline,
@@ -18,6 +20,7 @@ import {
   mdiLogout,
   mdiMenu,
   mdiClose,
+  mdiCellphone,
 } from '@mdi/js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -318,6 +321,32 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                 >
                   <ThemeToggle />
                   <button
+                    type="button"
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      clearDevicePreference();
+                      window.location.reload();
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      width: '100%',
+                      padding: '10px 14px',
+                      background: 'none',
+                      border: 'none',
+                      borderBottom: '1px solid var(--bg-tertiary)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      fontSize: 14,
+                      color: 'var(--text-secondary)',
+                    }}
+                    data-testid="user-menu-switch-to-mobile"
+                  >
+                    <Icon path={mdiCellphone} size={0.8} color="var(--text-muted)" />
+                    Switch to mobile app
+                  </button>
+                  <button
                     onClick={() => {
                       setUserMenuOpen(false);
                       void handleLogout();
@@ -363,6 +392,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           .portal-bottom-nav { display: block !important; }
         }
       `}</style>
+      <MobileLauncherModal />
     </div>
     </ThemeProvider>
   );
