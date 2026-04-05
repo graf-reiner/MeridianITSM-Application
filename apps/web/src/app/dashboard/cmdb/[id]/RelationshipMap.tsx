@@ -44,6 +44,9 @@ interface CIRelation {
   sourceId: string;
   targetId: string;
   type: string;
+  relationshipType?: string;
+  relationshipTypeRef?: { forwardLabel: string; reverseLabel: string } | null;
+  confidenceScore?: number | null;
   source: CINode;
   target: CINode;
 }
@@ -238,11 +241,13 @@ export default function RelationshipMap({ ci, impactData }: RelationshipMapProps
     for (const rel of [...(ci.sourceRelations ?? ci.sourceRels ?? []), ...(ci.targetRelations ?? ci.targetRels ?? [])]) {
       if (!allRelIds.has(rel.id)) {
         allRelIds.add(rel.id);
+        const edgeLabel = rel.relationshipTypeRef?.forwardLabel
+          ?? (rel.relationshipType ?? rel.type).replace(/_/g, ' ').toLowerCase();
         rEdges.push({
           id: rel.id,
           source: rel.sourceId,
           target: rel.targetId,
-          label: rel.type.replace(/_/g, ' ').toLowerCase(),
+          label: edgeLabel,
           style: { stroke: 'var(--text-placeholder)', strokeWidth: 1.5 },
           labelStyle: { fontSize: 10, fill: 'var(--text-placeholder)' },
         });

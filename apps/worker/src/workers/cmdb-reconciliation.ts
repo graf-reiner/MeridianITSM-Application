@@ -5,46 +5,103 @@ import { QUEUE_NAMES } from '../queues/definitions.js';
 
 // ─── CMDB Reconciliation Worker ───────────────────────────────────────────────
 //
-// Cross-tenant global sweep (like SLA monitor). Runs every 15 minutes via repeatable job.
+// Cross-tenant global sweep. Runs every 15 minutes via repeatable job.
 // Processes all ACTIVE agents, compares their latest InventorySnapshot to existing CIs,
-// creates/updates CIs, logs per-field changes, and marks stale CIs INACTIVE after 24h.
-//
-// Duplicated helper: ciNumber generation via raw SQL FOR UPDATE (same pattern as cmdb.service.ts
-// in apps/api) to avoid cross-app imports — follows mapStripeStatus precedent.
+// creates/updates CIs with promoted columns and extension tables, logs per-field changes,
+// and marks stale CIs as deleted after 24h of no contact.
 
-function inferCiTypeFromSnapshot(
+/**
+ * Infer a CI class key from agent platform/hostname/OS heuristics.
+ * Returns a classKey that maps to CmdbCiClass seed data.
+ */
+function inferClassKeyFromSnapshot(
   platform: string,
   hostname: string,
   operatingSystem: string | null,
-): string {
+): { classKey: string; legacyType: string } {
   const os = (operatingSystem ?? '').toLowerCase();
   const host = (hostname ?? '').toLowerCase();
   const plt = platform.toLowerCase();
 
-  // Server heuristics: server OS edition or server-like hostname
   if (
     os.includes('server') ||
     host.startsWith('srv') ||
     host.includes('-srv-') ||
-    os.includes('ubuntu server') ||
     os.includes('centos') ||
     os.includes('rhel') ||
     os.includes('debian')
   ) {
-    return 'SERVER';
+    return { classKey: 'server', legacyType: 'SERVER' };
   }
 
-  if (plt === 'linux') return 'SERVER'; // Linux agents tend to be servers
-  if (plt === 'macos') return 'WORKSTATION';
-  if (plt === 'windows') return 'WORKSTATION';
+  if (plt === 'linux') return { classKey: 'server', legacyType: 'SERVER' };
+  if (plt === 'macos') return { classKey: 'server', legacyType: 'WORKSTATION' };
+  if (plt === 'windows') return { classKey: 'server', legacyType: 'WORKSTATION' };
 
-  return 'OTHER';
+  return { classKey: 'generic', legacyType: 'OTHER' };
+}
+
+/**
+ * Resolve a classKey to a CmdbCiClass ID for a given tenant.
+ * Caches lookups per tenant within a single reconciliation run.
+ */
+const classIdCache = new Map<string, string>();
+async function resolveClassId(tenantId: string, classKey: string): Promise<string | null> {
+  const cacheKey = `${tenantId}:${classKey}`;
+  if (classIdCache.has(cacheKey)) return classIdCache.get(cacheKey)!;
+
+  const cls = await prisma.cmdbCiClass.findFirst({
+    where: { tenantId, classKey },
+    select: { id: true },
+  });
+
+  if (cls) classIdCache.set(cacheKey, cls.id);
+  return cls?.id ?? null;
+}
+
+/**
+ * Resolve lifecycle status 'in_service' for a tenant.
+ */
+const statusIdCache = new Map<string, string>();
+async function resolveLifecycleStatusId(tenantId: string, statusKey: string): Promise<string | null> {
+  const cacheKey = `${tenantId}:lifecycle:${statusKey}`;
+  if (statusIdCache.has(cacheKey)) return statusIdCache.get(cacheKey)!;
+
+  const status = await prisma.cmdbStatus.findFirst({
+    where: { tenantId, statusType: 'lifecycle', statusKey },
+    select: { id: true },
+  });
+
+  if (status) statusIdCache.set(cacheKey, status.id);
+  return status?.id ?? null;
+}
+
+/**
+ * Resolve environment 'prod' for a tenant.
+ */
+const envIdCache = new Map<string, string>();
+async function resolveEnvironmentId(tenantId: string, envKey: string): Promise<string | null> {
+  const cacheKey = `${tenantId}:${envKey}`;
+  if (envIdCache.has(cacheKey)) return envIdCache.get(cacheKey)!;
+
+  const env = await prisma.cmdbEnvironment.findFirst({
+    where: { tenantId, envKey },
+    select: { id: true },
+  });
+
+  if (env) envIdCache.set(cacheKey, env.id);
+  return env?.id ?? null;
 }
 
 export const cmdbReconciliationWorker = new Worker(
   QUEUE_NAMES.CMDB_RECONCILIATION,
   async (job) => {
     console.log(`[cmdb-reconciliation] Running global CI reconciliation sweep (job ${job.id})`);
+
+    // Clear caches for each run
+    classIdCache.clear();
+    statusIdCache.clear();
+    envIdCache.clear();
 
     let created = 0;
     let updated = 0;
@@ -66,12 +123,11 @@ export const cmdbReconciliationWorker = new Worker(
 
     for (const agent of agents) {
       const snapshot = agent.inventorySnapshots[0];
-      if (!snapshot) continue; // No inventory yet — skip
+      if (!snapshot) continue;
 
       const tenantId = agent.tenantId;
 
       try {
-        // Find existing CI linked to this agent
         const existingCi = await prisma.cmdbConfigurationItem.findFirst({
           where: { agentId: agent.id, tenantId },
         });
@@ -79,24 +135,17 @@ export const cmdbReconciliationWorker = new Worker(
         const hostname = snapshot.hostname ?? agent.hostname;
         const operatingSystem = snapshot.operatingSystem ?? null;
         const osVersion = snapshot.osVersion ?? null;
-        const ciType = inferCiTypeFromSnapshot(agent.platform, hostname, operatingSystem);
+        const { classKey, legacyType } = inferClassKeyFromSnapshot(agent.platform, hostname, operatingSystem);
 
-        // Build attributesJson from snapshot hardware data
-        const newAttributesJson: Record<string, unknown> = {};
-        if (snapshot.cpuModel) newAttributesJson['cpuModel'] = snapshot.cpuModel;
-        if (snapshot.cpuCores) newAttributesJson['cpuCores'] = snapshot.cpuCores;
-        if (snapshot.ramGb) newAttributesJson['ramGb'] = snapshot.ramGb;
-        if (snapshot.disks) newAttributesJson['disks'] = snapshot.disks;
-        if (snapshot.networkInterfaces) newAttributesJson['networkInterfaces'] = snapshot.networkInterfaces;
-        if (snapshot.installedSoftware) newAttributesJson['installedSoftware'] = snapshot.installedSoftware;
-        newAttributesJson['agentPlatform'] = agent.platform;
-        newAttributesJson['agentVersion'] = agent.agentVersion ?? null;
+        // Resolve reference table IDs
+        const classId = await resolveClassId(tenantId, classKey);
+        const lifecycleStatusId = await resolveLifecycleStatusId(tenantId, 'in_service');
+        const environmentId = await resolveEnvironmentId(tenantId, 'prod');
 
         if (!existingCi) {
-          // ─── Create new CI ────────────────────────────────────────────────
+          // ─── Create new CI with promoted columns + server extension ───
 
           await prisma.$transaction(async (tx) => {
-            // Advisory lock prevents race conditions; FOR UPDATE can't be used with aggregates
             await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${tenantId} || '_ci_seq'))`;
             const result = await tx.$queryRaw<[{ next: bigint }]>`
               SELECT COALESCE(MAX("ciNumber"), 0) + 1 AS next
@@ -110,15 +159,53 @@ export const cmdbReconciliationWorker = new Worker(
                 tenantId,
                 ciNumber,
                 name: hostname,
-                type: ciType as never,
+                // Legacy enum fields
+                type: legacyType as never,
                 status: 'ACTIVE' as never,
                 environment: 'PRODUCTION' as never,
+                // New reference table FKs
+                classId,
+                lifecycleStatusId,
+                environmentId,
+                // Promoted columns
+                hostname,
+                ipAddress: snapshot.networkInterfaces
+                  ? extractPrimaryIp(snapshot.networkInterfaces as unknown[])
+                  : null,
+                // Agent link
                 agentId: agent.id,
-                attributesJson: newAttributesJson as never,
+                // Governance
+                sourceSystem: 'agent',
+                sourceRecordKey: agent.agentKey,
+                firstDiscoveredAt: snapshot.collectedAt,
                 discoveredAt: snapshot.collectedAt,
                 lastSeenAt: new Date(),
+                reconciliationRank: 50, // Agent data is mid-priority
+                // Keep legacy attributesJson for additional data
+                attributesJson: {
+                  agentPlatform: agent.platform,
+                  agentVersion: agent.agentVersion ?? null,
+                  installedSoftware: snapshot.installedSoftware,
+                } as never,
               },
             });
+
+            // Create server extension if it's a server/workstation class
+            if (classKey === 'server' || legacyType === 'SERVER' || legacyType === 'WORKSTATION') {
+              await tx.cmdbCiServer.create({
+                data: {
+                  ciId: ci.id,
+                  tenantId,
+                  serverType: agent.platform === 'LINUX' ? 'physical' : 'physical',
+                  operatingSystem,
+                  osVersion,
+                  cpuCount: snapshot.cpuCores,
+                  memoryGb: snapshot.ramGb,
+                  domainName: null,
+                  backupRequired: false,
+                },
+              });
+            }
 
             await tx.cmdbChangeRecord.create({
               data: {
@@ -134,14 +221,7 @@ export const cmdbReconciliationWorker = new Worker(
           created++;
           console.log(`[cmdb-reconciliation] Created CI for agent ${agent.id} (host: ${hostname})`);
         } else {
-          // ─── Diff and update existing CI ─────────────────────────────────
-          //
-          // Manual CMDB edits win — per user decision, agent data only fills empty fields
-          // or updates agent-sourced fields. If a field was last edited by a USER, skip
-          // the agent update for that field.
-          //
-          // Check changedBy = 'USER' on the most recent CmdbChangeRecord per field.
-          // If found, that field is "locked" by the human edit and agent data is ignored.
+          // ─── Diff and update existing CI ─────────────────────────────
 
           const changedFields: Array<{
             fieldName: string;
@@ -149,10 +229,6 @@ export const cmdbReconciliationWorker = new Worker(
             newValue: string;
           }> = [];
 
-          /**
-           * Track a candidate field change only if the field was not last modified by a user.
-           * Queries the most recent change record for this field on this CI.
-           */
           const trackChangeIfNotUserLocked = async (
             field: string,
             oldVal: unknown,
@@ -160,9 +236,8 @@ export const cmdbReconciliationWorker = new Worker(
           ) => {
             const oldStr = oldVal == null ? '' : String(oldVal);
             const newStr = newVal == null ? '' : String(newVal);
-            if (oldStr === newStr) return; // No change — nothing to do
+            if (oldStr === newStr) return;
 
-            // Check if the most recent change to this field was by a USER (manual edit)
             const lastChange = await prisma.cmdbChangeRecord.findFirst({
               where: { ciId: existingCi.id, fieldName: field },
               orderBy: { createdAt: 'desc' },
@@ -170,27 +245,25 @@ export const cmdbReconciliationWorker = new Worker(
             });
 
             if (lastChange?.changedBy === 'USER') {
-              // Manual CMDB edits win — skip agent update for this field
-              console.log(
-                `[cmdb-reconciliation] Skipping field '${field}' on CI ${existingCi.id} — last changed by USER (manual edit wins)`,
-              );
-              return;
+              return; // Manual edits win
             }
 
             changedFields.push({ fieldName: field, oldValue: oldStr, newValue: newStr });
           };
 
-          // Compare fields — each check respects the manual-edit-wins rule
+          // Compare promoted columns
           await trackChangeIfNotUserLocked('name', existingCi.name, hostname);
+          await trackChangeIfNotUserLocked('hostname', existingCi.hostname, hostname);
 
-          const existingAttrs = (existingCi.attributesJson ?? {}) as Record<string, unknown>;
-          const newAttrsStr = JSON.stringify(newAttributesJson);
-          const oldAttrsStr = JSON.stringify(existingAttrs);
-          await trackChangeIfNotUserLocked('attributesJson', oldAttrsStr, newAttrsStr);
+          const primaryIp = snapshot.networkInterfaces
+            ? extractPrimaryIp(snapshot.networkInterfaces as unknown[])
+            : null;
+          if (primaryIp) {
+            await trackChangeIfNotUserLocked('ipAddress', existingCi.ipAddress, primaryIp);
+          }
 
           if (changedFields.length > 0) {
             await prisma.$transaction(async (tx) => {
-              // Log each changed field
               await tx.cmdbChangeRecord.createMany({
                 data: changedFields.map((f) => ({
                   tenantId,
@@ -204,43 +277,69 @@ export const cmdbReconciliationWorker = new Worker(
                 })),
               });
 
-              // Build update object — only fields that passed the manual-edit-wins check
-              const updateData: Record<string, unknown> = {
-                lastSeenAt: new Date(),
-              };
-              if (changedFields.some((f) => f.fieldName === 'name')) {
-                updateData['name'] = hostname;
+              const updateData: Record<string, unknown> = { lastSeenAt: new Date() };
+              for (const f of changedFields) {
+                updateData[f.fieldName] = f.newValue || null;
               }
-              if (changedFields.some((f) => f.fieldName === 'attributesJson')) {
-                updateData['attributesJson'] = newAttributesJson as never;
-              }
+
+              // Also set reference FKs if not yet set
+              if (!existingCi.classId && classId) updateData['classId'] = classId;
+              if (!existingCi.lifecycleStatusId && lifecycleStatusId) updateData['lifecycleStatusId'] = lifecycleStatusId;
+              if (!existingCi.environmentId && environmentId) updateData['environmentId'] = environmentId;
+              if (!existingCi.sourceSystem) updateData['sourceSystem'] = 'agent';
+              if (!existingCi.sourceRecordKey) updateData['sourceRecordKey'] = agent.agentKey;
 
               await tx.cmdbConfigurationItem.update({
                 where: { id: existingCi.id },
                 data: updateData as never,
               });
+
+              // Upsert server extension
+              if (classKey === 'server' || legacyType === 'SERVER' || legacyType === 'WORKSTATION') {
+                await tx.cmdbCiServer.upsert({
+                  where: { ciId: existingCi.id },
+                  create: {
+                    ciId: existingCi.id,
+                    tenantId,
+                    serverType: 'physical',
+                    operatingSystem,
+                    osVersion,
+                    cpuCount: snapshot.cpuCores,
+                    memoryGb: snapshot.ramGb,
+                    backupRequired: false,
+                  },
+                  update: {
+                    ...(operatingSystem ? { operatingSystem } : {}),
+                    ...(osVersion ? { osVersion } : {}),
+                    ...(snapshot.cpuCores ? { cpuCount: snapshot.cpuCores } : {}),
+                    ...(snapshot.ramGb ? { memoryGb: snapshot.ramGb } : {}),
+                  },
+                });
+              }
             });
 
             updated++;
-            console.log(
-              `[cmdb-reconciliation] Updated CI ${existingCi.id} with ${changedFields.length} field changes`,
-            );
           } else {
-            // No field changes (or all changes blocked by manual-edit-wins) — just bump lastSeenAt
+            // Just bump lastSeenAt and backfill reference FKs
+            const backfill: Record<string, unknown> = { lastSeenAt: new Date() };
+            if (!existingCi.classId && classId) backfill['classId'] = classId;
+            if (!existingCi.lifecycleStatusId && lifecycleStatusId) backfill['lifecycleStatusId'] = lifecycleStatusId;
+            if (!existingCi.environmentId && environmentId) backfill['environmentId'] = environmentId;
+            if (!existingCi.sourceSystem) backfill['sourceSystem'] = 'agent';
+
             await prisma.cmdbConfigurationItem.update({
               where: { id: existingCi.id },
-              data: { lastSeenAt: new Date() },
+              data: backfill as never,
             });
           }
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.error(`[cmdb-reconciliation] Error processing agent ${agent.id}: ${message}`);
-        // Continue with remaining agents — don't fail the whole job
       }
     }
 
-    // ─── Step 2: Mark stale CIs INACTIVE (agentId set, lastSeenAt > 24h) ──
+    // ─── Step 2: Mark stale CIs (agentId set, lastSeenAt > 24h) ────────────
 
     const staleThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
@@ -248,12 +347,13 @@ export const cmdbReconciliationWorker = new Worker(
       where: {
         agentId: { not: null },
         status: 'ACTIVE',
+        isDeleted: false,
         lastSeenAt: { lt: staleThreshold },
       },
       select: { id: true, tenantId: true, agentId: true },
     });
 
-    console.log(`[cmdb-reconciliation] Found ${staleCIs.length} stale CIs to mark INACTIVE`);
+    console.log(`[cmdb-reconciliation] Found ${staleCIs.length} stale CIs to mark`);
 
     for (const ci of staleCIs) {
       try {
@@ -290,10 +390,27 @@ export const cmdbReconciliationWorker = new Worker(
   },
   {
     connection: bullmqConnection,
-    concurrency: 1, // Cross-tenant batch sweep — single-threaded
+    concurrency: 1,
   },
 );
 
 cmdbReconciliationWorker.on('failed', (job, err) => {
   console.error(`[cmdb-reconciliation] Job ${job?.id} failed:`, err.message);
 });
+
+/**
+ * Extract the primary (non-loopback) IP from network interfaces data.
+ */
+function extractPrimaryIp(interfaces: unknown[]): string | null {
+  if (!Array.isArray(interfaces)) return null;
+  for (const iface of interfaces) {
+    if (iface && typeof iface === 'object') {
+      const obj = iface as Record<string, unknown>;
+      const ip = (obj.ipv4 ?? obj.ip ?? obj.address) as string | undefined;
+      if (ip && !ip.startsWith('127.') && ip !== '::1') {
+        return ip;
+      }
+    }
+  }
+  return null;
+}

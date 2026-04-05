@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
@@ -20,52 +20,123 @@ import {
   mdiAlertCircle,
   mdiTicket,
   mdiHistory,
+  mdiPencil,
+  mdiAccountMultiple,
+  mdiWrench,
+  mdiLink,
+  mdiCheckCircle,
+  mdiClipboardText,
+  mdiWeb,
+  mdiChevronRight,
+  mdiCertificate,
+  mdiInformationOutline,
 } from '@mdi/js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface CIRelation {
+interface CIRelSource {
   id: string;
-  sourceId: string;
-  targetId: string;
-  type: string;
-  source: { id: string; name: string; type: string; status: string; ciNumber: string };
-  target: { id: string; name: string; type: string; status: string; ciNumber: string };
+  relationshipType: string;
+  relationshipTypeRef: { forwardLabel: string } | null;
+  target: { id: string; name: string; ciNumber: number; hostname: string | null; criticality: string | null };
+}
+
+interface CIRelTarget {
+  id: string;
+  relationshipType: string;
+  relationshipTypeRef: { reverseLabel: string } | null;
+  source: { id: string; name: string; ciNumber: number; hostname: string | null; criticality: string | null };
 }
 
 interface ChangeRecord {
   id: string;
-  fieldName: string;
+  changeType: string;
+  fieldName: string | null;
   oldValue: string | null;
   newValue: string | null;
-  changedBy: { firstName: string; lastName: string } | null;
+  changedBy: string;
   createdAt: string;
 }
 
-interface TicketLink {
+interface CmdbChangeLink {
   id: string;
-  ticket: { id: string; ticketNumber: string; title: string; status: string };
+  impactRole: string | null;
+  change: { id: string; changeNumber: number; title: string; type: string; status: string };
+}
+
+interface CmdbTicketLink {
+  id: string;
+  impactRole: string | null;
+  ticket: { id: string; ticketNumber: number; title: string; type: string; priority: string; status: string };
+}
+
+interface Attestation {
+  id: string;
+  attestedAt: string;
+  attestationStatus: string;
+  comments: string | null;
+}
+
+interface LegacyTicketLink {
+  id: string;
+  ticket: { id: string; ticketNumber: number; title: string; type: string; status: string };
 }
 
 interface CIDetail {
   id: string;
-  ciNumber: string;
+  tenantId: string;
+  ciNumber: number;
   name: string;
+  displayName: string | null;
   type: string;
   status: string;
-  environment: string | null;
+  environment: string;
+  ciClass: { id: string; classKey: string; className: string; icon: string | null } | null;
+  lifecycleStatus: { id: string; statusKey: string; statusName: string } | null;
+  operationalStatus: { id: string; statusKey: string; statusName: string } | null;
+  cmdbEnvironment: { id: string; envKey: string; envName: string } | null;
+  manufacturer: { id: string; name: string } | null;
+  supportGroup: { id: string; name: string; email: string | null } | null;
+  category: { id: string; name: string } | null;
+  hostname: string | null;
+  fqdn: string | null;
+  ipAddress: string | null;
+  serialNumber: string | null;
+  assetTag: string | null;
+  externalId: string | null;
+  model: string | null;
+  version: string | null;
+  edition: string | null;
+  businessOwnerId: string | null;
+  technicalOwnerId: string | null;
+  criticality: string | null;
+  confidentialityClass: string | null;
+  integrityClass: string | null;
+  availabilityClass: string | null;
+  installDate: string | null;
+  firstDiscoveredAt: string | null;
+  lastVerifiedAt: string | null;
+  lastSeenAt: string | null;
+  sourceSystem: string | null;
+  sourceRecordKey: string | null;
+  sourceOfTruth: boolean;
+  reconciliationRank: number;
+  serverExt: { serverType: string; operatingSystem: string | null; osVersion: string | null; cpuCount: number | null; memoryGb: number | null; storageGb: number | null; backupRequired: boolean; backupPolicy: string | null; patchGroup: string | null; antivirusStatus: string | null } | null;
+  applicationExt: { applicationType: string | null; applicationId: string | null; application: { id: string; name: string } | null; internetFacing: boolean; complianceScope: string | null; repoUrl: string | null } | null;
+  databaseExt: { dbEngine: string; dbVersion: string | null; instanceName: string | null; port: number | null; backupRequired: boolean; encryptionEnabled: boolean; containsSensitiveData: boolean } | null;
+  networkDeviceExt: { deviceType: string; firmwareVersion: string | null; managementIp: string | null; macAddress: string | null; rackLocation: string | null } | null;
+  cloudResourceExt: { cloudProvider: string; region: string | null; resourceGroup: string | null; nativeResourceId: string | null } | null;
+  endpointExt: { endpointType: string; url: string | null; dnsName: string | null; certificateExpiryDate: string | null; certificateIssuer: string | null; tlsRequired: boolean } | null;
+  serviceExt: { serviceType: string; serviceTier: string | null; availabilityTarget: number | null; rtoMinutes: number | null; rpoMinutes: number | null } | null;
+  sourceRels: CIRelSource[];
+  targetRels: CIRelTarget[];
+  changeRecords: ChangeRecord[];
+  cmdbChangeLinks: CmdbChangeLink[];
+  cmdbIncidentLinks: CmdbTicketLink[];
+  cmdbProblemLinks: CmdbTicketLink[];
+  attestations: Attestation[];
+  ticketLinks: LegacyTicketLink[];
   attributesJson: Record<string, unknown> | null;
-  category: { name: string } | null;
-  owner: { firstName: string; lastName: string } | null;
-  site: { name: string } | null;
-  asset: { assetTag: string; id: string } | null;
-  sourceRelations?: CIRelation[];
-  targetRelations?: CIRelation[];
-  sourceRels?: CIRelation[];
-  targetRels?: CIRelation[];
-  changeHistory?: ChangeRecord[];
-  changeRecords?: ChangeRecord[];
-  ticketLinks?: TicketLink[];
   createdAt: string;
   updatedAt: string;
 }
@@ -82,11 +153,14 @@ interface ImpactCI {
 
 // ─── Dynamic ReactFlow Import (SSR safe) ─────────────────────────────────────
 
-const RelationshipMap = dynamic(() => import('./RelationshipMap'), { ssr: false, loading: () => (
-  <div style={{ height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-placeholder)', fontSize: 14 }}>
-    Loading relationship map...
-  </div>
-) });
+const RelationshipMap = dynamic(() => import('./RelationshipMap'), {
+  ssr: false,
+  loading: () => (
+    <div style={{ height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-placeholder)', fontSize: 14 }}>
+      Loading relationship map...
+    </div>
+  ),
+});
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -105,23 +179,104 @@ function getCITypeIcon(type: string): string {
   }
 }
 
-function getStatusStyle(status: string): { bg: string; text: string; border: string } {
-  switch (status) {
-    case 'ACTIVE':        return { bg: 'var(--badge-green-bg)', text: '#065f46', border: '#16a34a' };
-    case 'MAINTENANCE':   return { bg: 'var(--badge-yellow-bg)', text: '#92400e', border: '#d97706' };
-    case 'INACTIVE':      return { bg: 'var(--bg-tertiary)', text: '#6b7280', border: '#9ca3af' };
-    case 'DECOMMISSIONED': return { bg: 'var(--badge-red-bg)', text: '#991b1b', border: '#dc2626' };
-    default:              return { bg: 'var(--bg-tertiary)', text: '#374151', border: 'var(--border-secondary)' };
+function getStatusBadgeStyle(status: string | undefined | null): { bg: string; text: string } {
+  if (!status) return { bg: 'var(--bg-tertiary)', text: 'var(--text-muted)' };
+  const key = status.toUpperCase();
+  if (key === 'ACTIVE' || key === 'OPERATIONAL' || key === 'IN_SERVICE' || key === 'VERIFIED')
+    return { bg: 'var(--badge-green-bg)', text: '#065f46' };
+  if (key === 'MAINTENANCE' || key === 'DEGRADED' || key === 'PENDING')
+    return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
+  if (key === 'INACTIVE' || key === 'NON_OPERATIONAL' || key === 'RETIRED')
+    return { bg: 'var(--bg-tertiary)', text: '#6b7280' };
+  if (key === 'DECOMMISSIONED' || key === 'FAILED' || key === 'REJECTED')
+    return { bg: 'var(--badge-red-bg)', text: '#991b1b' };
+  return { bg: 'var(--bg-tertiary)', text: 'var(--text-muted)' };
+}
+
+function getCriticalityStyle(criticality: string | null): { bg: string; text: string } {
+  if (!criticality) return { bg: 'var(--bg-tertiary)', text: 'var(--text-muted)' };
+  switch (criticality.toUpperCase()) {
+    case 'CRITICAL': return { bg: 'var(--badge-red-bg)', text: '#991b1b' };
+    case 'HIGH':     return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
+    case 'MEDIUM':   return { bg: '#dbeafe', text: '#1e40af' };
+    case 'LOW':      return { bg: 'var(--bg-tertiary)', text: '#6b7280' };
+    default:         return { bg: 'var(--bg-tertiary)', text: 'var(--text-muted)' };
   }
 }
 
-function formatDateTime(dateStr: string): string {
+function formatDateTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return '\u2014';
   return new Date(dateStr).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-// ─── Active Tab ───────────────────────────────────────────────────────────────
+function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return '\u2014';
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
 
-type Tab = 'details' | 'map' | 'history' | 'tickets';
+function humanize(str: string): string {
+  return str.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+// ─── Reusable UI Components ──────────────────────────────────────────────────
+
+function Badge({ label, bg, text }: { label: string; bg: string; text: string }) {
+  return (
+    <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, backgroundColor: bg, color: text, whiteSpace: 'nowrap' }}>
+      {label}
+    </span>
+  );
+}
+
+function InfoRow({ label, value, link }: { label: string; value: string | number | null | undefined; link?: string }) {
+  const display = value != null && value !== '' ? String(value) : '\u2014';
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14, gap: 12 }}>
+      <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>{label}</span>
+      {link && display !== '\u2014' ? (
+        <Link href={link} style={{ color: 'var(--accent-primary)', textDecoration: 'none', textAlign: 'right', wordBreak: 'break-word' }}>
+          {display}
+        </Link>
+      ) : (
+        <span style={{ color: 'var(--text-primary)', textAlign: 'right', wordBreak: 'break-word' }}>{display}</span>
+      )}
+    </div>
+  );
+}
+
+function Card({ title, icon, children }: { title: string; icon?: string; children: React.ReactNode }) {
+  return (
+    <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
+      <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+        {icon && <Icon path={icon} size={0.8} color="var(--accent-primary)" />}
+        {title}
+      </h2>
+      {children}
+    </div>
+  );
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-placeholder)', fontSize: 14 }}>
+      {message}
+    </div>
+  );
+}
+
+// ─── Tab definitions ─────────────────────────────────────────────────────────
+
+type Tab = 'general' | 'ownership' | 'technical' | 'service' | 'relationships' | 'governance' | 'linked';
+
+const TAB_DEFS: { key: Tab; label: string; icon: string }[] = [
+  { key: 'general', label: 'General', icon: mdiInformationOutline },
+  { key: 'ownership', label: 'Ownership', icon: mdiAccountMultiple },
+  { key: 'technical', label: 'Technical', icon: mdiWrench },
+  { key: 'service', label: 'Service Context', icon: mdiCog },
+  { key: 'relationships', label: 'Relationships', icon: mdiLanConnect },
+  { key: 'governance', label: 'Governance', icon: mdiCertificate },
+  { key: 'linked', label: 'Linked Records', icon: mdiLink },
+];
 
 // ─── CMDB CI Detail Page ──────────────────────────────────────────────────────
 
@@ -129,12 +284,13 @@ export default function CMDBDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
-  const [activeTab, setActiveTab] = useState<Tab>('details');
+  const [activeTab, setActiveTab] = useState<Tab>('general');
   const [impactData, setImpactData] = useState<ImpactCI[] | null>(null);
   const [impactLoading, setImpactLoading] = useState(false);
   const [mapDepth, setMapDepth] = useState(2);
+  const [attestLoading, setAttestLoading] = useState(false);
 
-  const { data: ci, isLoading, error } = useQuery<CIDetail>({
+  const { data: ci, isLoading, error, refetch } = useQuery<CIDetail>({
     queryKey: ['cmdb-ci', id],
     queryFn: async () => {
       const res = await fetch(`/api/v1/cmdb/cis/${id}`, { credentials: 'include' });
@@ -157,64 +313,127 @@ export default function CMDBDetailPage() {
     }
   }, [id, mapDepth]);
 
-  const clearImpact = () => setImpactData(null);
+  const handleAttest = useCallback(async () => {
+    setAttestLoading(true);
+    try {
+      const res = await fetch(`/api/v1/cmdb/cis/${id}/attestations`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attestationStatus: 'verified' }),
+      });
+      if (!res.ok) throw new Error(`Attestation failed: ${res.status}`);
+      await refetch();
+    } catch {
+      // silently fail — could add toast here
+    } finally {
+      setAttestLoading(false);
+    }
+  }, [id, refetch]);
 
   if (isLoading) {
     return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading CI...</div>;
   }
   if (error || !ci) {
-    return <div style={{ padding: 40, textAlign: 'center', color: 'var(--accent-danger)' }}>
-      {error instanceof Error ? error.message : 'CI not found'}
-    </div>;
+    return (
+      <div style={{ padding: 40, textAlign: 'center', color: 'var(--accent-danger)' }}>
+        {error instanceof Error ? error.message : 'CI not found'}
+      </div>
+    );
   }
 
-  const statusStyle = getStatusStyle(ci.status);
-  const typeIcon = getCITypeIcon(ci.type);
+  const typeIcon = ci.ciClass?.icon ? getCITypeIcon(ci.ciClass.icon) : getCITypeIcon(ci.type);
+  const lifecycleStyle = getStatusBadgeStyle(ci.lifecycleStatus?.statusKey ?? ci.status);
+  const opsStyle = getStatusBadgeStyle(ci.operationalStatus?.statusKey);
+  const critStyle = getCriticalityStyle(ci.criticality);
 
-  const tabs: { key: Tab; label: string; icon: string }[] = [
-    { key: 'details', label: 'Details', icon: mdiCog },
-    { key: 'map', label: 'Relationship Map', icon: mdiLanConnect },
-    { key: 'history', label: 'Change History', icon: mdiHistory },
-    { key: 'tickets', label: `Linked Tickets (${(ci.ticketLinks ?? []).length})`, icon: mdiTicket },
-  ];
+  // Derive services this CI supports (from relationships)
+  const supportsServices = (ci.sourceRels ?? [])
+    .filter((r) => r.relationshipType === 'supports' || r.relationshipType === 'SUPPORTS')
+    .map((r) => r.target);
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
 
-      {/* ── Back + Header ─────────────────────────────────────────────────────── */}
+      {/* ── Breadcrumb + Header ──────────────────────────────────────────────── */}
       <div style={{ marginBottom: 20 }}>
-        <button
-          onClick={() => router.back()}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14, padding: 0, marginBottom: 12 }}
-        >
-          <Icon path={mdiArrowLeft} size={0.8} color="currentColor" />
-          Back to CMDB
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, fontSize: 13, color: 'var(--text-muted)' }}>
+          <button
+            onClick={() => router.push('/dashboard/cmdb')}
+            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+          >
+            <Icon path={mdiArrowLeft} size={0.7} color="currentColor" />
+            CMDB
+          </button>
+          <Icon path={mdiChevronRight} size={0.6} color="var(--text-placeholder)" />
+          <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>CI-{ci.ciNumber}</span>
+        </div>
+
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>
             <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
               <Icon path={typeIcon} size={1} color="var(--accent-primary)" />
-              {ci.name}
+              {ci.displayName ?? ci.name}
             </h1>
-            <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>CI-{ci.ciNumber}</span>
-              <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 13, fontWeight: 600, backgroundColor: statusStyle.bg, color: statusStyle.text }}>
-                {ci.status}
-              </span>
-              <span style={{ fontSize: 13, color: 'var(--text-placeholder)' }}>{ci.type.replace(/_/g, ' ')}</span>
-              {ci.environment && (
-                <span style={{ fontSize: 12, color: 'var(--text-muted)', backgroundColor: 'var(--bg-tertiary)', padding: '2px 8px', borderRadius: 10 }}>
-                  {ci.environment}
-                </span>
+              {ci.ciClass && (
+                <Badge label={ci.ciClass.className} bg="var(--bg-tertiary)" text="var(--text-secondary)" />
+              )}
+              <Badge
+                label={ci.lifecycleStatus?.statusName ?? ci.status}
+                bg={lifecycleStyle.bg}
+                text={lifecycleStyle.text}
+              />
+              {ci.operationalStatus && (
+                <Badge
+                  label={ci.operationalStatus.statusName}
+                  bg={opsStyle.bg}
+                  text={opsStyle.text}
+                />
+              )}
+              {(ci.cmdbEnvironment || ci.environment) && (
+                <Badge
+                  label={ci.cmdbEnvironment?.envName ?? ci.environment}
+                  bg="var(--bg-tertiary)"
+                  text="var(--text-muted)"
+                />
+              )}
+              {ci.criticality && (
+                <Badge
+                  label={ci.criticality}
+                  bg={critStyle.bg}
+                  text={critStyle.text}
+                />
               )}
             </div>
           </div>
+
+          <Link
+            href={`/dashboard/cmdb/${id}/edit`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '8px 16px',
+              backgroundColor: 'var(--accent-primary)',
+              color: '#fff',
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 500,
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <Icon path={mdiPencil} size={0.8} color="#fff" />
+            Edit
+          </Link>
         </div>
       </div>
 
-      {/* ── Tabs ──────────────────────────────────────────────────────────────── */}
+      {/* ── Tabs ─────────────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border-primary)', marginBottom: 20, gap: 0, overflowX: 'auto' }}>
-        {tabs.map((tab) => (
+        {TAB_DEFS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
@@ -240,60 +459,206 @@ export default function CMDBDetailPage() {
         ))}
       </div>
 
-      {/* ── Tab: Details ──────────────────────────────────────────────────────── */}
-      {activeTab === 'details' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-          <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
-            <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600 }}>Configuration Item Info</h2>
-            {[
-              ['Category', ci.category?.name],
-              ['Owner', ci.owner ? `${ci.owner.firstName} ${ci.owner.lastName}` : null],
-              ['Site', ci.site?.name],
-              ['Linked Asset', ci.asset ? ci.asset.assetTag : null],
-              ['Created', formatDateTime(ci.createdAt)],
-              ['Updated', formatDateTime(ci.updatedAt)],
-            ].map(([label, value]) => (
-              <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14 }}>
-                <span style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: 8 }}>{label}</span>
-                <span style={{ color: 'var(--text-primary)', textAlign: 'right' }}>
-                  {label === 'Linked Asset' && ci.asset ? (
-                    <Link href={`/dashboard/assets/${ci.asset.id}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>
-                      {ci.asset.assetTag}
-                    </Link>
-                  ) : ((value as string | null | undefined) ?? '—')}
-                </span>
-              </div>
-            ))}
-          </div>
+      {/* ── Tab: General ─────────────────────────────────────────────────────── */}
+      {activeTab === 'general' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+          <Card title="Configuration Item" icon={mdiInformationOutline}>
+            <InfoRow label="Name" value={ci.name} />
+            {ci.displayName && <InfoRow label="Display Name" value={ci.displayName} />}
+            <InfoRow label="CI Number" value={`CI-${ci.ciNumber}`} />
+            <InfoRow label="Class" value={ci.ciClass?.className ?? ci.type.replace(/_/g, ' ')} />
+            <InfoRow label="Lifecycle Status" value={ci.lifecycleStatus?.statusName ?? ci.status} />
+            {ci.operationalStatus && <InfoRow label="Operational Status" value={ci.operationalStatus.statusName} />}
+            <InfoRow label="Environment" value={ci.cmdbEnvironment?.envName ?? ci.environment} />
+            <InfoRow label="Criticality" value={ci.criticality} />
+            <InfoRow label="Category" value={ci.category?.name} />
+            <InfoRow label="Created" value={formatDateTime(ci.createdAt)} />
+            <InfoRow label="Updated" value={formatDateTime(ci.updatedAt)} />
+          </Card>
+
+          <Card title="Classification" icon={mdiShieldLock}>
+            <InfoRow label="Confidentiality" value={ci.confidentialityClass} />
+            <InfoRow label="Integrity" value={ci.integrityClass} />
+            <InfoRow label="Availability" value={ci.availabilityClass} />
+          </Card>
 
           {ci.attributesJson && Object.keys(ci.attributesJson).length > 0 && (
-            <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
-              <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600 }}>Attributes</h2>
+            <Card title="Custom Attributes">
               {Object.entries(ci.attributesJson).map(([key, value]) => (
-                <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14 }}>
-                  <span style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: 8, textTransform: 'capitalize' }}>
-                    {key.replace(/_/g, ' ')}
-                  </span>
-                  <span style={{ color: 'var(--text-primary)', textAlign: 'right', wordBreak: 'break-word' }}>
-                    {String(value ?? '—')}
-                  </span>
-                </div>
+                <InfoRow key={key} label={humanize(key)} value={String(value ?? '')} />
               ))}
-            </div>
+            </Card>
           )}
         </div>
       )}
 
-      {/* ── Tab: Relationship Map ──────────────────────────────────────────────── */}
-      {activeTab === 'map' && (
-        <div>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+      {/* ── Tab: Ownership ───────────────────────────────────────────────────── */}
+      {activeTab === 'ownership' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+          <Card title="Ownership" icon={mdiAccountMultiple}>
+            <InfoRow label="Business Owner" value={ci.businessOwnerId} />
+            <InfoRow label="Technical Owner" value={ci.technicalOwnerId} />
+          </Card>
+
+          <Card title="Support & Vendor" icon={mdiWrench}>
+            <InfoRow label="Support Group" value={ci.supportGroup?.name} />
+            {ci.supportGroup?.email && (
+              <InfoRow label="Support Email" value={ci.supportGroup.email} />
+            )}
+            <InfoRow label="Manufacturer / Vendor" value={ci.manufacturer?.name} />
+          </Card>
+        </div>
+      )}
+
+      {/* ── Tab: Technical ───────────────────────────────────────────────────── */}
+      {activeTab === 'technical' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+          <Card title="Identity" icon={mdiWrench}>
+            <InfoRow label="Hostname" value={ci.hostname} />
+            <InfoRow label="FQDN" value={ci.fqdn} />
+            <InfoRow label="IP Address" value={ci.ipAddress} />
+            <InfoRow label="Serial Number" value={ci.serialNumber} />
+            <InfoRow label="Asset Tag" value={ci.assetTag} />
+            <InfoRow label="External ID" value={ci.externalId} />
+            <InfoRow label="Model" value={ci.model} />
+            <InfoRow label="Version" value={ci.version} />
+            <InfoRow label="Edition" value={ci.edition} />
+          </Card>
+
+          {/* Server Extension */}
+          {ci.serverExt && (
+            <Card title="Server Details" icon={mdiServer}>
+              <InfoRow label="Server Type" value={ci.serverExt.serverType} />
+              <InfoRow label="Operating System" value={ci.serverExt.operatingSystem} />
+              <InfoRow label="OS Version" value={ci.serverExt.osVersion} />
+              <InfoRow label="CPU Count" value={ci.serverExt.cpuCount} />
+              <InfoRow label="Memory (GB)" value={ci.serverExt.memoryGb} />
+              <InfoRow label="Storage (GB)" value={ci.serverExt.storageGb} />
+              <InfoRow label="Backup Required" value={ci.serverExt.backupRequired ? 'Yes' : 'No'} />
+              <InfoRow label="Backup Policy" value={ci.serverExt.backupPolicy} />
+              <InfoRow label="Patch Group" value={ci.serverExt.patchGroup} />
+              <InfoRow label="Antivirus Status" value={ci.serverExt.antivirusStatus} />
+            </Card>
+          )}
+
+          {/* Application Extension */}
+          {ci.applicationExt && (
+            <Card title="Application Details" icon={mdiApplication}>
+              <InfoRow label="Application Type" value={ci.applicationExt.applicationType} />
+              {ci.applicationExt.application && (
+                <InfoRow
+                  label="Linked Application"
+                  value={ci.applicationExt.application.name}
+                  link={`/dashboard/applications/${ci.applicationExt.application.id}`}
+                />
+              )}
+              <InfoRow label="Internet Facing" value={ci.applicationExt.internetFacing ? 'Yes' : 'No'} />
+              <InfoRow label="Compliance Scope" value={ci.applicationExt.complianceScope} />
+              <InfoRow label="Repository URL" value={ci.applicationExt.repoUrl} />
+            </Card>
+          )}
+
+          {/* Database Extension */}
+          {ci.databaseExt && (
+            <Card title="Database Details" icon={mdiDatabase}>
+              <InfoRow label="DB Engine" value={ci.databaseExt.dbEngine} />
+              <InfoRow label="DB Version" value={ci.databaseExt.dbVersion} />
+              <InfoRow label="Instance Name" value={ci.databaseExt.instanceName} />
+              <InfoRow label="Port" value={ci.databaseExt.port} />
+              <InfoRow label="Backup Required" value={ci.databaseExt.backupRequired ? 'Yes' : 'No'} />
+              <InfoRow label="Encryption Enabled" value={ci.databaseExt.encryptionEnabled ? 'Yes' : 'No'} />
+              <InfoRow label="Contains Sensitive Data" value={ci.databaseExt.containsSensitiveData ? 'Yes' : 'No'} />
+            </Card>
+          )}
+
+          {/* Network Device Extension */}
+          {ci.networkDeviceExt && (
+            <Card title="Network Device Details" icon={mdiLanConnect}>
+              <InfoRow label="Device Type" value={ci.networkDeviceExt.deviceType} />
+              <InfoRow label="Firmware Version" value={ci.networkDeviceExt.firmwareVersion} />
+              <InfoRow label="Management IP" value={ci.networkDeviceExt.managementIp} />
+              <InfoRow label="MAC Address" value={ci.networkDeviceExt.macAddress} />
+              <InfoRow label="Rack Location" value={ci.networkDeviceExt.rackLocation} />
+            </Card>
+          )}
+
+          {/* Cloud Resource Extension */}
+          {ci.cloudResourceExt && (
+            <Card title="Cloud Resource Details" icon={mdiCloud}>
+              <InfoRow label="Cloud Provider" value={ci.cloudResourceExt.cloudProvider} />
+              <InfoRow label="Region" value={ci.cloudResourceExt.region} />
+              <InfoRow label="Resource Group" value={ci.cloudResourceExt.resourceGroup} />
+              <InfoRow label="Native Resource ID" value={ci.cloudResourceExt.nativeResourceId} />
+            </Card>
+          )}
+
+          {/* Endpoint Extension */}
+          {ci.endpointExt && (
+            <Card title="Endpoint Details" icon={mdiWeb}>
+              <InfoRow label="Endpoint Type" value={ci.endpointExt.endpointType} />
+              <InfoRow label="URL" value={ci.endpointExt.url} />
+              <InfoRow label="DNS Name" value={ci.endpointExt.dnsName} />
+              <InfoRow label="Certificate Expiry" value={formatDate(ci.endpointExt.certificateExpiryDate)} />
+              <InfoRow label="Certificate Issuer" value={ci.endpointExt.certificateIssuer} />
+              <InfoRow label="TLS Required" value={ci.endpointExt.tlsRequired ? 'Yes' : 'No'} />
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* ── Tab: Service Context ─────────────────────────────────────────────── */}
+      {activeTab === 'service' && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
+          {ci.serviceExt ? (
+            <Card title="Service Details" icon={mdiCog}>
+              <InfoRow label="Service Type" value={ci.serviceExt.serviceType} />
+              <InfoRow label="Service Tier" value={ci.serviceExt.serviceTier} />
+              <InfoRow label="Availability Target" value={ci.serviceExt.availabilityTarget != null ? `${ci.serviceExt.availabilityTarget}%` : null} />
+              <InfoRow label="RTO (minutes)" value={ci.serviceExt.rtoMinutes} />
+              <InfoRow label="RPO (minutes)" value={ci.serviceExt.rpoMinutes} />
+            </Card>
+          ) : (
+            <Card title="Service Context" icon={mdiCog}>
+              <div style={{ padding: '12px 0', fontSize: 14, color: 'var(--text-muted)' }}>
+                This CI is not a service.
+              </div>
+              {supportsServices.length > 0 ? (
+                <>
+                  <h3 style={{ margin: '16px 0 8px', fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                    Services Supported by this CI
+                  </h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                    {supportsServices.map((svc) => (
+                      <div key={svc.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14 }}>
+                        <Link href={`/dashboard/cmdb/${svc.id}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 500 }}>
+                          {svc.name}
+                        </Link>
+                        <span style={{ fontSize: 12, color: 'var(--text-placeholder)' }}>CI-{svc.ciNumber}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div style={{ padding: '8px 0', fontSize: 13, color: 'var(--text-placeholder)' }}>
+                  No service relationships found.
+                </div>
+              )}
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* ── Tab: Relationships ───────────────────────────────────────────────── */}
+      {activeTab === 'relationships' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Controls */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Depth:</span>
               <select
                 value={mapDepth}
                 onChange={(e) => { setMapDepth(Number(e.target.value)); setImpactData(null); }}
-                style={{ padding: '6px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 13, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}
+                style={{ padding: '6px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 13, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
               >
                 <option value={1}>1 level</option>
                 <option value={2}>2 levels</option>
@@ -324,7 +689,7 @@ export default function CMDBDetailPage() {
               </button>
             ) : (
               <button
-                onClick={clearImpact}
+                onClick={() => setImpactData(null)}
                 style={{
                   padding: '7px 14px',
                   backgroundColor: 'var(--badge-red-bg)',
@@ -346,15 +711,14 @@ export default function CMDBDetailPage() {
             )}
           </div>
 
+          {/* Map */}
           <div style={{ height: 500, border: '1px solid var(--border-primary)', borderRadius: 10, overflow: 'hidden', backgroundColor: 'var(--bg-secondary)' }}>
-            <RelationshipMap
-              ci={ci}
-              impactData={impactData}
-            />
+            <RelationshipMap ci={ci} impactData={impactData} />
           </div>
 
+          {/* Impact results */}
           {impactData !== null && impactData.length > 0 && (
-            <div style={{ marginTop: 12, backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 8, padding: 12 }}>
+            <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 8, padding: 12 }}>
               <h3 style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Impacted CIs</h3>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {impactData.map((imp) => (
@@ -370,109 +734,429 @@ export default function CMDBDetailPage() {
               </div>
             </div>
           )}
-        </div>
-      )}
 
-      {/* ── Tab: Change History ────────────────────────────────────────────────── */}
-      {activeTab === 'history' && (
-        <div>
-          {(ci.changeHistory ?? ci.changeRecords ?? []).length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-placeholder)', fontSize: 14 }}>
-              No change history recorded
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              {(ci.changeHistory ?? ci.changeRecords ?? []).map((record, idx) => (
-                <div
-                  key={record.id}
-                  style={{
-                    display: 'flex',
-                    gap: 16,
-                    padding: '12px 0',
-                    borderBottom: idx < (ci.changeHistory ?? ci.changeRecords ?? []).length - 1 ? '1px solid var(--bg-tertiary)' : 'none',
-                  }}
-                >
-                  <div style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-primary)', marginTop: 6 }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
-                      <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>
-                        {record.fieldName.replace(/_/g, ' ')} changed
-                      </span>
-                      <span style={{ fontSize: 12, color: 'var(--text-placeholder)', whiteSpace: 'nowrap' }}>
-                        {formatDateTime(record.createdAt)}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-                      <span style={{ backgroundColor: 'var(--badge-red-bg)', color: '#991b1b', padding: '1px 6px', borderRadius: 4 }}>
-                        {record.oldValue ?? '(empty)'}
-                      </span>
-                      <span>→</span>
-                      <span style={{ backgroundColor: 'var(--badge-green-bg)', color: '#065f46', padding: '1px 6px', borderRadius: 4 }}>
-                        {record.newValue ?? '(empty)'}
-                      </span>
-                      {record.changedBy && (
-                        <span style={{ color: 'var(--text-placeholder)', marginLeft: 4 }}>
-                          by {record.changedBy.firstName} {record.changedBy.lastName}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+          {/* Source Relationships Table */}
+          {(ci.sourceRels ?? []).length > 0 && (
+            <Card title="Outgoing Relationships (this CI ...)">
+              <div style={{ overflow: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
+                      <th style={thStyle}>Relationship</th>
+                      <th style={thStyle}>Target CI</th>
+                      <th style={thStyle}>CI #</th>
+                      <th style={thStyle}>Hostname</th>
+                      <th style={thStyle}>Criticality</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(ci.sourceRels ?? []).map((rel) => (
+                      <tr key={rel.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                        <td style={tdStyle}>
+                          <Badge
+                            label={rel.relationshipTypeRef?.forwardLabel ?? humanize(rel.relationshipType)}
+                            bg="var(--bg-tertiary)"
+                            text="var(--text-secondary)"
+                          />
+                        </td>
+                        <td style={tdStyle}>
+                          <Link href={`/dashboard/cmdb/${rel.target.id}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 500 }}>
+                            {rel.target.name}
+                          </Link>
+                        </td>
+                        <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>CI-{rel.target.ciNumber}</td>
+                        <td style={tdStyle}>{rel.target.hostname ?? '\u2014'}</td>
+                        <td style={tdStyle}>
+                          {rel.target.criticality ? (
+                            <Badge label={rel.target.criticality} {...getCriticalityStyle(rel.target.criticality)} />
+                          ) : '\u2014'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+
+          {/* Target Relationships Table */}
+          {(ci.targetRels ?? []).length > 0 && (
+            <Card title="Incoming Relationships (... this CI)">
+              <div style={{ overflow: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
+                      <th style={thStyle}>Source CI</th>
+                      <th style={thStyle}>Relationship</th>
+                      <th style={thStyle}>CI #</th>
+                      <th style={thStyle}>Hostname</th>
+                      <th style={thStyle}>Criticality</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(ci.targetRels ?? []).map((rel) => (
+                      <tr key={rel.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                        <td style={tdStyle}>
+                          <Link href={`/dashboard/cmdb/${rel.source.id}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 500 }}>
+                            {rel.source.name}
+                          </Link>
+                        </td>
+                        <td style={tdStyle}>
+                          <Badge
+                            label={rel.relationshipTypeRef?.reverseLabel ?? humanize(rel.relationshipType)}
+                            bg="var(--bg-tertiary)"
+                            text="var(--text-secondary)"
+                          />
+                        </td>
+                        <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>CI-{rel.source.ciNumber}</td>
+                        <td style={tdStyle}>{rel.source.hostname ?? '\u2014'}</td>
+                        <td style={tdStyle}>
+                          {rel.source.criticality ? (
+                            <Badge label={rel.source.criticality} {...getCriticalityStyle(rel.source.criticality)} />
+                          ) : '\u2014'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+
+          {(ci.sourceRels ?? []).length === 0 && (ci.targetRels ?? []).length === 0 && (
+            <EmptyState message="No relationships found for this CI" />
           )}
         </div>
       )}
 
-      {/* ── Tab: Linked Tickets ────────────────────────────────────────────────── */}
-      {activeTab === 'tickets' && (
-        <div>
-          {(ci.ticketLinks ?? []).length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-placeholder)', fontSize: 14 }}>
-              No tickets linked to this CI
+      {/* ── Tab: Governance ──────────────────────────────────────────────────── */}
+      {activeTab === 'governance' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+          <Card title="Discovery & Verification" icon={mdiCertificate}>
+            <InfoRow label="Source System" value={ci.sourceSystem} />
+            <InfoRow label="Source Record Key" value={ci.sourceRecordKey} />
+            <InfoRow label="Source of Truth" value={ci.sourceOfTruth ? 'Yes' : 'No'} />
+            <InfoRow label="Reconciliation Rank" value={ci.reconciliationRank} />
+            <InfoRow label="Install Date" value={formatDate(ci.installDate)} />
+            <InfoRow label="First Discovered" value={formatDateTime(ci.firstDiscoveredAt)} />
+            <InfoRow label="Last Discovered" value={formatDateTime(ci.lastSeenAt)} />
+            <InfoRow label="Last Verified" value={formatDateTime(ci.lastVerifiedAt)} />
+          </Card>
+
+          <Card title="Attestation History" icon={mdiCheckCircle}>
+            <div style={{ marginBottom: 12 }}>
+              <button
+                onClick={() => void handleAttest()}
+                disabled={attestLoading}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '8px 16px',
+                  backgroundColor: 'var(--accent-primary)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 6,
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: attestLoading ? 'not-allowed' : 'pointer',
+                  opacity: attestLoading ? 0.6 : 1,
+                }}
+              >
+                <Icon path={mdiCheckCircle} size={0.8} color="#fff" />
+                {attestLoading ? 'Attesting...' : 'Attest Now'}
+              </button>
             </div>
-          ) : (
-            <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
-                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Ticket #</th>
-                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Title</th>
-                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(ci.ticketLinks ?? []).map((link) => (
-                    <tr key={link.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
-                      <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                        <Link
-                          href={`/dashboard/tickets/${link.ticket.id}`}
-                          style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}
-                        >
-                          {link.ticket.ticketNumber}
-                        </Link>
-                      </td>
-                      <td style={{ padding: '10px 14px' }}>
-                        <Link
-                          href={`/dashboard/tickets/${link.ticket.id}`}
-                          style={{ color: 'var(--text-primary)', textDecoration: 'none', fontWeight: 500 }}
-                        >
-                          {link.ticket.title}
-                        </Link>
-                      </td>
-                      <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                        <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 12, fontWeight: 500, backgroundColor: 'var(--bg-tertiary)', color: '#374151' }}>
-                          {link.ticket.status.replace(/_/g, ' ')}
-                        </span>
-                      </td>
-                    </tr>
+
+            {(ci.attestations ?? []).length === 0 ? (
+              <div style={{ padding: '12px 0', fontSize: 13, color: 'var(--text-placeholder)' }}>
+                No attestations recorded.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                {(ci.attestations ?? []).map((att, idx) => {
+                  const attStyle = getStatusBadgeStyle(att.attestationStatus);
+                  return (
+                    <div
+                      key={att.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '8px 0',
+                        borderBottom: idx < (ci.attestations ?? []).length - 1 ? '1px solid var(--bg-tertiary)' : 'none',
+                        fontSize: 14,
+                        gap: 8,
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Badge label={humanize(att.attestationStatus)} bg={attStyle.bg} text={attStyle.text} />
+                        {att.comments && (
+                          <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{att.comments}</span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: 12, color: 'var(--text-placeholder)', whiteSpace: 'nowrap' }}>
+                        {formatDateTime(att.attestedAt)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+
+          {/* Change History */}
+          <div style={{ gridColumn: '1 / -1' }}>
+            <Card title="Change History" icon={mdiHistory}>
+              {(ci.changeRecords ?? []).length === 0 ? (
+                <EmptyState message="No change history recorded" />
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                  {(ci.changeRecords ?? []).map((record, idx) => (
+                    <div
+                      key={record.id}
+                      style={{
+                        display: 'flex',
+                        gap: 16,
+                        padding: '12px 0',
+                        borderBottom: idx < (ci.changeRecords ?? []).length - 1 ? '1px solid var(--bg-tertiary)' : 'none',
+                      }}
+                    >
+                      <div style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-primary)', marginTop: 6 }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                          <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>
+                            {record.fieldName ? `${humanize(record.fieldName)} changed` : humanize(record.changeType)}
+                          </span>
+                          <span style={{ fontSize: 12, color: 'var(--text-placeholder)', whiteSpace: 'nowrap' }}>
+                            {formatDateTime(record.createdAt)}
+                          </span>
+                        </div>
+                        {record.fieldName && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+                            <span style={{ backgroundColor: 'var(--badge-red-bg)', color: '#991b1b', padding: '1px 6px', borderRadius: 4 }}>
+                              {record.oldValue ?? '(empty)'}
+                            </span>
+                            <span>{'\u2192'}</span>
+                            <span style={{ backgroundColor: 'var(--badge-green-bg)', color: '#065f46', padding: '1px 6px', borderRadius: 4 }}>
+                              {record.newValue ?? '(empty)'}
+                            </span>
+                            {record.changedBy && (
+                              <span style={{ color: 'var(--text-placeholder)', marginLeft: 4 }}>
+                                by {record.changedBy}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </div>
+              )}
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* ── Tab: Linked Records ──────────────────────────────────────────────── */}
+      {activeTab === 'linked' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Changes */}
+          <Card title="Changes" icon={mdiClipboardText}>
+            {(ci.cmdbChangeLinks ?? []).length === 0 ? (
+              <EmptyState message="No change records linked" />
+            ) : (
+              <div style={{ overflow: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
+                      <th style={thStyle}>Change #</th>
+                      <th style={thStyle}>Title</th>
+                      <th style={thStyle}>Type</th>
+                      <th style={thStyle}>Status</th>
+                      <th style={thStyle}>Impact Role</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(ci.cmdbChangeLinks ?? []).map((link) => (
+                      <tr key={link.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                        <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
+                          <Link href={`/dashboard/changes/${link.change.id}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}>
+                            CHG-{link.change.changeNumber}
+                          </Link>
+                        </td>
+                        <td style={tdStyle}>
+                          <Link href={`/dashboard/changes/${link.change.id}`} style={{ color: 'var(--text-primary)', textDecoration: 'none', fontWeight: 500 }}>
+                            {link.change.title}
+                          </Link>
+                        </td>
+                        <td style={tdStyle}>
+                          <Badge label={humanize(link.change.type)} bg="var(--bg-tertiary)" text="var(--text-secondary)" />
+                        </td>
+                        <td style={tdStyle}>
+                          {(() => { const s = getStatusBadgeStyle(link.change.status); return <Badge label={humanize(link.change.status)} bg={s.bg} text={s.text} />; })()}
+                        </td>
+                        <td style={tdStyle}>{link.impactRole ? humanize(link.impactRole) : '\u2014'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+
+          {/* Incidents */}
+          <Card title="Incidents" icon={mdiAlertCircle}>
+            {(ci.cmdbIncidentLinks ?? []).length === 0 ? (
+              <EmptyState message="No incidents linked" />
+            ) : (
+              <div style={{ overflow: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
+                      <th style={thStyle}>Ticket #</th>
+                      <th style={thStyle}>Title</th>
+                      <th style={thStyle}>Priority</th>
+                      <th style={thStyle}>Status</th>
+                      <th style={thStyle}>Impact Role</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(ci.cmdbIncidentLinks ?? []).map((link) => (
+                      <tr key={link.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                        <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
+                          <Link href={`/dashboard/tickets/${link.ticket.id}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}>
+                            #{link.ticket.ticketNumber}
+                          </Link>
+                        </td>
+                        <td style={tdStyle}>
+                          <Link href={`/dashboard/tickets/${link.ticket.id}`} style={{ color: 'var(--text-primary)', textDecoration: 'none', fontWeight: 500 }}>
+                            {link.ticket.title}
+                          </Link>
+                        </td>
+                        <td style={tdStyle}>
+                          {(() => { const s = getCriticalityStyle(link.ticket.priority); return <Badge label={humanize(link.ticket.priority)} bg={s.bg} text={s.text} />; })()}
+                        </td>
+                        <td style={tdStyle}>
+                          {(() => { const s = getStatusBadgeStyle(link.ticket.status); return <Badge label={humanize(link.ticket.status)} bg={s.bg} text={s.text} />; })()}
+                        </td>
+                        <td style={tdStyle}>{link.impactRole ? humanize(link.impactRole) : '\u2014'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+
+          {/* Problems */}
+          <Card title="Problems" icon={mdiAlertCircle}>
+            {(ci.cmdbProblemLinks ?? []).length === 0 ? (
+              <EmptyState message="No problems linked" />
+            ) : (
+              <div style={{ overflow: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
+                      <th style={thStyle}>Ticket #</th>
+                      <th style={thStyle}>Title</th>
+                      <th style={thStyle}>Priority</th>
+                      <th style={thStyle}>Status</th>
+                      <th style={thStyle}>Impact Role</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(ci.cmdbProblemLinks ?? []).map((link) => (
+                      <tr key={link.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                        <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
+                          <Link href={`/dashboard/tickets/${link.ticket.id}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}>
+                            #{link.ticket.ticketNumber}
+                          </Link>
+                        </td>
+                        <td style={tdStyle}>
+                          <Link href={`/dashboard/tickets/${link.ticket.id}`} style={{ color: 'var(--text-primary)', textDecoration: 'none', fontWeight: 500 }}>
+                            {link.ticket.title}
+                          </Link>
+                        </td>
+                        <td style={tdStyle}>
+                          {(() => { const s = getCriticalityStyle(link.ticket.priority); return <Badge label={humanize(link.ticket.priority)} bg={s.bg} text={s.text} />; })()}
+                        </td>
+                        <td style={tdStyle}>
+                          {(() => { const s = getStatusBadgeStyle(link.ticket.status); return <Badge label={humanize(link.ticket.status)} bg={s.bg} text={s.text} />; })()}
+                        </td>
+                        <td style={tdStyle}>{link.impactRole ? humanize(link.impactRole) : '\u2014'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+
+          {/* Legacy Ticket Links */}
+          {(ci.ticketLinks ?? []).length > 0 && (
+            <Card title="Legacy Ticket Links" icon={mdiTicket}>
+              <div style={{ overflow: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
+                      <th style={thStyle}>Ticket #</th>
+                      <th style={thStyle}>Title</th>
+                      <th style={thStyle}>Type</th>
+                      <th style={thStyle}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(ci.ticketLinks ?? []).map((link) => (
+                      <tr key={link.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                        <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
+                          <Link href={`/dashboard/tickets/${link.ticket.id}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}>
+                            #{link.ticket.ticketNumber}
+                          </Link>
+                        </td>
+                        <td style={tdStyle}>
+                          <Link href={`/dashboard/tickets/${link.ticket.id}`} style={{ color: 'var(--text-primary)', textDecoration: 'none', fontWeight: 500 }}>
+                            {link.ticket.title}
+                          </Link>
+                        </td>
+                        <td style={tdStyle}>
+                          <Badge label={humanize(link.ticket.type)} bg="var(--bg-tertiary)" text="var(--text-secondary)" />
+                        </td>
+                        <td style={tdStyle}>
+                          {(() => { const s = getStatusBadgeStyle(link.ticket.status); return <Badge label={humanize(link.ticket.status)} bg={s.bg} text={s.text} />; })()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+
+          {(ci.cmdbChangeLinks ?? []).length === 0 &&
+           (ci.cmdbIncidentLinks ?? []).length === 0 &&
+           (ci.cmdbProblemLinks ?? []).length === 0 &&
+           (ci.ticketLinks ?? []).length === 0 && (
+            <EmptyState message="No linked records found" />
           )}
         </div>
       )}
     </div>
   );
 }
+
+// ─── Shared table styles ─────────────────────────────────────────────────────
+
+const thStyle: React.CSSProperties = {
+  padding: '10px 14px',
+  textAlign: 'left',
+  fontWeight: 600,
+  color: 'var(--text-secondary)',
+  whiteSpace: 'nowrap',
+  fontSize: 13,
+};
+
+const tdStyle: React.CSSProperties = {
+  padding: '10px 14px',
+  color: 'var(--text-primary)',
+};

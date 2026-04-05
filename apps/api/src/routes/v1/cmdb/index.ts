@@ -56,40 +56,65 @@ export async function cmdbRoutes(fastify: FastifyInstance): Promise<void> {
       const tenantId = user.tenantId;
       const userId = user.userId;
 
-      const body = request.body as {
-        name?: unknown;
-        type?: unknown;
-        status?: unknown;
-        environment?: unknown;
-        categoryId?: unknown;
-        assetId?: unknown;
-        agentId?: unknown;
-        ownerId?: unknown;
-        siteId?: unknown;
-        attributesJson?: unknown;
-      };
+      const body = request.body as Record<string, unknown>;
 
-      if (!body.name || typeof body.name !== 'string' || body.name.trim().length === 0) {
+      if (!body.name || typeof body.name !== 'string' || (body.name as string).trim().length === 0) {
         return reply.status(400).send({ error: 'name is required and must be a non-empty string' });
       }
+
+      const str = (k: string) => (typeof body[k] === 'string' ? (body[k] as string) : undefined);
+      const num = (k: string) => (typeof body[k] === 'number' ? (body[k] as number) : undefined);
+      const bool = (k: string) => (typeof body[k] === 'boolean' ? (body[k] as boolean) : undefined);
+      const obj = (k: string) => (body[k] && typeof body[k] === 'object' ? (body[k] as Record<string, unknown>) : undefined);
 
       try {
         const ci = await createCI(
           tenantId,
           {
-            name: body.name.trim(),
-            type: typeof body.type === 'string' ? body.type : undefined,
-            status: typeof body.status === 'string' ? body.status : undefined,
-            environment: typeof body.environment === 'string' ? body.environment : undefined,
-            categoryId: typeof body.categoryId === 'string' ? body.categoryId : undefined,
-            assetId: typeof body.assetId === 'string' ? body.assetId : undefined,
-            agentId: typeof body.agentId === 'string' ? body.agentId : undefined,
-            ownerId: typeof body.ownerId === 'string' ? body.ownerId : undefined,
-            siteId: typeof body.siteId === 'string' ? body.siteId : undefined,
-            attributesJson:
-              body.attributesJson && typeof body.attributesJson === 'object'
-                ? (body.attributesJson as Record<string, unknown>)
-                : undefined,
+            name: (body.name as string).trim(),
+            displayName: str('displayName'),
+            type: str('type'),
+            status: str('status'),
+            environment: str('environment'),
+            classId: str('classId'),
+            lifecycleStatusId: str('lifecycleStatusId'),
+            operationalStatusId: str('operationalStatusId'),
+            environmentId: str('environmentId'),
+            categoryId: str('categoryId'),
+            assetId: str('assetId'),
+            agentId: str('agentId'),
+            siteId: str('siteId'),
+            hostname: str('hostname'),
+            fqdn: str('fqdn'),
+            ipAddress: str('ipAddress'),
+            serialNumber: str('serialNumber'),
+            assetTag: str('assetTag'),
+            externalId: str('externalId'),
+            manufacturerId: str('manufacturerId'),
+            model: str('model'),
+            version: str('version'),
+            edition: str('edition'),
+            ownerId: str('ownerId'),
+            businessOwnerId: str('businessOwnerId'),
+            technicalOwnerId: str('technicalOwnerId'),
+            supportGroupId: str('supportGroupId'),
+            criticality: str('criticality'),
+            confidentialityClass: str('confidentialityClass'),
+            integrityClass: str('integrityClass'),
+            availabilityClass: str('availabilityClass'),
+            installDate: str('installDate'),
+            sourceSystem: str('sourceSystem'),
+            sourceRecordKey: str('sourceRecordKey'),
+            sourceOfTruth: bool('sourceOfTruth'),
+            reconciliationRank: num('reconciliationRank'),
+            attributesJson: obj('attributesJson'),
+            serverExt: obj('serverExt') as never,
+            applicationExt: obj('applicationExt') as never,
+            databaseExt: obj('databaseExt') as never,
+            networkDeviceExt: obj('networkDeviceExt') as never,
+            cloudResourceExt: obj('cloudResourceExt') as never,
+            endpointExt: obj('endpointExt') as never,
+            serviceExt: obj('serviceExt') as never,
           },
           userId,
         );
@@ -110,21 +135,20 @@ export async function cmdbRoutes(fastify: FastifyInstance): Promise<void> {
       const user = request.user as { tenantId: string };
       const tenantId = user.tenantId;
 
-      const query = request.query as {
-        type?: string;
-        status?: string;
-        environment?: string;
-        categoryId?: string;
-        search?: string;
-        page?: string;
-        pageSize?: string;
-      };
+      const query = request.query as Record<string, string | undefined>;
 
       const result = await listCIs(tenantId, {
         type: query.type,
         status: query.status,
         environment: query.environment,
+        classId: query.classId,
+        lifecycleStatusId: query.lifecycleStatusId,
+        environmentId: query.environmentId,
         categoryId: query.categoryId,
+        criticality: query.criticality,
+        manufacturerId: query.manufacturerId,
+        supportGroupId: query.supportGroupId,
+        staleness: query.staleness as 'fresh' | 'stale' | 'all' | undefined,
         search: query.search,
         page: query.page ? parseInt(query.page, 10) : undefined,
         pageSize: query.pageSize ? parseInt(query.pageSize, 10) : undefined,
@@ -164,64 +188,65 @@ export async function cmdbRoutes(fastify: FastifyInstance): Promise<void> {
       const userId = user.userId;
       const { id } = request.params as { id: string };
 
-      const body = request.body as {
-        name?: unknown;
-        type?: unknown;
-        status?: unknown;
-        environment?: unknown;
-        categoryId?: unknown;
-        assetId?: unknown;
-        agentId?: unknown;
-        ownerId?: unknown;
-        siteId?: unknown;
-        attributesJson?: unknown;
-      };
+      const body = request.body as Record<string, unknown>;
+
+      // Helper to extract typed values, preserving null for clearing
+      const strOrNull = (k: string) => body[k] === null ? null : (typeof body[k] === 'string' ? (body[k] as string) : undefined);
+      const str = (k: string) => (typeof body[k] === 'string' ? (body[k] as string) : undefined);
+      const num = (k: string) => (typeof body[k] === 'number' ? (body[k] as number) : undefined);
+      const bool = (k: string) => (typeof body[k] === 'boolean' ? (body[k] as boolean) : undefined);
+      const obj = (k: string) => (body[k] && typeof body[k] === 'object' ? (body[k] as Record<string, unknown>) : undefined);
 
       try {
         const ci = await updateCI(
           tenantId,
           id,
           {
-            name: typeof body.name === 'string' ? body.name : undefined,
-            type: typeof body.type === 'string' ? body.type : undefined,
-            status: typeof body.status === 'string' ? body.status : undefined,
-            environment: typeof body.environment === 'string' ? body.environment : undefined,
-            categoryId:
-              body.categoryId === null
-                ? null
-                : typeof body.categoryId === 'string'
-                  ? body.categoryId
-                  : undefined,
-            assetId:
-              body.assetId === null
-                ? null
-                : typeof body.assetId === 'string'
-                  ? body.assetId
-                  : undefined,
-            agentId:
-              body.agentId === null
-                ? null
-                : typeof body.agentId === 'string'
-                  ? body.agentId
-                  : undefined,
-            ownerId:
-              body.ownerId === null
-                ? null
-                : typeof body.ownerId === 'string'
-                  ? body.ownerId
-                  : undefined,
-            siteId:
-              body.siteId === null
-                ? null
-                : typeof body.siteId === 'string'
-                  ? body.siteId
-                  : undefined,
-            attributesJson:
-              body.attributesJson === null
-                ? null
-                : body.attributesJson && typeof body.attributesJson === 'object'
-                  ? (body.attributesJson as Record<string, unknown>)
-                  : undefined,
+            name: str('name'),
+            displayName: str('displayName'),
+            type: str('type'),
+            status: str('status'),
+            environment: str('environment'),
+            classId: strOrNull('classId') ?? undefined,
+            lifecycleStatusId: strOrNull('lifecycleStatusId') ?? undefined,
+            operationalStatusId: strOrNull('operationalStatusId') ?? undefined,
+            environmentId: strOrNull('environmentId') ?? undefined,
+            categoryId: strOrNull('categoryId') ?? undefined,
+            assetId: strOrNull('assetId') ?? undefined,
+            agentId: strOrNull('agentId') ?? undefined,
+            siteId: strOrNull('siteId') ?? undefined,
+            hostname: str('hostname'),
+            fqdn: str('fqdn'),
+            ipAddress: str('ipAddress'),
+            serialNumber: str('serialNumber'),
+            assetTag: str('assetTag'),
+            externalId: str('externalId'),
+            manufacturerId: strOrNull('manufacturerId') ?? undefined,
+            model: str('model'),
+            version: str('version'),
+            edition: str('edition'),
+            ownerId: strOrNull('ownerId') ?? undefined,
+            businessOwnerId: strOrNull('businessOwnerId') ?? undefined,
+            technicalOwnerId: strOrNull('technicalOwnerId') ?? undefined,
+            supportGroupId: strOrNull('supportGroupId') ?? undefined,
+            criticality: str('criticality'),
+            confidentialityClass: str('confidentialityClass'),
+            integrityClass: str('integrityClass'),
+            availabilityClass: str('availabilityClass'),
+            installDate: str('installDate'),
+            sourceSystem: str('sourceSystem'),
+            sourceRecordKey: str('sourceRecordKey'),
+            sourceOfTruth: bool('sourceOfTruth'),
+            reconciliationRank: num('reconciliationRank'),
+            isDeleted: bool('isDeleted'),
+            attributesJson: body.attributesJson === null ? null : obj('attributesJson'),
+            serverExt: obj('serverExt') as never,
+            applicationExt: obj('applicationExt') as never,
+            databaseExt: obj('databaseExt') as never,
+            networkDeviceExt: obj('networkDeviceExt') as never,
+            cloudResourceExt: obj('cloudResourceExt') as never,
+            endpointExt: obj('endpointExt') as never,
+            serviceExt: obj('serviceExt') as never,
           },
           userId,
         );
@@ -267,12 +292,7 @@ export async function cmdbRoutes(fastify: FastifyInstance): Promise<void> {
       const user = request.user as { tenantId: string };
       const tenantId = user.tenantId;
 
-      const body = request.body as {
-        sourceId?: unknown;
-        targetId?: unknown;
-        relationshipType?: unknown;
-        description?: unknown;
-      };
+      const body = request.body as Record<string, unknown>;
 
       if (!body.sourceId || typeof body.sourceId !== 'string') {
         return reply.status(400).send({ error: 'sourceId is required' });
@@ -289,7 +309,12 @@ export async function cmdbRoutes(fastify: FastifyInstance): Promise<void> {
           sourceId: body.sourceId,
           targetId: body.targetId,
           relationshipType: body.relationshipType,
+          relationshipTypeId: typeof body.relationshipTypeId === 'string' ? body.relationshipTypeId : undefined,
           description: typeof body.description === 'string' ? body.description : undefined,
+          sourceSystem: typeof body.sourceSystem === 'string' ? body.sourceSystem : undefined,
+          sourceRecordKey: typeof body.sourceRecordKey === 'string' ? body.sourceRecordKey : undefined,
+          confidenceScore: typeof body.confidenceScore === 'number' ? body.confidenceScore : undefined,
+          isDiscovered: typeof body.isDiscovered === 'boolean' ? body.isDiscovered : undefined,
         });
         return reply.status(201).send(relationship);
       } catch (err) {
