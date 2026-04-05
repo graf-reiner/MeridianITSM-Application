@@ -239,7 +239,7 @@ export async function cmdbRoutes(fastify: FastifyInstance): Promise<void> {
             sourceOfTruth: bool('sourceOfTruth'),
             reconciliationRank: num('reconciliationRank'),
             isDeleted: bool('isDeleted'),
-            attributesJson: body.attributesJson === null ? null : obj('attributesJson'),
+            attributesJson: body.attributesJson === null ? undefined : obj('attributesJson'),
             serverExt: obj('serverExt') as never,
             applicationExt: obj('applicationExt') as never,
             databaseExt: obj('databaseExt') as never,
