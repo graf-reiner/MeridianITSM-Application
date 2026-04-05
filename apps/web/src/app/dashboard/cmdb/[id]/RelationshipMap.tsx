@@ -35,7 +35,7 @@ interface CINode {
   name: string;
   type: string;
   status: string;
-  ciNumber: string;
+  ciNumber: string | number;
   isCurrent?: boolean;
 }
 
@@ -56,7 +56,7 @@ interface ImpactCI {
   name: string;
   type: string;
   status: string;
-  ciNumber: string;
+  ciNumber: string | number;
 }
 
 interface RelationshipMapProps {
@@ -65,7 +65,7 @@ interface RelationshipMapProps {
     name: string;
     type: string;
     status: string;
-    ciNumber: string;
+    ciNumber: string | number;
     sourceRelations?: CIRelation[];
     targetRelations?: CIRelation[];
     sourceRels?: CIRelation[];
