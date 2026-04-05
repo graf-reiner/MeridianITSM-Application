@@ -63,8 +63,10 @@ interface RelationshipMapProps {
     type: string;
     status: string;
     ciNumber: string;
-    sourceRelations: CIRelation[];
-    targetRelations: CIRelation[];
+    sourceRelations?: CIRelation[];
+    targetRelations?: CIRelation[];
+    sourceRels?: CIRelation[];
+    targetRels?: CIRelation[];
   };
   impactData: ImpactCI[] | null;
 }
@@ -211,7 +213,7 @@ export default function RelationshipMap({ ci, impactData }: RelationshipMapProps
     const nodesMap = new Map<string, CINode>();
     nodesMap.set(ci.id, { id: ci.id, name: ci.name, type: ci.type, status: ci.status, ciNumber: ci.ciNumber, isCurrent: true });
 
-    for (const rel of [...ci.sourceRelations, ...ci.targetRelations]) {
+    for (const rel of [...(ci.sourceRelations ?? ci.sourceRels ?? []), ...(ci.targetRelations ?? ci.targetRels ?? [])]) {
       if (!nodesMap.has(rel.source.id)) nodesMap.set(rel.source.id, rel.source);
       if (!nodesMap.has(rel.target.id)) nodesMap.set(rel.target.id, rel.target);
     }
@@ -233,7 +235,7 @@ export default function RelationshipMap({ ci, impactData }: RelationshipMapProps
 
     const allRelIds = new Set<string>();
     const rEdges: Edge[] = [];
-    for (const rel of [...ci.sourceRelations, ...ci.targetRelations]) {
+    for (const rel of [...(ci.sourceRelations ?? ci.sourceRels ?? []), ...(ci.targetRelations ?? ci.targetRels ?? [])]) {
       if (!allRelIds.has(rel.id)) {
         allRelIds.add(rel.id);
         rEdges.push({

@@ -59,8 +59,10 @@ interface CIDetail {
   owner: { firstName: string; lastName: string } | null;
   site: { name: string } | null;
   asset: { assetTag: string; id: string } | null;
-  sourceRelations: CIRelation[];
-  targetRelations: CIRelation[];
+  sourceRelations?: CIRelation[];
+  targetRelations?: CIRelation[];
+  sourceRels?: CIRelation[];
+  targetRels?: CIRelation[];
   changeHistory: ChangeRecord[];
   ticketLinks: TicketLink[];
   createdAt: string;
