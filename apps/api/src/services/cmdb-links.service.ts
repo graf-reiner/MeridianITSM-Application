@@ -273,3 +273,35 @@ export async function listProblemLinks(tenantId: string, ciId: string) {
     orderBy: { ticket: { createdAt: 'desc' } },
   });
 }
+
+/**
+ * List all CIs linked to a ticket (both incident and problem links).
+ */
+export async function listCIsByTicket(tenantId: string, ticketId: string) {
+  const ciSelect = {
+    id: true,
+    ciNumber: true,
+    name: true,
+    hostname: true,
+    criticality: true,
+    type: true,
+    status: true,
+    ciClass: { select: { id: true, classKey: true, className: true, icon: true } },
+    lifecycleStatus: { select: { id: true, statusKey: true, statusName: true } },
+  };
+
+  const [incidentLinks, problemLinks] = await Promise.all([
+    prisma.cmdbIncidentLink.findMany({
+      where: { tenantId, ticketId },
+      include: { ci: { select: ciSelect } },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.cmdbProblemLink.findMany({
+      where: { tenantId, ticketId },
+      include: { ci: { select: ciSelect } },
+      orderBy: { createdAt: 'desc' },
+    }),
+  ]);
+
+  return { incidents: incidentLinks, problems: problemLinks };
+}

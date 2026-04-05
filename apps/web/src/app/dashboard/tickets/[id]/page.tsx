@@ -105,7 +105,7 @@ export default function TicketDetailPage() {
   const router = useRouter();
   const qc = useQueryClient();
   const ticketId = params.id as string;
-  const [activeTab, setActiveTab] = useState<'comments' | 'activity' | 'attachments'>('comments');
+  const [activeTab, setActiveTab] = useState<'comments' | 'activity' | 'attachments' | 'cis'>('comments');
   const [commentBody, setCommentBody] = useState('');
   const [commentVisibility, setCommentVisibility] = useState<'PUBLIC' | 'INTERNAL'>('PUBLIC');
   const [commentSubmitting, setCommentSubmitting] = useState(false);
@@ -422,7 +422,7 @@ export default function TicketDetailPage() {
         <div>
           {/* Tab Bar */}
           <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border-primary)', marginBottom: 16, backgroundColor: 'var(--bg-primary)', borderRadius: '12px 12px 0 0', border: '1px solid var(--border-primary)', borderBottomColor: 'transparent' }}>
-            {(['comments', 'activity', 'attachments'] as const).map((tab) => {
+            {(['comments', 'activity', 'attachments', 'cis'] as const).map((tab) => {
               const hasAttachments = tab === 'attachments' && (ticket.attachments?.length ?? 0) > 0;
               return (
                 <button
@@ -651,6 +651,8 @@ export default function TicketDetailPage() {
                 )}
               </div>
             )}
+
+            {activeTab === 'cis' && <CmdbLinksSection ticketId={ticketId} />}
           </div>
         </div>
 
@@ -824,6 +826,140 @@ export default function TicketDetailPage() {
         onDiscard={handleSidebarDiscard}
         saving={sidebarSaving}
       />
+    </div>
+  );
+}
+
+// ─── CMDB Links Section (linked CIs on a ticket) ────────────────────────────
+
+interface LinkedCi {
+  id: string;
+  impactRole: string | null;
+  ci: {
+    id: string;
+    ciNumber: number;
+    name: string;
+    hostname: string | null;
+    criticality: string | null;
+    type: string;
+    status: string;
+    ciClass: { className: string } | null;
+    lifecycleStatus: { statusName: string } | null;
+  };
+}
+
+function CmdbLinksSection({ ticketId }: { ticketId: string }) {
+  const [links, setLinks] = useState<{ incidents: LinkedCi[]; problems: LinkedCi[] }>({ incidents: [], problems: [] });
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Array<{ id: string; ciNumber: number; name: string; hostname: string | null; ciClass: { className: string } | null }>>([]);
+  const [impactRole, setImpactRole] = useState('affected');
+
+  const loadLinks = async () => {
+    const res = await fetch(`/api/v1/tickets/${ticketId}/cmdb-links`, { credentials: 'include' });
+    if (res.ok) setLinks(await res.json());
+  };
+
+  useEffect(() => { void loadLinks(); }, [ticketId]);
+
+  const searchCis = async (q: string) => {
+    if (!q || q.length < 2) { setSearchResults([]); return; }
+    const res = await fetch(`/api/v1/cmdb/cis?search=${encodeURIComponent(q)}&pageSize=20`, { credentials: 'include' });
+    if (res.ok) {
+      const data = await res.json();
+      setSearchResults(data.data ?? []);
+    }
+  };
+
+  const linkCi = async (ciId: string) => {
+    const res = await fetch(`/api/v1/tickets/${ticketId}/cmdb-links`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ciId, impactRole }),
+    });
+    if (res.ok) { setSearchOpen(false); setSearchQuery(''); setSearchResults([]); void loadLinks(); }
+  };
+
+  const unlinkCi = async (ciId: string) => {
+    if (!confirm('Unlink this CI?')) return;
+    const res = await fetch(`/api/v1/tickets/${ticketId}/cmdb-links/${ciId}`, { method: 'DELETE', credentials: 'include' });
+    if (res.ok || res.status === 204) void loadLinks();
+  };
+
+  const allLinks = [...links.incidents, ...links.problems];
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{allLinks.length} configuration item{allLinks.length !== 1 ? 's' : ''} linked</span>
+        <button
+          onClick={() => setSearchOpen(!searchOpen)}
+          style={{ padding: '6px 12px', backgroundColor: 'var(--accent-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
+        >
+          {searchOpen ? 'Cancel' : '+ Link CI'}
+        </button>
+      </div>
+
+      {searchOpen && (
+        <div style={{ padding: 12, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              type="search"
+              placeholder="Search by name, hostname, FQDN, IP..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); void searchCis(e.target.value); }}
+              style={{ flex: 1, padding: '8px 12px', border: '1px solid var(--border-primary)', borderRadius: 6, fontSize: 13 }}
+              autoFocus
+            />
+            <select value={impactRole} onChange={(e) => setImpactRole(e.target.value)}
+              style={{ padding: '8px 12px', border: '1px solid var(--border-primary)', borderRadius: 6, fontSize: 13, backgroundColor: 'var(--bg-primary)' }}>
+              <option value="affected">Affected</option>
+              <option value="root_cause">Root Cause</option>
+              <option value="related">Related</option>
+            </select>
+          </div>
+          {searchResults.length > 0 && (
+            <div style={{ maxHeight: 200, overflowY: 'auto', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 6 }}>
+              {searchResults.map((ci) => (
+                <button key={ci.id} onClick={() => linkCi(ci.id)}
+                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', border: 'none', borderBottom: '1px solid var(--bg-tertiary)', background: 'none', cursor: 'pointer', fontSize: 13 }}>
+                  <div style={{ fontWeight: 500 }}>CI-{ci.ciNumber} — {ci.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                    {ci.ciClass?.className ?? ''} {ci.hostname ? `• ${ci.hostname}` : ''}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {allLinks.length === 0 ? (
+        <p style={{ color: 'var(--text-placeholder)', fontSize: 13, margin: 0 }}>No configuration items linked yet.</p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {allLinks.map((link) => (
+            <div key={link.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: 8 }}>
+              <div style={{ flex: 1 }}>
+                <Link href={`/dashboard/cmdb/${link.ci.id}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 500, fontSize: 13 }}>
+                  CI-{link.ci.ciNumber} — {link.ci.name}
+                </Link>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                  {link.ci.ciClass?.className ?? ''}
+                  {link.ci.lifecycleStatus?.statusName ? ` • ${link.ci.lifecycleStatus.statusName}` : ''}
+                  {link.ci.criticality ? ` • ${link.ci.criticality}` : ''}
+                  {link.impactRole ? ` • ${link.impactRole}` : ''}
+                </div>
+              </div>
+              <button onClick={() => unlinkCi(link.ci.id)}
+                style={{ padding: '4px 10px', background: 'none', border: '1px solid var(--border-secondary)', borderRadius: 4, fontSize: 11, cursor: 'pointer', color: 'var(--text-muted)' }}>
+                Unlink
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

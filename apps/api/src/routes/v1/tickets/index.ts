@@ -528,4 +528,64 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
 
     return reply.status(200).send({ activities, total, page, pageSize });
   });
+
+  // ─── Ticket → CMDB CI Links ─────────────────────────────────────────────────
+
+  const { listCIsByTicket, createIncidentLink, createProblemLink, deleteIncidentLink, deleteProblemLink } =
+    await import('../../../services/cmdb-links.service.js');
+
+  // GET /api/v1/tickets/:id/cmdb-links — list CIs linked to this ticket
+  fastify.get('/api/v1/tickets/:id/cmdb-links', async (request, reply) => {
+    const user = request.user as { tenantId: string };
+    const { id } = request.params as { id: string };
+    const result = await listCIsByTicket(user.tenantId, id);
+    return reply.send(result);
+  });
+
+  // POST /api/v1/tickets/:id/cmdb-links — create CI link (auto-detects based on ticket type)
+  fastify.post('/api/v1/tickets/:id/cmdb-links', async (request, reply) => {
+    const user = request.user as { tenantId: string };
+    const { id } = request.params as { id: string };
+    const body = request.body as { ciId?: string; impactRole?: string };
+    if (!body.ciId) return reply.status(400).send({ error: 'ciId is required' });
+
+    // Determine whether incident or problem link based on ticket type
+    const ticket = await prisma.ticket.findFirst({
+      where: { id, tenantId: user.tenantId },
+      select: { type: true },
+    });
+    if (!ticket) return reply.status(404).send({ error: 'Ticket not found' });
+
+    try {
+      const link = ticket.type === 'PROBLEM'
+        ? await createProblemLink(user.tenantId, body.ciId, id, body.impactRole)
+        : await createIncidentLink(user.tenantId, body.ciId, id, body.impactRole);
+      return reply.status(201).send(link);
+    } catch (err) {
+      return reply.status(409).send({ error: (err as Error).message });
+    }
+  });
+
+  // DELETE /api/v1/tickets/:id/cmdb-links/:ciId — unlink a CI from ticket
+  fastify.delete('/api/v1/tickets/:id/cmdb-links/:ciId', async (request, reply) => {
+    const user = request.user as { tenantId: string };
+    const { id, ciId } = request.params as { id: string; ciId: string };
+
+    const ticket = await prisma.ticket.findFirst({
+      where: { id, tenantId: user.tenantId },
+      select: { type: true },
+    });
+    if (!ticket) return reply.status(404).send({ error: 'Ticket not found' });
+
+    try {
+      if (ticket.type === 'PROBLEM') {
+        await deleteProblemLink(user.tenantId, ciId, id);
+      } else {
+        await deleteIncidentLink(user.tenantId, ciId, id);
+      }
+      return reply.status(204).send();
+    } catch (err) {
+      return reply.status(404).send({ error: (err as Error).message });
+    }
+  });
 }
