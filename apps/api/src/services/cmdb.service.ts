@@ -223,7 +223,7 @@ export interface ServiceExtData {
 export async function createCI(tenantId: string, data: CreateCIData, userId: string) {
   return prisma.$transaction(async (tx) => {
     // Get next ciNumber atomically with advisory lock
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${tenantId} || '_ci_seq'))`;
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${tenantId} || '_ci_seq'))`;
     const result = await tx.$queryRaw<[{ next: bigint }]>`
       SELECT COALESCE(MAX("ciNumber"), 0) + 1 AS next
       FROM cmdb_configuration_items

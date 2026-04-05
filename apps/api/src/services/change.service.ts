@@ -126,7 +126,7 @@ export async function createChange(
 
   return prisma.$transaction(async (tx) => {
     // Get next changeNumber atomically with advisory lock
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${tenantId} || '_change_seq'))`;
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${tenantId} || '_change_seq'))`;
     const result = await tx.$queryRaw<[{ next: bigint }]>`
       SELECT COALESCE(MAX("changeNumber"), 0) + 1 AS next
       FROM changes
