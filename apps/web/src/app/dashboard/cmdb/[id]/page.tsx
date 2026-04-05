@@ -111,6 +111,8 @@ interface CIDetail {
   edition: string | null;
   businessOwnerId: string | null;
   technicalOwnerId: string | null;
+  businessOwner: { id: string; firstName: string; lastName: string; email: string; displayName: string | null } | null;
+  technicalOwner: { id: string; firstName: string; lastName: string; email: string; displayName: string | null } | null;
   criticality: string | null;
   confidentialityClass: string | null;
   integrityClass: string | null;
@@ -755,8 +757,8 @@ export default function CMDBDetailPage() {
       {activeTab === 'ownership' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
           <Card title="Ownership" icon={mdiAccountMultiple}>
-            <InfoRow label="Business Owner" value={ci.businessOwnerId} />
-            <InfoRow label="Technical Owner" value={ci.technicalOwnerId} />
+            <InfoRow label="Business Owner" value={ci.businessOwner ? (ci.businessOwner.displayName || `${ci.businessOwner.firstName} ${ci.businessOwner.lastName}`) : null} />
+            <InfoRow label="Technical Owner" value={ci.technicalOwner ? (ci.technicalOwner.displayName || `${ci.technicalOwner.firstName} ${ci.technicalOwner.lastName}`) : null} />
           </Card>
 
           <Card title="Support & Vendor" icon={mdiWrench}>

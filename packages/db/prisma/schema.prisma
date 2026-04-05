@@ -486,28 +486,30 @@ model User {
   createdAt               DateTime   @default(now())
   updatedAt               DateTime   @updatedAt
 
-  tenant              Tenant               @relation(fields: [tenantId], references: [id])
-  site                Site?                @relation(fields: [siteId], references: [id])
-  userRoles           UserRole[]
-  sessions            Session[]
-  assignedTickets     Ticket[]             @relation("AssignedTo")
-  requestedTickets    Ticket[]             @relation("RequestedBy")
-  ticketComments      TicketComment[]
-  ticketAttachments   TicketAttachment[]
-  cabMeetingAttendees CABMeetingAttendee[]
-  changeApprovals     ChangeApproval[]
-  notifications       Notification[]
-  deviceTokens        DeviceToken[]
-  auditLogs           AuditLog[]
-  ticketActivities    TicketActivity[]     @relation("TicketActivityActor")
-  passwordResetTokens PasswordResetToken[]
-  userGroupMembers    UserGroupMember[]
-  apiKeys             ApiKey[]
-  federatedIdentities FederatedIdentity[]
-  mfaDevices          MfaDevice[]
-  mfaChallenges       MfaChallenge[]
-  recoveryCodes       RecoveryCode[]
-  mfaTrustedDevices   MfaTrustedDevice[]
+  tenant                  Tenant                  @relation(fields: [tenantId], references: [id])
+  site                    Site?                   @relation(fields: [siteId], references: [id])
+  userRoles               UserRole[]
+  sessions                Session[]
+  assignedTickets         Ticket[]                @relation("AssignedTo")
+  requestedTickets        Ticket[]                @relation("RequestedBy")
+  ticketComments          TicketComment[]
+  ticketAttachments       TicketAttachment[]
+  cabMeetingAttendees     CABMeetingAttendee[]
+  changeApprovals         ChangeApproval[]
+  notifications           Notification[]
+  deviceTokens            DeviceToken[]
+  auditLogs               AuditLog[]
+  ticketActivities        TicketActivity[]        @relation("TicketActivityActor")
+  passwordResetTokens     PasswordResetToken[]
+  userGroupMembers        UserGroupMember[]
+  apiKeys                 ApiKey[]
+  federatedIdentities     FederatedIdentity[]
+  mfaDevices              MfaDevice[]
+  mfaChallenges           MfaChallenge[]
+  recoveryCodes           RecoveryCode[]
+  mfaTrustedDevices       MfaTrustedDevice[]
+  cmdbCisAsBusinessOwner  CmdbConfigurationItem[] @relation("CmdbCiBusinessOwner")
+  cmdbCisAsTechnicalOwner CmdbConfigurationItem[] @relation("CmdbCiTechnicalOwner")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -1755,6 +1757,8 @@ model CmdbConfigurationItem {
   cmdbEnvironment   CmdbEnvironment? @relation(fields: [environmentId], references: [id])
   manufacturer      CmdbVendor?      @relation(fields: [manufacturerId], references: [id])
   supportGroup      UserGroup?       @relation("CmdbCiSupportGroup", fields: [supportGroupId], references: [id])
+  businessOwner     User?            @relation("CmdbCiBusinessOwner", fields: [businessOwnerId], references: [id])
+  technicalOwner    User?            @relation("CmdbCiTechnicalOwner", fields: [technicalOwnerId], references: [id])
 
   sourceRels    CmdbRelationship[] @relation("CmdbRelSource")
   targetRels    CmdbRelationship[] @relation("CmdbRelTarget")

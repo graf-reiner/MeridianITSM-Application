@@ -458,6 +458,8 @@ export async function getCI(tenantId: string, ciId: string) {
       cmdbEnvironment: true,
       manufacturer: true,
       supportGroup: { select: { id: true, name: true, email: true } },
+      businessOwner: { select: { id: true, firstName: true, lastName: true, email: true, displayName: true } },
+      technicalOwner: { select: { id: true, firstName: true, lastName: true, email: true, displayName: true } },
       // Extension tables
       serverExt: true,
       applicationExt: { include: { application: { select: { id: true, name: true, type: true, status: true } } } },
