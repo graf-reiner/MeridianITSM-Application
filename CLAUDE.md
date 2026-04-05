@@ -41,8 +41,19 @@ docker-compose up    # PostgreSQL:5432, Redis:6379, MinIO:9001, MailHog:8025
 
 ## Critical Design Rules
 
-### 1. Multi-Tenancy — Every Query Must Be Scoped by tenantId
-Every database table has a `tenantId` column. **Every query, without exception, must filter by `tenantId`**. This is the #1 security rule.
+### 1. Multi-Tenancy — MANDATORY for ALL Code Changes
+**This is the #1 rule of this project. It applies to EVERY piece of code that is built, added, or modified.**
+
+- Every database table has a `tenantId` column. **Every query, without exception, must filter by `tenantId`**.
+- Every new API endpoint must extract `tenantId` from the authenticated user and scope all queries by it.
+- Every new database model must include a `tenantId` field with a relation to the `Tenant` model.
+- Every new feature, page, component, service, or worker must be tenant-aware — data from one tenant must NEVER leak to another.
+- When modifying existing code, verify that tenant scoping is preserved. Never remove or bypass `tenantId` filters.
+- Background workers that process data across tenants must iterate per-tenant, never mix tenant data.
+- File storage paths must include `tenantId` (e.g., `{tenantId}/tickets/{ticketId}/filename`).
+- The only exceptions are: the Owner Admin app (which manages tenants globally), the `OwnerUser`/`OwnerSession`/`OwnerNote`/`OwnerSmtpConfig` models (which are global), and `SubscriptionPlan` (shared across tenants).
+
+**Violating tenant isolation is a critical security bug. Always verify tenant scoping in every code change.**
 
 ### 2. Owner Admin Is Fully Isolated
 `apps/owner-admin` shares the PostgreSQL database but uses separate auth (`OwnerUser` table, separate JWT secret `OWNER_JWT_SECRET`), separate cookie domain, and is never exposed through Cloudflare. No code in `apps/web` may authenticate to or call the owner admin.
