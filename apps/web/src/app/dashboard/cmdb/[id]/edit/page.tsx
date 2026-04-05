@@ -1120,8 +1120,8 @@ export default function CMDBEditPage() {
     };
     const groupLabel = (gid: string) => groups.find((g) => g.id === gid)?.name ?? gid;
     const vendorLabel = (vid: string) => vendors.find((v) => v.id === vid)?.name ?? vid;
-    const statusLabel = (sid: string, list: CmdbStatus[]) => list.find((s) => s.id === sid)?.name ?? sid;
-    const envLabel = (eid: string) => environments.find((e) => e.id === eid)?.name ?? eid;
+    const statusLabel = (sid: string, list: CmdbStatus[]) => list.find((s) => s.id === sid)?.statusName ?? sid;
+    const envLabel = (eid: string) => environments.find((e) => e.id === eid)?.envName ?? eid;
 
     return (
       <div>
