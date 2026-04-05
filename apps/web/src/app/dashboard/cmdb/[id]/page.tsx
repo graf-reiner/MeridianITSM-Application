@@ -770,7 +770,7 @@ export default function CMDBDetailPage() {
       )}
 
       {/* ── Tab: Technical ───────────────────────────────────────────────────── */}
-      {activeTab === 'technical' && (
+      {activeTab === 'technical' && (<>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
           <Card title="Identity" icon={mdiWrench}>
             <InfoRow label="Hostname" value={ci.hostname} />
@@ -866,7 +866,7 @@ export default function CMDBDetailPage() {
 
         {/* Agent Inventory Snapshot (if CI has a linked agent) */}
         {ci.agentId && <InventorySnapshotSection ciId={ci.id} />}
-      )}
+      </>)}
 
       {/* ── Tab: Service Context ─────────────────────────────────────────────── */}
       {activeTab === 'service' && (
