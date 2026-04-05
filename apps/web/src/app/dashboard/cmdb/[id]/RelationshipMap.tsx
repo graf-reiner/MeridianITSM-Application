@@ -41,14 +41,14 @@ interface CINode {
 
 interface CIRelation {
   id: string;
-  sourceId: string;
-  targetId: string;
-  type: string;
+  sourceId?: string;
+  targetId?: string;
+  type?: string;
   relationshipType?: string;
-  relationshipTypeRef?: { forwardLabel: string; reverseLabel: string } | null;
+  relationshipTypeRef?: { forwardLabel?: string; reverseLabel?: string } | null;
   confidenceScore?: number | null;
-  source: CINode;
-  target: CINode;
+  source?: CINode;
+  target?: CINode;
 }
 
 interface ImpactCI {
@@ -216,9 +216,17 @@ export default function RelationshipMap({ ci, impactData }: RelationshipMapProps
     const nodesMap = new Map<string, CINode>();
     nodesMap.set(ci.id, { id: ci.id, name: ci.name, type: ci.type, status: ci.status, ciNumber: ci.ciNumber, isCurrent: true });
 
-    for (const rel of [...(ci.sourceRelations ?? ci.sourceRels ?? []), ...(ci.targetRelations ?? ci.targetRels ?? [])]) {
-      if (!nodesMap.has(rel.source.id)) nodesMap.set(rel.source.id, rel.source);
-      if (!nodesMap.has(rel.target.id)) nodesMap.set(rel.target.id, rel.target);
+    // Source relations have a target node; target relations have a source node
+    const sourceRels = ci.sourceRelations ?? ci.sourceRels ?? [];
+    const targetRels = ci.targetRelations ?? ci.targetRels ?? [];
+
+    for (const rel of sourceRels) {
+      if (rel.target && !nodesMap.has(rel.target.id)) nodesMap.set(rel.target.id, rel.target);
+      if (rel.source && !nodesMap.has(rel.source.id)) nodesMap.set(rel.source.id, rel.source);
+    }
+    for (const rel of targetRels) {
+      if (rel.source && !nodesMap.has(rel.source.id)) nodesMap.set(rel.source.id, rel.source);
+      if (rel.target && !nodesMap.has(rel.target.id)) nodesMap.set(rel.target.id, rel.target);
     }
 
     const rNodes: Node[] = Array.from(nodesMap.values()).map((n) => ({
@@ -238,19 +246,37 @@ export default function RelationshipMap({ ci, impactData }: RelationshipMapProps
 
     const allRelIds = new Set<string>();
     const rEdges: Edge[] = [];
-    for (const rel of [...(ci.sourceRelations ?? ci.sourceRels ?? []), ...(ci.targetRelations ?? ci.targetRels ?? [])]) {
+
+    for (const rel of sourceRels) {
       if (!allRelIds.has(rel.id)) {
         allRelIds.add(rel.id);
         const edgeLabel = rel.relationshipTypeRef?.forwardLabel
-          ?? (rel.relationshipType ?? rel.type).replace(/_/g, ' ').toLowerCase();
-        rEdges.push({
-          id: rel.id,
-          source: rel.sourceId,
-          target: rel.targetId,
-          label: edgeLabel,
-          style: { stroke: 'var(--text-placeholder)', strokeWidth: 1.5 },
-          labelStyle: { fontSize: 10, fill: 'var(--text-placeholder)' },
-        });
+          ?? (rel.relationshipType ?? rel.type ?? '').replace(/_/g, ' ').toLowerCase();
+        const sourceId = rel.sourceId ?? ci.id;
+        const targetId = rel.targetId ?? rel.target?.id;
+        if (sourceId && targetId) {
+          rEdges.push({
+            id: rel.id, source: sourceId, target: targetId, label: edgeLabel,
+            style: { stroke: 'var(--text-placeholder)', strokeWidth: 1.5 },
+            labelStyle: { fontSize: 10, fill: 'var(--text-placeholder)' },
+          });
+        }
+      }
+    }
+    for (const rel of targetRels) {
+      if (!allRelIds.has(rel.id)) {
+        allRelIds.add(rel.id);
+        const edgeLabel = rel.relationshipTypeRef?.reverseLabel ?? rel.relationshipTypeRef?.forwardLabel
+          ?? (rel.relationshipType ?? rel.type ?? '').replace(/_/g, ' ').toLowerCase();
+        const sourceId = rel.sourceId ?? rel.source?.id;
+        const targetId = rel.targetId ?? ci.id;
+        if (sourceId && targetId) {
+          rEdges.push({
+            id: rel.id, source: sourceId, target: targetId, label: edgeLabel,
+            style: { stroke: 'var(--text-placeholder)', strokeWidth: 1.5 },
+            labelStyle: { fontSize: 10, fill: 'var(--text-placeholder)' },
+          });
+        }
       }
     }
 
