@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
@@ -380,6 +380,16 @@ export default function AgentsSettingsPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [revoking, setRevoking] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [updatePolicy, setUpdatePolicy] = useState('manual');
+  const [uploadVersion, setUploadVersion] = useState('');
+  const [uploadPlatform, setUploadPlatform] = useState('WINDOWS');
+  const [uploading, setUploading] = useState(false);
+  const [deployConfirm, setDeployConfirm] = useState(false);
+  const [deploying, setDeploying] = useState(false);
+  const [deployResult, setDeployResult] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: agentsData, isLoading: agentsLoading } = useQuery<AgentListResponse>({
     queryKey: ['settings-agents'],
@@ -826,6 +836,289 @@ export default function AgentsSettingsPage() {
             </tbody>
           </table>
         )}
+      </div>
+
+      {/* Agent Updates Section */}
+      <div
+        style={{
+          marginTop: 32,
+          backgroundColor: 'var(--bg-primary)',
+          borderRadius: 12,
+          border: '1px solid var(--border-primary)',
+          padding: 24,
+        }}
+      >
+        <h2 style={{ margin: '0 0 20px', fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>
+          Agent Updates
+        </h2>
+
+        {/* Update Policy */}
+        <div style={{ marginBottom: 24 }}>
+          <label
+            htmlFor="updatePolicy"
+            style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}
+          >
+            Update Policy
+          </label>
+          <select
+            id="updatePolicy"
+            value={updatePolicy}
+            onChange={async (e) => {
+              const newPolicy = e.target.value;
+              setUpdatePolicy(newPolicy);
+              try {
+                await fetch('/api/v1/settings/agent-update-policy', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                  body: JSON.stringify({ policy: newPolicy }),
+                });
+              } catch {
+                // revert on failure could be added later
+              }
+            }}
+            style={{
+              width: '100%',
+              maxWidth: 440,
+              padding: '8px 10px',
+              border: '1px solid var(--border-secondary)',
+              borderRadius: 7,
+              fontSize: 14,
+              outline: 'none',
+              backgroundColor: 'var(--bg-primary)',
+              color: 'var(--text-primary)',
+            }}
+          >
+            <option value="manual">Manual — admin must push updates</option>
+            <option value="automatic">Automatic — agents update on next heartbeat</option>
+            <option value="scheduled">Scheduled — updates during maintenance window only</option>
+          </select>
+        </div>
+
+        {/* Upload Update Package */}
+        <div style={{ marginBottom: 24 }}>
+          <label
+            style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}
+          >
+            Upload Update Package
+          </label>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <div>
+              <label
+                htmlFor="uploadVersion"
+                style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}
+              >
+                Version
+              </label>
+              <input
+                id="uploadVersion"
+                type="text"
+                placeholder="e.g. 1.2.0"
+                value={uploadVersion}
+                onChange={(e) => setUploadVersion(e.target.value)}
+                style={{
+                  padding: '8px 10px',
+                  border: '1px solid var(--border-secondary)',
+                  borderRadius: 7,
+                  fontSize: 14,
+                  outline: 'none',
+                  width: 140,
+                }}
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="uploadPlatform"
+                style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}
+              >
+                Platform
+              </label>
+              <select
+                id="uploadPlatform"
+                value={uploadPlatform}
+                onChange={(e) => setUploadPlatform(e.target.value)}
+                style={{
+                  padding: '8px 10px',
+                  border: '1px solid var(--border-secondary)',
+                  borderRadius: 7,
+                  fontSize: 14,
+                  outline: 'none',
+                  backgroundColor: 'var(--bg-primary)',
+                  color: 'var(--text-primary)',
+                  width: 140,
+                }}
+              >
+                <option value="WINDOWS">Windows</option>
+                <option value="LINUX">Linux</option>
+                <option value="MACOS">macOS</option>
+              </select>
+            </div>
+            <div>
+              <label
+                htmlFor="uploadFile"
+                style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}
+              >
+                Package File
+              </label>
+              <input
+                id="uploadFile"
+                ref={fileInputRef}
+                type="file"
+                accept=".exe,.msi,.tar.gz,.zip"
+                style={{
+                  fontSize: 13,
+                  color: 'var(--text-secondary)',
+                }}
+              />
+            </div>
+            <button
+              disabled={uploading}
+              onClick={async () => {
+                const file = fileInputRef.current?.files?.[0];
+                if (!file) { setUploadError('Please select a file.'); return; }
+                if (!uploadVersion.trim()) { setUploadError('Please enter a version.'); return; }
+                setUploading(true);
+                setUploadError(null);
+                setUploadSuccess(null);
+                try {
+                  const formData = new FormData();
+                  formData.append('file', file);
+                  formData.append('version', uploadVersion.trim());
+                  formData.append('platform', uploadPlatform);
+                  const res = await fetch('/api/v1/agents/updates/upload', {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData,
+                  });
+                  if (!res.ok) {
+                    const data = (await res.json()) as { error?: string };
+                    throw new Error(data.error ?? 'Upload failed');
+                  }
+                  setUploadSuccess(`Package v${uploadVersion.trim()} (${uploadPlatform}) uploaded successfully.`);
+                  setUploadVersion('');
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                } catch (err) {
+                  setUploadError(err instanceof Error ? err.message : 'Upload failed');
+                } finally {
+                  setUploading(false);
+                }
+              }}
+              style={{
+                padding: '8px 18px',
+                backgroundColor: uploading ? '#a5b4fc' : 'var(--accent-brand, #0284c7)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 7,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: uploading ? 'not-allowed' : 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {uploading ? 'Uploading...' : 'Upload'}
+            </button>
+          </div>
+          {uploadError && (
+            <div style={{ marginTop: 8, padding: '6px 12px', backgroundColor: 'var(--badge-red-bg-subtle)', border: '1px solid #fecaca', borderRadius: 7, color: '#dc2626', fontSize: 13 }}>
+              {uploadError}
+            </div>
+          )}
+          {uploadSuccess && (
+            <div style={{ marginTop: 8, padding: '6px 12px', backgroundColor: 'var(--badge-green-bg-subtle)', border: '1px solid #86efac', borderRadius: 7, color: '#166534', fontSize: 13 }}>
+              {uploadSuccess}
+            </div>
+          )}
+        </div>
+
+        {/* Deploy Update */}
+        <div>
+          <label
+            style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}
+          >
+            Deploy Update
+          </label>
+          {!deployConfirm ? (
+            <button
+              onClick={() => setDeployConfirm(true)}
+              style={{
+                padding: '8px 18px',
+                backgroundColor: 'var(--accent-warning, #f59e0b)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 7,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Deploy Update to All Agents
+            </button>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                Deploy the latest update to all agents? This cannot be undone.
+              </span>
+              <button
+                disabled={deploying}
+                onClick={async () => {
+                  setDeploying(true);
+                  setDeployResult(null);
+                  try {
+                    const res = await fetch('/api/v1/agents/updates/deploy', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      credentials: 'include',
+                      body: JSON.stringify({ agentIds: 'all', version: 'latest', platform: 'WINDOWS' }),
+                    });
+                    if (!res.ok) {
+                      const data = (await res.json()) as { error?: string };
+                      throw new Error(data.error ?? 'Deploy failed');
+                    }
+                    const data = (await res.json()) as { targeted?: number };
+                    setDeployResult(`Update deployed — ${data.targeted ?? 0} agent(s) targeted.`);
+                  } catch (err) {
+                    setDeployResult(err instanceof Error ? err.message : 'Deploy failed');
+                  } finally {
+                    setDeploying(false);
+                    setDeployConfirm(false);
+                  }
+                }}
+                style={{
+                  padding: '6px 14px',
+                  backgroundColor: deploying ? '#a5b4fc' : '#dc2626',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 6,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: deploying ? 'not-allowed' : 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {deploying ? 'Deploying...' : 'Confirm Deploy'}
+              </button>
+              <button
+                onClick={() => setDeployConfirm(false)}
+                style={{
+                  padding: '6px 10px',
+                  border: 'none',
+                  background: 'none',
+                  color: 'var(--text-muted)',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+          {deployResult && (
+            <div style={{ marginTop: 8, padding: '6px 12px', backgroundColor: 'var(--badge-green-bg-subtle)', border: '1px solid #86efac', borderRadius: 7, color: '#166534', fontSize: 13 }}>
+              {deployResult}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Generate Token Modal */}
