@@ -16,10 +16,13 @@ test.describe('Mobile launcher modal', () => {
     page,
     context,
   }) => {
-    // Ensure no existing preference cookie
-    await context.clearCookies({ name: 'meridian_device_pref' });
-
     await page.goto('/dashboard', { waitUntil: 'networkidle' });
+
+    // Clear only the device pref cookie (not the auth session)
+    await page.evaluate(() => {
+      document.cookie = 'meridian_device_pref=; Path=/; Max-Age=0; SameSite=Lax';
+    });
+    await page.reload({ waitUntil: 'networkidle' });
 
     const modal = page.getByTestId('mobile-launcher-modal');
     await expect(modal).toBeVisible();
@@ -43,7 +46,7 @@ test.describe('Mobile launcher modal', () => {
       {
         name: 'meridian_device_pref',
         value: 'desktop',
-        domain: 'localhost',
+        domain: '10.1.200.218',
         path: '/',
       },
     ]);

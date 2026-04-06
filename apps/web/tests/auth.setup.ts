@@ -1,6 +1,6 @@
 import { test as setup, expect } from '@playwright/test';
 
-const API_URL = process.env.API_URL ?? 'http://localhost:4000';
+const API_URL = process.env.API_URL ?? 'http://10.1.200.218:4000';
 const STORAGE_STATE_PATH = 'tests/.auth/admin.json';
 
 /**
