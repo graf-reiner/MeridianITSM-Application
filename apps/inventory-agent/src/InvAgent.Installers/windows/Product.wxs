@@ -1,11 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  WiX Toolset v4 installer definition for Meridian Inventory Agent (Windows)
+  WiX Toolset v4 installer for Meridian Inventory Agent (Windows)
+
+  Silent install:
+    msiexec /i MeridianAgent.msi SERVER_URL="https://..." ENROLLMENT_TOKEN="..." /quiet
+
+  Interactive:
+    Double-click MeridianAgent.msi — the installer prompts for server URL, token, etc.
+
   Install path:  %ProgramFiles%\Meridian\Agent\
   Config path:   %ProgramData%\Meridian\config.json
   Service name:  MeridianAgent (auto-start, LocalSystem)
 -->
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
      xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
 
   <Package Name="Meridian Inventory Agent"
@@ -19,19 +27,23 @@
 
     <MediaTemplate EmbedCab="yes" />
 
-    <!-- Installation directory -->
+    <!-- ── Public Properties (settable via msiexec /quiet) ──────────────── -->
+    <Property Id="SERVER_URL" Value="" />
+    <Property Id="ENROLLMENT_TOKEN" Value="" Secure="yes" />
+    <Property Id="PRIVACY_TIER" Value="full" />
+
+    <!-- ── Directories ──────────────────────────────────────────────────── -->
     <StandardDirectory Id="ProgramFilesFolder">
       <Directory Id="MeridianDir" Name="Meridian">
         <Directory Id="INSTALLFOLDER" Name="Agent" />
       </Directory>
     </StandardDirectory>
 
-    <!-- Config directory under ProgramData -->
     <StandardDirectory Id="CommonAppDataFolder">
       <Directory Id="MeridianDataDir" Name="Meridian" />
     </StandardDirectory>
 
-    <!-- Main component: agent binary and files -->
+    <!-- ── Agent binaries ───────────────────────────────────────────────── -->
     <ComponentGroup Id="AgentComponents" Directory="INSTALLFOLDER">
       <Component Id="AgentExe">
         <File Id="AgentExeFile"
@@ -39,23 +51,20 @@
               KeyPath="yes" />
       </Component>
       <Component Id="AgentDeps">
-        <!-- Include all DLLs from publish directory -->
         <File Source="$(var.PublishDir)\InvAgent.dll" />
         <File Source="$(var.PublishDir)\InvAgent.runtimeconfig.json" />
       </Component>
     </ComponentGroup>
 
-    <!-- Default config file -->
+    <!-- ── Config file (written by custom action, not static) ───────────── -->
     <ComponentGroup Id="ConfigComponents" Directory="MeridianDataDir">
-      <Component Id="AgentConfig">
-        <File Id="AgentConfigFile"
-              Source="$(var.ProjectDir)\windows\config.default.json"
-              Name="config.json"
-              KeyPath="yes" />
+      <Component Id="ConfigDir">
+        <CreateFolder />
+        <KeyPath Id="ConfigDirKey" />
       </Component>
     </ComponentGroup>
 
-    <!-- Windows Service registration -->
+    <!-- ── Windows Service ──────────────────────────────────────────────── -->
     <ComponentGroup Id="ServiceComponents" Directory="INSTALLFOLDER">
       <Component Id="AgentService">
         <ServiceInstall Id="AgentServiceInstall"
@@ -76,11 +85,90 @@
       </Component>
     </ComponentGroup>
 
+    <!-- ── Custom Action: write config.json after install ───────────────── -->
+    <SetProperty Id="WriteConfigAction"
+                 Before="WriteConfigAction"
+                 Sequence="execute"
+                 Value="SERVER_URL=[SERVER_URL];ENROLLMENT_TOKEN=[ENROLLMENT_TOKEN];PRIVACY_TIER=[PRIVACY_TIER];CONFIG_DIR=[MeridianDataDir]" />
+
+    <CustomAction Id="WriteConfigAction"
+                  Directory="MeridianDataDir"
+                  ExeCommand='cmd.exe /c echo {"AgentConfig":{"ServerUrl":"[SERVER_URL]","EnrollmentToken":"[ENROLLMENT_TOKEN]","PrivacyTier":"[PRIVACY_TIER]","HeartbeatIntervalSeconds":300,"InventoryIntervalSeconds":14400,"LocalWebUiPort":8787,"LocalQueueMaxSizeMb":100,"LogLevel":"Information"}} > "[MeridianDataDir]config.json"'
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="check" />
+
+    <InstallExecuteSequence>
+      <Custom Action="WriteConfigAction" After="InstallFiles">NOT Installed</Custom>
+    </InstallExecuteSequence>
+
+    <!-- ── Features ─────────────────────────────────────────────────────── -->
     <Feature Id="ProductFeature" Title="Meridian Inventory Agent" Level="1">
       <ComponentGroupRef Id="AgentComponents" />
       <ComponentGroupRef Id="ConfigComponents" />
       <ComponentGroupRef Id="ServiceComponents" />
     </Feature>
+
+    <!-- ── UI Dialogs ───────────────────────────────────────────────────── -->
+    <ui:WixUI Id="WixUI_MeridianAgent" />
+
+    <UI>
+      <!-- Welcome dialog -->
+      <Dialog Id="WelcomeDlg" Width="370" Height="270" Title="Meridian Agent Setup">
+        <Control Id="Title" Type="Text" X="20" Y="20" Width="330" Height="20"
+                 Text="{\WixUI_Font_Title}Welcome to Meridian Inventory Agent Setup" />
+        <Control Id="Description" Type="Text" X="20" Y="50" Width="330" Height="40"
+                 Text="This wizard will install the Meridian ITSM Inventory Agent on your computer. The agent collects hardware and software inventory and reports it to your Meridian ITSM server." />
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="Next">
+          <Publish Event="NewDialog" Value="ServerConfigDlg">1</Publish>
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="Cancel">
+          <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>
+        </Control>
+      </Dialog>
+
+      <!-- Server configuration dialog -->
+      <Dialog Id="ServerConfigDlg" Width="370" Height="270" Title="Meridian Agent — Server Configuration">
+        <Control Id="Title" Type="Text" X="20" Y="20" Width="330" Height="20"
+                 Text="{\WixUI_Font_Title}Server Configuration" />
+
+        <Control Id="ServerLabel" Type="Text" X="20" Y="55" Width="330" Height="13"
+                 Text="Meridian ITSM Server URL:" />
+        <Control Id="ServerUrl" Type="Edit" X="20" Y="70" Width="330" Height="18"
+                 Property="SERVER_URL" />
+
+        <Control Id="TokenLabel" Type="Text" X="20" Y="100" Width="330" Height="13"
+                 Text="Enrollment Token (from Settings > Agents):" />
+        <Control Id="Token" Type="Edit" X="20" Y="115" Width="330" Height="18"
+                 Property="ENROLLMENT_TOKEN" />
+
+        <Control Id="TierLabel" Type="Text" X="20" Y="150" Width="330" Height="13"
+                 Text="Privacy Tier:" />
+        <Control Id="TierCombo" Type="ComboBox" X="20" Y="165" Width="150" Height="18"
+                 Property="PRIVACY_TIER" Sorted="yes">
+          <ComboBox Property="PRIVACY_TIER">
+            <ListItem Text="Full (all data)" Value="full" />
+            <ListItem Text="Restricted (hardware only)" Value="restricted" />
+            <ListItem Text="Anonymized (minimal)" Value="anonymized" />
+          </ComboBox>
+        </Control>
+
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="Back">
+          <Publish Event="NewDialog" Value="WelcomeDlg">1</Publish>
+        </Control>
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="Install">
+          <Publish Event="EndDialog" Value="Return">
+            <![CDATA[SERVER_URL <> "" AND ENROLLMENT_TOKEN <> ""]]>
+          </Publish>
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="Cancel">
+          <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>
+        </Control>
+
+        <Control Id="ValidationNote" Type="Text" X="20" Y="200" Width="330" Height="30"
+                 Text="Server URL and Enrollment Token are required. You can obtain the token from the Meridian ITSM admin dashboard under Settings > Agents." />
+      </Dialog>
+    </UI>
 
   </Package>
 </Wix>

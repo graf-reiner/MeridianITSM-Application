@@ -40,7 +40,19 @@ You also need the **server URL** (e.g., `https://meridian.yourcompany.com`).
 
 From the `apps/inventory-agent/` directory:
 
-### Build all platforms at once
+### Build Windows installer package (recommended)
+
+```powershell
+powershell -ExecutionPolicy Bypass -File build-installer.ps1
+```
+
+This produces `publish/win-x64-installer/` containing both:
+- `InvAgent.exe` — the agent service binary
+- `MeridianAgentSetup.exe` — the interactive/silent installer
+
+Distribute this entire folder to endpoints. End users run `MeridianAgentSetup.exe`.
+
+### Build all platforms (agent only, no setup EXE)
 
 ```bash
 ./build-all.sh
@@ -72,9 +84,43 @@ dotnet publish src/InvAgent.CLI/InvAgent.CLI.csproj -c Release -r osx-x64 --self
 
 ## Windows Installation
 
-### Automated (Recommended)
+There are three ways to install on Windows. All require Administrator privileges.
 
-Run PowerShell **as Administrator**:
+### Option 1: Setup EXE — Interactive (Recommended for end users)
+
+Double-click `MeridianAgentSetup.exe` (or right-click > Run as administrator). The installer walks you through 4 steps:
+
+1. Server URL
+2. Enrollment token
+3. Privacy tier
+4. Install directory
+
+No command-line knowledge required.
+
+### Option 2: Setup EXE — Silent (Recommended for deployment scripts)
+
+```powershell
+MeridianAgentSetup.exe --server-url "https://meridian.yourcompany.com" --token "your-enrollment-token" --quiet
+```
+
+All switches:
+- `--server-url URL` — Meridian server URL (required)
+- `--token TOKEN` — Enrollment token (required)
+- `--privacy-tier full|restricted|anonymized` (default: `full`)
+- `--install-dir "C:\Custom\Path"` (default: `C:\Program Files\MeridianAgent`)
+- `--quiet` — No interactive prompts; fail if required args are missing
+
+### Option 3: MSI Installer
+
+**Interactive** — double-click `MeridianAgent.msi`. The wizard prompts for server URL, token, and privacy tier.
+
+**Silent** via `msiexec`:
+
+```powershell
+msiexec /i MeridianAgent.msi SERVER_URL="https://meridian.yourcompany.com" ENROLLMENT_TOKEN="your-token" PRIVACY_TIER="full" /quiet
+```
+
+### Option 4: PowerShell Script (legacy)
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File packaging\windows\install.ps1 `
@@ -86,10 +132,12 @@ Optional parameters:
 - `-PrivacyTier full|restricted|anonymized` (default: `full`)
 - `-InstallDir "C:\Custom\Path"` (default: `C:\Program Files\MeridianAgent`)
 
-The installer will:
-1. Copy the agent binaries to `C:\Program Files\MeridianAgent`
-2. Write config to `%ProgramData%\Meridian\config.json`
-3. Register and start the `MeridianAgent` Windows Service (auto-start)
+### What the installer does
+
+Regardless of method, the installer:
+1. Copies the agent binaries to `C:\Program Files\MeridianAgent`
+2. Writes config to `%ProgramData%\Meridian\config.json`
+3. Registers and starts the `MeridianAgent` Windows Service (auto-start)
 
 ### Manual
 
