@@ -12,4 +12,5 @@ public class AgentConfig
     public string? HttpProxy { get; set; }
     public int LocalQueueMaxSizeMb { get; set; } = 100;
     public string LogLevel { get; set; } = "Information";
+    public bool AutoUpdateEnabled { get; set; } = true;
 }
