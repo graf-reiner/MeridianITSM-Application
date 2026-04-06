@@ -110,6 +110,27 @@ public class MeridianApiClient
     }
 
     /// <summary>
+    /// Checks the server for an available agent update.
+    /// Returns UpdateInfo if an update is available, or null if up to date.
+    /// </summary>
+    public async Task<UpdateInfo?> CheckForUpdateAsync(string currentVersion, CancellationToken ct = default)
+    {
+        try
+        {
+            var response = await _http.GetAsync($"api/v1/agents/update-check?version={currentVersion}", ct);
+            if (response.StatusCode == HttpStatusCode.NoContent || response.StatusCode == HttpStatusCode.NotFound)
+                return null;
+
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<UpdateInfo>(JsonOptions, ct);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
     /// Downloads a file from the given URL to a local path.
     /// Supports both absolute URLs and relative paths on the Meridian server.
     /// </summary>
