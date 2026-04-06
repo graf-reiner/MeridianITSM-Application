@@ -360,6 +360,11 @@ model Tenant {
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
 
+  agentUpdatePolicy       String    @default("manual")
+  agentUpdateWindowStart  String?
+  agentUpdateWindowEnd    String?
+  agentUpdateWindowDay    String?
+
   // Relations
   users                    User[]
   customerOrganizations    CustomerOrganization[]
@@ -1415,9 +1420,29 @@ model Agent {
   cmdbConfigItems    CmdbConfigurationItem[]
   cmdbChangeRecords  CmdbChangeRecord[]
 
+  forceUpdateUrl    String?
+  updateInProgress  Boolean   @default(false)
+  updateStartedAt   DateTime?
+
   @@index([tenantId])
   @@index([tenantId, status])
   @@map("agents")
+}
+
+model AgentUpdate {
+  id           String        @id @default(uuid()) @db.Uuid
+  version      String
+  platform     AgentPlatform
+  downloadUrl  String
+  checksum     String
+  fileSize     Int
+  releaseNotes String?
+  storageKey   String?
+  uploadedBy   String?       @db.Uuid
+  createdAt    DateTime      @default(now())
+
+  @@unique([version, platform])
+  @@map("agent_updates")
 }
 
 // Model 37: AgentEnrollmentToken
