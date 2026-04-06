@@ -126,7 +126,42 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
       });
     }
 
-    // Generate a unique agent key
+    // Check if an agent with this hostname already exists for this tenant.
+    // If so, re-key it instead of creating a duplicate.
+    const existingAgent = await prisma.agent.findFirst({
+      where: { hostname, tenantId: enrollmentToken.tenantId },
+      orderBy: { enrolledAt: 'desc' },
+    });
+
+    if (existingAgent) {
+      // Re-enroll: generate new key, update existing record
+      const newAgentKey = randomBytes(32).toString('hex');
+
+      const updated = await prisma.$transaction(async (tx) => {
+        const reEnrolled = await tx.agent.update({
+          where: { id: existingAgent.id },
+          data: {
+            agentKey: newAgentKey,
+            platform: platformEnum,
+            agentVersion: agentVersion ?? null,
+            status: 'ACTIVE',
+            enrolledAt: now,
+            lastHeartbeatAt: now,
+          },
+        });
+
+        await tx.agentEnrollmentToken.update({
+          where: { id: enrollmentToken.id },
+          data: { enrollCount: { increment: 1 } },
+        });
+
+        return reEnrolled;
+      });
+
+      return reply.code(200).send({ agentKey: newAgentKey, agentId: updated.id });
+    }
+
+    // Generate a unique agent key for a brand-new agent
     const agentKey = randomBytes(32).toString('hex');
 
     // Transactionally create the agent and increment enrollCount

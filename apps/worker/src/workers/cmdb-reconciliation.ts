@@ -128,10 +128,6 @@ export const cmdbReconciliationWorker = new Worker(
       const tenantId = agent.tenantId;
 
       try {
-        const existingCi = await prisma.cmdbConfigurationItem.findFirst({
-          where: { agentId: agent.id, tenantId },
-        });
-
         const hostname = snapshot.hostname ?? agent.hostname;
         const operatingSystem = snapshot.operatingSystem ?? null;
         const osVersion = snapshot.osVersion ?? null;
@@ -141,6 +137,26 @@ export const cmdbReconciliationWorker = new Worker(
         const classId = await resolveClassId(tenantId, classKey);
         const lifecycleStatusId = await resolveLifecycleStatusId(tenantId, 'in_service');
         const environmentId = await resolveEnvironmentId(tenantId, 'prod');
+
+        // Look up existing CI: first by agentId, then by hostname (handles re-enrollment)
+        let existingCi = await prisma.cmdbConfigurationItem.findFirst({
+          where: { agentId: agent.id, tenantId },
+        });
+
+        if (!existingCi && hostname) {
+          existingCi = await prisma.cmdbConfigurationItem.findFirst({
+            where: { hostname, tenantId, isDeleted: false },
+          });
+
+          // Re-link the CI to the current agent so future lookups hit the fast path
+          if (existingCi) {
+            await prisma.cmdbConfigurationItem.update({
+              where: { id: existingCi.id },
+              data: { agentId: agent.id, sourceRecordKey: agent.agentKey },
+            });
+            console.log(`[cmdb-reconciliation] Re-linked CI ${existingCi.id} (${hostname}) to new agent ${agent.id}`);
+          }
+        }
 
         if (!existingCi) {
           // ─── Create new CI with promoted columns + server extension ───
