@@ -24,6 +24,8 @@ public class AgentWorker : BackgroundService
     private readonly LocalQueue _queue;
     private readonly AgentConfig _config;
     private readonly ILogger<AgentWorker> _logger;
+    private readonly UpdateChecker _updateChecker;
+    private readonly UpdateInstaller _updateInstaller;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -35,13 +37,17 @@ public class AgentWorker : BackgroundService
         MeridianApiClient api,
         LocalQueue queue,
         IOptions<AgentConfig> config,
-        ILogger<AgentWorker> logger)
+        ILogger<AgentWorker> logger,
+        UpdateChecker updateChecker,
+        UpdateInstaller updateInstaller)
     {
         _collector = collector;
         _api = api;
         _queue = queue;
         _config = config.Value;
         _logger = logger;
+        _updateChecker = updateChecker;
+        _updateInstaller = updateInstaller;
     }
 
     protected override async Task ExecuteAsync(CancellationToken ct)
@@ -118,8 +124,16 @@ public class AgentWorker : BackgroundService
                     ["platform"] = RuntimeInformation.OSDescription,
                 }
             };
-            await _api.SendHeartbeatAsync(payload, ct);
+            var response = await _api.SendHeartbeatAsync(payload, ct);
             _logger.LogDebug("Heartbeat sent successfully.");
+
+            // Check for updates after successful heartbeat
+            var updateInfo = await _updateChecker.CheckForUpdateAsync(ct);
+            if (updateInfo != null)
+            {
+                _logger.LogInformation("Applying update to {Version}...", updateInfo.LatestVersion);
+                await _updateInstaller.InstallUpdateAsync(updateInfo, ct);
+            }
         }
         catch (OperationCanceledException)
         {
