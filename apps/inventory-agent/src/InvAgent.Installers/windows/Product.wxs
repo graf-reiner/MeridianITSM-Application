@@ -8,9 +8,8 @@
   Interactive:
     Double-click MeridianAgent.msi
 
-  Install path:  %ProgramFiles%\Meridian\Agent\
-  Config path:   %ProgramData%\Meridian\config.json
-  Service name:  MeridianAgent (auto-start, LocalSystem)
+  Build:
+    wix build Product.wxs -d PublishDir=...\publish\win-x64-installer -d ProjectDir=...\src\InvAgent.Installers -o MeridianAgent.msi
 -->
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
 
@@ -44,16 +43,12 @@
       <Directory Id="MeridianDataDir" Name="Meridian" />
     </StandardDirectory>
 
-    <!-- ── Agent binary ─────────────────────────────────────────────────── -->
-    <ComponentGroup Id="AgentComponents" Directory="INSTALLFOLDER">
-      <Component Id="AgentExe" Guid="E1A2B3C4-D5E6-F789-0123-456789ABCDEF">
-        <File Id="AgentExeFile"
-              Source="$(var.PublishDir)\InvAgent.exe"
-              KeyPath="yes" />
-      </Component>
+    <!-- ── All agent files from publish directory ───────────────────────── -->
+    <ComponentGroup Id="AgentFiles" Directory="INSTALLFOLDER" Source="$(var.PublishDir)">
+      <Files Include="**" />
     </ComponentGroup>
 
-    <!-- ── Config directory (created empty, populated by custom action) ── -->
+    <!-- ── Config directory ──────────────────────────────────────────────── -->
     <ComponentGroup Id="ConfigComponents" Directory="MeridianDataDir">
       <Component Id="ConfigDir" Guid="F2B3C4D5-E6F7-8901-2345-6789ABCDEF01">
         <CreateFolder />
@@ -65,7 +60,7 @@
     <!-- ── Windows Service ──────────────────────────────────────────────── -->
     <ComponentGroup Id="ServiceComponents" Directory="INSTALLFOLDER">
       <Component Id="AgentService" Guid="A3B4C5D6-E7F8-9012-3456-789ABCDEF012">
-        <File Id="AgentServiceDummy" Source="$(var.PublishDir)\InvAgent.exe" KeyPath="yes" Name="InvAgent.svc.marker" />
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Meridian\Agent" Name="ServiceInstalled" Type="integer" Value="1" KeyPath="yes" />
         <ServiceInstall Id="AgentServiceInstall"
                         Name="MeridianAgent"
                         DisplayName="Meridian Inventory Agent"
@@ -84,8 +79,7 @@
     </ComponentGroup>
 
     <!-- ── Custom action: write config.json ──────────────────────────────
-         Uses cmd.exe to write the JSON config file after install.
-         The [PROPERTY] references are resolved by Windows Installer. -->
+         Uses cmd.exe to write the JSON config file after install. -->
     <CustomAction Id="WriteConfigCA"
                   Directory="MeridianDataDir"
                   ExeCommand='cmd.exe /c echo {&quot;AgentConfig&quot;:{&quot;ServerUrl&quot;:&quot;[SERVER_URL]&quot;,&quot;EnrollmentToken&quot;:&quot;[ENROLLMENT_TOKEN]&quot;,&quot;PrivacyTier&quot;:&quot;[PRIVACY_TIER]&quot;,&quot;HeartbeatIntervalSeconds&quot;:300,&quot;InventoryIntervalSeconds&quot;:14400,&quot;LocalWebUiPort&quot;:8787,&quot;LocalQueueMaxSizeMb&quot;:100,&quot;LogLevel&quot;:&quot;Information&quot;}} > &quot;[MeridianDataDir]config.json&quot;'
@@ -99,7 +93,7 @@
 
     <!-- ── Features ─────────────────────────────────────────────────────── -->
     <Feature Id="ProductFeature" Title="Meridian Inventory Agent" Level="1">
-      <ComponentGroupRef Id="AgentComponents" />
+      <ComponentGroupRef Id="AgentFiles" />
       <ComponentGroupRef Id="ConfigComponents" />
       <ComponentGroupRef Id="ServiceComponents" />
     </Feature>

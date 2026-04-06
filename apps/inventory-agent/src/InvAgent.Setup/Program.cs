@@ -250,9 +250,10 @@ internal static class Program
 
     private static void CopyAgentFiles(string installDir)
     {
-        // The setup exe should be in the same directory as the agent files
-        // (typically the publish/win-x64 folder).
-        var sourceDir = AppContext.BaseDirectory;
+        // The setup exe lives alongside the agent files in the publish folder.
+        // Use the actual EXE location (not AppContext.BaseDirectory, which points
+        // to a temp extraction dir for single-file publishes).
+        var sourceDir = Path.GetDirectoryName(Environment.ProcessPath!)!;
 
         var files = Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories);
         var setupExeName = Path.GetFileName(Environment.ProcessPath ?? "MeridianAgentSetup.exe");
