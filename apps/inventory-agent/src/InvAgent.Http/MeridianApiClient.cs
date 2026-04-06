@@ -60,11 +60,12 @@ public class MeridianApiClient
         return await response.Content.ReadFromJsonAsync<EnrollmentResult>(JsonOptions, ct);
     }
 
-    /// <summary>Sends a heartbeat to the server. Throws on HTTP error (Polly will retry).</summary>
-    public async Task SendHeartbeatAsync(HeartbeatPayload payload, CancellationToken ct = default)
+    /// <summary>Sends a heartbeat to the server. Returns update info if available. Throws on HTTP error (Polly will retry).</summary>
+    public async Task<HeartbeatResponse?> SendHeartbeatAsync(HeartbeatPayload payload, CancellationToken ct = default)
     {
         var response = await _http.PostAsJsonAsync("api/v1/agents/heartbeat", payload, JsonOptions, ct);
         response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<HeartbeatResponse>(JsonOptions, ct);
     }
 
     /// <summary>
@@ -106,5 +107,32 @@ public class MeridianApiClient
         {
             return -1;
         }
+    }
+
+    /// <summary>
+    /// Downloads a file from the given URL to a local path.
+    /// Supports both absolute URLs and relative paths on the Meridian server.
+    /// </summary>
+    public async Task DownloadFileAsync(string url, string destinationPath, CancellationToken ct = default)
+    {
+        HttpResponseMessage response;
+        if (url.StartsWith("http://") || url.StartsWith("https://"))
+        {
+            using var client = new HttpClient();
+            response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
+        }
+        else
+        {
+            response = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
+        }
+
+        response.EnsureSuccessStatusCode();
+
+        var dir = Path.GetDirectoryName(destinationPath);
+        if (dir != null) Directory.CreateDirectory(dir);
+
+        await using var stream = await response.Content.ReadAsStreamAsync(ct);
+        await using var fileStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None);
+        await stream.CopyToAsync(fileStream, ct);
     }
 }
