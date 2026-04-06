@@ -43,6 +43,30 @@ const cmdbReconciliationQueue = new Queue(CMDB_RECONCILIATION_QUEUE, {
  */
 
 /**
+ * Check if the current server time falls within the configured maintenance window.
+ */
+function isWithinMaintenanceWindow(
+  start: string | null,
+  end: string | null,
+  day: string | null,
+): boolean {
+  if (!start || !end) return false;
+
+  const now = new Date();
+  const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+
+  if (day && currentDay !== day.toLowerCase()) return false;
+
+  const [startH, startM] = start.split(':').map(Number);
+  const [endH, endM] = end.split(':').map(Number);
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const startMinutes = startH * 60 + startM;
+  const endMinutes = endH * 60 + endM;
+
+  return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+}
+
+/**
  * Resolve agent from Authorization: AgentKey <key> header.
  * Returns the agent record or sends 401 and returns null.
  * Agent must not be DEREGISTERED (suspended/offline agents can still heartbeat).
@@ -202,17 +226,26 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
       metrics?: Record<string, unknown>;
     };
 
-    // Update lastHeartbeatAt and optionally agentVersion
+    const updateData: Record<string, unknown> = {
+      lastHeartbeatAt: new Date(),
+      status: 'ACTIVE',
+    };
+    if (body.agentVersion) {
+      updateData.agentVersion = body.agentVersion;
+      if (agent.updateInProgress) {
+        updateData.updateInProgress = false;
+        updateData.updateStartedAt = null;
+      }
+      if (agent.forceUpdateUrl) {
+        updateData.forceUpdateUrl = null;
+      }
+    }
+
     await prisma.agent.update({
       where: { id: agent.id },
-      data: {
-        lastHeartbeatAt: new Date(),
-        status: 'ACTIVE',
-        ...(body.agentVersion ? { agentVersion: body.agentVersion } : {}),
-      },
+      data: updateData,
     });
 
-    // If metrics provided, create a MetricSample for each metric
     if (body.metrics && typeof body.metrics === 'object') {
       const metricEntries = Object.entries(body.metrics);
       if (metricEntries.length > 0) {
@@ -229,7 +262,70 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
       }
     }
 
-    return reply.code(200).send({ ok: true });
+    let update: {
+      latestVersion: string;
+      updateUrl: string;
+      checksum: string;
+      fileSize: number;
+    } | null = null;
+
+    if (agent.forceUpdateUrl) {
+      const forced = await prisma.agentUpdate.findFirst({
+        where: { platform: agent.platform },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (forced) {
+        update = {
+          latestVersion: forced.version,
+          updateUrl: agent.forceUpdateUrl,
+          checksum: forced.checksum,
+          fileSize: forced.fileSize,
+        };
+      }
+    }
+
+    if (!update && body.agentVersion) {
+      const latest = await prisma.agentUpdate.findFirst({
+        where: { platform: agent.platform },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (latest && latest.version > (body.agentVersion ?? '0.0.0')) {
+        const tenant = await prisma.tenant.findUnique({
+          where: { id: agent.tenantId },
+          select: {
+            agentUpdatePolicy: true,
+            agentUpdateWindowStart: true,
+            agentUpdateWindowEnd: true,
+            agentUpdateWindowDay: true,
+          },
+        });
+
+        const policy = tenant?.agentUpdatePolicy ?? 'manual';
+        let shouldIncludeUpdate = false;
+
+        if (policy === 'auto') {
+          shouldIncludeUpdate = true;
+        } else if (policy === 'scheduled') {
+          shouldIncludeUpdate = isWithinMaintenanceWindow(
+            tenant?.agentUpdateWindowStart ?? null,
+            tenant?.agentUpdateWindowEnd ?? null,
+            tenant?.agentUpdateWindowDay ?? null,
+          );
+        }
+
+        if (shouldIncludeUpdate) {
+          update = {
+            latestVersion: latest.version,
+            updateUrl: latest.downloadUrl,
+            checksum: latest.checksum,
+            fileSize: latest.fileSize,
+          };
+        }
+      }
+    }
+
+    return reply.code(200).send({ ok: true, update });
   });
 
   // ─── POST /api/v1/agents/inventory ────────────────────────────────────────────
