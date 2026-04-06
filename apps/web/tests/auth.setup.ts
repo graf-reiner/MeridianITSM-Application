@@ -30,7 +30,7 @@ setup('authenticate as admin', async ({ page }) => {
     {
       name: 'meridian_session',
       value: accessToken,
-      domain: 'localhost',
+      domain: '10.1.200.218',
       path: '/',
     },
   ]);
