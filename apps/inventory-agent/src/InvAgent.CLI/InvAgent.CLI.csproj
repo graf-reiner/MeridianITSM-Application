@@ -28,6 +28,10 @@
     <ProjectReference Include="..\InvAgent.Http\InvAgent.Http.csproj" />
     <ProjectReference Include="..\InvAgent.Queue\InvAgent.Queue.csproj" />
     <ProjectReference Include="..\InvAgent.Api\InvAgent.Api.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Include wwwroot from InvAgent.Api so the local diagnostic UI is published -->
+    <Content Include="..\InvAgent.Api\wwwroot\**" CopyToOutputDirectory="PreserveNewest" LinkBase="wwwroot" />
     <ProjectReference Include="..\InvAgent.Privacy\InvAgent.Privacy.csproj" />
   </ItemGroup>
 </Project>
