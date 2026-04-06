@@ -14,7 +14,8 @@ namespace InvAgent.Setup;
 ///
 /// CLI switches (same as InvAgent.exe):
 ///   --server-url    Meridian ITSM server URL (required)
-///   --token         Enrollment token (required)
+///   --token         Enrollment token (required unless --agent-key provided)
+///   --agent-key     Agent key for re-installs/updates (skips enrollment)
 ///   --privacy-tier  full | restricted | anonymized (default: full)
 ///   --install-dir   Custom install path (default: C:\Program Files\MeridianAgent)
 ///   --quiet         Suppress interactive prompts; fail if required args are missing
@@ -41,6 +42,7 @@ internal static class Program
         // ── Parse CLI args ───────────────────────────────────────────────────
         var serverUrl = GetArg(args, "--server-url");
         var token = GetArg(args, "--token");
+        var agentKey = GetArg(args, "--agent-key");
         var privacyTier = GetArg(args, "--privacy-tier") ?? "full";
         var installDir = GetArg(args, "--install-dir") ?? DefaultInstallDir;
         var quiet = args.Contains("--quiet", StringComparer.OrdinalIgnoreCase);
@@ -127,9 +129,9 @@ internal static class Program
             WriteColor("ERROR: --server-url is required.", ConsoleColor.Red);
             return 1;
         }
-        if (string.IsNullOrEmpty(token))
+        if (string.IsNullOrEmpty(token) && string.IsNullOrEmpty(agentKey))
         {
-            WriteColor("ERROR: --token is required.", ConsoleColor.Red);
+            WriteColor("ERROR: --token or --agent-key is required.", ConsoleColor.Red);
             return 1;
         }
         if (privacyTier is not ("full" or "restricted" or "anonymized"))
@@ -140,7 +142,7 @@ internal static class Program
 
         try
         {
-            RunInstall(serverUrl!, token!, privacyTier, installDir);
+            RunInstall(serverUrl!, token, privacyTier, installDir, agentKey);
         }
         catch (Exception ex)
         {
@@ -155,7 +157,7 @@ internal static class Program
 
     // ─── Installation Steps ──────────────────────────────────────────────────
 
-    private static void RunInstall(string serverUrl, string token, string privacyTier, string installDir)
+    private static void RunInstall(string serverUrl, string? token, string privacyTier, string installDir, string? agentKey = null)
     {
         var configDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
@@ -177,7 +179,7 @@ internal static class Program
 
         // Step 4: Write config
         WriteStep("Writing configuration...");
-        WriteConfig(configDir, serverUrl, token, privacyTier);
+        WriteConfig(configDir, serverUrl, token, privacyTier, agentKey);
 
         // Step 5: Install service
         WriteStep("Installing Windows Service...");
@@ -276,23 +278,25 @@ internal static class Program
         WriteColor($"    Copied {copied} files to {installDir}", ConsoleColor.Gray);
     }
 
-    private static void WriteConfig(string configDir, string serverUrl, string token, string privacyTier)
+    private static void WriteConfig(string configDir, string serverUrl, string? token, string privacyTier, string? agentKey = null)
     {
-        var config = new
+        var agentConfig = new Dictionary<string, object>
         {
-            AgentConfig = new
-            {
-                ServerUrl = serverUrl,
-                EnrollmentToken = token,
-                PrivacyTier = privacyTier,
-                HeartbeatIntervalSeconds = 300,
-                InventoryIntervalSeconds = 14400,
-                LocalWebUiPort = 8787,
-                LocalQueueMaxSizeMb = 100,
-                LogLevel = "Information",
-            },
+            ["ServerUrl"] = serverUrl,
+            ["PrivacyTier"] = privacyTier,
+            ["HeartbeatIntervalSeconds"] = 300,
+            ["InventoryIntervalSeconds"] = 14400,
+            ["LocalWebUiPort"] = 8787,
+            ["LocalQueueMaxSizeMb"] = 100,
+            ["LogLevel"] = "Information",
         };
 
+        if (!string.IsNullOrEmpty(agentKey))
+            agentConfig["AgentKey"] = agentKey;
+        else if (!string.IsNullOrEmpty(token))
+            agentConfig["EnrollmentToken"] = token;
+
+        var config = new { AgentConfig = agentConfig };
         var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
         var configPath = Path.Combine(configDir, "config.json");
         File.WriteAllText(configPath, json);
