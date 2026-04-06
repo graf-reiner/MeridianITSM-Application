@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { createHash, randomBytes } from 'node:crypto';
 import { prisma } from '@meridian/db';
 import { Queue } from 'bullmq';
+import agentUpdateRoutes from './updates.js';
 
 // Queue names mirrored locally to avoid cross-app imports from apps/worker — follows mapStripeStatus precedent
 const CMDB_RECONCILIATION_QUEUE = 'cmdb-reconciliation';
@@ -99,6 +100,9 @@ async function resolveAgent(request: FastifyRequest, reply: FastifyReply) {
 }
 
 export async function agentRoutes(app: FastifyInstance): Promise<void> {
+  // Register agent update package routes (upload, download, deploy, list)
+  await app.register(agentUpdateRoutes);
+
   // ─── POST /api/v1/agents/enroll ───────────────────────────────────────────────
   // Public within external scope — validates enrollment token, creates Agent record.
 
