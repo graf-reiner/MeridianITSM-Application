@@ -49,9 +49,15 @@ internal static class Program
 
         // ── Banner ───────────────────────────────────────────────────────────
         Console.WriteLine();
-        WriteColor("  ╔══════════════════════════════════════════════╗", ConsoleColor.Cyan);
-        WriteColor("  ║   Meridian ITSM — Inventory Agent Installer  ║", ConsoleColor.Cyan);
-        WriteColor("  ╚══════════════════════════════════════════════╝", ConsoleColor.Cyan);
+        WriteColor(@"    __  __           _     _ _             ", ConsoleColor.Cyan);
+        WriteColor(@"   |  \/  | ___ _ __(_) __| (_) __ _ _ __  ", ConsoleColor.Cyan);
+        WriteColor(@"   | |\/| |/ _ \ '__| |/ _` | |/ _` | '_ \ ", ConsoleColor.DarkCyan);
+        WriteColor(@"   | |  | |  __/ |  | | (_| | | (_| | | | |", ConsoleColor.DarkCyan);
+        WriteColor(@"   |_|  |_|\___|_|  |_|\__,_|_|\__,_|_| |_|", ConsoleColor.Magenta);
+        WriteColor(@"                      I T S M                ", ConsoleColor.Magenta);
+        Console.WriteLine();
+        WriteColor("   ── Inventory Agent Installer ─────────────────", ConsoleColor.Gray);
+        WriteColor("   Version 1.0.0", ConsoleColor.DarkGray);
         Console.WriteLine();
 
         if (interactive)
@@ -188,9 +194,9 @@ internal static class Program
         Console.WriteLine();
         if (running)
         {
-            WriteColor("  ╔══════════════════════════════════════════════╗", ConsoleColor.Green);
-            WriteColor("  ║        Agent installed successfully!         ║", ConsoleColor.Green);
-            WriteColor("  ╚══════════════════════════════════════════════╝", ConsoleColor.Green);
+            WriteColor("  ┌──────────────────────────────────────────────┐", ConsoleColor.Green);
+            WriteColor("  │   Meridian Agent installed successfully!     │", ConsoleColor.Green);
+            WriteColor("  └──────────────────────────────────────────────┘", ConsoleColor.Green);
             Console.WriteLine();
             WriteColor($"    Service:  {ServiceName} (Running)", ConsoleColor.Green);
             WriteColor($"    Config:   {Path.Combine(configDir, "config.json")}", ConsoleColor.Gray);

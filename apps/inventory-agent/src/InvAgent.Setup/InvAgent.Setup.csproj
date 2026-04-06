@@ -6,5 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>MeridianAgentSetup</AssemblyName>
     <RootNamespace>InvAgent.Setup</RootNamespace>
+    <ApplicationIcon>meridian-logo.ico</ApplicationIcon>
   </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="meridian-logo.png" />
+  </ItemGroup>
 </Project>
