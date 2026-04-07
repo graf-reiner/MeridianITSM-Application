@@ -29,6 +29,7 @@ import {
   mdiShieldLock,
   mdiCellphone,
   mdiRobotOutline,
+  mdiCheckDecagram,
 } from '@mdi/js';
 import AiChatPanel from '@/components/AiChatPanel';
 import { usePlan } from '@/hooks/usePlan';
@@ -52,6 +53,7 @@ const queryClient = new QueryClient({
 const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: mdiViewDashboard },
   { href: '/dashboard/tickets', label: 'Tickets', icon: mdiTicketOutline },
+  { href: '/dashboard/approvals', label: 'Approvals', icon: mdiCheckDecagram },
   { href: '/dashboard/assets', label: 'Assets', icon: mdiPackageVariantClosed },
   { href: '/dashboard/cmdb', label: 'CMDB', icon: mdiServerNetwork },
   { href: '/dashboard/changes', label: 'Changes', icon: mdiSwapHorizontal },

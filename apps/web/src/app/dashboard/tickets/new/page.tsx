@@ -6,9 +6,28 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Icon from '@mdi/react';
-import { mdiArrowLeft } from '@mdi/js';
+import { mdiArrowLeft, mdiFileDocumentEdit } from '@mdi/js';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
 import RichTextField from '@/components/RichTextField';
+
+interface TicketTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  color: string | null;
+  ticketType: string;
+  isDefault: boolean;
+  defaultPriority: string | null;
+  defaultCategoryId: string | null;
+  defaultQueueId: string | null;
+  defaultAssigneeId: string | null;
+  defaultGroupId: string | null;
+  defaultSlaId: string | null;
+  titleTemplate: string | null;
+  descriptionTemplate: string | null;
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -55,6 +74,31 @@ export default function NewTicketPage() {
   const [groups, setGroups] = useState<GroupOption[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+
+  // Load required fields per ticket type
+  const { data: requiredFieldsConfig } = useQuery<Record<string, string[]>>({
+    queryKey: ['required-fields-config'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/settings/required-fields', { credentials: 'include' });
+      if (!res.ok) return {};
+      return res.json() as Promise<Record<string, string[]>>;
+    },
+  });
+
+  // Get required fields for current ticket type
+  const currentType = watch('type');
+  const requiredFields = requiredFieldsConfig?.[currentType] ?? [];
+
+  // Load templates
+  const { data: templates = [] } = useQuery<TicketTemplate[]>({
+    queryKey: ['ticket-templates-active'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/ticket-templates', { credentials: 'include' });
+      if (!res.ok) return [];
+      return res.json() as Promise<TicketTemplate[]>;
+    },
+  });
 
   const {
     register,
@@ -108,6 +152,21 @@ export default function NewTicketPage() {
   const onSubmit = async (values: CreateTicketForm) => {
     setIsSubmitting(true);
     setSubmitError(null);
+
+    // Validate required fields per ticket type
+    const missing: string[] = [];
+    for (const field of requiredFields) {
+      const val = (values as Record<string, unknown>)[field];
+      if (!val || (typeof val === 'string' && !val.trim())) {
+        missing.push(field.replace(/Id$/, '').replace(/([A-Z])/g, ' $1').trim());
+      }
+    }
+    if (missing.length > 0) {
+      setSubmitError(`Required fields missing: ${missing.join(', ')}`);
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const body = {
         ...values,
@@ -162,6 +221,19 @@ export default function NewTicketPage() {
 
   const errorStyle = { color: 'var(--accent-danger)', fontSize: 12, marginTop: 4 };
 
+  const applyTemplate = (template: TicketTemplate) => {
+    setSelectedTemplateId(template.id);
+    if (template.ticketType) setValue('type', template.ticketType as any);
+    if (template.defaultPriority) setValue('priority', template.defaultPriority as any);
+    if (template.defaultCategoryId) setValue('categoryId', template.defaultCategoryId);
+    if (template.defaultQueueId) setValue('queueId', template.defaultQueueId);
+    if (template.defaultSlaId) setValue('slaPolicyId', template.defaultSlaId);
+    if (template.defaultAssigneeId) setValue('assignedToId', template.defaultAssigneeId);
+    if (template.defaultGroupId) setValue('assignedGroupId', template.defaultGroupId);
+    if (template.titleTemplate) setValue('title', template.titleTemplate);
+    if (template.descriptionTemplate) setValue('description', template.descriptionTemplate);
+  };
+
   return (
     <div style={{ maxWidth: 720, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
@@ -170,6 +242,43 @@ export default function NewTicketPage() {
         </Link>
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>New Ticket</h1>
       </div>
+
+      {/* Template picker */}
+      {templates.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 10 }}>Choose a template or start from scratch:</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
+            <button
+              onClick={() => setSelectedTemplateId(null)}
+              style={{
+                padding: '14px 16px', borderRadius: 10, cursor: 'pointer', textAlign: 'left',
+                border: selectedTemplateId === null ? '2px solid var(--accent-primary)' : '1px solid var(--border-secondary)',
+                backgroundColor: selectedTemplateId === null ? 'var(--badge-blue-bg)' : 'var(--bg-primary)',
+              }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Blank Ticket</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>Start from scratch</div>
+            </button>
+            {templates.map(t => (
+              <button
+                key={t.id}
+                onClick={() => applyTemplate(t)}
+                style={{
+                  padding: '14px 16px', borderRadius: 10, cursor: 'pointer', textAlign: 'left',
+                  border: selectedTemplateId === t.id ? `2px solid ${t.color || 'var(--accent-primary)'}` : '1px solid var(--border-secondary)',
+                  backgroundColor: selectedTemplateId === t.id ? 'var(--badge-blue-bg)' : 'var(--bg-primary)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Icon path={mdiFileDocumentEdit} size={0.7} color={t.color || 'var(--accent-primary)'} />
+                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{t.name}</span>
+                </div>
+                {t.description && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{t.description}</div>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: 28 }}>
         <form onSubmit={(e) => { void handleSubmit(onSubmit)(e); }}>
@@ -188,7 +297,7 @@ export default function NewTicketPage() {
 
           {/* Description */}
           <div style={{ marginBottom: 18 }}>
-            <label style={labelStyle}>Description</label>
+            <label style={labelStyle}>Description{requiredFields.includes('description') ? ' *' : ''}</label>
             <RichTextField
               value={watch('description') ?? ''}
               onChange={(html) => setValue('description', html, { shouldValidate: true })}
@@ -222,7 +331,7 @@ export default function NewTicketPage() {
           {/* Category & Queue row */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
             <div>
-              <label style={labelStyle}>Category</label>
+              <label style={labelStyle}>Category{requiredFields.includes('categoryId') ? ' *' : ''}</label>
               <select {...register('categoryId')} style={inputStyle}>
                 <option value="">-- None --</option>
                 {categories.map((c) => (
@@ -231,7 +340,7 @@ export default function NewTicketPage() {
               </select>
             </div>
             <div>
-              <label style={labelStyle}>Queue</label>
+              <label style={labelStyle}>Queue{requiredFields.includes('queueId') ? ' *' : ''}</label>
               <select {...register('queueId')} style={inputStyle}>
                 <option value="">-- None --</option>
                 {queues.map((q) => (
