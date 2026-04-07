@@ -356,12 +356,20 @@ export default function DashboardTicketsPage() {
                       {/* Default star */}
                       {view.isDefault && <Icon path={mdiStar} size={0.55} color="#f59e0b" />}
 
-                      {/* Edit */}
-                      <Link href={`/dashboard/tickets/views/${view.id}/edit`} onClick={() => setDropdownOpen(false)} style={{ display: 'flex', padding: 2, color: 'var(--text-placeholder)' }}>
-                        <Icon path={mdiPencilOutline} size={0.55} color="currentColor" />
+                      {/* Edit button */}
+                      <Link
+                        href={`/dashboard/tickets/views/${view.id}/edit`}
+                        onClick={() => setDropdownOpen(false)}
+                        title="Edit view"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 5, fontSize: 11, fontWeight: 500, color: 'var(--accent-primary)', textDecoration: 'none', border: '1px solid transparent' }}
+                        onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--badge-blue-bg)'; e.currentTarget.style.borderColor = 'var(--accent-primary)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; }}
+                      >
+                        <Icon path={mdiPencilOutline} size={0.5} color="currentColor" />
+                        Edit
                       </Link>
 
-                      {/* Delete */}
+                      {/* Delete button */}
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();
@@ -369,10 +377,15 @@ export default function DashboardTicketsPage() {
                           await fetch(`/api/v1/tickets/views/${view.id}`, { method: 'DELETE', credentials: 'include' });
                           void qc.invalidateQueries({ queryKey: ['ticket-views'] });
                           if (activeViewId === view.id) clearView();
+                          setDropdownOpen(false);
                         }}
-                        style={{ display: 'flex', padding: 2, border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-placeholder)' }}
+                        title="Delete view"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 5, fontSize: 11, fontWeight: 500, color: '#dc2626', border: '1px solid transparent', background: 'none', cursor: 'pointer' }}
+                        onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#fef2f2'; e.currentTarget.style.borderColor = '#fecaca'; }}
+                        onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; }}
                       >
-                        <Icon path={mdiTrashCanOutline} size={0.55} color="currentColor" />
+                        <Icon path={mdiTrashCanOutline} size={0.5} color="currentColor" />
+                        Delete
                       </button>
                     </div>
                   ))}
