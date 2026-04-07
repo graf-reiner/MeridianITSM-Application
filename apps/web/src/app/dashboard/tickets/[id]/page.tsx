@@ -50,6 +50,9 @@ interface Activity {
   actor: { firstName: string; lastName: string } | null;
   createdAt: string;
   meta: Record<string, unknown> | null;
+  fieldName: string | null;
+  oldValue: string | null;
+  newValue: string | null;
 }
 
 interface SlaStatus {
