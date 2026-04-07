@@ -66,10 +66,10 @@ export function useCreateTicket() {
     }) => {
       if (!isOnline) {
         // Queue for offline replay
-        enqueue({ type: 'create_ticket', payload: data });
+        enqueue({ type: 'create_ticket', payload: { ...data, source: 'MOBILE' } });
         return Promise.resolve({} as Ticket);
       }
-      return apiClient.post<Ticket>('/api/v1/tickets', data).then((r) => r.data);
+      return apiClient.post<Ticket>('/api/v1/tickets', { ...data, source: 'MOBILE' }).then((r) => r.data);
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['tickets'] });

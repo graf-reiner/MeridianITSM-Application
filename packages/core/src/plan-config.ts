@@ -13,7 +13,8 @@ export type PlanResource =
   | 'mobile'
   | 'webhooks'
   | 'api_access'
-  | 'scheduled_reports';
+  | 'scheduled_reports'
+  | 'ai_assistant';
 
 /** Shape of the limitsJson field on SubscriptionPlan */
 export type PlanLimits = {
@@ -34,6 +35,7 @@ export const FEATURE_RESOURCES = [
   'webhooks',
   'api_access',
   'scheduled_reports',
+  'ai_assistant',
 ] as const;
 export type FeatureResource = (typeof FEATURE_RESOURCES)[number];
 

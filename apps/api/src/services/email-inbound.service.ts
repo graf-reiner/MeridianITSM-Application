@@ -237,6 +237,7 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
                 queueId: account.defaultQueueId ?? undefined,
                 categoryId: account.defaultCategoryId ?? undefined,
                 requestedById: requestedById ?? undefined,
+                source: 'EMAIL',
               },
               null as unknown as string,
             );

@@ -441,6 +441,7 @@ model Tenant {
   tenantAuthSettings       TenantAuthSettings?
   mfaTrustedDevices        MfaTrustedDevice[]
   emailActivityLogs        EmailActivityLog[]
+  chatConversations        ChatConversation[]
 
   @@map("tenants")
 }
@@ -515,6 +516,7 @@ model User {
   mfaTrustedDevices       MfaTrustedDevice[]
   cmdbCisAsBusinessOwner  CmdbConfigurationItem[] @relation("CmdbCiBusinessOwner")
   cmdbCisAsTechnicalOwner CmdbConfigurationItem[] @relation("CmdbCiTechnicalOwner")
+  chatConversations       ChatConversation[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -2796,4 +2798,39 @@ model RecoveryCode {
   @@map("recovery_codes")
 }
 
-// Total: 87 models
+// Model 71: ChatConversation
+model ChatConversation {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  userId    String   @db.Uuid
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant   Tenant        @relation(fields: [tenantId], references: [id])
+  user     User          @relation(fields: [userId], references: [id])
+  messages ChatMessage[]
+
+  @@index([tenantId, userId])
+  @@index([tenantId, createdAt])
+  @@map("chat_conversations")
+}
+
+// Model 72: ChatMessage
+model ChatMessage {
+  id             String   @id @default(uuid()) @db.Uuid
+  conversationId String   @db.Uuid
+  role           String   // 'user' | 'assistant' | 'tool'
+  content        String?  @db.Text
+  toolCalls      Json?
+  toolCallId     String?
+  tokenUsage     Int?
+  createdAt      DateTime @default(now())
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("chat_messages")
+}
+
+// Total: 89 models

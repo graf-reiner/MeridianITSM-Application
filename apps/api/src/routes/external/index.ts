@@ -117,6 +117,7 @@ export async function externalRoutes(app: FastifyInstance): Promise<void> {
         priority: body.priority as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | undefined,
         categoryId: typeof body.categoryId === 'string' ? body.categoryId : undefined,
         requestedById: undefined,
+        source: 'API',
       },
       API_KEY_ACTOR_ID,
     );

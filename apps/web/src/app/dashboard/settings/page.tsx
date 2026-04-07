@@ -24,6 +24,7 @@ import {
   mdiCellphone,
   mdiSend,
   mdiRobot,
+  mdiRobotOutline,
 } from '@mdi/js';
 
 // ─── Settings Hub ─────────────────────────────────────────────────────────────
@@ -180,6 +181,13 @@ const SETTINGS_GROUPS: SettingsGroup[] = [
         description: 'Receive real-time event notifications via webhooks',
         icon: mdiWebhook,
         color: '#059669',
+      },
+      {
+        href: '/dashboard/settings/ai',
+        label: 'AI Assistant',
+        description: 'Configure your OpenAI API key and model for the AI chatbot',
+        icon: mdiRobotOutline,
+        color: '#0284c7',
       },
     ],
   },

@@ -28,7 +28,10 @@ import {
   mdiApplicationBracketsOutline,
   mdiShieldLock,
   mdiCellphone,
+  mdiRobotOutline,
 } from '@mdi/js';
+import AiChatPanel from '@/components/AiChatPanel';
+import { usePlan } from '@/hooks/usePlan';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -94,6 +97,8 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const { hasFeature } = usePlan();
 
   // Fetch unread notification count
   useEffect(() => {
@@ -422,6 +427,47 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         }
       `}</style>
       <MobileLauncherModal />
+
+      {/* AI Assistant FAB + Panel */}
+      {hasFeature('ai_assistant') && (
+        <>
+          {!chatOpen && (
+            <button
+              onClick={() => setChatOpen(true)}
+              title="AI Assistant"
+              style={{
+                position: 'fixed',
+                bottom: 24,
+                right: 24,
+                width: 52,
+                height: 52,
+                borderRadius: '50%',
+                border: 'none',
+                backgroundColor: 'var(--accent-brand)',
+                color: '#fff',
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(0, 0, 0, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 30,
+                transition: 'transform 0.15s, box-shadow 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.08)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.25)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.boxShadow = '0 4px 14px rgba(0, 0, 0, 0.2)';
+              }}
+            >
+              <Icon path={mdiRobotOutline} size={1.15} color="#fff" />
+            </button>
+          )}
+          <AiChatPanel isOpen={chatOpen} onClose={() => setChatOpen(false)} />
+        </>
+      )}
     </div>
   );
 }

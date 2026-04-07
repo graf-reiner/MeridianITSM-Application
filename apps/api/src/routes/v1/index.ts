@@ -18,6 +18,7 @@ import { slaRoutes } from './sla/index.js';
 import { ticketRoutes } from './tickets/index.js';
 import { webhookRoutes } from './webhooks/index.js';
 import { preferencesRoutes } from './preferences.js';
+import { aiChatRoutes } from './ai-chat/index.js';
 
 /**
  * V1 API routes — protected scope (requires JWT + tenant + RBAC).
@@ -83,4 +84,7 @@ export async function v1Routes(app: FastifyInstance): Promise<void> {
 
   // User preferences — theme, notification settings
   await app.register(preferencesRoutes);
+
+  // AI Assistant — chat conversations with function-calling over ITSM data
+  await app.register(aiChatRoutes);
 }
