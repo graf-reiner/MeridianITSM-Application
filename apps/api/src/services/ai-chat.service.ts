@@ -528,21 +528,26 @@ async function getOrCreateConversation(
     });
 
     if (conv) {
-      const messages: ChatCompletionMessageParam[] = conv.messages
-        .filter((m) => m.role !== 'tool') // tool messages are paired inline
-        .map((m) => {
-          if (m.role === 'assistant' && m.toolCalls) {
-            return {
-              role: 'assistant' as const,
-              content: m.content ?? null,
-              tool_calls: m.toolCalls as ChatCompletionMessageParam extends { tool_calls?: infer T } ? T : never,
-            };
-          }
+      const messages: ChatCompletionMessageParam[] = conv.messages.map((m) => {
+        if (m.role === 'assistant' && m.toolCalls) {
           return {
-            role: m.role as 'user' | 'assistant',
+            role: 'assistant' as const,
+            content: m.content ?? null,
+            tool_calls: m.toolCalls as never,
+          };
+        }
+        if (m.role === 'tool') {
+          return {
+            role: 'tool' as const,
+            tool_call_id: m.toolCallId ?? '',
             content: m.content ?? '',
           };
-        });
+        }
+        return {
+          role: m.role as 'user' | 'assistant',
+          content: m.content ?? '',
+        };
+      });
       return { id: conv.id, messages };
     }
   }
