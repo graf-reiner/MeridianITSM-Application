@@ -76,6 +76,15 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 <MaterialCommunityIcons name="ticket" size={24} color="#000" />
 ```
 
+### 6. AI Assistant Data Availability — MANDATORY for Schema Changes
+Every new or modified database model, field, or feature MUST be accessible to the AI Assistant chatbot. The AI uses Text-to-SQL (generates SQL from natural language) so schema awareness is critical.
+
+- **Schema context** (`apps/api/src/services/ai-schema-context.ts`): Contains a compressed DDL of the database schema. When adding new models or fields to the Prisma schema, **update this file** to include the new tables/columns so the AI can query them.
+- **Unstructured text fields**: If adding text fields (descriptions, content, notes), add a PostgreSQL `tsvector` generated column + GIN index so the `search_content` tool can find them.
+- **File uploads**: If adding new file upload features, integrate with the PDF extraction pipeline (`pdf-extraction.service.ts`) so uploaded PDF content is searchable.
+- **Excluded tables**: Sensitive tables (auth, billing, MFA, SSO) are excluded from AI access. If adding a sensitive model, add its table name to `EXCLUDED_TABLES` in `ai-schema-context.ts`.
+- **Verification**: After schema changes, test that the AI chatbot can answer questions about the new data.
+
 ## Build & Run Commands
 
 ```bash

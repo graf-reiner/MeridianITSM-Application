@@ -8,12 +8,8 @@ import { useAiChat, type ChatMessage, type Conversation } from '@/hooks/use-ai-c
 // ─── Tool Call Display Names ─────────────────────────────────────────────────
 
 const TOOL_LABELS: Record<string, string> = {
-  search_tickets: 'Searching tickets',
-  search_cmdb_cis: 'Searching CMDB',
-  search_inventory: 'Searching inventory',
-  search_knowledge_articles: 'Searching knowledge base',
-  search_assets: 'Searching assets',
-  search_applications: 'Searching applications',
+  query_database: 'Querying database',
+  search_content: 'Searching content',
 };
 
 // ─── Message Component ───────────────────────────────────────────────────────
