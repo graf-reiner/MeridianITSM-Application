@@ -86,10 +86,6 @@ export default function NewTicketPage() {
     },
   });
 
-  // Get required fields for current ticket type
-  const currentType = watch('type');
-  const requiredFields = requiredFieldsConfig?.[currentType] ?? [];
-
   // Load templates
   const { data: templates = [] } = useQuery<TicketTemplate[]>({
     queryKey: ['ticket-templates-active'],
@@ -113,6 +109,10 @@ export default function NewTicketPage() {
       priority: 'MEDIUM',
     },
   });
+
+  // Get required fields for current ticket type
+  const currentType = watch('type');
+  const requiredFields = requiredFieldsConfig?.[currentType] ?? [];
 
   // Load dropdowns
   useEffect(() => {
