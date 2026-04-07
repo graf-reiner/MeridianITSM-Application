@@ -456,6 +456,9 @@ model Tenant {
   recurringTickets         RecurringTicket[]
   ticketTemplates          TicketTemplate[]
   ticketViewAssignments    TicketViewAssignment[]
+  workflows                Workflow[]
+  workflowExecutions       WorkflowExecution[]
+  workflowAuditLogs        WorkflowAuditLog[]
 
   @@map("tenants")
 }
@@ -885,6 +888,7 @@ model Queue {
   tickets           Ticket[]
   notificationRules NotificationRule[]
   recurringTickets  RecurringTicket[]
+  workflows         Workflow[]        @relation("WorkflowQueue")
 
   @@index([tenantId])
   @@map("queues")
@@ -3201,4 +3205,104 @@ model DocumentContent {
   @@map("document_contents")
 }
 
-// Total: 90 models
+// ─── Workflow Automation Engine ────────────────────────────────────────────────
+
+model Workflow {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @db.Uuid
+  name             String
+  description      String?
+  status           String   @default("DRAFT") // DRAFT | PUBLISHED | DISABLED
+  trigger          String   // Same trigger strings as NotificationRule
+  scopedQueueId    String?  @db.Uuid
+  currentVersionId String?  @db.Uuid
+  createdById      String?  @db.Uuid
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenant     Tenant              @relation(fields: [tenantId], references: [id])
+  queue      Queue?              @relation("WorkflowQueue", fields: [scopedQueueId], references: [id])
+  versions   WorkflowVersion[]
+  executions WorkflowExecution[]
+  auditLogs  WorkflowAuditLog[]
+
+  @@index([tenantId, trigger, status])
+  @@index([tenantId])
+  @@map("workflows")
+}
+
+model WorkflowVersion {
+  id          String   @id @default(uuid()) @db.Uuid
+  workflowId  String   @db.Uuid
+  version     Int      @default(1)
+  graphJson   Json     @default("{\"nodes\":[],\"edges\":[]}")
+  createdById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+
+  workflow   Workflow             @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  executions WorkflowExecution[]
+
+  @@unique([workflowId, version])
+  @@index([workflowId])
+  @@map("workflow_versions")
+}
+
+model WorkflowExecution {
+  id           String    @id @default(uuid()) @db.Uuid
+  tenantId     String    @db.Uuid
+  workflowId   String    @db.Uuid
+  versionId    String    @db.Uuid
+  trigger      String
+  status       String    @default("RUNNING") // RUNNING | COMPLETED | FAILED | SKIPPED
+  eventPayload Json?
+  startedAt    DateTime  @default(now())
+  completedAt  DateTime?
+  error        String?
+  isSimulation Boolean   @default(false)
+
+  tenant   Tenant                  @relation(fields: [tenantId], references: [id])
+  workflow Workflow                @relation(fields: [workflowId], references: [id])
+  version  WorkflowVersion         @relation(fields: [versionId], references: [id])
+  steps    WorkflowExecutionStep[]
+
+  @@index([tenantId, startedAt])
+  @@index([workflowId, startedAt])
+  @@map("workflow_executions")
+}
+
+model WorkflowExecutionStep {
+  id          String    @id @default(uuid()) @db.Uuid
+  executionId String    @db.Uuid
+  nodeId      String    // React Flow node ID within graph
+  nodeType    String
+  status      String    @default("PENDING") // PENDING | RUNNING | COMPLETED | FAILED | SKIPPED
+  inputData   Json?
+  outputData  Json?
+  error       String?
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  execution WorkflowExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@index([executionId])
+  @@map("workflow_execution_steps")
+}
+
+model WorkflowAuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @db.Uuid
+  workflowId String   @db.Uuid
+  action     String   // CREATED | UPDATED | PUBLISHED | DISABLED | DELETED | VERSION_CREATED
+  actorId    String?  @db.Uuid
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  workflow Workflow  @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([workflowId])
+  @@map("workflow_audit_logs")
+}
+
+// Total: 95 models

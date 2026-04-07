@@ -1,0 +1,81 @@
+import { registerNode } from '../../node-registry.js';
+import type { ExecutionContext, NodeResult } from '../../types.js';
+import { prisma } from '@meridian/db';
+
+registerNode({
+  type: 'action_assign_ticket',
+  category: 'action',
+  label: 'Assign Ticket',
+  description: 'Assign the ticket to a user or move to a queue',
+  icon: 'mdiAccountArrowRight',
+  color: '#059669',
+  inputs: [{ id: 'in', label: 'Input', type: 'default' }],
+  outputs: [{ id: 'out', label: 'Next', type: 'default' }],
+  configSchema: [
+    { key: 'assignedToId', label: 'Assign to User ID', type: 'text', placeholder: 'User ID to assign' },
+    { key: 'queueId', label: 'Move to Queue ID', type: 'text', placeholder: 'Queue ID to move ticket to' },
+  ],
+  execute: async (config: Record<string, unknown>, context: ExecutionContext): Promise<NodeResult> => {
+    if (context.isSimulation) {
+      return { success: true, output: { simulated: true, action: 'assign_ticket', config } };
+    }
+
+    const ticketId = context.eventContext.ticket?.id;
+    if (!ticketId) {
+      return { success: false, error: 'No ticket in context' };
+    }
+
+    const assignedToId = config.assignedToId as string | undefined;
+    const queueId = config.queueId as string | undefined;
+
+    const updateData: Record<string, unknown> = {};
+    const activities: Array<{ type: string; description: string; oldValue?: string; newValue?: string }> = [];
+
+    if (assignedToId) {
+      updateData.assignedToId = assignedToId;
+      activities.push({
+        type: 'ASSIGNMENT',
+        description: `Ticket assigned to user ${assignedToId} by workflow`,
+        oldValue: context.eventContext.ticket?.assignedToId ?? undefined,
+        newValue: assignedToId,
+      });
+    }
+
+    if (queueId) {
+      updateData.queueId = queueId;
+      activities.push({
+        type: 'QUEUE_CHANGE',
+        description: `Ticket moved to queue ${queueId} by workflow`,
+        oldValue: context.eventContext.ticket?.queueId ?? undefined,
+        newValue: queueId,
+      });
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return { success: false, error: 'No assignedToId or queueId provided' };
+    }
+
+    await prisma.ticket.update({
+      where: { id: ticketId },
+      data: updateData,
+    });
+
+    for (const activity of activities) {
+      await prisma.ticketActivity.create({
+        data: {
+          tenantId: context.tenantId,
+          ticketId,
+          type: activity.type,
+          description: activity.description,
+          oldValue: activity.oldValue,
+          newValue: activity.newValue,
+        },
+      });
+    }
+
+    return {
+      success: true,
+      output: { ticketId, assignedToId, queueId },
+    };
+  },
+});

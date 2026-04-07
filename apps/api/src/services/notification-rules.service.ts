@@ -153,6 +153,14 @@ export async function dispatchNotificationEvent(
   trigger: string,
   eventContext: EventContext,
 ): Promise<void> {
+  // Dispatch matching workflows (new workflow engine — coexists with legacy rules)
+  try {
+    const { dispatchWorkflows } = await import('./workflow-engine/index.js');
+    await dispatchWorkflows(tenantId, trigger, eventContext);
+  } catch (err) {
+    console.error('[notification-rules] Workflow dispatch failed (non-fatal):', err);
+  }
+
   try {
     const rules = await loadRules(tenantId, trigger);
 

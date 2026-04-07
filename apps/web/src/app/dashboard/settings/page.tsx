@@ -31,6 +31,7 @@ import {
   mdiCheckDecagram,
   mdiCalendarClock,
   mdiEmoticonHappy,
+  mdiSitemap,
 } from '@mdi/js';
 
 // ─── Settings Hub ─────────────────────────────────────────────────────────────
@@ -100,6 +101,13 @@ const SETTINGS_GROUPS: SettingsGroup[] = [
         description: 'Manage tags for tickets and knowledge articles',
         icon: mdiTagMultiple,
         color: '#8b5cf6',
+      },
+      {
+        href: '/dashboard/settings/workflows',
+        label: 'Workflow Automation',
+        description: 'Visual node-based workflow builder for ticket automation',
+        icon: mdiSitemap,
+        color: '#7c3aed',
       },
       {
         href: '/dashboard/settings/canned-responses',
