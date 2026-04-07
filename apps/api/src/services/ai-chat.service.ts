@@ -51,9 +51,13 @@ SQL RULES:
 - DO NOT add WHERE "tenantId" = ... — tenant filtering is AUTOMATIC. Never include tenantId conditions.
 - Use JOINs freely to combine data across tables
 - Use GROUP BY / COUNT / SUM / AVG for aggregations
-- For JSON fields (like "installedSoftware" on inventory_snapshots), use JSONB operators:
-  - elem->>'name' for text extraction
-  - jsonb_array_elements("installedSoftware") to expand arrays
+- For JSON array fields, use jsonb_array_elements() to expand and filter:
+  Example — find machines with specific software:
+    SELECT DISTINCT i.hostname, i."operatingSystem", elem->>'name' as sw_name, elem->>'version' as sw_version
+    FROM inventory_snapshots i, jsonb_array_elements(i."installedSoftware") elem
+    WHERE elem->>'name' ILIKE '%7-Zip%'
+    ORDER BY i.hostname
+  Note: inventory_snapshots may have multiple rows per agent — use DISTINCT ON("agentId") or GROUP BY to deduplicate.
 - LIMIT results to 100 unless the user asks for more
 - If a query fails, try a simpler version
 
