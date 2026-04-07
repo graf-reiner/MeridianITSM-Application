@@ -134,10 +134,21 @@ export default function WorkflowBuilderPage() {
   // Register all node types as the same component
   const nodeTypes = useMemo(() => {
     const types: Record<string, typeof WorkflowNodeComponent> = {};
-    // We'll add types dynamically from definitions
-    return new Proxy(types, {
-      get: (_target, _prop) => WorkflowNodeComponent,
-    });
+    // Pre-register known node type prefixes
+    const prefixes = ['trigger_', 'condition_', 'action_', 'control_', 'data_'];
+    const knownTypes = [
+      'trigger_ticket_created', 'trigger_ticket_updated', 'trigger_ticket_assigned',
+      'trigger_ticket_commented', 'trigger_ticket_resolved', 'trigger_sla_warning',
+      'trigger_sla_breach', 'trigger_ticket_status_changed',
+      'condition_field', 'condition_group',
+      'action_send_email', 'action_send_in_app', 'action_send_slack', 'action_send_teams',
+      'action_send_webhook', 'action_send_push', 'action_escalate', 'action_update_field',
+      'action_change_status', 'action_change_priority', 'action_assign_ticket', 'action_add_comment',
+    ];
+    for (const t of knownTypes) {
+      types[t] = WorkflowNodeComponent;
+    }
+    return types;
   }, []);
 
   // Load workflow
@@ -160,21 +171,23 @@ export default function WorkflowBuilderPage() {
     },
   });
 
-  // Initialize nodes/edges from workflow graph
+  // Initialize nodes/edges from workflow graph (only once when data loads)
+  const graphInitialized = useRef(false);
   useEffect(() => {
-    if (workflow?.graph) {
-      // Enrich nodes with nodeDef data for rendering
+    if (workflow?.graph && nodeDefs.length > 0 && !graphInitialized.current) {
+      graphInitialized.current = true;
       const enrichedNodes = (workflow.graph.nodes ?? []).map((n: any) => ({
         ...n,
         data: {
           ...n.data,
-          nodeDef: nodeDefs.find(d => d.type === n.type),
+          nodeDef: nodeDefs.find((d: NodeDef) => d.type === n.type),
         },
       }));
       setNodes(enrichedNodes);
       setEdges(workflow.graph.edges ?? []);
     }
-  }, [workflow, nodeDefs, setNodes, setEdges]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workflow, nodeDefs]);
 
   // Group node defs by category, filtered by search
   const groupedDefs = useMemo(() => {
