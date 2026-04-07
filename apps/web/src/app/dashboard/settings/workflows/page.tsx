@@ -80,6 +80,28 @@ export default function WorkflowsSettingsPage() {
     void qc.invalidateQueries({ queryKey: ['settings-workflows'] });
   };
 
+  const handleDuplicate = async (wf: Workflow) => {
+    // Fetch the full workflow with graph, then create a copy
+    const res = await fetch(`/api/v1/settings/workflows/${wf.id}`, { credentials: 'include' });
+    if (!res.ok) return;
+    const data = await res.json();
+    const createRes = await fetch('/api/v1/settings/workflows', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify({ name: `Copy of ${wf.name}`, trigger: wf.trigger, description: wf.description }),
+    });
+    if (createRes.ok) {
+      const newWf = await createRes.json();
+      // Save the graph from the original
+      if (data.graph?.nodes?.length) {
+        await fetch(`/api/v1/settings/workflows/${newWf.id}/graph`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+          body: JSON.stringify({ graph: data.graph }),
+        });
+      }
+      void qc.invalidateQueries({ queryKey: ['settings-workflows'] });
+    }
+  };
+
   const handleToggle = async (wf: Workflow) => {
     const newStatus = wf.status === 'PUBLISHED' ? 'DISABLED' : 'PUBLISHED';
     if (newStatus === 'PUBLISHED') {
@@ -109,6 +131,29 @@ export default function WorkflowsSettingsPage() {
             New Workflow
           </button>
         </div>
+      </div>
+
+      {/* Migration banner */}
+      <div style={{ padding: '12px 16px', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#1e40af' }}>Migrate from Notification Rules</span>
+          <p style={{ fontSize: 13, color: '#3b82f6', margin: '4px 0 0' }}>Convert existing notification rules into workflow drafts for review.</p>
+        </div>
+        <button
+          onClick={async () => {
+            if (!window.confirm('Migrate all notification rules to draft workflows? Existing rules will NOT be affected.')) return;
+            const res = await fetch('/api/v1/settings/workflows/migrate-from-rules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: '{}' });
+            if (res.ok) {
+              const data = await res.json();
+              const msg = data.warnings?.length ? `Migrated ${data.migrated} rules with warnings:\n${data.warnings.join('\n')}` : `Migrated ${data.migrated} rules successfully!`;
+              alert(msg);
+              void qc.invalidateQueries({ queryKey: ['settings-workflows'] });
+            }
+          }}
+          style={{ padding: '8px 16px', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
+        >
+          Migrate Rules
+        </button>
       </div>
 
       {/* Filters */}
@@ -181,6 +226,9 @@ export default function WorkflowsSettingsPage() {
                         <button onClick={() => void handleToggle(wf)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: wf.status === 'PUBLISHED' ? '#dc2626' : '#059669' }}>
                           <Icon path={wf.status === 'PUBLISHED' ? mdiPause : mdiRocketLaunch} size={0.55} color="currentColor" />
                           {wf.status === 'PUBLISHED' ? 'Disable' : 'Publish'}
+                        </button>
+                        <button onClick={() => void handleDuplicate(wf)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
+                          Duplicate
                         </button>
                         <button onClick={() => void handleDelete(wf)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', border: '1px solid #fecaca', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: '#dc2626' }}>
                           <Icon path={mdiTrashCan} size={0.55} color="currentColor" />

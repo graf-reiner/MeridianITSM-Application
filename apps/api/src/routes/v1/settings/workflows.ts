@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '@meridian/db';
 import { getAllNodeDefinitionDTOs, invalidateWorkflowCache } from '../../../services/workflow-engine/index.js';
+import { convertRuleToWorkflowGraph } from '../../../services/workflow-engine/migration.js';
 
 /**
  * Workflow Automation Designer REST API routes.
@@ -369,5 +370,118 @@ export async function workflowRoutes(fastify: FastifyInstance): Promise<void> {
     ]);
 
     return reply.status(200).send({ executions, total, page: Number(page), pageSize: Number(pageSize) });
+  });
+
+  // ─── POST /:id/simulate — Run workflow in simulation mode ─────────────────
+
+  fastify.post('/api/v1/settings/workflows/:id/simulate', async (request, reply) => {
+    const user = request.user as { userId: string; tenantId: string };
+    const { id } = request.params as { id: string };
+    const body = request.body as { eventContext: Record<string, unknown> };
+
+    const workflow = await prisma.workflow.findFirst({
+      where: { id, tenantId: user.tenantId },
+      include: { versions: { orderBy: { version: 'desc' }, take: 1 } },
+    });
+
+    if (!workflow) return reply.status(404).send({ error: 'Workflow not found' });
+
+    const currentVersion = workflow.versions[0];
+    if (!currentVersion) return reply.status(400).send({ error: 'No version to simulate' });
+
+    // Build a minimal event context with the provided data
+    const eventContext = {
+      ticket: {
+        id: 'sim-ticket-id',
+        ticketNumber: 0,
+        title: 'Simulation Ticket',
+        type: 'INCIDENT',
+        priority: 'MEDIUM',
+        status: 'NEW',
+        ...(body.eventContext?.ticket ?? {}),
+      },
+      actorId: user.userId,
+      ...(body.eventContext ?? {}),
+    };
+
+    const { executeWorkflow } = await import('../../../services/workflow-engine/index.js');
+    await executeWorkflow(user.tenantId, workflow.id, currentVersion.id, workflow.trigger, eventContext as any, true);
+
+    // Load the execution that was just created
+    const execution = await prisma.workflowExecution.findFirst({
+      where: { workflowId: id, versionId: currentVersion.id, isSimulation: true },
+      orderBy: { startedAt: 'desc' },
+      include: { steps: { orderBy: { startedAt: 'asc' } } },
+    });
+
+    return reply.status(200).send({ execution });
+  });
+
+  // ─── POST /migrate-from-rules — Convert notification rules to workflows ───
+
+  fastify.post('/api/v1/settings/workflows/migrate-from-rules', async (request, reply) => {
+    const user = request.user as { userId: string; tenantId: string };
+    const body = request.body as { ruleIds?: string[] };
+
+    // Load rules to migrate
+    const where: Record<string, unknown> = { tenantId: user.tenantId };
+    if (body.ruleIds?.length) where.id = { in: body.ruleIds };
+
+    const rules = await prisma.notificationRule.findMany({
+      where: where as any,
+      select: {
+        id: true, name: true, trigger: true, conditionGroups: true,
+        actions: true, scopedQueueId: true, description: true,
+      },
+    });
+
+    if (rules.length === 0) {
+      return reply.status(200).send({ migrated: 0, workflows: [], warnings: [] });
+    }
+
+    const allWarnings: string[] = [];
+    const created: Array<{ id: string; name: string; sourceRuleId: string }> = [];
+
+    for (const rule of rules) {
+      const { graph, warnings } = convertRuleToWorkflowGraph(rule as any);
+      allWarnings.push(...warnings.map(w => `[${rule.name}] ${w}`));
+
+      const workflow = await prisma.$transaction(async (tx) => {
+        const wf = await tx.workflow.create({
+          data: {
+            tenantId: user.tenantId,
+            name: `[Migrated] ${rule.name}`,
+            description: rule.description ?? `Migrated from notification rule: ${rule.name}`,
+            trigger: rule.trigger,
+            scopedQueueId: rule.scopedQueueId ?? null,
+            status: 'DRAFT',
+            createdById: user.userId,
+          },
+        });
+
+        const version = await tx.workflowVersion.create({
+          data: { workflowId: wf.id, version: 1, graphJson: graph as any, createdById: user.userId },
+        });
+
+        await tx.workflow.update({ where: { id: wf.id }, data: { currentVersionId: version.id } });
+
+        await tx.workflowAuditLog.create({
+          data: {
+            tenantId: user.tenantId, workflowId: wf.id, action: 'CREATED', actorId: user.userId,
+            metadata: { migratedFromRuleId: rule.id, migratedFromRuleName: rule.name },
+          },
+        });
+
+        return wf;
+      });
+
+      created.push({ id: workflow.id, name: workflow.name, sourceRuleId: rule.id });
+    }
+
+    return reply.status(201).send({
+      migrated: created.length,
+      workflows: created,
+      warnings: allWarnings,
+    });
   });
 }

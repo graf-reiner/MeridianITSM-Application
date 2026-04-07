@@ -345,6 +345,11 @@ export default function NotificationRulesPage() {
           Notification Rules
         </h1>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Link href="/dashboard/settings/workflows" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', backgroundColor: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
+            Try Workflow Automation
+          </Link>
+        </div>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <Link
             href="/dashboard/settings/notification-rules/new"
             style={{

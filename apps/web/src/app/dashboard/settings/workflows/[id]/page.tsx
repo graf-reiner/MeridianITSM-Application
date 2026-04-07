@@ -20,8 +20,9 @@ import {
   type OnConnect,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import dagre from '@dagrejs/dagre';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiContentSave, mdiCheckCircle, mdiRocketLaunch, mdiPlay, mdiMagnify } from '@mdi/js';
+import { mdiArrowLeft, mdiContentSave, mdiCheckCircle, mdiRocketLaunch, mdiPlay, mdiMagnify, mdiAutoFix } from '@mdi/js';
 import Link from 'next/link';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -137,24 +138,30 @@ function EntitySelect({ endpoint, value, onChange, placeholder }: { endpoint: st
 // ─── Custom Node Component ──────────────────────────────────────────────────
 
 function WorkflowNodeComponent({ data, type, selected }: NodeProps) {
-  const nodeData = data as { label: string; config: Record<string, unknown>; nodeDef?: NodeDef };
+  const nodeData = data as { label: string; config: Record<string, unknown>; nodeDef?: NodeDef; execStatus?: string; execError?: string };
   const category = nodeData.nodeDef?.category ?? (type?.startsWith('trigger_') ? 'trigger' : type?.startsWith('condition_') ? 'condition' : 'action');
   const color = CATEGORY_COLORS[category] ?? '#6b7280';
   const hasInputs = category !== 'trigger';
   const isCondition = category === 'condition';
 
+  // Execution replay coloring
+  const execColor = nodeData.execStatus === 'COMPLETED' ? '#16a34a' : nodeData.execStatus === 'FAILED' ? '#dc2626' : nodeData.execStatus === 'SKIPPED' ? '#9ca3af' : null;
+  const borderColor = execColor ?? (selected ? 'var(--accent-primary, #4f46e5)' : color);
+  const opacity = nodeData.execStatus === 'SKIPPED' ? 0.5 : 1;
+
   return (
     <div style={{
       backgroundColor: 'var(--bg-primary, #fff)',
-      border: `2px solid ${selected ? 'var(--accent-primary, #4f46e5)' : color}`,
+      border: `2px solid ${borderColor}`,
       borderRadius: 10,
       minWidth: 180,
-      boxShadow: selected ? `0 0 0 2px ${color}40` : '0 2px 8px rgba(0,0,0,0.08)',
+      boxShadow: execColor ? `0 0 0 3px ${execColor}30` : selected ? `0 0 0 2px ${color}40` : '0 2px 8px rgba(0,0,0,0.08)',
       overflow: 'hidden',
+      opacity,
     }}>
       {/* Header */}
-      <div style={{ backgroundColor: color, padding: '6px 12px', color: '#fff', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-        {CATEGORY_LABELS[category] ?? category}
+      <div style={{ backgroundColor: execColor ?? color, padding: '6px 12px', color: '#fff', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        {execColor ? (nodeData.execStatus === 'COMPLETED' ? 'PASSED' : nodeData.execStatus === 'FAILED' ? 'FAILED' : 'SKIPPED') : (CATEGORY_LABELS[category] ?? category)}
       </div>
 
       {/* Body */}
@@ -195,6 +202,10 @@ export default function WorkflowBuilderPage() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [paletteSearch, setPaletteSearch] = useState('');
   const [saving, setSaving] = useState(false);
+  const [replaySteps, setReplaySteps] = useState<Record<string, { status: string; output?: unknown; error?: string }> | null>(null);
+  const [showTestModal, setShowTestModal] = useState(false);
+  const [testPayload, setTestPayload] = useState('{\n  "ticket": {\n    "priority": "HIGH",\n    "status": "NEW",\n    "type": "INCIDENT",\n    "title": "Test ticket"\n  }\n}');
+  const [simulating, setSimulating] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [validationResult, setValidationResult] = useState<{ valid: boolean; errors: Array<{ nodeId?: string; message: string }> } | null>(null);
 
@@ -272,7 +283,9 @@ export default function WorkflowBuilderPage() {
   const selectedNodeDef = selectedNode ? nodeDefs.find(d => d.type === selectedNode.type) : null;
 
   const onConnect: OnConnect = useCallback((connection: Connection) => {
-    setEdges(eds => addEdge({ ...connection, id: `e-${Date.now()}` }, eds));
+    // Add labels for condition branches
+    const label = connection.sourceHandle === 'true' ? 'True' : connection.sourceHandle === 'false' ? 'False' : undefined;
+    setEdges(eds => addEdge({ ...connection, id: `e-${Date.now()}`, label, style: { strokeWidth: 2 } }, eds));
   }, [setEdges]);
 
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
@@ -339,6 +352,20 @@ export default function WorkflowBuilderPage() {
     setPublishing(false);
   };
 
+  // Auto-layout using dagre
+  const handleAutoLayout = useCallback(() => {
+    const g = new dagre.graphlib.Graph();
+    g.setDefaultEdgeLabel(() => ({}));
+    g.setGraph({ rankdir: 'TB', nodesep: 60, ranksep: 100 });
+    nodes.forEach(n => g.setNode(n.id, { width: 200, height: 80 }));
+    edges.forEach(e => g.setEdge(e.source, e.target));
+    dagre.layout(g);
+    setNodes(nds => nds.map(n => {
+      const pos = g.node(n.id);
+      return pos ? { ...n, position: { x: pos.x - 100, y: pos.y - 40 } } : n;
+    }));
+  }, [nodes, edges, setNodes]);
+
   // Delete node
   const handleDeleteNode = useCallback(() => {
     if (!selectedNodeId) return;
@@ -371,6 +398,10 @@ export default function WorkflowBuilderPage() {
             <Icon path={mdiContentSave} size={0.65} color="currentColor" />
             {saving ? 'Saving...' : 'Save'}
           </button>
+          <button onClick={handleAutoLayout} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 14px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 13, fontWeight: 500, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
+            <Icon path={mdiAutoFix} size={0.65} color="currentColor" />
+            Auto-Layout
+          </button>
           <button onClick={() => void handleValidate()} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 14px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 13, fontWeight: 500, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
             <Icon path={mdiCheckCircle} size={0.65} color="currentColor" />
             Validate
@@ -379,6 +410,39 @@ export default function WorkflowBuilderPage() {
             <Icon path={mdiRocketLaunch} size={0.65} color="currentColor" />
             {publishing ? 'Publishing...' : 'Publish'}
           </button>
+          <button onClick={() => setShowTestModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 14px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 13, fontWeight: 500, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
+            <Icon path={mdiPlay} size={0.65} color="currentColor" />
+            Test
+          </button>
+          {replaySteps ? (
+            <button onClick={() => {
+              setReplaySteps(null);
+              // Remove execStatus from nodes
+              setNodes(nds => nds.map(n => ({ ...n, data: { ...n.data, execStatus: undefined, execError: undefined } })));
+            }} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 14px', border: '1px solid #fecaca', borderRadius: 7, fontSize: 13, fontWeight: 500, cursor: 'pointer', backgroundColor: '#fef2f2', color: '#dc2626' }}>
+              Exit Replay
+            </button>
+          ) : (
+            <button onClick={async () => {
+              const res = await fetch(`/api/v1/settings/workflows/${workflowId}/executions?page=1&pageSize=1`, { credentials: 'include' });
+              if (!res.ok) return;
+              const data = await res.json();
+              const exec = data.executions?.[0];
+              if (!exec?.steps?.length) return;
+              const stepMap: Record<string, { status: string; output?: unknown; error?: string }> = {};
+              for (const step of exec.steps) stepMap[step.nodeId] = { status: step.status, output: step.outputData, error: step.error };
+              setReplaySteps(stepMap);
+              setNodes(nds => nds.map(n => ({
+                ...n,
+                data: { ...n.data, execStatus: stepMap[n.id]?.status ?? 'SKIPPED', execError: stepMap[n.id]?.error },
+              })));
+            }} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 14px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 13, fontWeight: 500, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
+              Replay Last Run
+            </button>
+          )}
+          <Link href={`/dashboard/settings/workflows/${workflowId}/executions`} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 14px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 13, fontWeight: 500, textDecoration: 'none', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-primary)' }}>
+            History
+          </Link>
         </div>
       </div>
 
@@ -569,6 +633,63 @@ export default function WorkflowBuilderPage() {
           </div>
         )}
       </div>
+
+      {/* Test/Simulate Modal */}
+      {showTestModal && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ backgroundColor: 'var(--bg-primary)', borderRadius: 12, width: '100%', maxWidth: 560, padding: 24 }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 700 }}>Test Workflow (Simulation)</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 0 16px' }}>
+              Run the workflow in simulation mode. Actions will not actually execute — conditions will be evaluated and results shown on the canvas.
+            </p>
+            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Event Payload (JSON)</label>
+            <textarea
+              value={testPayload}
+              onChange={e => setTestPayload(e.target.value)}
+              rows={10}
+              style={{ width: '100%', padding: '10px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 12, fontFamily: 'monospace', resize: 'vertical', boxSizing: 'border-box', marginBottom: 16 }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowTestModal(false)} style={{ padding: '8px 16px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}>Cancel</button>
+              <button
+                onClick={async () => {
+                  setSimulating(true);
+                  try {
+                    // Save current graph first
+                    await handleSave();
+                    const payload = JSON.parse(testPayload);
+                    const res = await fetch(`/api/v1/settings/workflows/${workflowId}/simulate`, {
+                      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                      body: JSON.stringify({ eventContext: payload }),
+                    });
+                    if (res.ok) {
+                      const data = await res.json();
+                      const exec = data.execution;
+                      if (exec?.steps?.length) {
+                        const stepMap: Record<string, { status: string; output?: unknown; error?: string }> = {};
+                        for (const step of exec.steps) stepMap[step.nodeId] = { status: step.status, output: step.outputData, error: step.error };
+                        setReplaySteps(stepMap);
+                        setNodes(nds => nds.map(n => ({
+                          ...n,
+                          data: { ...n.data, execStatus: stepMap[n.id]?.status ?? 'SKIPPED', execError: stepMap[n.id]?.error },
+                        })));
+                      }
+                    }
+                  } catch (err) {
+                    alert(err instanceof Error ? err.message : 'Simulation failed');
+                  }
+                  setSimulating(false);
+                  setShowTestModal(false);
+                }}
+                disabled={simulating}
+                style={{ padding: '8px 18px', backgroundColor: '#059669', color: '#fff', border: 'none', borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+              >
+                {simulating ? 'Running...' : 'Run Simulation'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
