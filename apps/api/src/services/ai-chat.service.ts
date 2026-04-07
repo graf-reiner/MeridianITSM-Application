@@ -414,7 +414,7 @@ async function searchInventorySnapshots(
   if (args.softwareName) {
     conditions.push(`EXISTS (
       SELECT 1 FROM jsonb_array_elements(i."installedSoftware") elem
-      WHERE elem->>'Name' ILIKE $${paramIdx}
+      WHERE COALESCE(elem->>'name', elem->>'Name', elem->>'DisplayName') ILIKE $${paramIdx}
     )`);
     params.push(`%${args.softwareName}%`);
     paramIdx++;
@@ -493,9 +493,16 @@ async function searchInventorySnapshots(
 
     if (softwareName && Array.isArray(row.installedSoftware)) {
       entry.matchingSoftware = (row.installedSoftware as Array<Record<string, string>>)
-        .filter((sw) => sw.Name?.toLowerCase().includes(softwareName.toLowerCase()))
+        .filter((sw) => {
+          const swName = sw.name || sw.Name || sw.DisplayName || '';
+          return swName.toLowerCase().includes(softwareName.toLowerCase());
+        })
         .slice(0, 5)
-        .map((sw) => ({ name: sw.Name, version: sw.Version, publisher: sw.Publisher }));
+        .map((sw) => ({
+          name: sw.name || sw.Name || sw.DisplayName,
+          version: sw.version || sw.Version,
+          publisher: sw.publisher || sw.Publisher,
+        }));
     }
 
     return entry;
