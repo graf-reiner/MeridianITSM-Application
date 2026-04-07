@@ -279,35 +279,74 @@ export default function DashboardTicketsPage() {
       </div>
 
       {/* ── Saved Views ─────────────────────────────────────────────────────── */}
-      {savedViews.length > 0 && (
-        <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
-          <button
-            onClick={() => { setActiveViewId(null); setSearch(''); setStatus(''); setPriority(''); setPage(1); }}
-            style={{
-              padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid var(--border-secondary)',
-              backgroundColor: activeViewId === null ? 'var(--accent-primary)' : 'var(--bg-primary)',
-              color: activeViewId === null ? '#fff' : 'var(--text-secondary)',
-            }}
-          >
-            All Tickets
-          </button>
-          {savedViews.map(view => (
+      <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+        <button
+          onClick={() => { setActiveViewId(null); setSearch(''); setStatus(''); setPriority(''); setPage(1); }}
+          style={{
+            padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid var(--border-secondary)',
+            backgroundColor: activeViewId === null ? 'var(--accent-primary)' : 'var(--bg-primary)',
+            color: activeViewId === null ? '#fff' : 'var(--text-secondary)',
+          }}
+        >
+          All Tickets
+        </button>
+        {savedViews.map(view => (
+          <div key={view.id} style={{ display: 'inline-flex', alignItems: 'center', position: 'relative' }}>
             <button
-              key={view.id}
               onClick={() => applyView(view)}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 4,
-                padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid var(--border-secondary)',
+                padding: '5px 12px', borderRadius: '6px 0 0 6px', fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid var(--border-secondary)',
                 backgroundColor: activeViewId === view.id ? 'var(--accent-primary)' : 'var(--bg-primary)',
                 color: activeViewId === view.id ? '#fff' : 'var(--text-secondary)',
+                borderRight: 'none',
               }}
             >
               <Icon path={view.isShared ? mdiBookmark : mdiBookmarkOutline} size={0.5} color="currentColor" />
               {view.name}
             </button>
-          ))}
-        </div>
-      )}
+            <button
+              onClick={async () => {
+                if (!window.confirm(`Delete view "${view.name}"?`)) return;
+                await fetch(`/api/v1/tickets/views/${view.id}`, { method: 'DELETE', credentials: 'include' });
+                void qc.invalidateQueries({ queryKey: ['ticket-views'] });
+                if (activeViewId === view.id) setActiveViewId(null);
+              }}
+              style={{
+                padding: '5px 6px', borderRadius: '0 6px 6px 0', fontSize: 10, cursor: 'pointer',
+                border: '1px solid var(--border-secondary)',
+                backgroundColor: activeViewId === view.id ? 'var(--accent-primary)' : 'var(--bg-primary)',
+                color: activeViewId === view.id ? '#fff' : 'var(--text-placeholder)',
+              }}
+              title="Delete view"
+            >
+              <Icon path={mdiClose} size={0.45} color="currentColor" />
+            </button>
+          </div>
+        ))}
+        {/* Save current filters as a view */}
+        {(search || status || priority) && (
+          <button
+            onClick={async () => {
+              const name = window.prompt('View name:');
+              if (!name?.trim()) return;
+              await fetch('/api/v1/tickets/views', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                body: JSON.stringify({ name: name.trim(), filters: { search, status, priority } }),
+              });
+              void qc.invalidateQueries({ queryKey: ['ticket-views'] });
+            }}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer',
+              border: '1px dashed var(--border-secondary)', backgroundColor: 'var(--bg-primary)', color: 'var(--text-muted)',
+            }}
+          >
+            <Icon path={mdiBookmarkOutline} size={0.5} color="currentColor" />
+            Save View
+          </button>
+        )}
+      </div>
 
       {/* ── Bulk Action Bar ──────────────────────────────────────────────────── */}
       {selectedIds.size > 0 && (

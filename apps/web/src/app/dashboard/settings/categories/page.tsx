@@ -16,6 +16,7 @@ interface Category {
   icon: string | null;
   color: string | null;
   parentId: string | null;
+  autoCloseDays: number | null;
   children?: Category[];
 }
 
@@ -36,6 +37,7 @@ function CategoryModal({
   const [description, setDescription] = useState(category?.description ?? '');
   const [parentId, setParentId] = useState(category?.parentId ?? '');
   const [color, setColor] = useState(category?.color ?? '#6366f1');
+  const [autoCloseDays, setAutoCloseDays] = useState(category?.autoCloseDays?.toString() ?? '');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,6 +55,7 @@ function CategoryModal({
           description: description.trim() || null,
           parentId: parentId || null,
           color: color || null,
+          autoCloseDays: autoCloseDays ? parseInt(autoCloseDays, 10) : null,
         }),
       });
       if (!res.ok) {
@@ -100,6 +103,11 @@ function CategoryModal({
               <label htmlFor="color" style={labelStyle}>Color</label>
               <input id="color" type="color" value={color} onChange={(e) => setColor(e.target.value)} style={{ width: '100%', height: 38, border: '1px solid var(--border-secondary)', borderRadius: 7, cursor: 'pointer', padding: 2 }} />
             </div>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label htmlFor="autoCloseDays" style={labelStyle}>Auto-Close Days</label>
+            <input id="autoCloseDays" type="number" min="0" max="365" value={autoCloseDays} onChange={(e) => setAutoCloseDays(e.target.value)} placeholder="Leave blank for default" style={inputStyle} />
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-placeholder)' }}>Override tenant default for tickets in this category.</p>
           </div>
           {error && <div style={{ padding: '8px 12px', backgroundColor: 'var(--badge-red-bg-subtle)', border: '1px solid #fecaca', borderRadius: 7, marginBottom: 14, color: '#dc2626', fontSize: 13 }}>{error}</div>}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>

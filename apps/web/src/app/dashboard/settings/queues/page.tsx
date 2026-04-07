@@ -16,6 +16,7 @@ interface Queue {
   defaultAssignee: { id: string; firstName: string; lastName: string } | null;
   userGroup: { id: string; name: string } | null;
   userGroupId: string | null;
+  autoCloseDays: number | null;
   _count?: { tickets: number };
 }
 
@@ -38,6 +39,7 @@ function QueueModal({ queue, users, groups, onClose, onSaved }: { queue: Queue |
   const [defaultAssigneeId, setDefaultAssigneeId] = useState(queue?.defaultAssignee?.id ?? '');
   const [userGroupId, setUserGroupId] = useState(queue?.userGroupId ?? '');
   const [assignmentRules, setAssignmentRules] = useState('');
+  const [autoCloseDays, setAutoCloseDays] = useState(queue?.autoCloseDays?.toString() ?? '');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,6 +53,7 @@ function QueueModal({ queue, users, groups, onClose, onSaved }: { queue: Queue |
         autoAssign,
         defaultAssigneeId: defaultAssigneeId || null,
         userGroupId: userGroupId || null,
+        autoCloseDays: autoCloseDays ? parseInt(autoCloseDays, 10) : null,
       };
       if (assignmentRules.trim()) {
         try { body.assignmentRules = JSON.parse(assignmentRules); } catch { /* ignore invalid JSON */ }
@@ -108,6 +111,11 @@ function QueueModal({ queue, users, groups, onClose, onSaved }: { queue: Queue |
               {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
             </select>
             <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-placeholder)' }}>Assign this queue to a user group</p>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label htmlFor="autoCloseDays" style={labelStyle}>Auto-Close Days</label>
+            <input id="autoCloseDays" type="number" min="0" max="365" value={autoCloseDays} onChange={(e) => setAutoCloseDays(e.target.value)} placeholder="Leave blank for tenant default" style={inputStyle} />
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-placeholder)' }}>Days after resolution before auto-closing. Leave blank to use tenant default.</p>
           </div>
           <div style={{ marginBottom: 20 }}>
             <label htmlFor="assignmentRules" style={labelStyle}>Assignment Rules (JSON)</label>

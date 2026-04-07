@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiPaperclip, mdiSend, mdiAccountCircle, mdiClockOutline, mdiCloudUploadOutline } from '@mdi/js';
+import { mdiArrowLeft, mdiPaperclip, mdiSend, mdiAccountCircle, mdiClockOutline, mdiCloudUploadOutline, mdiPlus, mdiLinkVariant, mdiMerge, mdiEyeOutline, mdiEyeOffOutline, mdiCheckDecagram, mdiClose } from '@mdi/js';
 import CannedResponsePicker from '@/components/CannedResponsePicker';
 import RichTextField from '@/components/RichTextField';
 import SlaCountdown from '../../../../components/SlaCountdown';
@@ -120,6 +120,21 @@ export default function TicketDetailPage() {
   const [editPriority, setEditPriority] = useState('');
   const [editType, setEditType] = useState('');
   const [sidebarSaving, setSidebarSaving] = useState(false);
+  // Modal states for children, links, merge, watchers, approvals
+  const [showChildModal, setShowChildModal] = useState(false);
+  const [childTitle, setChildTitle] = useState('');
+  const [childSubmitting, setChildSubmitting] = useState(false);
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [linkTicketNumber, setLinkTicketNumber] = useState('');
+  const [linkType, setLinkType] = useState('RELATED_TO');
+  const [linkSubmitting, setLinkSubmitting] = useState(false);
+  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [mergeTicketNumbers, setMergeTicketNumbers] = useState('');
+  const [mergeSubmitting, setMergeSubmitting] = useState(false);
+  const [watcherUserId, setWatcherUserId] = useState('');
+  const [approvalChecked, setApprovalChecked] = useState(false);
+  const [approvalRequired, setApprovalRequired] = useState(false);
+  const [approvalSubmitting, setApprovalSubmitting] = useState(false);
 
   const { data: ticket, isLoading, error } = useQuery<TicketDetail>({
     queryKey: ['ticket', ticketId],
@@ -286,6 +301,35 @@ export default function TicketDetailPage() {
     staleTime: 60000,
   });
 
+  // ── CSAT Survey ────────────────────────────────────────────────────────────
+  const { data: surveyData } = useQuery<{ available?: boolean; alreadyResponded?: boolean; template?: { id: string; name: string; questions: Array<{ id: string; type: string; label: string; required?: boolean }> } }>({
+    queryKey: ['ticket-survey', ticketId],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/surveys/ticket/${ticketId}`, { credentials: 'include' });
+      if (!res.ok) return { available: false };
+      return res.json();
+    },
+    enabled: !!ticket && (ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'),
+  });
+
+  const [surveyAnswers, setSurveyAnswers] = useState<Record<string, unknown>>({});
+  const [surveySubmitting, setSurveySubmitting] = useState(false);
+  const [surveySubmitted, setSurveySubmitted] = useState(false);
+
+  const handleSurveySubmit = async () => {
+    if (!surveyData?.template) return;
+    setSurveySubmitting(true);
+    try {
+      const answers = Object.entries(surveyAnswers).map(([questionId, value]) => ({ questionId, value }));
+      await fetch('/api/v1/surveys/respond', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ ticketId, templateId: surveyData.template.id, answers }),
+      });
+      setSurveySubmitted(true);
+    } catch { /* ignore */ }
+    setSurveySubmitting(false);
+  };
+
   // ── KB suggestions ────────────────────────────────────────────────────────
   const { data: kbSuggestions } = useQuery<Array<{ id: string; articleNumber: number; title: string; summary: string | null }>>({
     queryKey: ['ticket-kb-suggestions', ticketId],
@@ -360,6 +404,109 @@ export default function TicketDetailPage() {
       setEditPriority(ticket.priority);
       setEditType(ticket.type);
     }
+  };
+
+  // ── Create child ticket handler ─────────────────────────────────────────
+  const handleCreateChild = async () => {
+    if (!childTitle.trim()) return;
+    setChildSubmitting(true);
+    try {
+      const res = await fetch(`/api/v1/tickets/${ticketId}/children`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ title: childTitle.trim() }),
+      });
+      if (!res.ok) throw new Error('Failed to create child ticket');
+      setChildTitle('');
+      setShowChildModal(false);
+      void qc.invalidateQueries({ queryKey: ['ticket-children', ticketId] });
+    } catch { /* ignore */ }
+    setChildSubmitting(false);
+  };
+
+  // ── Link ticket handler ───────────────────────────────────────────────
+  const handleLinkTicket = async () => {
+    if (!linkTicketNumber.trim()) return;
+    setLinkSubmitting(true);
+    try {
+      // Search for ticket by number to get its ID
+      const searchRes = await fetch(`/api/v1/tickets?search=${encodeURIComponent(linkTicketNumber.trim())}&pageSize=1`, { credentials: 'include' });
+      if (!searchRes.ok) throw new Error('Ticket not found');
+      const searchData = await searchRes.json();
+      const tickets = searchData.data ?? searchData.tickets ?? [];
+      if (tickets.length === 0) throw new Error('Ticket not found');
+      const targetId = tickets[0].id;
+      const res = await fetch(`/api/v1/tickets/${ticketId}/links`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ targetTicketId: targetId, linkType }),
+      });
+      if (!res.ok) throw new Error('Failed to link ticket');
+      setLinkTicketNumber('');
+      setShowLinkModal(false);
+      void qc.invalidateQueries({ queryKey: ['ticket-links', ticketId] });
+    } catch { /* ignore */ }
+    setLinkSubmitting(false);
+  };
+
+  // ── Merge tickets handler ─────────────────────────────────────────────
+  const handleMerge = async () => {
+    if (!mergeTicketNumbers.trim()) return;
+    setMergeSubmitting(true);
+    try {
+      // Parse comma-separated ticket numbers/IDs and search each
+      const numbers = mergeTicketNumbers.split(',').map(s => s.trim()).filter(Boolean);
+      const sourceIds: string[] = [];
+      for (const num of numbers) {
+        const res = await fetch(`/api/v1/tickets?search=${encodeURIComponent(num)}&pageSize=1`, { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          const tickets = data.data ?? data.tickets ?? [];
+          if (tickets.length > 0) sourceIds.push(tickets[0].id);
+        }
+      }
+      if (sourceIds.length === 0) throw new Error('No source tickets found');
+      const res = await fetch(`/api/v1/tickets/${ticketId}/merge`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ sourceTicketIds: sourceIds }),
+      });
+      if (!res.ok) throw new Error('Merge failed');
+      setMergeTicketNumbers('');
+      setShowMergeModal(false);
+      void qc.invalidateQueries({ queryKey: ['ticket', ticketId] });
+      void qc.invalidateQueries({ queryKey: ['ticket-comments', ticketId] });
+    } catch { /* ignore */ }
+    setMergeSubmitting(false);
+  };
+
+  // ── Add watcher handler ───────────────────────────────────────────────
+  const handleAddWatcher = async (userId: string) => {
+    await fetch(`/api/v1/tickets/${ticketId}/watchers`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify({ userId }),
+    });
+    setWatcherUserId('');
+    void qc.invalidateQueries({ queryKey: ['ticket-watchers', ticketId] });
+  };
+
+  const handleRemoveWatcher = async (userId: string) => {
+    await fetch(`/api/v1/tickets/${ticketId}/watchers/${userId}`, { method: 'DELETE', credentials: 'include' });
+    void qc.invalidateQueries({ queryKey: ['ticket-watchers', ticketId] });
+  };
+
+  // ── Check approval requirement ────────────────────────────────────────
+  const checkApproval = async () => {
+    const res = await fetch(`/api/v1/tickets/${ticketId}/approvals/check`, { method: 'POST', credentials: 'include' });
+    if (res.ok) {
+      const data = await res.json();
+      setApprovalRequired(data.approvalRequired);
+      setApprovalChecked(true);
+    }
+  };
+
+  const handleSubmitApproval = async () => {
+    setApprovalSubmitting(true);
+    await fetch(`/api/v1/tickets/${ticketId}/approvals/submit`, { method: 'POST', credentials: 'include' });
+    setApprovalSubmitting(false);
+    void qc.invalidateQueries({ queryKey: ['ticket', ticketId] });
   };
 
   const updateStatusMutation = useMutation({
@@ -464,7 +611,10 @@ export default function TicketDetailPage() {
                   backgroundColor: '#fef3c7', color: '#92400e',
                 }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#f59e0b', display: 'inline-block' }} />
-                  {presenceData.agents.length} other agent{presenceData.agents.length > 1 ? 's' : ''} viewing
+                  {presenceData.agents.map(a => {
+                    const u = (usersData ?? []).find(u => u.id === a.userId);
+                    return u ? `${u.firstName} ${u.lastName}` : 'Agent';
+                  }).join(', ')} also viewing
                 </span>
               )}
             </div>
@@ -493,6 +643,79 @@ export default function TicketDetailPage() {
           )}
         </div>
       </div>
+
+      {/* ── CSAT Survey Prompt ────────────────────────────────────────────────── */}
+      {surveyData?.available && !surveyData.alreadyResponded && !surveySubmitted && surveyData.template && (
+        <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: 20, marginBottom: 16 }}>
+          <h3 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 700, color: '#166534' }}>How was your experience?</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {surveyData.template.questions.map((q) => (
+              <div key={q.id}>
+                <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 600, color: '#15803d' }}>
+                  {q.label}{q.required ? ' *' : ''}
+                </label>
+                {q.type === 'rating' && (
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {[1, 2, 3, 4, 5].map(n => (
+                      <button
+                        key={n}
+                        onClick={() => setSurveyAnswers(prev => ({ ...prev, [q.id]: n }))}
+                        style={{
+                          width: 40, height: 40, borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: 'pointer',
+                          border: surveyAnswers[q.id] === n ? '2px solid #16a34a' : '1px solid #bbf7d0',
+                          backgroundColor: surveyAnswers[q.id] === n ? '#dcfce7' : '#fff',
+                          color: '#166534',
+                        }}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {q.type === 'yes_no' && (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {['Yes', 'No'].map(v => (
+                      <button
+                        key={v}
+                        onClick={() => setSurveyAnswers(prev => ({ ...prev, [q.id]: v }))}
+                        style={{
+                          padding: '6px 16px', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                          border: surveyAnswers[q.id] === v ? '2px solid #16a34a' : '1px solid #bbf7d0',
+                          backgroundColor: surveyAnswers[q.id] === v ? '#dcfce7' : '#fff',
+                          color: '#166534',
+                        }}
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {q.type === 'text' && (
+                  <textarea
+                    value={(surveyAnswers[q.id] as string) ?? ''}
+                    onChange={(e) => setSurveyAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
+                    placeholder="Your feedback..."
+                    rows={3}
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #bbf7d0', borderRadius: 7, fontSize: 13, resize: 'vertical', boxSizing: 'border-box' }}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={() => void handleSurveySubmit()}
+            disabled={surveySubmitting}
+            style={{ marginTop: 14, padding: '8px 20px', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+          >
+            {surveySubmitting ? 'Submitting...' : 'Submit Feedback'}
+          </button>
+        </div>
+      )}
+      {surveySubmitted && (
+        <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: 16, marginBottom: 16, textAlign: 'center' }}>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#166534' }}>Thank you for your feedback!</p>
+        </div>
+      )}
 
       {/* ── Content grid ──────────────────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 16, alignItems: 'start' }}>
@@ -737,6 +960,9 @@ export default function TicketDetailPage() {
             {/* Children */}
             {activeTab === 'children' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <button onClick={() => setShowChildModal(true)} style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 12px', backgroundColor: 'var(--accent-primary)', color: '#fff', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 4 }}>
+                  <Icon path={mdiPlus} size={0.65} color="currentColor" /> Add Child Ticket
+                </button>
                 {(childrenData ?? []).length === 0 ? (
                   <p style={{ color: 'var(--text-placeholder)', fontSize: 14, margin: 0 }}>No child tickets.</p>
                 ) : (
@@ -752,12 +978,35 @@ export default function TicketDetailPage() {
                     </Link>
                   ))
                 )}
+                {/* Create child modal */}
+                {showChildModal && (
+                  <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+                    <div style={{ backgroundColor: 'var(--bg-primary)', borderRadius: 12, width: '100%', maxWidth: 460, padding: 24 }}>
+                      <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700 }}>Create Child Ticket</h3>
+                      <input type="text" value={childTitle} onChange={(e) => setChildTitle(e.target.value)} placeholder="Child ticket title..." style={{ width: '100%', padding: '9px 12px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, marginBottom: 16, boxSizing: 'border-box' }} />
+                      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                        <button onClick={() => { setShowChildModal(false); setChildTitle(''); }} style={{ padding: '8px 16px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}>Cancel</button>
+                        <button onClick={() => void handleCreateChild()} disabled={childSubmitting || !childTitle.trim()} style={{ padding: '8px 18px', backgroundColor: 'var(--accent-primary)', color: '#fff', border: 'none', borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                          {childSubmitting ? 'Creating...' : 'Create'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
             {/* Links */}
             {activeTab === 'links' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
+                  <button onClick={() => setShowLinkModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 12px', backgroundColor: 'var(--accent-primary)', color: '#fff', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                    <Icon path={mdiLinkVariant} size={0.65} color="currentColor" /> Link Ticket
+                  </button>
+                  <button onClick={() => setShowMergeModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 12px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 13, fontWeight: 500, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
+                    <Icon path={mdiMerge} size={0.65} color="currentColor" /> Merge Into This
+                  </button>
+                </div>
                 {(linksData ?? []).length === 0 ? (
                   <p style={{ color: 'var(--text-placeholder)', fontSize: 14, margin: 0 }}>No linked tickets.</p>
                 ) : (
@@ -775,6 +1024,55 @@ export default function TicketDetailPage() {
                       </span>
                     </div>
                   ))
+                )}
+                {/* Link ticket modal */}
+                {showLinkModal && (
+                  <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+                    <div style={{ backgroundColor: 'var(--bg-primary)', borderRadius: 12, width: '100%', maxWidth: 460, padding: 24 }}>
+                      <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700 }}>Link Ticket</h3>
+                      <div style={{ marginBottom: 12 }}>
+                        <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Ticket Number or Title</label>
+                        <input type="text" value={linkTicketNumber} onChange={(e) => setLinkTicketNumber(e.target.value)} placeholder="e.g. TKT-42 or search by title..." style={{ width: '100%', padding: '9px 12px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, boxSizing: 'border-box' }} />
+                      </div>
+                      <div style={{ marginBottom: 16 }}>
+                        <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Link Type</label>
+                        <select value={linkType} onChange={(e) => setLinkType(e.target.value)} style={{ width: '100%', padding: '9px 12px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, boxSizing: 'border-box' }}>
+                          <option value="RELATED_TO">Related To</option>
+                          <option value="BLOCKS">Blocks</option>
+                          <option value="BLOCKED_BY">Blocked By</option>
+                          <option value="DUPLICATES">Duplicates</option>
+                          <option value="DUPLICATED_BY">Duplicated By</option>
+                        </select>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                        <button onClick={() => { setShowLinkModal(false); setLinkTicketNumber(''); }} style={{ padding: '8px 16px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}>Cancel</button>
+                        <button onClick={() => void handleLinkTicket()} disabled={linkSubmitting || !linkTicketNumber.trim()} style={{ padding: '8px 18px', backgroundColor: 'var(--accent-primary)', color: '#fff', border: 'none', borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                          {linkSubmitting ? 'Linking...' : 'Link'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {/* Merge modal */}
+                {showMergeModal && (
+                  <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+                    <div style={{ backgroundColor: 'var(--bg-primary)', borderRadius: 12, width: '100%', maxWidth: 460, padding: 24 }}>
+                      <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 700 }}>Merge Tickets Into This One</h3>
+                      <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
+                        Comments, attachments, and watchers from source tickets will be moved here. Source tickets will be closed.
+                      </p>
+                      <div style={{ marginBottom: 16 }}>
+                        <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Source Ticket Numbers (comma-separated)</label>
+                        <input type="text" value={mergeTicketNumbers} onChange={(e) => setMergeTicketNumbers(e.target.value)} placeholder="e.g. TKT-10, TKT-15" style={{ width: '100%', padding: '9px 12px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, boxSizing: 'border-box' }} />
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                        <button onClick={() => { setShowMergeModal(false); setMergeTicketNumbers(''); }} style={{ padding: '8px 16px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}>Cancel</button>
+                        <button onClick={() => void handleMerge()} disabled={mergeSubmitting || !mergeTicketNumbers.trim()} style={{ padding: '8px 18px', backgroundColor: '#dc2626', color: '#fff', border: 'none', borderRadius: 7, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                          {mergeSubmitting ? 'Merging...' : 'Merge'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
@@ -953,22 +1251,71 @@ export default function TicketDetailPage() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {(watchersData ?? []).map(w => (
-                  <div key={w.id} style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                    {w.user.firstName} {w.user.lastName}
+                  <div key={w.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-secondary)' }}>
+                    <span>{w.user.firstName} {w.user.lastName}</span>
+                    <button
+                      onClick={() => void handleRemoveWatcher(w.user.id)}
+                      title="Remove watcher"
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: 'var(--text-placeholder)' }}
+                    >
+                      <Icon path={mdiClose} size={0.55} color="currentColor" />
+                    </button>
                   </div>
                 ))}
               </div>
             )}
-            <button
-              onClick={async () => {
-                await fetch(`/api/v1/tickets/${ticketId}/watchers`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-                void qc.invalidateQueries({ queryKey: ['ticket-watchers', ticketId] });
-              }}
-              style={{ marginTop: 8, fontSize: 12, color: 'var(--accent-primary)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-            >
-              + Watch this ticket
-            </button>
+            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+              <button
+                onClick={() => void handleAddWatcher('')}
+                style={{ fontSize: 12, color: 'var(--accent-primary)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              >
+                <Icon path={mdiEyeOutline} size={0.55} color="currentColor" style={{ verticalAlign: 'middle', marginRight: 2 }} />
+                Watch
+              </button>
+              <span style={{ color: 'var(--text-placeholder)', fontSize: 12 }}>|</span>
+              <select
+                value={watcherUserId}
+                onChange={(e) => { if (e.target.value) void handleAddWatcher(e.target.value); }}
+                style={{ fontSize: 12, border: 'none', background: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: 0 }}
+              >
+                <option value="">+ Add user...</option>
+                {(usersData ?? []).map(u => (
+                  <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
+                ))}
+              </select>
+            </div>
           </div>
+
+          {/* ── Approval Status ─────────────────────────────────────────────────── */}
+          {ticket.status === 'PENDING_APPROVAL' && (
+            <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: 18 }}>
+              <h3 style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600, color: '#92400e', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon path={mdiCheckDecagram} size={0.7} color="#f59e0b" />
+                Pending Approval
+              </h3>
+              <p style={{ fontSize: 13, color: '#92400e', margin: 0 }}>This ticket is waiting for approval before it can proceed.</p>
+            </div>
+          )}
+          {ticket.status !== 'PENDING_APPROVAL' && ticket.status !== 'CLOSED' && ticket.status !== 'CANCELLED' && ticket.status !== 'RESOLVED' && (
+            <div>
+              {!approvalChecked ? (
+                <button onClick={() => void checkApproval()} style={{ fontSize: 12, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                  Check if approval is required
+                </button>
+              ) : approvalRequired ? (
+                <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: 12 }}>
+                  <p style={{ fontSize: 13, color: '#92400e', margin: '0 0 8px' }}>Approval is required for this ticket.</p>
+                  <button
+                    onClick={() => void handleSubmitApproval()}
+                    disabled={approvalSubmitting}
+                    style={{ padding: '6px 14px', backgroundColor: '#059669', color: '#fff', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    {approvalSubmitting ? 'Submitting...' : 'Submit for Approval'}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          )}
 
           {/* ── Similar Tickets ─────────────────────────────────────────────────── */}
           {similarData && similarData.length > 0 && (

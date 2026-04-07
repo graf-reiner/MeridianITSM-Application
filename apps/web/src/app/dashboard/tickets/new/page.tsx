@@ -59,6 +59,8 @@ const createTicketSchema = z.object({
   slaPolicyId: z.string().optional(),
   assignedToId: z.string().optional(),
   assignedGroupId: z.string().optional(),
+  impact: z.string().optional(),
+  urgency: z.string().optional(),
 });
 
 type CreateTicketForm = z.infer<typeof createTicketSchema>;
@@ -327,6 +329,32 @@ export default function NewTicketPage() {
               </select>
             </div>
           </div>
+
+          {/* Impact & Urgency row — shown for INCIDENT type or when required */}
+          {(currentType === 'INCIDENT' || requiredFields.includes('impact') || requiredFields.includes('urgency')) && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
+              <div>
+                <label style={labelStyle}>Impact{requiredFields.includes('impact') ? ' *' : ''}</label>
+                <select {...register('impact')} style={inputStyle}>
+                  <option value="">-- Select --</option>
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
+                  <option value="CRITICAL">Critical</option>
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Urgency{requiredFields.includes('urgency') ? ' *' : ''}</label>
+                <select {...register('urgency')} style={inputStyle}>
+                  <option value="">-- Select --</option>
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
+                  <option value="CRITICAL">Critical</option>
+                </select>
+              </div>
+            </div>
+          )}
 
           {/* Category & Queue row */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
