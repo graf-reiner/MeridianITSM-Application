@@ -13,6 +13,7 @@ import {
   linkCmdbItem,
 } from '../../../services/ticket.service.js';
 import * as storageService from '../../../services/storage.service.js';
+import { extractPdfContent } from '../../../services/pdf-extraction.service.js';
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
 
@@ -389,6 +390,11 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
         },
       },
     });
+
+    // Extract text from PDF attachments for AI search (fire-and-forget)
+    if (file.mimetype === 'application/pdf') {
+      extractPdfContent(tenantId, attachment.id, key, file.filename).catch(() => {});
+    }
 
     return reply.status(201).send(attachment);
   });
