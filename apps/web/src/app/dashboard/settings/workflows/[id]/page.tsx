@@ -79,10 +79,14 @@ const FIELD_VALUE_OPTIONS: Record<string, Array<{ label: string; value: string }
   slaStatus: [{ label: 'OK', value: 'OK' }, { label: 'Warning', value: 'WARNING' }, { label: 'Critical', value: 'CRITICAL' }, { label: 'Breached', value: 'BREACHED' }],
 };
 
+// Text-type fields that should show a textarea instead of a single-line input
+const TEXT_FIELDS = new Set(['description', 'resolution', 'title']);
+
 function DynamicValueSelect({ selectedField, value, onChange }: { selectedField: string; value: string; onChange: (v: string) => void }) {
   const options = FIELD_VALUE_OPTIONS[selectedField];
   const selectStyle = { width: '100%', padding: '7px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 13, boxSizing: 'border-box' as const };
 
+  // Enum fields → dropdown
   if (options) {
     return (
       <select value={value} onChange={e => onChange(e.target.value)} style={selectStyle}>
@@ -92,7 +96,14 @@ function DynamicValueSelect({ selectedField, value, onChange }: { selectedField:
     );
   }
 
-  // For fields without predefined options (queue, category, assignedTo, etc.), show text input
+  // Text-heavy fields → textarea
+  if (TEXT_FIELDS.has(selectedField)) {
+    return (
+      <textarea value={value} onChange={e => onChange(e.target.value)} placeholder="Enter value..." rows={4} style={{ ...selectStyle, resize: 'vertical' }} />
+    );
+  }
+
+  // Everything else → text input
   return (
     <input type="text" value={value} onChange={e => onChange(e.target.value)} placeholder="Enter value..." style={{ ...selectStyle }} />
   );
