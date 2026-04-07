@@ -870,8 +870,19 @@ export default function TicketDetailPage() {
                     <div key={act.id} style={{ display: 'flex', gap: 10, fontSize: 13 }}>
                       <span style={{ color: 'var(--text-placeholder)', flexShrink: 0 }}>{formatDate(act.createdAt)}</span>
                       <span style={{ color: 'var(--text-secondary)' }}>
-                        <strong>{act.actor ? `${act.actor.firstName} ${act.actor.lastName}` : 'System'}</strong>
-                        {' — '}{act.action.replace(/_/g, ' ')}
+                        {act.meta?.source === 'workflow' ? (
+                          <>
+                            <strong style={{ color: '#7c3aed' }}>Workflow: {(act.meta as Record<string, unknown>).workflowName as string ?? 'Automation'}</strong>
+                            {' — '}{act.action.replace(/_/g, ' ')}
+                            {act.fieldName && <span style={{ color: 'var(--text-muted)' }}> ({act.fieldName}: {act.oldValue ?? '—'} → {act.newValue ?? '—'})</span>}
+                          </>
+                        ) : (
+                          <>
+                            <strong>{act.actor ? `${act.actor.firstName} ${act.actor.lastName}` : 'System'}</strong>
+                            {' — '}{act.action.replace(/_/g, ' ')}
+                            {act.fieldName && <span style={{ color: 'var(--text-muted)' }}> ({act.fieldName}: {act.oldValue ?? '—'} → {act.newValue ?? '—'})</span>}
+                          </>
+                        )}
                       </span>
                     </div>
                   ))

@@ -50,11 +50,12 @@ export async function executeWorkflow(
     // Increment recursion depth
     await redis.set(depthKey, String(currentDepth + 1), 'EX', 60);
 
-    // Load the graph
-    const version = await prisma.workflowVersion.findUnique({
-      where: { id: versionId },
-      select: { graphJson: true },
-    });
+    // Load the graph and workflow name
+    const [version, workflowRecord] = await Promise.all([
+      prisma.workflowVersion.findUnique({ where: { id: versionId }, select: { graphJson: true } }),
+      prisma.workflow.findUnique({ where: { id: workflowId }, select: { name: true } }),
+    ]);
+    const workflowName = workflowRecord?.name ?? 'Unknown Workflow';
 
     if (!version?.graphJson) {
       await markExecutionDone(execution.id, 'FAILED', 'No graph found for version');
@@ -92,6 +93,7 @@ export async function executeWorkflow(
     const context: ExecutionContext = {
       tenantId,
       workflowId,
+      workflowName,
       executionId: execution.id,
       eventContext,
       variables: {},

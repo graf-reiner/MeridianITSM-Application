@@ -54,10 +54,16 @@ registerNode({
       data: {
         tenantId: context.tenantId,
         ticketId,
-        type: 'STATUS_CHANGE',
-        description: `Status changed from ${oldStatus} to ${newStatus} by workflow`,
+        activityType: 'FIELD_CHANGED',
+        fieldName: 'status',
         oldValue: oldStatus,
         newValue: newStatus,
+        metadata: {
+          source: 'workflow',
+          workflowId: context.workflowId,
+          workflowName: context.workflowName,
+          executionId: context.executionId,
+        },
       },
     });
 

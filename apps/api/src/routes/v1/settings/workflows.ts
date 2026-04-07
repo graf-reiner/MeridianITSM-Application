@@ -110,6 +110,38 @@ export async function workflowRoutes(fastify: FastifyInstance): Promise<void> {
     return reply.status(200).send(definitions);
   });
 
+  // ─── GET /executions — Global execution history (all workflows) ────────────
+
+  fastify.get('/api/v1/settings/workflows/executions', async (request, reply) => {
+    const user = request.user as { tenantId: string };
+    const { status, trigger, page = '1', pageSize = '25' } = request.query as {
+      status?: string; trigger?: string; page?: string; pageSize?: string;
+    };
+
+    const where: Record<string, unknown> = { tenantId: user.tenantId };
+    if (status) where.status = status;
+    if (trigger) where.trigger = trigger;
+
+    const skip = (Number(page) - 1) * Number(pageSize);
+
+    const [executions, total] = await Promise.all([
+      prisma.workflowExecution.findMany({
+        where: where as any,
+        include: {
+          workflow: { select: { id: true, name: true, trigger: true } },
+          version: { select: { version: true } },
+          steps: { orderBy: { startedAt: 'asc' } },
+        },
+        orderBy: { startedAt: 'desc' },
+        skip,
+        take: Number(pageSize),
+      }),
+      prisma.workflowExecution.count({ where: where as any }),
+    ]);
+
+    return reply.status(200).send({ executions, total, page: Number(page), pageSize: Number(pageSize) });
+  });
+
   // ─── GET /:id — Single workflow with graph ────────────────────────────────
 
   fastify.get('/api/v1/settings/workflows/:id', async (request, reply) => {

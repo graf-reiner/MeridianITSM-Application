@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiSitemap, mdiPlus, mdiPencil, mdiTrashCan, mdiPlay, mdiPause, mdiRocketLaunch } from '@mdi/js';
+import { mdiArrowLeft, mdiSitemap, mdiPlus, mdiPencil, mdiTrashCan, mdiPlay, mdiPause, mdiRocketLaunch, mdiHistory } from '@mdi/js';
 
 interface Workflow {
   id: string;
@@ -126,6 +126,10 @@ export default function WorkflowsSettingsPage() {
           Workflow Automation
         </h1>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+          <Link href="/dashboard/settings/workflows/executions" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, fontWeight: 500, textDecoration: 'none', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-primary)' }}>
+            <Icon path={mdiHistory} size={0.7} color="currentColor" />
+            View All Activity
+          </Link>
           <button onClick={() => setShowCreateModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', backgroundColor: 'var(--accent-primary)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
             <Icon path={mdiPlus} size={0.8} color="currentColor" />
             New Workflow

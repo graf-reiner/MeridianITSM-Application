@@ -65,10 +65,16 @@ registerNode({
         data: {
           tenantId: context.tenantId,
           ticketId,
-          type: activity.type,
-          description: activity.description,
+          activityType: 'FIELD_CHANGED',
+          fieldName: activity.type === 'ASSIGNMENT' ? 'assignedToId' : 'queueId',
           oldValue: activity.oldValue,
           newValue: activity.newValue,
+          metadata: {
+            source: 'workflow',
+            workflowId: context.workflowId,
+            workflowName: context.workflowName,
+            executionId: context.executionId,
+          },
         },
       });
     }

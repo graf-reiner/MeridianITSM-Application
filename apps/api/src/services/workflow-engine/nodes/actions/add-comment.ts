@@ -37,13 +37,19 @@ registerNode({
     const content = config.content as string;
     const visibility = (config.visibility as string) ?? 'INTERNAL';
 
+    // Use the actor from event context, or the ticket requester as fallback
+    const authorId = context.eventContext.actorId ?? context.eventContext.ticket?.requestedById;
+    if (!authorId) {
+      return { success: false, error: 'No author available for comment' };
+    }
+
     const comment = await prisma.ticketComment.create({
       data: {
         tenantId: context.tenantId,
         ticketId,
-        content,
-        visibility,
-        isAutomated: true,
+        authorId,
+        content: `[Automated] ${content}`,
+        visibility: visibility as any,
       },
     });
 
@@ -51,8 +57,15 @@ registerNode({
       data: {
         tenantId: context.tenantId,
         ticketId,
-        type: 'COMMENT_ADDED',
-        description: `Automated ${visibility.toLowerCase()} comment added by workflow`,
+        activityType: 'COMMENT_ADDED',
+        metadata: {
+          source: 'workflow',
+          workflowId: context.workflowId,
+          workflowName: context.workflowName,
+          executionId: context.executionId,
+          visibility,
+          commentId: comment.id,
+        },
       },
     });
 

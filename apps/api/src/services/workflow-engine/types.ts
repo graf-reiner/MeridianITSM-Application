@@ -65,6 +65,7 @@ export interface FieldSchema {
 export interface ExecutionContext {
   tenantId: string;
   workflowId: string;
+  workflowName: string;
   executionId: string;
   eventContext: EventContext;
   variables: Record<string, unknown>;   // Accumulated node outputs

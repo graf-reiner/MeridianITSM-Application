@@ -47,10 +47,16 @@ registerNode({
       data: {
         tenantId: context.tenantId,
         ticketId,
-        type: 'PRIORITY_CHANGE',
-        description: `Priority changed from ${oldPriority} to ${newPriority} by workflow`,
+        activityType: 'FIELD_CHANGED',
+        fieldName: 'priority',
         oldValue: oldPriority,
         newValue: newPriority,
+        metadata: {
+          source: 'workflow',
+          workflowId: context.workflowId,
+          workflowName: context.workflowName,
+          executionId: context.executionId,
+        },
       },
     });
 
