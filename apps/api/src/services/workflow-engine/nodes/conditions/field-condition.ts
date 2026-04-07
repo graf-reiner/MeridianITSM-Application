@@ -50,7 +50,17 @@ registerNode({
         { label: 'Is False', value: 'is_false' },
       ],
     },
-    { key: 'value', label: 'Value', type: 'text', required: true },
+    {
+      key: 'value', label: 'Value', type: 'dynamic_select', required: true,
+      helpText: 'dependsOn:field',
+      options: [
+        // These are shown when field=priority
+        { label: 'Low', value: 'LOW' },
+        { label: 'Medium', value: 'MEDIUM' },
+        { label: 'High', value: 'HIGH' },
+        { label: 'Critical', value: 'CRITICAL' },
+      ],
+    },
   ],
   execute: async (config: Record<string, unknown>, context: ExecutionContext): Promise<NodeResult> => {
     const field = config.field as string;

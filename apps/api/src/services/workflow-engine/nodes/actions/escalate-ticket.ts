@@ -12,9 +12,9 @@ registerNode({
   inputs: [{ id: 'in', label: 'Input', type: 'default' }],
   outputs: [{ id: 'out', label: 'Next', type: 'default' }],
   configSchema: [
-    { key: 'queueId', label: 'Queue ID', type: 'text', placeholder: 'Target queue ID' },
-    { key: 'assignedGroupId', label: 'Assigned Group ID', type: 'text', placeholder: 'Target group ID' },
-    { key: 'assignedToId', label: 'Assigned To User ID', type: 'text', placeholder: 'Target user ID' },
+    { key: 'queueId', label: 'Escalate to Queue', type: 'entity_select', helpText: 'endpoint:/api/v1/settings/queues', placeholder: 'Select queue...' },
+    { key: 'assignedGroupId', label: 'Escalate to Group', type: 'entity_select', helpText: 'endpoint:/api/v1/settings/groups', placeholder: 'Select group...' },
+    { key: 'assignedToId', label: 'Escalate to User', type: 'entity_select', helpText: 'endpoint:/api/v1/settings/users?isActive=true&pageSize=200', placeholder: 'Select user...' },
   ],
   execute: async (config: Record<string, unknown>, context: ExecutionContext): Promise<NodeResult> => {
     if (context.isSimulation) {

@@ -52,7 +52,7 @@ export interface PortDefinition {
 export interface FieldSchema {
   key: string;
   label: string;
-  type: 'text' | 'textarea' | 'select' | 'multiselect' | 'checkbox' | 'number' | 'json';
+  type: 'text' | 'textarea' | 'select' | 'multiselect' | 'checkbox' | 'number' | 'json' | 'entity_select' | 'dynamic_select';
   required?: boolean;
   placeholder?: string;
   helpText?: string;

@@ -12,8 +12,8 @@ registerNode({
   inputs: [{ id: 'in', label: 'Input', type: 'default' }],
   outputs: [{ id: 'out', label: 'Next', type: 'default' }],
   configSchema: [
-    { key: 'assignedToId', label: 'Assign to User ID', type: 'text', placeholder: 'User ID to assign' },
-    { key: 'queueId', label: 'Move to Queue ID', type: 'text', placeholder: 'Queue ID to move ticket to' },
+    { key: 'assignedToId', label: 'Assign to User', type: 'entity_select', helpText: 'endpoint:/api/v1/settings/users?isActive=true&pageSize=200', placeholder: 'Select user...' },
+    { key: 'queueId', label: 'Move to Queue', type: 'entity_select', helpText: 'endpoint:/api/v1/settings/queues', placeholder: 'Select queue...' },
   ],
   execute: async (config: Record<string, unknown>, context: ExecutionContext): Promise<NodeResult> => {
     if (context.isSimulation) {

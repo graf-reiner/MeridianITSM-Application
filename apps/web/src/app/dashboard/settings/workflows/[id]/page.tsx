@@ -69,6 +69,62 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 // ─── Custom Node Components ─────────────────────────────────────────────────
 
+// ─── Dynamic Field Components ────────────────────────────────────────────────
+
+const FIELD_VALUE_OPTIONS: Record<string, Array<{ label: string; value: string }>> = {
+  priority: [{ label: 'Low', value: 'LOW' }, { label: 'Medium', value: 'MEDIUM' }, { label: 'High', value: 'HIGH' }, { label: 'Critical', value: 'CRITICAL' }],
+  status: [{ label: 'New', value: 'NEW' }, { label: 'Open', value: 'OPEN' }, { label: 'In Progress', value: 'IN_PROGRESS' }, { label: 'Pending', value: 'PENDING' }, { label: 'Resolved', value: 'RESOLVED' }, { label: 'Closed', value: 'CLOSED' }, { label: 'Cancelled', value: 'CANCELLED' }],
+  type: [{ label: 'Incident', value: 'INCIDENT' }, { label: 'Service Request', value: 'SERVICE_REQUEST' }, { label: 'Problem', value: 'PROBLEM' }],
+  source: [{ label: 'Portal', value: 'PORTAL' }, { label: 'Email', value: 'EMAIL' }, { label: 'Agent', value: 'AGENT' }, { label: 'API', value: 'API' }, { label: 'Recurring', value: 'RECURRING' }],
+  slaStatus: [{ label: 'OK', value: 'OK' }, { label: 'Warning', value: 'WARNING' }, { label: 'Critical', value: 'CRITICAL' }, { label: 'Breached', value: 'BREACHED' }],
+};
+
+function DynamicValueSelect({ selectedField, value, onChange }: { selectedField: string; value: string; onChange: (v: string) => void }) {
+  const options = FIELD_VALUE_OPTIONS[selectedField];
+  const selectStyle = { width: '100%', padding: '7px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 13, boxSizing: 'border-box' as const };
+
+  if (options) {
+    return (
+      <select value={value} onChange={e => onChange(e.target.value)} style={selectStyle}>
+        <option value="">-- Select --</option>
+        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+    );
+  }
+
+  // For fields without predefined options (queue, category, assignedTo, etc.), show text input
+  return (
+    <input type="text" value={value} onChange={e => onChange(e.target.value)} placeholder="Enter value..." style={{ ...selectStyle }} />
+  );
+}
+
+function EntitySelect({ endpoint, value, onChange, placeholder }: { endpoint: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+  const { data: options = [] } = useQuery<Array<{ id: string; name?: string; firstName?: string; lastName?: string }>>({
+    queryKey: ['entity-options', endpoint],
+    queryFn: async () => {
+      const res = await fetch(endpoint, { credentials: 'include' });
+      if (!res.ok) return [];
+      const json = await res.json();
+      return json.data ?? json.users ?? json.groups ?? json.queues ?? json.categories ?? (Array.isArray(json) ? json : []);
+    },
+    enabled: !!endpoint,
+    staleTime: 60000,
+  });
+
+  return (
+    <select value={value} onChange={e => onChange(e.target.value)} style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 13, boxSizing: 'border-box' }}>
+      <option value="">{placeholder ?? '-- Select --'}</option>
+      {options.map(o => (
+        <option key={o.id} value={o.id}>
+          {o.firstName ? `${o.firstName} ${o.lastName ?? ''}`.trim() : o.name ?? o.id}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+// ─── Custom Node Component ──────────────────────────────────────────────────
+
 function WorkflowNodeComponent({ data, type, selected }: NodeProps) {
   const nodeData = data as { label: string; config: Record<string, unknown>; nodeDef?: NodeDef };
   const category = nodeData.nodeDef?.category ?? (type?.startsWith('trigger_') ? 'trigger' : type?.startsWith('condition_') ? 'condition' : 'action');
@@ -465,6 +521,19 @@ export default function WorkflowBuilderPage() {
                     placeholder={field.placeholder ?? '[]'}
                     rows={5}
                     style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 12, fontFamily: 'monospace', resize: 'vertical', boxSizing: 'border-box' }}
+                  />
+                ) : field.type === 'entity_select' ? (
+                  <EntitySelect
+                    endpoint={field.helpText?.replace('endpoint:', '') ?? ''}
+                    value={String((selectedNode.data as any).config?.[field.key] ?? '')}
+                    onChange={v => updateNodeConfig(selectedNode.id, field.key, v)}
+                    placeholder={field.placeholder}
+                  />
+                ) : field.type === 'dynamic_select' ? (
+                  <DynamicValueSelect
+                    selectedField={String((selectedNode.data as any).config?.field ?? '')}
+                    value={String((selectedNode.data as any).config?.[field.key] ?? '')}
+                    onChange={v => updateNodeConfig(selectedNode.id, field.key, v)}
                   />
                 ) : (
                   <input
