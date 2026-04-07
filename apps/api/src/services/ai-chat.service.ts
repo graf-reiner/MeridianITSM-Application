@@ -133,7 +133,7 @@ const TOOLS: ChatCompletionTool[] = [
     function: {
       name: 'search_inventory',
       description:
-        'Search inventory snapshots from endpoint agents. Use this to find machines by installed software, operating system, hardware specs, hostname, manufacturer, or model. This is the best tool for questions like "which computers have X installed".',
+        'Search inventory snapshots from endpoint agents. Use this to find machines by installed software, operating system, hardware specs, hostname, manufacturer, or model. This is the best tool for questions like "which computers have X installed". Does NOT return the full software list — use list_installed_software for that.',
       parameters: {
         type: 'object',
         properties: {
@@ -145,6 +145,25 @@ const TOOLS: ChatCompletionTool[] = [
           page: { type: 'number', description: 'Page number (default 1)' },
           pageSize: { type: 'number', description: 'Results per page (default 25, max 50)' },
         },
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_installed_software',
+      description:
+        'List all software installed on a specific machine by hostname. Use this when the user asks "what software is on X" or "list applications installed on X". Returns a paginated list of software names and versions.',
+      parameters: {
+        type: 'object',
+        properties: {
+          hostname: { type: 'string', description: 'Exact or partial hostname to look up' },
+          search: { type: 'string', description: 'Optional filter to narrow software names (e.g. "Adobe")' },
+          page: { type: 'number', description: 'Page number (default 1)' },
+          pageSize: { type: 'number', description: 'Results per page (default 50, max 200)' },
+        },
+        required: ['hostname'],
         additionalProperties: false,
       },
     },
@@ -312,6 +331,10 @@ async function executeTool(
 
     case 'search_inventory': {
       return await searchInventorySnapshots(tenantId, args);
+    }
+
+    case 'list_installed_software': {
+      return await listInstalledSoftware(tenantId, args);
     }
 
     case 'search_knowledge_articles': {
@@ -513,6 +536,70 @@ async function searchInventorySnapshots(
     page,
     pageSize,
     machines: results,
+  });
+}
+
+// ─── List Installed Software ──────────────────────────────────────────────────
+
+async function listInstalledSoftware(
+  tenantId: string,
+  args: Record<string, unknown>,
+): Promise<string> {
+  const hostname = args.hostname as string;
+  const search = args.search as string | undefined;
+  const page = Math.max(1, (args.page as number) || 1);
+  const pageSize = Math.min(Math.max(1, (args.pageSize as number) || 50), 200);
+
+  // Get the latest inventory snapshot for this hostname
+  const snapshots = await prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(
+    `SELECT "hostname", "installedSoftware", "collectedAt"
+     FROM inventory_snapshots
+     WHERE "tenantId" = $1::uuid AND "hostname" ILIKE $2
+     ORDER BY "collectedAt" DESC
+     LIMIT 1`,
+    tenantId,
+    `%${hostname}%`,
+  );
+
+  if (snapshots.length === 0) {
+    return JSON.stringify({ error: `No inventory snapshot found for hostname matching "${hostname}"` });
+  }
+
+  const snapshot = snapshots[0];
+  const allSoftware = Array.isArray(snapshot.installedSoftware)
+    ? (snapshot.installedSoftware as Array<Record<string, string>>)
+    : [];
+
+  // Extract and normalize software entries
+  let software = allSoftware
+    .map((sw) => ({
+      name: sw.name || sw.Name || sw.DisplayName || '(unknown)',
+      version: sw.version || sw.Version || '',
+      publisher: sw.publisher || sw.Publisher || '',
+    }))
+    .filter((sw) => sw.name !== '(unknown)' && sw.name.trim() !== '');
+
+  // Apply optional search filter
+  if (search) {
+    const lower = search.toLowerCase();
+    software = software.filter((sw) => sw.name.toLowerCase().includes(lower));
+  }
+
+  // Sort alphabetically
+  software.sort((a, b) => a.name.localeCompare(b.name));
+
+  // Paginate
+  const total = software.length;
+  const offset = (page - 1) * pageSize;
+  const paged = software.slice(offset, offset + pageSize);
+
+  return JSON.stringify({
+    hostname: snapshot.hostname,
+    totalSoftwareCount: total,
+    page,
+    pageSize,
+    lastCollected: snapshot.collectedAt,
+    software: paged,
   });
 }
 
