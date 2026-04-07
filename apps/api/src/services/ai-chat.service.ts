@@ -48,14 +48,17 @@ SQL RULES:
 - Write PostgreSQL-compatible SELECT statements ONLY
 - Column names are "camelCase" in double quotes: "ticketNumber", "assignedToId", "createdAt"
 - Table names are snake_case WITHOUT quotes: tickets, cmdb_configuration_items
-- DO NOT add WHERE "tenantId" = ... — tenant filtering is AUTOMATIC. Never include tenantId conditions.
+- TENANT FILTERING: ALWAYS include $TENANT_ID as the tenant UUID placeholder. Use table alias to qualify it.
+  Single table: SELECT * FROM tickets WHERE "tenantId" = '$TENANT_ID'
+  JOIN example: SELECT t."ticketNumber", ta.filename FROM tickets t JOIN ticket_attachments ta ON ta."ticketId" = t.id WHERE t."tenantId" = '$TENANT_ID'
+  The system replaces $TENANT_ID with the real UUID — never hardcode a UUID.
 - Use JOINs freely to combine data across tables
 - Use GROUP BY / COUNT / SUM / AVG for aggregations
 - For JSON array fields, use jsonb_array_elements() to expand and filter:
   Example — find machines with specific software:
     SELECT DISTINCT i.hostname, i."operatingSystem", elem->>'name' as sw_name, elem->>'version' as sw_version
     FROM inventory_snapshots i, jsonb_array_elements(i."installedSoftware") elem
-    WHERE elem->>'name' ILIKE '%7-Zip%'
+    WHERE i."tenantId" = '$TENANT_ID' AND elem->>'name' ILIKE '%7-Zip%'
     ORDER BY i.hostname
   Note: inventory_snapshots may have multiple rows per agent — use DISTINCT ON("agentId") or GROUP BY to deduplicate.
 - LIMIT results to 100 unless the user asks for more
@@ -281,7 +284,8 @@ export async function streamChatResponse(params: {
   let totalTokens = 0;
 
   // Phase 1: Tool-calling loop (non-streaming, max 5 rounds)
-  for (let round = 0; round < 5; round++) {
+  let round = 0;
+  for (; round < 5; round++) {
     const response = await openai.chat.completions.create({
       model,
       messages,
@@ -326,6 +330,14 @@ export async function streamChatResponse(params: {
     }
 
     break;
+  }
+
+  // If we exhausted all 5 rounds without producing an answer, show friendly error
+  if (round >= 5) {
+    const errorMsg = "I wasn't able to fulfill your request. Please try rephrasing your question.";
+    onToken(errorMsg);
+    await saveMessage(conv.id, 'assistant', errorMsg, undefined, undefined, totalTokens);
+    return { conversationId: conv.id, tokensUsed: totalTokens };
   }
 
   // Phase 2: Stream the final synthesis after tool calls
