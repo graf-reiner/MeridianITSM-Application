@@ -46,6 +46,7 @@ enum TicketStatus {
   OPEN
   IN_PROGRESS
   PENDING
+  PENDING_APPROVAL
   RESOLVED
   CLOSED
   CANCELLED
@@ -443,6 +444,17 @@ model Tenant {
   emailActivityLogs        EmailActivityLog[]
   chatConversations        ChatConversation[]
   documentContents         DocumentContent[]
+  cannedResponses          CannedResponse[]
+  ticketWatchers           TicketWatcher[]
+  savedTicketViews         SavedTicketView[]
+  ticketLinks              TicketLink[]
+  surveyTemplates          SurveyTemplate[]
+  surveyResponses          SurveyResponse[]
+  escalationPolicies       EscalationPolicy[]
+  ticketApprovalRules      TicketApprovalRule[]
+  ticketApprovals          TicketApproval[]
+  recurringTickets         RecurringTicket[]
+  ticketTemplates          TicketTemplate[]
 
   @@map("tenants")
 }
@@ -518,6 +530,14 @@ model User {
   cmdbCisAsBusinessOwner  CmdbConfigurationItem[] @relation("CmdbCiBusinessOwner")
   cmdbCisAsTechnicalOwner CmdbConfigurationItem[] @relation("CmdbCiTechnicalOwner")
   chatConversations       ChatConversation[]
+  cannedResponses         CannedResponse[]        @relation("CannedResponseCreatedBy")
+  ticketWatches           TicketWatcher[]
+  savedTicketViews        SavedTicketView[]
+  ticketLinksCreated      TicketLink[]            @relation("TicketLinkCreatedBy")
+  surveyResponses         SurveyResponse[]
+  ticketApprovalsGiven    TicketApproval[]         @relation("TicketApprovalApprover")
+  recurringTicketsCreated RecurringTicket[]        @relation("RecurringTicketCreatedBy")
+  ticketTemplatesCreated  TicketTemplate[]         @relation("TicketTemplateCreatedBy")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -544,6 +564,7 @@ model UserGroup {
   queues           Queue[]
   ticketsAssigned  Ticket[]                @relation("TicketAssignedGroup")
   cmdbCisBySupport CmdbConfigurationItem[] @relation("CmdbCiSupportGroup")
+  cannedResponses  CannedResponse[]
 
   @@index([tenantId])
   @@map("user_groups")
@@ -677,6 +698,8 @@ model Ticket {
   resolution      String?
   tags            String[]
   customFields    Json?
+  parentId        String?        @db.Uuid // Parent ticket for sub-task hierarchy
+  mergedIntoId    String?        @db.Uuid // If merged, points to the target ticket
   source          String         @default("PORTAL")
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
@@ -688,6 +711,10 @@ model Ticket {
   queue             Queue?                   @relation(fields: [queueId], references: [id])
   sla               SLA?                     @relation(fields: [slaId], references: [id])
   category          Category?                @relation(fields: [categoryId], references: [id])
+  parent            Ticket?                  @relation("TicketParentChild", fields: [parentId], references: [id])
+  children          Ticket[]                 @relation("TicketParentChild")
+  mergedInto        Ticket?                  @relation("TicketMerge", fields: [mergedIntoId], references: [id])
+  mergedFrom        Ticket[]                 @relation("TicketMerge")
   comments          TicketComment[]
   attachments       TicketAttachment[]
   activities        TicketActivity[]
@@ -695,6 +722,11 @@ model Ticket {
   cmdbTicketLinks   CmdbTicketLink[]
   cmdbIncidentLinks CmdbIncidentLink[]
   cmdbProblemLinks  CmdbProblemLink[]
+  watchers          TicketWatcher[]
+  linksFrom         TicketLink[]             @relation("TicketLinkFrom")
+  linksTo           TicketLink[]             @relation("TicketLinkTo")
+  surveyResponse    SurveyResponse?
+  approvals         TicketApproval[]
 
   @@unique([tenantId, ticketNumber])
   @@index([tenantId])
@@ -703,6 +735,7 @@ model Ticket {
   @@index([tenantId, assignedToId])
   @@index([tenantId, createdAt])
   @@index([tenantId, slaBreachAt])
+  @@index([tenantId, parentId])
   @@map("tickets")
 }
 
@@ -715,6 +748,7 @@ model TicketComment {
   content          String
   visibility       CommentVisibility @default(PUBLIC)
   timeSpentMinutes Int?
+  ccUserIds        String[]          @default([]) @db.Uuid // One-time CC recipients for this comment
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
@@ -773,6 +807,45 @@ model TicketActivity {
   @@map("ticket_activities")
 }
 
+// Ticket Watchers — users who receive notifications on all ticket updates
+model TicketWatcher {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  ticketId  String   @db.Uuid
+  userId    String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  ticket Ticket @relation(fields: [ticketId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([ticketId, userId])
+  @@index([tenantId, userId])
+  @@map("ticket_watchers")
+}
+
+// Ticket Links — relationships between tickets (blocks, duplicates, related)
+model TicketLink {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @db.Uuid
+  fromTicketId String   @db.Uuid
+  toTicketId   String   @db.Uuid
+  linkType     String   // BLOCKS, BLOCKED_BY, DUPLICATES, DUPLICATED_BY, RELATED_TO
+  createdById  String   @db.Uuid
+  createdAt    DateTime @default(now())
+
+  tenant     Tenant @relation(fields: [tenantId], references: [id])
+  fromTicket Ticket @relation("TicketLinkFrom", fields: [fromTicketId], references: [id])
+  toTicket   Ticket @relation("TicketLinkTo", fields: [toTicketId], references: [id])
+  createdBy  User   @relation("TicketLinkCreatedBy", fields: [createdById], references: [id])
+
+  @@unique([fromTicketId, toTicketId, linkType])
+  @@index([tenantId])
+  @@index([fromTicketId])
+  @@index([toTicketId])
+  @@map("ticket_links")
+}
+
 // Model 14: TicketKnowledgeArticle
 model TicketKnowledgeArticle {
   id                 String   @id @default(uuid()) @db.Uuid
@@ -800,6 +873,7 @@ model Queue {
   defaultAssigneeId String?  @db.Uuid
   userGroupId       String?  @db.Uuid
   assignmentRules   Json?
+  autoCloseDays     Int?     // Override tenant default for auto-close (RESOLVED → CLOSED)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -807,6 +881,7 @@ model Queue {
   userGroup         UserGroup?         @relation(fields: [userGroupId], references: [id])
   tickets           Ticket[]
   notificationRules NotificationRule[]
+  recurringTickets  RecurringTicket[]
 
   @@index([tenantId])
   @@map("queues")
@@ -830,13 +905,15 @@ model SLA {
   businessHoursEnd    String?
   businessDays        Int[]
   timezone            String   @default("UTC")
-  autoEscalate        Boolean  @default(false)
-  escalateToQueueId   String?  @db.Uuid
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  autoEscalate          Boolean  @default(false)
+  escalateToQueueId     String?  @db.Uuid
+  escalationPolicyId    String?  @db.Uuid
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
-  tenant  Tenant   @relation(fields: [tenantId], references: [id])
-  tickets Ticket[]
+  tenant           Tenant             @relation(fields: [tenantId], references: [id])
+  tickets          Ticket[]
+  escalationPolicy EscalationPolicy?  @relation("SlaEscalationPolicy", fields: [escalationPolicyId], references: [id])
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -845,21 +922,23 @@ model SLA {
 
 // Model 17: Category
 model Category {
-  id          String   @id @default(uuid()) @db.Uuid
-  tenantId    String   @db.Uuid
-  name        String
-  icon        String?
-  color       String?
-  parentId    String?  @db.Uuid
-  userGroupId String?  @db.Uuid
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @db.Uuid
+  name          String
+  icon          String?
+  color         String?
+  parentId      String?  @db.Uuid
+  userGroupId   String?  @db.Uuid
+  autoCloseDays Int?     // Override tenant default for auto-close (RESOLVED → CLOSED)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   tenant    Tenant     @relation(fields: [tenantId], references: [id])
   parent    Category?  @relation("CategoryParent", fields: [parentId], references: [id])
   children  Category[] @relation("CategoryParent")
-  userGroup UserGroup? @relation(fields: [userGroupId], references: [id])
-  tickets   Ticket[]
+  userGroup        UserGroup? @relation(fields: [userGroupId], references: [id])
+  tickets          Ticket[]
+  recurringTickets RecurringTicket[]
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -954,6 +1033,250 @@ model EmailPollJob {
   @@index([tenantId])
   @@index([nextPollAt])
   @@map("email_poll_jobs")
+}
+
+// ─── Ticket Templates (Form-Builder) ──────────────────────────────────────────
+
+model TicketTemplate {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  name        String
+  description String?
+  icon        String?  // MDI icon path for template picker
+  color       String?  // Accent color for template picker
+  ticketType  TicketType @default(SERVICE_REQUEST)
+  isActive    Boolean  @default(true)
+  isDefault   Boolean  @default(false)
+  // Default values for ticket fields
+  defaultPriority    TicketPriority?
+  defaultCategoryId  String?  @db.Uuid
+  defaultQueueId     String?  @db.Uuid
+  defaultAssigneeId  String?  @db.Uuid
+  defaultGroupId     String?  @db.Uuid
+  defaultSlaId       String?  @db.Uuid
+  defaultTags        String[]
+  // Form field definitions
+  fields     Json     // Array of TicketTemplateField objects (see below)
+  // Layout
+  sections   Json?    // Array of { name, description?, fieldIds[] } for grouping
+  // Title/description templates
+  titleTemplate       String?  // Pre-filled title with {{variables}}
+  descriptionTemplate String?  @db.Text // Pre-filled description with rich text
+  // Tracking
+  createdById String   @db.Uuid
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  createdBy User      @relation("TicketTemplateCreatedBy", fields: [createdById], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+  @@map("ticket_templates")
+}
+
+// TicketTemplateField JSON structure:
+// {
+//   id: string (UUID),
+//   type: "text" | "textarea" | "select" | "multiselect" | "number" | "date" | "checkbox" | "user_picker" | "attachment",
+//   label: string,
+//   placeholder?: string,
+//   helpText?: string,
+//   required: boolean,
+//   defaultValue?: unknown,
+//   options?: Array<{ label: string, value: string }>,  // For select/multiselect
+//   validation?: { min?: number, max?: number, pattern?: string },
+//   conditions?: Array<{ fieldId: string, operator: string, value: unknown }>,  // Show/hide based on other fields
+//   position: number,
+//   width?: "full" | "half",  // Layout
+//   mapsTo?: string,  // Maps to a built-in ticket field (e.g., "impact", "urgency")
+// }
+
+// ─── Recurring Tickets ────────────────────────────────────────────────────────
+
+model RecurringTicket {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @db.Uuid
+  name           String
+  isActive       Boolean  @default(true)
+  schedule       String   // Cron expression (e.g., "0 9 * * 1" = every Monday at 9am)
+  timezone       String   @default("UTC")
+  // Ticket template fields
+  title          String
+  description    String?  @db.Text
+  type           TicketType     @default(INCIDENT)
+  priority       TicketPriority @default(MEDIUM)
+  categoryId     String?  @db.Uuid
+  queueId        String?  @db.Uuid
+  assignedToId   String?  @db.Uuid
+  assignedGroupId String? @db.Uuid
+  tags           String[]
+  customFields   Json?
+  // Tracking
+  lastRunAt      DateTime?
+  nextRunAt      DateTime?
+  createdById    String   @db.Uuid
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  createdBy   User      @relation("RecurringTicketCreatedBy", fields: [createdById], references: [id])
+  category    Category? @relation(fields: [categoryId], references: [id])
+  queue       Queue?    @relation(fields: [queueId], references: [id])
+
+  @@index([tenantId])
+  @@index([isActive, nextRunAt])
+  @@map("recurring_tickets")
+}
+
+// ─── Escalation Policies ──────────────────────────────────────────────────────
+
+model EscalationPolicy {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  name      String
+  isActive  Boolean  @default(true)
+  levels    Json     // Array of { level, afterMinutes, action: "notify"|"reassign"|"escalate_queue", targetUserId?, targetQueueId?, notifyRoles? }
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  slas   SLA[]  @relation("SlaEscalationPolicy")
+
+  @@index([tenantId])
+  @@map("escalation_policies")
+}
+
+// ─── Ticket Approval Workflows ────────────────────────────────────────────────
+
+// Rules that determine when ticket approvals are required
+model TicketApprovalRule {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  name        String
+  isActive    Boolean  @default(true)
+  conditions  Json     // { ticketType?, categoryId?, priority?, customField?, operator, value }
+  approvers   Json     // Array of stages: [{ stage, type: "user"|"role"|"manager", targetId?, approveMode: "any"|"all" }]
+  priority    Int      @default(0) // Lower = higher priority, first match wins
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@map("ticket_approval_rules")
+}
+
+// Individual approval record per ticket
+model TicketApproval {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @db.Uuid
+  ticketId    String    @db.Uuid
+  ruleId      String    @db.Uuid
+  stage       Int       @default(1)
+  approverId  String    @db.Uuid
+  status      String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  comment     String?
+  decidedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  ticket   Ticket @relation(fields: [ticketId], references: [id])
+  approver User   @relation("TicketApprovalApprover", fields: [approverId], references: [id])
+
+  @@index([tenantId, ticketId])
+  @@index([tenantId, approverId, status])
+  @@map("ticket_approvals")
+}
+
+// ─── CSAT Surveys ─────────────────────────────────────────────────────────────
+
+// Survey template — configurable short survey (2-5 questions)
+model SurveyTemplate {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  name        String
+  description String?
+  questions   Json     // Array of { id, type: "rating"|"yes_no"|"text", label, required, options? }
+  isDefault   Boolean  @default(false) // One default per tenant
+  isActive    Boolean  @default(true)
+  trigger     String   @default("RESOLVED") // RESOLVED | CLOSED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant    Tenant           @relation(fields: [tenantId], references: [id])
+  responses SurveyResponse[]
+
+  @@index([tenantId])
+  @@map("survey_templates")
+}
+
+// Individual survey response — one per ticket
+model SurveyResponse {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @db.Uuid
+  templateId String   @db.Uuid
+  ticketId   String   @db.Uuid
+  userId     String   @db.Uuid  // The requester who filled it out
+  answers    Json     // Array of { questionId, value }
+  rating     Int?     // Extracted overall rating (1-5) for quick aggregation
+  comment    String?  // Extracted free-text comment for quick access
+  createdAt  DateTime @default(now())
+
+  tenant   Tenant         @relation(fields: [tenantId], references: [id])
+  template SurveyTemplate @relation(fields: [templateId], references: [id])
+  ticket   Ticket         @relation(fields: [ticketId], references: [id])
+  user     User           @relation(fields: [userId], references: [id])
+
+  @@unique([ticketId]) // One response per ticket
+  @@index([tenantId])
+  @@index([tenantId, templateId])
+  @@map("survey_responses")
+}
+
+// Saved Ticket Views — per-agent filter presets
+model SavedTicketView {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  userId    String   @db.Uuid
+  name      String
+  filters   Json     // { status[], priority[], queueId, categoryId, assignedToId, search, dateRange }
+  sortBy    String?  @default("createdAt")
+  sortDir   String?  @default("desc")
+  isShared  Boolean  @default(false)  // Visible to all agents in tenant
+  position  Int      @default(0)       // Display order
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, userId])
+  @@map("saved_ticket_views")
+}
+
+// Canned Responses / Quick Replies for ticket comments
+model CannedResponse {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @db.Uuid
+  title      String
+  content    String   @db.Text
+  shortcut   String?  // Quick-type shortcut (e.g., "/greeting")
+  category   String?  // Grouping label (e.g., "Closings", "Troubleshooting")
+  visibility String   @default("PERSONAL") // PERSONAL | TEAM | GLOBAL
+  createdById String  @db.Uuid
+  groupId    String?  @db.Uuid // For TEAM visibility — which group can see it
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  createdBy User       @relation("CannedResponseCreatedBy", fields: [createdById], references: [id])
+  group     UserGroup? @relation(fields: [groupId], references: [id])
+
+  @@index([tenantId, createdById])
+  @@index([tenantId, visibility])
+  @@map("canned_responses")
 }
 
 model SchedulerJob {

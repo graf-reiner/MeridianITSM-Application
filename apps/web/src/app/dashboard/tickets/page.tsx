@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Icon from '@mdi/react';
-import { mdiTicket, mdiPlus, mdiMagnify, mdiFilter } from '@mdi/js';
+import { mdiTicket, mdiPlus, mdiMagnify, mdiFilter, mdiCheckboxBlankOutline, mdiCheckboxMarked, mdiClose, mdiBookmarkOutline, mdiBookmark } from '@mdi/js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -80,12 +80,98 @@ function SlaDot({ pct }: { pct?: number }) {
 
 // ─── Ticket List Page ─────────────────────────────────────────────────────────
 
+interface SavedView {
+  id: string;
+  name: string;
+  filters: { status?: string; priority?: string; search?: string };
+  isShared: boolean;
+}
+
 export default function DashboardTicketsPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [priority, setPriority] = useState('');
   const [page, setPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkAction, setBulkAction] = useState('');
+  const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const PAGE_SIZE = 25;
+  const qc = useQueryClient();
+
+  // Saved views
+  const { data: savedViews = [] } = useQuery<SavedView[]>({
+    queryKey: ['ticket-views'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/tickets/views', { credentials: 'include' });
+      if (!res.ok) return [];
+      return res.json() as Promise<SavedView[]>;
+    },
+  });
+
+  // Bulk action mutation
+  const bulkMutation = useMutation({
+    mutationFn: async (payload: { ticketIds: string[]; action: string; status?: string; priority?: string }) => {
+      const res = await fetch('/api/v1/tickets/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error('Bulk action failed');
+      return res.json();
+    },
+    onSuccess: () => {
+      setSelectedIds(new Set());
+      setBulkAction('');
+      void qc.invalidateQueries({ queryKey: ['tickets'] });
+    },
+  });
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback((ticketIds: string[]) => {
+    setSelectedIds(prev => {
+      const allSelected = ticketIds.every(id => prev.has(id));
+      if (allSelected) return new Set();
+      return new Set(ticketIds);
+    });
+  }, []);
+
+  const applyView = useCallback((view: SavedView) => {
+    setActiveViewId(view.id);
+    setSearch(view.filters.search ?? '');
+    setStatus(view.filters.status ?? '');
+    setPriority(view.filters.priority ?? '');
+    setPage(1);
+  }, []);
+
+  const executeBulkAction = useCallback(() => {
+    if (selectedIds.size === 0 || !bulkAction) return;
+    const ids = [...selectedIds];
+    switch (bulkAction) {
+      case 'close':
+        bulkMutation.mutate({ ticketIds: ids, action: 'close' });
+        break;
+      case 'status_open':
+        bulkMutation.mutate({ ticketIds: ids, action: 'change_status', status: 'OPEN' });
+        break;
+      case 'status_in_progress':
+        bulkMutation.mutate({ ticketIds: ids, action: 'change_status', status: 'IN_PROGRESS' });
+        break;
+      case 'priority_high':
+        bulkMutation.mutate({ ticketIds: ids, action: 'change_priority', priority: 'HIGH' });
+        break;
+      case 'priority_critical':
+        bulkMutation.mutate({ ticketIds: ids, action: 'change_priority', priority: 'CRITICAL' });
+        break;
+    }
+  }, [selectedIds, bulkAction, bulkMutation]);
 
   const { data, isLoading, error } = useQuery<TicketListResponse>({
     queryKey: ['tickets', search, status, priority, page],
@@ -171,6 +257,7 @@ export default function DashboardTicketsPage() {
             <option value="OPEN">Open</option>
             <option value="IN_PROGRESS">In Progress</option>
             <option value="PENDING">Pending</option>
+            <option value="PENDING_APPROVAL">Pending Approval</option>
             <option value="RESOLVED">Resolved</option>
             <option value="CLOSED">Closed</option>
             <option value="CANCELLED">Cancelled</option>
@@ -191,6 +278,77 @@ export default function DashboardTicketsPage() {
         </select>
       </div>
 
+      {/* ── Saved Views ─────────────────────────────────────────────────────── */}
+      {savedViews.length > 0 && (
+        <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+          <button
+            onClick={() => { setActiveViewId(null); setSearch(''); setStatus(''); setPriority(''); setPage(1); }}
+            style={{
+              padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid var(--border-secondary)',
+              backgroundColor: activeViewId === null ? 'var(--accent-primary)' : 'var(--bg-primary)',
+              color: activeViewId === null ? '#fff' : 'var(--text-secondary)',
+            }}
+          >
+            All Tickets
+          </button>
+          {savedViews.map(view => (
+            <button
+              key={view.id}
+              onClick={() => applyView(view)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid var(--border-secondary)',
+                backgroundColor: activeViewId === view.id ? 'var(--accent-primary)' : 'var(--bg-primary)',
+                color: activeViewId === view.id ? '#fff' : 'var(--text-secondary)',
+              }}
+            >
+              <Icon path={view.isShared ? mdiBookmark : mdiBookmarkOutline} size={0.5} color="currentColor" />
+              {view.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ── Bulk Action Bar ──────────────────────────────────────────────────── */}
+      {selectedIds.size > 0 && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', marginBottom: 12,
+          backgroundColor: 'var(--badge-blue-bg)', borderRadius: 8, border: '1px solid var(--accent-primary)',
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-primary)' }}>
+            {selectedIds.size} selected
+          </span>
+          <select
+            value={bulkAction}
+            onChange={(e) => setBulkAction(e.target.value)}
+            style={{ padding: '5px 8px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 13, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}
+          >
+            <option value="">Choose action...</option>
+            <option value="status_open">Set Open</option>
+            <option value="status_in_progress">Set In Progress</option>
+            <option value="priority_high">Set High Priority</option>
+            <option value="priority_critical">Set Critical Priority</option>
+            <option value="close">Close</option>
+          </select>
+          <button
+            onClick={executeBulkAction}
+            disabled={!bulkAction || bulkMutation.isPending}
+            style={{
+              padding: '5px 14px', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: bulkAction ? 'pointer' : 'not-allowed',
+              backgroundColor: bulkAction ? 'var(--accent-primary)' : 'var(--bg-tertiary)', color: '#fff', border: 'none',
+            }}
+          >
+            {bulkMutation.isPending ? 'Applying...' : 'Apply'}
+          </button>
+          <button
+            onClick={() => { setSelectedIds(new Set()); setBulkAction(''); }}
+            style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+          >
+            <Icon path={mdiClose} size={0.7} color="currentColor" />
+          </button>
+        </div>
+      )}
+
       {/* ── Table ─────────────────────────────────────────────────────────────── */}
       {isLoading ? (
         <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading tickets...</div>
@@ -208,6 +366,18 @@ export default function DashboardTicketsPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
+                <th style={{ padding: '10px 8px 10px 14px', width: 32 }}>
+                  <button
+                    onClick={() => toggleSelectAll(tickets.map((t: any) => t.id))}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}
+                  >
+                    <Icon
+                      path={tickets.length > 0 && tickets.every((t: any) => selectedIds.has(t.id)) ? mdiCheckboxMarked : mdiCheckboxBlankOutline}
+                      size={0.8}
+                      color="var(--text-secondary)"
+                    />
+                  </button>
+                </th>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Number</th>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Title</th>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Status</th>
@@ -224,7 +394,19 @@ export default function DashboardTicketsPage() {
                 const statusStyle = getStatusStyle(ticket.status);
                 const priorityStyle = getPriorityStyle(ticket.priority);
                 return (
-                  <tr key={ticket.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                  <tr key={ticket.id} style={{ borderBottom: '1px solid var(--bg-tertiary)', backgroundColor: selectedIds.has(ticket.id) ? 'var(--badge-blue-bg)' : undefined }}>
+                    <td style={{ padding: '10px 8px 10px 14px', width: 32 }}>
+                      <button
+                        onClick={() => toggleSelect(ticket.id)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}
+                      >
+                        <Icon
+                          path={selectedIds.has(ticket.id) ? mdiCheckboxMarked : mdiCheckboxBlankOutline}
+                          size={0.8}
+                          color={selectedIds.has(ticket.id) ? 'var(--accent-primary)' : 'var(--text-placeholder)'}
+                        />
+                      </button>
+                    </td>
                     <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
                       <Link
                         href={`/dashboard/tickets/${ticket.id}`}

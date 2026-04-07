@@ -1,14 +1,16 @@
 import { prisma } from '@meridian/db';
 import { calculateBreachAt, getResolutionMinutes, type Priority as SlaPriority } from './sla.service.js';
 import { dispatchNotificationEvent } from './notification-rules.service.js';
+import { clearSlaAlerts } from '../workers/sla-monitor.worker.js';
 
 // ─── Status Transition Map ────────────────────────────────────────────────────
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
-  NEW: ['OPEN', 'IN_PROGRESS', 'CANCELLED'],
-  OPEN: ['IN_PROGRESS', 'PENDING', 'RESOLVED', 'CANCELLED'],
-  IN_PROGRESS: ['PENDING', 'RESOLVED', 'CANCELLED'],
+  NEW: ['OPEN', 'IN_PROGRESS', 'PENDING_APPROVAL', 'CANCELLED'],
+  OPEN: ['IN_PROGRESS', 'PENDING', 'PENDING_APPROVAL', 'RESOLVED', 'CANCELLED'],
+  IN_PROGRESS: ['PENDING', 'PENDING_APPROVAL', 'RESOLVED', 'CANCELLED'],
   PENDING: ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CANCELLED'],
+  PENDING_APPROVAL: ['OPEN', 'IN_PROGRESS', 'CANCELLED'], // Approved → OPEN/IN_PROGRESS, Rejected → CANCELLED
   RESOLVED: ['CLOSED', 'OPEN'],
   CLOSED: [],
   CANCELLED: [],
@@ -351,9 +353,12 @@ export async function updateTicket(
 
     if (data.status === 'RESOLVED') {
       updates.resolvedAt = new Date();
+      // Clear SLA alert tracking so alerts can re-fire if ticket is reopened
+      clearSlaAlerts(existing.id).catch(() => {});
     }
     if (data.status === 'CLOSED') {
       updates.closedAt = new Date();
+      clearSlaAlerts(existing.id).catch(() => {});
     }
 
     // SLA pause: record pause timestamp in customFields when entering PENDING

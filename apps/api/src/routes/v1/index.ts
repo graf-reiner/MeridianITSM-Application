@@ -19,6 +19,11 @@ import { ticketRoutes } from './tickets/index.js';
 import { webhookRoutes } from './webhooks/index.js';
 import { preferencesRoutes } from './preferences.js';
 import { aiChatRoutes } from './ai-chat/index.js';
+import { cannedResponseRoutes } from './canned-responses/index.js';
+import { surveyRoutes } from './surveys/index.js';
+import { escalationPolicyRoutes } from './escalation-policies/index.js';
+import { recurringTicketRoutes } from './recurring-tickets/index.js';
+import { ticketTemplateRoutes } from './ticket-templates/index.js';
 
 /**
  * V1 API routes — protected scope (requires JWT + tenant + RBAC).
@@ -87,4 +92,19 @@ export async function v1Routes(app: FastifyInstance): Promise<void> {
 
   // AI Assistant — chat conversations with function-calling over ITSM data
   await app.register(aiChatRoutes);
+
+  // Canned responses / quick replies for ticket comments
+  await app.register(cannedResponseRoutes);
+
+  // CSAT surveys — templates, responses, aggregate stats
+  await app.register(surveyRoutes);
+
+  // Escalation policies — multi-level escalation rules linked to SLAs
+  await app.register(escalationPolicyRoutes);
+
+  // Recurring tickets — cron-scheduled ticket creation
+  await app.register(recurringTicketRoutes);
+
+  // Ticket templates — form-builder with custom fields, conditions, sections
+  await app.register(ticketTemplateRoutes);
 }

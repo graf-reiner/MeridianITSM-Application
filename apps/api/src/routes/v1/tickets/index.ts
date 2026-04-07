@@ -2,6 +2,16 @@ import type { FastifyInstance } from 'fastify';
 import multipart from '@fastify/multipart';
 import { prisma } from '@meridian/db';
 import { planGate } from '../../../plugins/plan-gate.js';
+import { ticketWatcherRoutes } from './watchers.js';
+import { ticketBulkRoutes } from './bulk.js';
+import { savedViewRoutes } from './saved-views.js';
+import { ticketRelationshipRoutes } from './relationships.js';
+import { ticketMergeRoutes } from './merge.js';
+import { ticketPresenceRoutes } from './presence.js';
+import { kbSuggestionRoutes } from './kb-suggestions.js';
+import { ticketApprovalRoutes } from './approvals.js';
+import { similarTicketRoutes } from './similar.js';
+import { ticketClassifyRoutes } from './classify.js';
 import {
   createTicket,
   updateTicket,
@@ -594,4 +604,34 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
       return reply.status(404).send({ error: (err as Error).message });
     }
   });
+
+  // Register watcher sub-routes
+  await ticketWatcherRoutes(fastify);
+
+  // Register bulk operations sub-routes
+  await ticketBulkRoutes(fastify);
+
+  // Register saved views sub-routes
+  await savedViewRoutes(fastify);
+
+  // Register ticket relationship sub-routes (parent/child, links)
+  await ticketRelationshipRoutes(fastify);
+
+  // Register ticket merge sub-routes
+  await ticketMergeRoutes(fastify);
+
+  // Register agent presence/collision detection sub-routes
+  await ticketPresenceRoutes(fastify);
+
+  // Register KB article suggestion sub-routes
+  await kbSuggestionRoutes(fastify);
+
+  // Register ticket approval sub-routes
+  await ticketApprovalRoutes(fastify);
+
+  // Register similar ticket suggestion sub-routes
+  await similarTicketRoutes(fastify);
+
+  // Register AI ticket classification sub-routes
+  await ticketClassifyRoutes(fastify);
 }

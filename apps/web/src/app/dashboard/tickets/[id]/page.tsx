@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiArrowLeft, mdiPaperclip, mdiSend, mdiAccountCircle, mdiClockOutline, mdiCloudUploadOutline } from '@mdi/js';
+import CannedResponsePicker from '@/components/CannedResponsePicker';
 import RichTextField from '@/components/RichTextField';
 import SlaCountdown from '../../../../components/SlaCountdown';
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
@@ -105,7 +106,7 @@ export default function TicketDetailPage() {
   const router = useRouter();
   const qc = useQueryClient();
   const ticketId = params.id as string;
-  const [activeTab, setActiveTab] = useState<'comments' | 'activity' | 'attachments' | 'cis'>('comments');
+  const [activeTab, setActiveTab] = useState<'comments' | 'activity' | 'attachments' | 'cis' | 'children' | 'links'>('comments');
   const [commentBody, setCommentBody] = useState('');
   const [commentVisibility, setCommentVisibility] = useState<'PUBLIC' | 'INTERNAL'>('PUBLIC');
   const [commentSubmitting, setCommentSubmitting] = useState(false);
@@ -227,6 +228,73 @@ export default function TicketDetailPage() {
       const json = await res.json();
       return Array.isArray(json) ? json : json.groups ?? [];
     },
+  });
+
+  // ── Watchers ──────────────────────────────────────────────────────────────
+  const { data: watchersData } = useQuery<Array<{ id: string; user: { id: string; firstName: string; lastName: string; email: string } }>>({
+    queryKey: ['ticket-watchers', ticketId],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/tickets/${ticketId}/watchers`, { credentials: 'include' });
+      if (!res.ok) return [];
+      return res.json();
+    },
+  });
+
+  // ── Agent Presence (collision detection) ─────────────────────────────────
+  const { data: presenceData } = useQuery<{ agents: Array<{ userId: string }> }>({
+    queryKey: ['ticket-presence', ticketId],
+    queryFn: async () => {
+      // Send heartbeat and get presence
+      await fetch(`/api/v1/tickets/${ticketId}/presence/heartbeat`, { method: 'POST', credentials: 'include' });
+      const res = await fetch(`/api/v1/tickets/${ticketId}/presence`, { credentials: 'include' });
+      if (!res.ok) return { agents: [] };
+      return res.json();
+    },
+    refetchInterval: 15000, // Every 15 seconds
+  });
+
+  // ── Children tickets ──────────────────────────────────────────────────────
+  const { data: childrenData } = useQuery<Array<{ id: string; ticketNumber: number; title: string; status: string; priority: string }>>({
+    queryKey: ['ticket-children', ticketId],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/tickets/${ticketId}/children`, { credentials: 'include' });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: activeTab === 'children',
+  });
+
+  // ── Linked tickets ────────────────────────────────────────────────────────
+  const { data: linksData } = useQuery<Array<{ id: string; linkType: string; ticket: { id: string; ticketNumber: number; title: string; status: string; priority: string } }>>({
+    queryKey: ['ticket-links', ticketId],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/tickets/${ticketId}/links`, { credentials: 'include' });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: activeTab === 'links',
+  });
+
+  // ── Similar ticket suggestions ────────────────────────────────────────────
+  const { data: similarData } = useQuery<Array<{ id: string; ticketNumber: number; title: string; status: string; priority: string }>>({
+    queryKey: ['ticket-similar', ticketId],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/tickets/${ticketId}/similar?limit=3`, { credentials: 'include' });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 60000,
+  });
+
+  // ── KB suggestions ────────────────────────────────────────────────────────
+  const { data: kbSuggestions } = useQuery<Array<{ id: string; articleNumber: number; title: string; summary: string | null }>>({
+    queryKey: ['ticket-kb-suggestions', ticketId],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/tickets/${ticketId}/kb-suggestions?limit=3`, { credentials: 'include' });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 60000,
   });
 
   // ── Initialize sidebar edit state from ticket ────────────────────────────
@@ -388,6 +456,17 @@ export default function TicketDetailPage() {
                   pauseReason={slaStatus.pauseReason}
                 />
               )}
+              {/* Agent presence indicator */}
+              {presenceData && presenceData.agents.length > 0 && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px',
+                  borderRadius: 12, fontSize: 11, fontWeight: 500,
+                  backgroundColor: '#fef3c7', color: '#92400e',
+                }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#f59e0b', display: 'inline-block' }} />
+                  {presenceData.agents.length} other agent{presenceData.agents.length > 1 ? 's' : ''} viewing
+                </span>
+              )}
             </div>
             <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>{ticket.title}</h1>
             {/* Description is rich HTML from TipTap editor — authored by authenticated users only */}
@@ -422,7 +501,7 @@ export default function TicketDetailPage() {
         <div>
           {/* Tab Bar */}
           <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border-primary)', marginBottom: 16, backgroundColor: 'var(--bg-primary)', borderRadius: '12px 12px 0 0', border: '1px solid var(--border-primary)', borderBottomColor: 'transparent' }}>
-            {(['comments', 'activity', 'attachments', 'cis'] as const).map((tab) => {
+            {(['comments', 'activity', 'attachments', 'cis', 'children', 'links'] as const).map((tab) => {
               const hasAttachments = tab === 'attachments' && (ticket.attachments?.length ?? 0) > 0;
               return (
                 <button
@@ -531,6 +610,7 @@ export default function TicketDetailPage() {
                       <option value="PUBLIC">Public</option>
                       <option value="INTERNAL">Internal</option>
                     </select>
+                    <CannedResponsePicker onSelect={(content) => setCommentBody(prev => prev ? prev + content : content)} />
                     <button
                       onClick={() => void handleAddComment()}
                       disabled={commentSubmitting || !commentBody.trim()}
@@ -653,6 +733,51 @@ export default function TicketDetailPage() {
             )}
 
             {activeTab === 'cis' && <CmdbLinksSection ticketId={ticketId} />}
+
+            {/* Children */}
+            {activeTab === 'children' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {(childrenData ?? []).length === 0 ? (
+                  <p style={{ color: 'var(--text-placeholder)', fontSize: 14, margin: 0 }}>No child tickets.</p>
+                ) : (
+                  (childrenData ?? []).map((child) => (
+                    <Link key={child.id} href={`/dashboard/tickets/${child.id}`} style={{ textDecoration: 'none', display: 'block', padding: '10px 14px', backgroundColor: 'var(--bg-secondary)', borderRadius: 8, border: '1px solid var(--bg-tertiary)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--accent-primary)' }}>TKT-{child.ticketNumber}</span>
+                        <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{child.title}</span>
+                        <span style={{ padding: '1px 6px', borderRadius: 10, fontSize: 11, fontWeight: 500, backgroundColor: getStatusStyle(child.status).bg, color: getStatusStyle(child.status).text }}>
+                          {child.status.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                    </Link>
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* Links */}
+            {activeTab === 'links' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {(linksData ?? []).length === 0 ? (
+                  <p style={{ color: 'var(--text-placeholder)', fontSize: 14, margin: 0 }}>No linked tickets.</p>
+                ) : (
+                  (linksData ?? []).map((link) => (
+                    <div key={link.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', backgroundColor: 'var(--bg-secondary)', borderRadius: 8, border: '1px solid var(--bg-tertiary)' }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-placeholder)', textTransform: 'uppercase', minWidth: 80 }}>
+                        {link.linkType.replace(/_/g, ' ')}
+                      </span>
+                      <Link href={`/dashboard/tickets/${link.ticket.id}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--accent-primary)' }}>TKT-{link.ticket.ticketNumber}</span>
+                        <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{link.ticket.title}</span>
+                      </Link>
+                      <span style={{ padding: '1px 6px', borderRadius: 10, fontSize: 11, fontWeight: 500, backgroundColor: getStatusStyle(link.ticket.status).bg, color: getStatusStyle(link.ticket.status).text }}>
+                        {link.ticket.status.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -817,6 +942,69 @@ export default function TicketDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* ── Watchers ───────────────────────────────────────────────────────── */}
+          <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: 18 }}>
+            <h3 style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Watchers ({watchersData?.length ?? 0})
+            </h3>
+            {(watchersData ?? []).length === 0 ? (
+              <p style={{ color: 'var(--text-placeholder)', fontSize: 13, margin: 0 }}>No watchers</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {(watchersData ?? []).map(w => (
+                  <div key={w.id} style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                    {w.user.firstName} {w.user.lastName}
+                  </div>
+                ))}
+              </div>
+            )}
+            <button
+              onClick={async () => {
+                await fetch(`/api/v1/tickets/${ticketId}/watchers`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+                void qc.invalidateQueries({ queryKey: ['ticket-watchers', ticketId] });
+              }}
+              style={{ marginTop: 8, fontSize: 12, color: 'var(--accent-primary)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            >
+              + Watch this ticket
+            </button>
+          </div>
+
+          {/* ── Similar Tickets ─────────────────────────────────────────────────── */}
+          {similarData && similarData.length > 0 && (
+            <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: 18 }}>
+              <h3 style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Similar Tickets
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {similarData.map(t => (
+                  <Link key={t.id} href={`/dashboard/tickets/${t.id}`} style={{ textDecoration: 'none', fontSize: 13 }}>
+                    <span style={{ color: 'var(--accent-primary)', fontWeight: 500 }}>TKT-{t.ticketNumber}</span>
+                    {' '}
+                    <span style={{ color: 'var(--text-secondary)' }}>{t.title}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── KB Suggestions ──────────────────────────────────────────────────── */}
+          {kbSuggestions && kbSuggestions.length > 0 && (
+            <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: 18 }}>
+              <h3 style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Suggested Articles
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {kbSuggestions.map(a => (
+                  <Link key={a.id} href={`/dashboard/knowledge/${a.id}`} style={{ textDecoration: 'none', fontSize: 13 }}>
+                    <span style={{ color: 'var(--accent-primary)', fontWeight: 500 }}>KB-{a.articleNumber}</span>
+                    {' '}
+                    <span style={{ color: 'var(--text-secondary)' }}>{a.title}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

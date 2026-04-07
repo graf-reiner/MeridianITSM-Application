@@ -21,6 +21,7 @@ import { emailActivityRoutes } from './email-activity.js';
 import { notificationRulesRoutes } from './notification-rules.js';
 import { notificationRulesYamlRoutes } from './notification-rules-yaml.js';
 import { aiSettingsRoutes } from './ai.js';
+import { requiredFieldsRoutes } from './required-fields.js';
 
 /**
  * Settings routes registrar.
@@ -66,4 +67,5 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
   await fastify.register(notificationRulesYamlRoutes);
   await fastify.register(notificationRulesRoutes);
   await fastify.register(aiSettingsRoutes);
+  await fastify.register(requiredFieldsRoutes);
 }
