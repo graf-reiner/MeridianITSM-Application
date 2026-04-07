@@ -129,12 +129,26 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
     const query = request.query as {
       status?: string;
       priority?: string;
+      type?: string;
       assignedToId?: string;
+      assignedGroupId?: string;
+      requestedById?: string;
       categoryId?: string;
       queueId?: string;
+      slaId?: string;
+      source?: string;
+      tags?: string;
       search?: string;
       dateFrom?: string;
       dateTo?: string;
+      updatedFrom?: string;
+      updatedTo?: string;
+      resolvedFrom?: string;
+      resolvedTo?: string;
+      closedFrom?: string;
+      closedTo?: string;
+      sortBy?: string;
+      sortDir?: string;
       page?: string;
       pageSize?: string;
     };
@@ -142,12 +156,26 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
     const result = await getTicketList(tenantId, {
       status: query.status,
       priority: query.priority,
+      type: query.type,
       assignedToId: query.assignedToId,
+      assignedGroupId: query.assignedGroupId,
+      requestedById: query.requestedById,
       categoryId: query.categoryId,
       queueId: query.queueId,
+      slaId: query.slaId,
+      source: query.source,
+      tags: query.tags ? query.tags.split(',') : undefined,
       search: query.search,
       dateFrom: query.dateFrom,
       dateTo: query.dateTo,
+      updatedFrom: query.updatedFrom,
+      updatedTo: query.updatedTo,
+      resolvedFrom: query.resolvedFrom,
+      resolvedTo: query.resolvedTo,
+      closedFrom: query.closedFrom,
+      closedTo: query.closedTo,
+      sortBy: query.sortBy,
+      sortDir: query.sortDir,
       page: query.page ? parseInt(query.page, 10) : undefined,
       pageSize: query.pageSize ? parseInt(query.pageSize, 10) : undefined,
     });

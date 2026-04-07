@@ -455,6 +455,7 @@ model Tenant {
   ticketApprovals          TicketApproval[]
   recurringTickets         RecurringTicket[]
   ticketTemplates          TicketTemplate[]
+  ticketViewAssignments    TicketViewAssignment[]
 
   @@map("tenants")
 }
@@ -538,6 +539,7 @@ model User {
   ticketApprovalsGiven    TicketApproval[]         @relation("TicketApprovalApprover")
   recurringTicketsCreated RecurringTicket[]        @relation("RecurringTicketCreatedBy")
   ticketTemplatesCreated  TicketTemplate[]         @relation("TicketTemplateCreatedBy")
+  ticketViewAssignments   TicketViewAssignment[]   @relation("TicketViewAssignmentUser")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -564,7 +566,8 @@ model UserGroup {
   queues           Queue[]
   ticketsAssigned  Ticket[]                @relation("TicketAssignedGroup")
   cmdbCisBySupport CmdbConfigurationItem[] @relation("CmdbCiSupportGroup")
-  cannedResponses  CannedResponse[]
+  cannedResponses        CannedResponse[]
+  ticketViewAssignments  TicketViewAssignment[]
 
   @@index([tenantId])
   @@map("user_groups")
@@ -1235,25 +1238,50 @@ model SurveyResponse {
   @@map("survey_responses")
 }
 
-// Saved Ticket Views — per-agent filter presets
+// Saved Ticket Views — advanced filter presets with display customization
 model SavedTicketView {
-  id        String   @id @default(uuid()) @db.Uuid
-  tenantId  String   @db.Uuid
-  userId    String   @db.Uuid
-  name      String
-  filters   Json     // { status[], priority[], queueId, categoryId, assignedToId, search, dateRange }
-  sortBy    String?  @default("createdAt")
-  sortDir   String?  @default("desc")
-  isShared  Boolean  @default(false)  // Visible to all agents in tenant
-  position  Int      @default(0)       // Display order
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @db.Uuid
+  userId        String   @db.Uuid        // Creator/owner
+  name          String
+  description   String?
+  filters       Json     // All ticket field filters: status, priority, type, assignedToId, queueId, categoryId, etc.
+  sortBy        String?  @default("createdAt")
+  sortDir       String?  @default("desc")
+  displayConfig Json?    // { textColor, bgColor, badgeColors, columns[] }
+  isGlobal      Boolean  @default(false)  // Visible to all agents in tenant
+  isDefault     Boolean  @default(false)  // User's default view (at-most-one per user)
+  position      Int      @default(0)      // Display order
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  tenant Tenant @relation(fields: [tenantId], references: [id])
-  user   User   @relation(fields: [userId], references: [id])
+  tenant      Tenant                 @relation(fields: [tenantId], references: [id])
+  user        User                   @relation(fields: [userId], references: [id])
+  assignments TicketViewAssignment[]
 
   @@index([tenantId, userId])
   @@map("saved_ticket_views")
+}
+
+// Granular view sharing — assign views to specific users or groups
+model TicketViewAssignment {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  viewId      String   @db.Uuid
+  userId      String?  @db.Uuid   // Assign to specific user (exactly one of userId/userGroupId)
+  userGroupId String?  @db.Uuid   // Assign to a group
+  createdAt   DateTime @default(now())
+
+  tenant    Tenant          @relation(fields: [tenantId], references: [id])
+  view      SavedTicketView @relation(fields: [viewId], references: [id], onDelete: Cascade)
+  user      User?           @relation("TicketViewAssignmentUser", fields: [userId], references: [id])
+  userGroup UserGroup?      @relation(fields: [userGroupId], references: [id])
+
+  @@unique([viewId, userId])
+  @@unique([viewId, userGroupId])
+  @@index([tenantId, userId])
+  @@index([tenantId, userGroupId])
+  @@map("ticket_view_assignments")
 }
 
 // Canned Responses / Quick Replies for ticket comments

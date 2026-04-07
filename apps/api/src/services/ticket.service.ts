@@ -57,12 +57,26 @@ export interface AddCommentData {
 export interface TicketListFilters {
   status?: string;
   priority?: string;
+  type?: string;
   assignedToId?: string;
+  assignedGroupId?: string;
+  requestedById?: string;
   categoryId?: string;
   queueId?: string;
+  slaId?: string;
+  source?: string;
+  tags?: string[];
   search?: string;
   dateFrom?: string;
   dateTo?: string;
+  updatedFrom?: string;
+  updatedTo?: string;
+  resolvedFrom?: string;
+  resolvedTo?: string;
+  closedFrom?: string;
+  closedTo?: string;
+  sortBy?: string;
+  sortDir?: string;
   page?: number;
   pageSize?: number;
 }
@@ -539,14 +553,30 @@ export async function getTicketList(tenantId: string, filters: TicketListFilters
 
   if (filters.status) where.status = filters.status;
   if (filters.priority) where.priority = filters.priority;
+  if (filters.type) where.type = filters.type;
   if (filters.assignedToId) where.assignedToId = filters.assignedToId;
+  if (filters.assignedGroupId) where.assignedGroupId = filters.assignedGroupId;
+  if (filters.requestedById) where.requestedById = filters.requestedById;
   if (filters.categoryId) where.categoryId = filters.categoryId;
   if (filters.queueId) where.queueId = filters.queueId;
+  if (filters.slaId) where.slaId = filters.slaId;
+  if (filters.source) where.source = filters.source;
+  if (filters.tags?.length) where.tags = { hasSome: filters.tags };
 
-  if (filters.dateFrom || filters.dateTo) {
-    where.createdAt = {};
-    if (filters.dateFrom) (where.createdAt as Record<string, unknown>).gte = new Date(filters.dateFrom);
-    if (filters.dateTo) (where.createdAt as Record<string, unknown>).lte = new Date(filters.dateTo);
+  // Date range filters
+  const dateRanges: [string, string, string | undefined, string | undefined][] = [
+    ['createdAt', 'createdAt', filters.dateFrom, filters.dateTo],
+    ['updatedAt', 'updatedAt', filters.updatedFrom, filters.updatedTo],
+    ['resolvedAt', 'resolvedAt', filters.resolvedFrom, filters.resolvedTo],
+    ['closedAt', 'closedAt', filters.closedFrom, filters.closedTo],
+  ];
+  for (const [, field, from, to] of dateRanges) {
+    if (from || to) {
+      const range: Record<string, Date> = {};
+      if (from) range.gte = new Date(from);
+      if (to) range.lte = new Date(to);
+      where[field] = range;
+    }
   }
 
   if (filters.search) {
@@ -556,11 +586,16 @@ export async function getTicketList(tenantId: string, filters: TicketListFilters
     ];
   }
 
+  // Dynamic sort with whitelist
+  const VALID_SORT_FIELDS = ['createdAt', 'updatedAt', 'priority', 'status', 'title', 'ticketNumber', 'resolvedAt', 'closedAt', 'type', 'source'];
+  const sortField = VALID_SORT_FIELDS.includes(filters.sortBy ?? '') ? filters.sortBy! : 'createdAt';
+  const sortDirection = filters.sortDir === 'asc' ? 'asc' : 'desc';
+
   const [tickets, total] = await Promise.all([
     prisma.ticket.findMany({
       where,
       include: TICKET_LIST_INCLUDE,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { [sortField]: sortDirection },
       skip,
       take: pageSize,
     }),
