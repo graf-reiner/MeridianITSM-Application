@@ -697,9 +697,12 @@ export async function customFormRoutes(
       if (body[field] !== undefined) updates[field] = body[field];
     }
 
+    // defaultTags is a String[] and cannot be null — coerce to empty array
+    if (updates.defaultTags === null) updates.defaultTags = [];
+
     const form = await prisma.customForm.update({
       where: { id },
-      data: updates,
+      data: updates as any,
     });
 
     return reply.status(200).send(form);
