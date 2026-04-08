@@ -9,11 +9,12 @@ export default function LoginPage() {
   const callbackUrl = searchParams.get('callbackUrl') ?? '/dashboard/tickets';
   const errorParam = searchParams.get('error') ?? '';
   const signupSuccess = searchParams.get('signup') === 'success';
-  const signupTenant = searchParams.get('tenant') ?? '';
+  const tenantParam = searchParams.get('tenant') ?? '';
+  const fromSubdomain = searchParams.get('fromSubdomain') === '1';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [tenantSlug, setTenantSlug] = useState(signupTenant || 'msp-default');
+  const [tenantSlug, setTenantSlug] = useState(tenantParam || 'msp-default');
   const [error, setError] = useState(errorParam);
   const [loading, setLoading] = useState(false);
 
@@ -112,20 +113,18 @@ export default function LoginPage() {
             </div>
           )}
 
-          <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#1e293b', marginBottom: 4 }}>
-            Tenant
-          </label>
-          <input
-            type="text"
-            value={tenantSlug}
-            onChange={(e) => setTenantSlug(e.target.value)}
-            readOnly={!!signupTenant}
-            style={{ width: '100%', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: 8, marginBottom: signupTenant ? 4 : 16, fontSize: 14, boxSizing: 'border-box', outline: 'none', backgroundColor: signupTenant ? '#f1f5f9' : '#fff' }}
-          />
-          {signupTenant && (
-            <p style={{ margin: '0 0 12px', fontSize: 11, color: '#94a3b8' }}>
-              Auto-detected from subdomain
-            </p>
+          {!fromSubdomain && (
+            <>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#1e293b', marginBottom: 4 }}>
+                Tenant
+              </label>
+              <input
+                type="text"
+                value={tenantSlug}
+                onChange={(e) => setTenantSlug(e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: 8, marginBottom: 16, fontSize: 14, boxSizing: 'border-box', outline: 'none', backgroundColor: '#fff' }}
+              />
+            </>
           )}
 
           <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#1e293b', marginBottom: 4 }}>
