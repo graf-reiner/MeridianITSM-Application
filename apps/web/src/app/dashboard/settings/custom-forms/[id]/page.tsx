@@ -806,9 +806,13 @@ function ConditionsConfigTab({
 function SettingsConfigTab({
   settings,
   onUpdateSettings,
+  formId,
+  formStatus,
 }: {
   settings: FormSettings;
   onUpdateSettings: (updates: Partial<FormSettings>) => void;
+  formId: string;
+  formStatus: 'DRAFT' | 'PUBLISHED';
 }) {
   // Fetch queues, categories, SLAs
   const { data: queues } = useQuery<SelectOption[]>({
@@ -946,6 +950,38 @@ function SettingsConfigTab({
           <input type="checkbox" checked={settings.requireAuth} onChange={(e) => onUpdateSettings({ requireAuth: e.target.checked })} style={{ width: 16, height: 16, accentColor: 'var(--accent-primary)' }} />
           Require Authentication
         </label>
+        {!settings.requireAuth && (
+          <div style={{ marginTop: 8, marginLeft: 24 }}>
+            <p style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4 }}>
+              Anonymous submissions enabled. Name and Email fields will be auto-added for anonymous users.
+            </p>
+            {formStatus === 'PUBLISHED' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input
+                  type="text"
+                  readOnly
+                  value={`${typeof window !== 'undefined' ? window.location.origin : ''}/public/forms/${formId}`}
+                  style={{ ...inputStyle, flex: 1, fontSize: 12, fontFamily: 'monospace', backgroundColor: 'var(--bg-secondary)' }}
+                  onFocus={(e) => e.target.select()}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    void navigator.clipboard.writeText(`${window.location.origin}/public/forms/${formId}`);
+                  }}
+                  style={{ padding: '6px 12px', fontSize: 12, fontWeight: 600, border: '1px solid var(--border-secondary)', borderRadius: 6, backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                >
+                  Copy Link
+                </button>
+              </div>
+            )}
+            {formStatus === 'DRAFT' && (
+              <p style={{ margin: 0, fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                Publish the form to generate a shareable public link.
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1369,7 +1405,7 @@ export default function CustomFormBuilderPage() {
               <ConditionsConfigTab conditions={conditions} allFields={allFields} onUpdateConditions={updateConditions} />
             )}
             {activeTab === 'settings' && (
-              <SettingsConfigTab settings={settings} onUpdateSettings={updateSettings} />
+              <SettingsConfigTab settings={settings} onUpdateSettings={updateSettings} formId={formId} formStatus={formStatus} />
             )}
           </div>
         </div>

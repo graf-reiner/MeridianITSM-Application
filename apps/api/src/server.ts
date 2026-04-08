@@ -16,6 +16,7 @@ import { billingRoutes, authenticatedBillingRoutes } from './routes/billing/inde
 import { v1Routes } from './routes/v1/index.js';
 import { externalRoutes } from './routes/external/index.js';
 import { agentRoutes } from './routes/v1/agents/index.js';
+import { publicFormRoutes } from './routes/public/custom-forms.js';
 
 export async function buildApp() {
   const app = Fastify({ logger: true, bodyLimit: 10 * 1024 * 1024 /* 10 MB — supports base64 image pastes in rich text */ });
@@ -41,6 +42,7 @@ export async function buildApp() {
   await app.register(healthRoutes);
   await app.register(authRoutes);
   await app.register(billingRoutes); // Stripe webhooks use signature verification, not JWT
+  await app.register(publicFormRoutes); // Anonymous custom form viewing + submission
 
   // Protected routes — JWT auth + tenant injection + plan gate + impersonation write-block
   await app.register(async (protectedApp) => {
