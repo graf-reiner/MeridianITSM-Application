@@ -16,7 +16,7 @@ import { alertChannelRoutes } from './alerts.js';
 import { tagsSettingsRoutes } from './tags.js';
 import { ssoSettingsRoutes } from './sso.js';
 import { authPolicyRoutes } from './auth-policy.js';
-import { portalAccessRoutes } from './portal-access.js';
+
 import { federationRoutes } from './federation.js';
 import { emailActivityRoutes } from './email-activity.js';
 import { notificationRulesRoutes } from './notification-rules.js';
@@ -64,7 +64,6 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
   await fastify.register(tagsSettingsRoutes);
   await fastify.register(ssoSettingsRoutes);
   await fastify.register(authPolicyRoutes);
-  await fastify.register(portalAccessRoutes);
   await fastify.register(federationRoutes);
   await fastify.register(emailActivityRoutes);
   await fastify.register(notificationRulesYamlRoutes);
