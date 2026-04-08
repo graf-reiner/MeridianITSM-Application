@@ -144,7 +144,7 @@ function FieldDefinitionModal({
   const [helpText, setHelpText] = useState(field?.helpText ?? '');
   const [required, setRequired] = useState(field?.required ?? false);
   const [readOnly, setReadOnly] = useState(field?.readOnly ?? false);
-  const [options, setOptions] = useState<FieldOption[]>(field?.options ?? [{ label: '', value: '' }]);
+  const [options, setOptions] = useState<FieldOption[]>((field as any)?.optionsJson ?? (field as any)?.options ?? [{ label: '', value: '' }]);
   const [validationConfig, setValidationConfig] = useState<ValidationConfig>(field?.validationConfig ?? {});
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -211,9 +211,9 @@ function FieldDefinitionModal({
       }
 
       if (showOptions) {
-        body.options = options.filter(o => o.label.trim() && o.value.trim());
+        body.optionsJson = options.filter(o => o.label.trim() && o.value.trim());
       } else {
-        body.options = null;
+        body.optionsJson = null;
       }
 
       if (showTextValidation || showNumberValidation) {

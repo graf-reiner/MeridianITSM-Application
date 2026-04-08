@@ -210,7 +210,7 @@ export async function customFormRoutes(
           const def = fieldDefMap.get(fieldInstance.fieldDefinitionId);
           const overrides = fieldInstance.overrides ?? {};
           return {
-            instanceId: fieldInstance.id,
+            instanceId: fieldInstance.instanceId ?? fieldInstance.id,
             fieldDefinitionId: fieldInstance.fieldDefinitionId,
             position: fieldInstance.position,
             key: def?.key ?? '',
