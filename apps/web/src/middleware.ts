@@ -82,6 +82,31 @@ export async function middleware(request: NextRequest) {
   const host = request.headers.get('host') ?? '';
   const subdomain = extractSubdomain(host);
 
+  // ── Check for public portal access (unauthenticated + subdomain + portal path) ──
+  if (!payload && subdomain && pathname.startsWith('/portal')) {
+    try {
+      const apiBase = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const tenantRes = await fetch(
+        `${apiBase}/api/v1/public/tenant-portal/${encodeURIComponent(subdomain)}`,
+      );
+
+      if (tenantRes.ok) {
+        const tenantData = await tenantRes.json() as { allowPublicPortal?: boolean; slug?: string };
+        if (tenantData.allowPublicPortal) {
+          // Tenant allows public portal — let the request through without auth
+          const response = NextResponse.next();
+          response.cookies.set('meridian_subdomain', subdomain, { path: '/', httpOnly: false });
+          if (tenantData.slug) {
+            response.cookies.set('meridian_tenant_slug', tenantData.slug, { path: '/', httpOnly: false });
+          }
+          return response;
+        }
+      }
+    } catch {
+      // On error, fall through to normal auth redirect
+    }
+  }
+
   // ── Redirect unauthenticated users to /login ──────────────────────────────
   if (!payload) {
     const loginUrl = new URL('/login', request.url);

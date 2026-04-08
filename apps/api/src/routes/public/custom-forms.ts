@@ -18,6 +18,39 @@ export async function publicFormRoutes(
   fastify: FastifyInstance,
 ): Promise<void> {
 
+  // ─── GET tenant public portal status by subdomain ──────────────────────────
+
+  fastify.get(
+    '/api/v1/public/tenant-portal/:subdomain',
+    async (request, reply) => {
+      const { subdomain } = request.params as { subdomain: string };
+
+      const tenant = await prisma.tenant.findFirst({
+        where: { subdomain, status: 'ACTIVE' },
+        select: { id: true, name: true, slug: true, subdomain: true, settings: true },
+      });
+
+      if (!tenant) {
+        return reply.status(404).send({ error: 'Tenant not found' });
+      }
+
+      const settings = (tenant.settings ?? {}) as Record<string, unknown>;
+      const allowPublicPortal = settings.allowPublicPortal === true;
+      const publicPortalFeatures = Array.isArray(settings.publicPortalFeatures)
+        ? settings.publicPortalFeatures
+        : [];
+
+      return reply.status(200).send({
+        tenantId: tenant.id,
+        name: tenant.name,
+        slug: tenant.slug,
+        subdomain: tenant.subdomain,
+        allowPublicPortal,
+        publicPortalFeatures,
+      });
+    },
+  );
+
   // ─── GET published form by ID ──────────────────────────────────────────────
 
   fastify.get(
