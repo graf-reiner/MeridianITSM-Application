@@ -82,13 +82,13 @@ const TOOLS: ChatCompletionTool[] = [
     function: {
       name: 'query_database',
       description:
-        'Execute a read-only SQL SELECT query against the PostgreSQL database. Use this for ANY structured data question: counts, lists, filters, aggregations, cross-table JOINs, JSON field queries. Tenant filtering is automatic — do NOT add tenantId conditions. Column names use "camelCase" in double quotes. Table names use snake_case.',
+        'Execute a read-only SQL SELECT query against the PostgreSQL database. Use this for ANY structured data question: counts, lists, filters, aggregations, cross-table JOINs, JSON field queries. You MUST include a WHERE "tenantId" = \'$TENANT_ID\' clause in every query — the system replaces $TENANT_ID with the real tenant UUID. Use table aliases to qualify tenantId in JOINs (e.g., t."tenantId" = \'$TENANT_ID\'). Column names use "camelCase" in double quotes. Table names use snake_case.',
       parameters: {
         type: 'object',
         properties: {
           sql: {
             type: 'string',
-            description: 'A PostgreSQL SELECT statement. Do NOT include tenantId filters.',
+            description: 'A PostgreSQL SELECT statement. MUST include WHERE "tenantId" = \'$TENANT_ID\' for tenant filtering.',
           },
           description: {
             type: 'string',
