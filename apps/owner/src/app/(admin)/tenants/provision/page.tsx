@@ -16,6 +16,7 @@ export default function ProvisionTenantPage() {
   const [form, setForm] = useState({
     name: '',
     slug: '',
+    subdomain: '',
     adminEmail: '',
     adminPassword: '',
     planTier: 'STARTER',
@@ -25,10 +26,12 @@ export default function ProvisionTenantPage() {
   const [success, setSuccess] = useState<{ tenant: { id: string; name: string; slug: string }; user: { id: string; email: string } } | null>(null);
 
   function handleNameChange(name: string) {
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     setForm((f) => ({
       ...f,
       name,
-      slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+      slug,
+      subdomain: f.subdomain || slug, // Auto-suggest subdomain from slug if not manually set
     }));
   }
 
@@ -133,7 +136,7 @@ export default function ProvisionTenantPage() {
               View Tenant
             </Link>
             <button
-              onClick={() => { setSuccess(null); setForm({ name: '', slug: '', adminEmail: '', adminPassword: '', planTier: 'STARTER' }); }}
+              onClick={() => { setSuccess(null); setForm({ name: '', slug: '', subdomain: '', adminEmail: '', adminPassword: '', planTier: 'STARTER' }); }}
               style={{
                 padding: '9px 18px',
                 backgroundColor: '#fff',
@@ -215,6 +218,20 @@ export default function ProvisionTenantPage() {
             />
             <p style={{ margin: '4px 0 0', fontSize: 12, color: '#9ca3af' }}>
               Used as the tenant identifier at login. Lowercase letters, numbers, and hyphens only.
+            </p>
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>Subdomain</label>
+            <input
+              type="text"
+              value={form.subdomain}
+              onChange={(e) => setForm((f) => ({ ...f, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))}
+              style={{ ...inputStyle, fontFamily: 'monospace' }}
+              placeholder="acme"
+            />
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: '#9ca3af' }}>
+              Optional. Used for tenant-specific URLs like <strong>{form.subdomain || 'acme'}.meridianitsm.com</strong>
             </p>
           </div>
 

@@ -119,8 +119,14 @@ export default function LoginPage() {
             type="text"
             value={tenantSlug}
             onChange={(e) => setTenantSlug(e.target.value)}
-            style={{ width: '100%', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: 8, marginBottom: 16, fontSize: 14, boxSizing: 'border-box', outline: 'none' }}
+            readOnly={!!signupTenant}
+            style={{ width: '100%', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: 8, marginBottom: signupTenant ? 4 : 16, fontSize: 14, boxSizing: 'border-box', outline: 'none', backgroundColor: signupTenant ? '#f1f5f9' : '#fff' }}
           />
+          {signupTenant && (
+            <p style={{ margin: '0 0 12px', fontSize: 11, color: '#94a3b8' }}>
+              Auto-detected from subdomain
+            </p>
+          )}
 
           <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#1e293b', marginBottom: 4 }}>
             Email

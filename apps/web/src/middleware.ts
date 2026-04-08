@@ -16,6 +16,25 @@ interface JwtPayload {
 
 const AUTH_COOKIE_NAME = 'meridian_session';
 const JWT_SECRET = process.env.JWT_SECRET || 'meridian-dev-jwt-secret-change-in-production';
+const APP_DOMAIN = process.env.APP_DOMAIN || process.env.NEXT_PUBLIC_APP_DOMAIN || '';
+
+// ─── Subdomain Extraction ───────────────────────────────────────────────────
+
+/**
+ * Extract subdomain from the Host header.
+ * e.g., "acme.app-dev.meridianitsm.com" with APP_DOMAIN="app-dev.meridianitsm.com" → "acme"
+ */
+function extractSubdomain(host: string): string | null {
+  if (!APP_DOMAIN) return null;
+  // Remove port if present
+  const hostWithoutPort = host.split(':')[0];
+  const domainWithoutPort = APP_DOMAIN.split(':')[0];
+  if (hostWithoutPort === domainWithoutPort) return null;
+  if (!hostWithoutPort.endsWith(`.${domainWithoutPort}`)) return null;
+  const subdomain = hostWithoutPort.slice(0, -(domainWithoutPort.length + 1));
+  if (!subdomain || subdomain.includes('.')) return null; // Skip multi-level subdomains
+  return subdomain;
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -59,11 +78,25 @@ export async function middleware(request: NextRequest) {
 
   const payload = await getTokenPayload(request);
 
+  // ── Extract subdomain for tenant context ──────────────────────────────────
+  const host = request.headers.get('host') ?? '';
+  const subdomain = extractSubdomain(host);
+
   // ── Redirect unauthenticated users to /login ──────────────────────────────
   if (!payload) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('callbackUrl', pathname);
+    // Pass subdomain as tenant hint so login page can auto-fill
+    if (subdomain) {
+      loginUrl.searchParams.set('tenant', subdomain);
+    }
     return NextResponse.redirect(loginUrl);
+  }
+
+  // ── Set subdomain cookie for tenant-aware pages ───────────────────────────
+  const response = NextResponse.next();
+  if (subdomain) {
+    response.cookies.set('meridian_subdomain', subdomain, { path: '/', httpOnly: false });
   }
 
   // Support both `roles` (array from API JWT) and `role` (legacy single string)
@@ -83,7 +116,7 @@ export async function middleware(request: NextRequest) {
   // ── All other roles can access /portal (staff can view portal too) ─────────
   // No restriction needed — allow staff to view the portal if desired.
 
-  return NextResponse.next();
+  return response;
 }
 
 // ─── Matcher ─────────────────────────────────────────────────────────────────

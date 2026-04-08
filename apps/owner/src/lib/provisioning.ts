@@ -6,6 +6,7 @@ type SubscriptionPlanTier = 'STARTER' | 'PROFESSIONAL' | 'BUSINESS' | 'ENTERPRIS
 export interface ProvisionTenantInput {
   name: string;
   slug: string;
+  subdomain?: string;
   adminEmail: string;
   adminPassword: string;
   planTier?: SubscriptionPlanTier;
@@ -93,7 +94,7 @@ const DEFAULT_CATEGORIES = [
  * - Initial admin user
  */
 export async function provisionTenant(input: ProvisionTenantInput): Promise<ProvisionTenantResult> {
-  const { name, slug, adminEmail, adminPassword, planTier = 'STARTER', stripeCustomerId } = input;
+  const { name, slug, subdomain, adminEmail, adminPassword, planTier = 'STARTER', stripeCustomerId } = input;
 
   const passwordHash = hashSync(adminPassword, 10);
 
@@ -103,6 +104,7 @@ export async function provisionTenant(input: ProvisionTenantInput): Promise<Prov
       data: {
         name,
         slug,
+        subdomain: subdomain || null,
         type: 'MSP',
         status: 'ACTIVE',
         plan: planTier,

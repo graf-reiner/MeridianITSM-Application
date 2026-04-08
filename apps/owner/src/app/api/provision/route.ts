@@ -10,9 +10,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { name, slug, adminEmail, adminPassword, planTier } = body as {
+  const { name, slug, subdomain, adminEmail, adminPassword, planTier } = body as {
     name?: string;
     slug?: string;
+    subdomain?: string;
     adminEmail?: string;
     adminPassword?: string;
     planTier?: string;
@@ -47,10 +48,25 @@ export async function POST(request: Request) {
     | 'BUSINESS'
     | 'ENTERPRISE';
 
+  // Validate subdomain format if provided
+  if (subdomain) {
+    if (!/^[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?$/.test(subdomain)) {
+      return NextResponse.json(
+        { error: 'Subdomain must be 3-63 lowercase letters, numbers, and hyphens (no leading/trailing hyphens)' },
+        { status: 400 },
+      );
+    }
+    const existingSubdomain = await prisma.tenant.findFirst({ where: { subdomain } });
+    if (existingSubdomain) {
+      return NextResponse.json({ error: `Subdomain '${subdomain}' is already taken` }, { status: 409 });
+    }
+  }
+
   try {
     const result = await provisionTenant({
       name,
       slug,
+      subdomain: subdomain || undefined,
       adminEmail,
       adminPassword,
       planTier: resolvedPlanTier,

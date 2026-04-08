@@ -34,6 +34,7 @@ import {
   mdiSitemap,
   mdiFormTextbox,
   mdiFormSelect,
+  mdiWeb,
 } from '@mdi/js';
 
 // ─── Settings Hub ─────────────────────────────────────────────────────────────
@@ -286,6 +287,13 @@ const SETTINGS_GROUPS: SettingsGroup[] = [
         description: 'MFA, password, and session policies',
         icon: mdiShieldLockOutline,
         color: '#7c3aed',
+      },
+      {
+        href: '/dashboard/settings/portal-access',
+        label: 'Portal Access',
+        description: 'Control public access to your self-service portal',
+        icon: mdiWeb,
+        color: '#0891b2',
       },
     ],
   },
