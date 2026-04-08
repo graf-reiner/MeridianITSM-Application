@@ -508,6 +508,7 @@ model User {
   notificationPreferences Json?
   pushPreferences         Json?
   themePreference         String     @default("system")
+  dashboardConfig         Json?
   siteId                  String?    @db.Uuid
   createdAt               DateTime   @default(now())
   updatedAt               DateTime   @updatedAt
