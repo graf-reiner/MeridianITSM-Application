@@ -137,7 +137,7 @@ function FieldRenderer({
         name={field.instanceId}
         control={control}
         rules={field.isRequired ? { required: `${field.label} is required` } : undefined}
-        defaultValue={field.defaultValue ?? (field.fieldType === 'multiselect' ? [] : '')}
+        defaultValue={undefined ?? (field.fieldType === 'multiselect' ? [] : '')}
         render={({ field: rhfField }) => {
           switch (field.fieldType) {
             case 'text':
