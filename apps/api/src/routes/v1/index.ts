@@ -24,6 +24,8 @@ import { surveyRoutes } from './surveys/index.js';
 import { escalationPolicyRoutes } from './escalation-policies/index.js';
 import { recurringTicketRoutes } from './recurring-tickets/index.js';
 import { ticketTemplateRoutes } from './ticket-templates/index.js';
+import { fieldDefinitionRoutes } from './field-definitions/index.js';
+import { customFormRoutes } from './custom-forms/index.js';
 
 /**
  * V1 API routes — protected scope (requires JWT + tenant + RBAC).
@@ -107,4 +109,10 @@ export async function v1Routes(app: FastifyInstance): Promise<void> {
 
   // Ticket templates — form-builder with custom fields, conditions, sections
   await app.register(ticketTemplateRoutes);
+
+  // Field definitions — reusable field library for custom forms
+  await app.register(fieldDefinitionRoutes);
+
+  // Custom forms — form builder, portal rendering, submission → ticket creation
+  await app.register(customFormRoutes);
 }

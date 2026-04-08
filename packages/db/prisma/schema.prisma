@@ -459,6 +459,9 @@ model Tenant {
   workflows                Workflow[]
   workflowExecutions       WorkflowExecution[]
   workflowAuditLogs        WorkflowAuditLog[]
+  fieldDefinitions         FieldDefinition[]
+  customForms              CustomForm[]
+  customFormSubmissions    CustomFormSubmission[]
 
   @@map("tenants")
 }
@@ -543,6 +546,9 @@ model User {
   recurringTicketsCreated RecurringTicket[]        @relation("RecurringTicketCreatedBy")
   ticketTemplatesCreated  TicketTemplate[]         @relation("TicketTemplateCreatedBy")
   ticketViewAssignments   TicketViewAssignment[]   @relation("TicketViewAssignmentUser")
+  fieldDefinitionsCreated FieldDefinition[]        @relation("FieldDefinitionCreatedBy")
+  customFormsCreated      CustomForm[]             @relation("CustomFormCreatedBy")
+  customFormSubmissions   CustomFormSubmission[]   @relation("CustomFormSubmittedBy")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -733,6 +739,7 @@ model Ticket {
   linksTo           TicketLink[]             @relation("TicketLinkTo")
   surveyResponse    SurveyResponse?
   approvals         TicketApproval[]
+  customFormSubmissions CustomFormSubmission[]
 
   @@unique([tenantId, ticketNumber])
   @@index([tenantId])
@@ -3305,4 +3312,111 @@ model WorkflowAuditLog {
   @@map("workflow_audit_logs")
 }
 
-// Total: 95 models
+// ─── Custom Forms ───────────────────────────────────────────────────────────
+
+enum FieldDefinitionStatus {
+  ACTIVE
+  DEPRECATED
+  ARCHIVED
+}
+
+enum CustomFormStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+// Model 96: FieldDefinition — Reusable field library for custom forms
+model FieldDefinition {
+  id               String                @id @default(uuid()) @db.Uuid
+  tenantId         String                @db.Uuid
+  key              String                // Tenant-unique slug (e.g., "employee_name")
+  label            String
+  fieldType        String                // text, textarea, richtext, number, select, multiselect, radio, checkbox, date, datetime, email, phone, url, file, user_picker, group_picker, hidden
+  description      String?
+  placeholder      String?
+  helpText         String?
+  isRequired       Boolean               @default(false)
+  isReadOnly       Boolean               @default(false)
+  validationConfig Json?                 // { minLength, maxLength, min, max, pattern }
+  optionsJson      Json?                 // [{ label, value }] for select/multiselect/radio
+  status           FieldDefinitionStatus @default(ACTIVE)
+  version          Int                   @default(1)
+  createdById      String                @db.Uuid
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
+  createdBy User   @relation("FieldDefinitionCreatedBy", fields: [createdById], references: [id])
+
+  @@unique([tenantId, key])
+  @@index([tenantId, status])
+  @@map("field_definitions")
+}
+
+// Model 97: CustomForm — Form definitions with layout, mapping, and conditions
+model CustomForm {
+  id                  String           @id @default(uuid()) @db.Uuid
+  tenantId            String           @db.Uuid
+  name                String
+  slug                String           // Tenant-unique URL-friendly identifier
+  description         String?
+  icon                String?          // MDI icon path
+  color               String?          // Accent color hex
+  status              CustomFormStatus @default(DRAFT)
+  currentVersion      Int              @default(1)
+  layoutJson          Json             // { sections: [{ id, title, position, fields: [{ id, fieldDefinitionId, position, overrides }] }] }
+  mappingJson         Json             @default("{}") // { title?: fieldInstanceId, description?: fieldInstanceId, priority?: fieldInstanceId, ... }
+  conditionsJson      Json             @default("[]") // [{ id, targetFieldId, parentFieldId, operator, value, action }]
+  ticketType          TicketType       @default(SERVICE_REQUEST)
+  defaultPriority     TicketPriority?
+  defaultCategoryId   String?          @db.Uuid
+  defaultQueueId      String?          @db.Uuid
+  defaultAssigneeId   String?          @db.Uuid
+  defaultGroupId      String?          @db.Uuid
+  defaultSlaId        String?          @db.Uuid
+  defaultTags         String[]
+  titleTemplate       String?          // "{{field_key}} request for {{another_field}}"
+  descriptionTemplate String?          @db.Text
+  showInPortal        Boolean          @default(true)
+  requireAuth         Boolean          @default(true)
+  position            Int              @default(0)
+  createdById         String           @db.Uuid
+  publishedAt         DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  tenant      Tenant               @relation(fields: [tenantId], references: [id])
+  createdBy   User                 @relation("CustomFormCreatedBy", fields: [createdById], references: [id])
+  submissions CustomFormSubmission[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId, status])
+  @@map("custom_forms")
+}
+
+// Model 98: CustomFormSubmission — Submission audit trail with ticket linkage
+model CustomFormSubmission {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @db.Uuid
+  formId         String   @db.Uuid
+  formVersion    Int      // Snapshot of which version was used
+  ticketId       String?  @db.Uuid
+  submittedById  String   @db.Uuid
+  valuesJson     Json     // Raw submitted field values
+  layoutSnapshot Json?    // Copy of layoutJson at submission time
+  status         String   @default("COMPLETED") // COMPLETED | FAILED
+  errorMessage   String?
+  createdAt      DateTime @default(now())
+
+  tenant      Tenant     @relation(fields: [tenantId], references: [id])
+  form        CustomForm @relation(fields: [formId], references: [id])
+  ticket      Ticket?    @relation(fields: [ticketId], references: [id])
+  submittedBy User       @relation("CustomFormSubmittedBy", fields: [submittedById], references: [id])
+
+  @@index([tenantId, formId])
+  @@index([tenantId, submittedById])
+  @@map("custom_form_submissions")
+}
+
+// Total: 98 models

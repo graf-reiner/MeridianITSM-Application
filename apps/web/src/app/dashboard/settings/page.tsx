@@ -32,6 +32,8 @@ import {
   mdiCalendarClock,
   mdiEmoticonHappy,
   mdiSitemap,
+  mdiFormTextbox,
+  mdiFormSelect,
 } from '@mdi/js';
 
 // ─── Settings Hub ─────────────────────────────────────────────────────────────
@@ -150,6 +152,20 @@ const SETTINGS_GROUPS: SettingsGroup[] = [
         description: 'Customer satisfaction survey templates and results',
         icon: mdiEmoticonHappy,
         color: '#16a34a',
+      },
+      {
+        href: '/dashboard/settings/field-library',
+        label: 'Field Library',
+        description: 'Reusable field definitions for custom forms',
+        icon: mdiFormTextbox,
+        color: '#0d9488',
+      },
+      {
+        href: '/dashboard/settings/custom-forms',
+        label: 'Custom Forms',
+        description: 'Build portal forms that generate tickets',
+        icon: mdiFormSelect,
+        color: '#0d9488',
       },
     ],
   },

@@ -21,6 +21,7 @@ import {
   mdiMenu,
   mdiClose,
   mdiCellphone,
+  mdiClipboardTextOutline,
 } from '@mdi/js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -37,6 +38,7 @@ const navItems: NavItem[] = [
   { href: '/portal', label: 'Home', icon: mdiHome },
   { href: '/portal/tickets', label: 'My Tickets', icon: mdiTicketOutline },
   { href: '/portal/tickets/new', label: 'New Request', icon: mdiPlus },
+  { href: '/portal/forms', label: 'Service Forms', icon: mdiClipboardTextOutline },
   { href: '/portal/knowledge', label: 'Knowledge Base', icon: mdiBookOpenVariant },
   { href: '/portal/assets', label: 'My Assets', icon: mdiLaptop },
 ];

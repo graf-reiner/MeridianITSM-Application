@@ -78,7 +78,7 @@ export function resolveFieldValue(field: string, context: EventContext): unknown
     case "status":
       return context.ticket?.status;
     case "source":
-      return context.source;
+      return context.source ?? context.ticket?.source;
     case "requestedBy":
       return context.ticket?.requestedById;
     case "assignedTo":

@@ -6,7 +6,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Icon from '@mdi/react';
-import { mdiChevronLeft, mdiCheckCircle } from '@mdi/js';
+import { mdiChevronLeft, mdiCheckCircle, mdiClipboardTextOutline } from '@mdi/js';
+import Link from 'next/link';
 import RichTextField from '@/components/RichTextField';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -17,6 +18,15 @@ interface Category {
   description: string | null;
   color: string | null;
   icon: string | null;
+}
+
+interface PublishedForm {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  icon: string | null;
+  color: string | null;
 }
 
 // ─── Validation Schema ────────────────────────────────────────────────────────
@@ -96,6 +106,7 @@ export default function NewRequestPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [customForms, setCustomForms] = useState<PublishedForm[]>([]);
   const [step, setStep] = useState<1 | 2>(1);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -128,6 +139,20 @@ export default function NewRequestPage() {
       }
     }
     void fetchCategories();
+
+    // Also fetch published custom forms
+    async function fetchCustomForms() {
+      try {
+        const res = await fetch('/api/v1/custom-forms/published', { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          setCustomForms(Array.isArray(data) ? data : []);
+        }
+      } catch {
+        // Non-critical
+      }
+    }
+    void fetchCustomForms();
   }, []);
 
   const handleCategorySelect = (category: Category) => {
@@ -267,6 +292,62 @@ export default function NewRequestPage() {
                   />
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* ── Custom Forms Section ─────────────────────────────────────────── */}
+          {customForms.length > 0 && (
+            <div style={{ marginTop: 32 }}>
+              <h2 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Service Forms
+              </h2>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                  gap: 12,
+                }}
+              >
+                {customForms.map((form) => (
+                  <Link
+                    key={form.id}
+                    href={`/portal/forms/${form.slug}`}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      gap: 6,
+                      padding: 16,
+                      border: '2px solid var(--border-primary)',
+                      borderRadius: 10,
+                      backgroundColor: 'var(--bg-primary)',
+                      textDecoration: 'none',
+                      color: 'inherit',
+                      transition: 'border-color 0.15s ease',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        backgroundColor: (form.color ?? '#0d9488') + '1a',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Icon path={mdiClipboardTextOutline} size={0.7} color={form.color ?? '#0d9488'} />
+                    </div>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{form.name}</span>
+                    {form.description && (
+                      <span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                        {form.description}
+                      </span>
+                    )}
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
         </div>
