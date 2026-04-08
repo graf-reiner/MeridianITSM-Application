@@ -1012,8 +1012,9 @@ export default function CustomFormBuilderPage() {
   useEffect(() => {
     if (!formData || dataLoaded) return;
 
-    const layout = formData.layoutJson ?? [];
-    setSections(layout.map(s => ({ ...s, collapsed: false })));
+    const layout = formData.layoutJson ?? { sections: [] };
+    const sectionList = Array.isArray(layout) ? layout : (layout.sections ?? []);
+    setSections(sectionList.map((s: any) => ({ ...s, collapsed: false })));
     setMapping(formData.mappingJson ?? {
       title: null, description: null, priority: null, category: null, type: null,
       titleTemplate: '', descriptionTemplate: '',
@@ -1151,8 +1152,8 @@ export default function CustomFormBuilderPage() {
     setSaving(true);
     setErrorMsg(null);
     try {
-      // Strip collapsed from sections for persistence
-      const layoutJson = sections.map(({ collapsed, ...rest }) => rest);
+      // Strip collapsed from sections for persistence, wrap in { sections }
+      const layoutJson = { sections: sections.map(({ collapsed, ...rest }) => rest) };
       const tagsArray = settings.defaultTags
         ? settings.defaultTags.split(',').map(t => t.trim()).filter(Boolean)
         : [];
