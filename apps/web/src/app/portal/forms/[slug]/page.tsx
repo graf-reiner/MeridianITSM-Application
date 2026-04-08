@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
 import Link from 'next/link';
 import Icon from '@mdi/react';
@@ -351,15 +350,25 @@ export default function FormSubmitPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<SubmitResponse | null>(null);
+  const [formData, setFormData] = useState<FormData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<Error | null>(null);
 
-  const { data: formData, isLoading, error: loadError } = useQuery<FormData>({
-    queryKey: ['portal-form', slug],
-    queryFn: async () => {
-      const res = await fetch(`/api/v1/custom-forms/published/${slug}`, { credentials: 'include' });
-      if (!res.ok) throw new Error('Failed to load form');
-      return res.json() as Promise<FormData>;
-    },
-  });
+  useEffect(() => {
+    async function loadForm() {
+      try {
+        const res = await fetch(`/api/v1/custom-forms/published/${slug}`, { credentials: 'include' });
+        if (!res.ok) throw new Error('Failed to load form');
+        const data = await res.json();
+        setFormData(data);
+      } catch (err) {
+        setLoadError(err instanceof Error ? err : new Error('Failed to load form'));
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    void loadForm();
+  }, [slug]);
 
   const {
     control,

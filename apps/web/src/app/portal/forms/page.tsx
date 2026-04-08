@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiFormSelect, mdiFileDocumentOutline } from '@mdi/js';
@@ -83,16 +83,25 @@ function FormCard({ form }: { form: PublishedForm }) {
 // ─── Service Forms Catalog ────────────────────────────────────────────────────
 
 export default function ServiceFormsPage() {
-  const { data, isLoading, error } = useQuery<{ forms: PublishedForm[] }>({
-    queryKey: ['portal-published-forms'],
-    queryFn: async () => {
-      const res = await fetch('/api/v1/custom-forms/published', { credentials: 'include' });
-      if (!res.ok) throw new Error('Failed to load forms');
-      return res.json() as Promise<{ forms: PublishedForm[] }>;
-    },
-  });
+  const [forms, setForms] = useState<PublishedForm[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const forms = data?.forms ?? [];
+  useEffect(() => {
+    async function fetchForms() {
+      try {
+        const res = await fetch('/api/v1/custom-forms/published', { credentials: 'include' });
+        if (!res.ok) throw new Error('Failed to load forms');
+        const data = await res.json();
+        setForms(Array.isArray(data) ? data : []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load forms');
+      } finally {
+        setLoading(false);
+      }
+    }
+    void fetchForms();
+  }, []);
 
   return (
     <div style={{ maxWidth: 720, margin: '0 auto' }}>
@@ -110,7 +119,7 @@ export default function ServiceFormsPage() {
       </div>
 
       {/* ── Content ─────────────────────────────────────────────────────────── */}
-      {isLoading ? (
+      {loading ? (
         <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 32 }}>
           Loading forms...
         </p>
