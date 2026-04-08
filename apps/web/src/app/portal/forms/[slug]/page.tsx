@@ -9,23 +9,25 @@ import { mdiCheckCircle, mdiChevronLeft, mdiAlertCircleOutline } from '@mdi/js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface FieldDefinition {
-  id: string;
-  fieldInstanceId: string;
+interface ResolvedField {
+  instanceId: string;
+  fieldDefinitionId: string;
+  key: string;
   fieldType: string;
   label: string;
   placeholder: string | null;
   helpText: string | null;
-  required: boolean;
-  options: Array<{ label: string; value: string }> | null;
-  defaultValue: unknown;
+  isRequired: boolean;
+  isReadOnly: boolean;
+  optionsJson: Array<{ label: string; value: string }> | null;
+  validationConfig: Record<string, unknown> | null;
 }
 
-interface LayoutSection {
+interface ResolvedSection {
   id: string;
   title: string;
   description: string | null;
-  fieldInstanceIds: string[];
+  fields: ResolvedField[];
 }
 
 interface Condition {
@@ -41,14 +43,14 @@ interface FormData {
   slug: string;
   name: string;
   description: string | null;
-  resolvedFields: FieldDefinition[];
-  layoutJson: { sections: LayoutSection[] };
-  conditionsJson: Condition[];
+  sections: ResolvedSection[];
+  conditions: Condition[];
 }
 
 interface SubmitResponse {
+  submissionId: string;
   ticketId: string;
-  ticketNumber: string;
+  ticketNumber: number;
 }
 
 // ─── Condition Evaluation ─────────────────────────────────────────────────────
@@ -115,26 +117,26 @@ function FieldRenderer({
   control,
   errors,
 }: {
-  field: FieldDefinition;
+  field: ResolvedField;
   control: ReturnType<typeof useForm>['control'];
   errors: Record<string, { message?: string }>;
 }) {
-  const error = errors[field.fieldInstanceId];
+  const error = errors[field.instanceId];
   const hasError = !!error;
 
   return (
     <div style={{ marginBottom: 18 }}>
       {field.fieldType !== 'hidden' && (
-        <label htmlFor={field.fieldInstanceId} style={labelStyle}>
+        <label htmlFor={field.instanceId} style={labelStyle}>
           {field.label}
-          {field.required && <span style={{ color: 'var(--accent-danger)' }}> *</span>}
+          {field.isRequired && <span style={{ color: 'var(--accent-danger)' }}> *</span>}
         </label>
       )}
 
       <Controller
-        name={field.fieldInstanceId}
+        name={field.instanceId}
         control={control}
-        rules={field.required ? { required: `${field.label} is required` } : undefined}
+        rules={field.isRequired ? { required: `${field.label} is required` } : undefined}
         defaultValue={field.defaultValue ?? (field.fieldType === 'multiselect' ? [] : '')}
         render={({ field: rhfField }) => {
           switch (field.fieldType) {
@@ -144,7 +146,7 @@ function FieldRenderer({
             case 'url':
               return (
                 <input
-                  id={field.fieldInstanceId}
+                  id={field.instanceId}
                   type={field.fieldType === 'phone' ? 'tel' : field.fieldType}
                   placeholder={field.placeholder ?? ''}
                   value={(rhfField.value as string) ?? ''}
@@ -158,7 +160,7 @@ function FieldRenderer({
             case 'richtext':
               return (
                 <textarea
-                  id={field.fieldInstanceId}
+                  id={field.instanceId}
                   placeholder={field.placeholder ?? ''}
                   rows={4}
                   value={(rhfField.value as string) ?? ''}
@@ -171,7 +173,7 @@ function FieldRenderer({
             case 'number':
               return (
                 <input
-                  id={field.fieldInstanceId}
+                  id={field.instanceId}
                   type="number"
                   placeholder={field.placeholder ?? ''}
                   value={(rhfField.value as string) ?? ''}
@@ -186,14 +188,14 @@ function FieldRenderer({
             case 'group_picker':
               return (
                 <select
-                  id={field.fieldInstanceId}
+                  id={field.instanceId}
                   value={(rhfField.value as string) ?? ''}
                   onChange={rhfField.onChange}
                   onBlur={rhfField.onBlur}
                   style={inputStyle(hasError)}
                 >
                   <option value="">{field.placeholder ?? 'Select an option...'}</option>
-                  {(field.options ?? []).map((opt) => (
+                  {(field.optionsJson ?? []).map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
                     </option>
@@ -204,7 +206,7 @@ function FieldRenderer({
             case 'multiselect':
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {(field.options ?? []).map((opt) => {
+                  {(field.optionsJson ?? []).map((opt) => {
                     const checked = Array.isArray(rhfField.value) && (rhfField.value as string[]).includes(opt.value);
                     return (
                       <label
@@ -233,14 +235,14 @@ function FieldRenderer({
             case 'radio':
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {(field.options ?? []).map((opt) => (
+                  {(field.optionsJson ?? []).map((opt) => (
                     <label
                       key={opt.value}
                       style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, cursor: 'pointer' }}
                     >
                       <input
                         type="radio"
-                        name={field.fieldInstanceId}
+                        name={field.instanceId}
                         value={opt.value}
                         checked={rhfField.value === opt.value}
                         onChange={() => rhfField.onChange(opt.value)}
@@ -266,7 +268,7 @@ function FieldRenderer({
             case 'date':
               return (
                 <input
-                  id={field.fieldInstanceId}
+                  id={field.instanceId}
                   type="date"
                   value={(rhfField.value as string) ?? ''}
                   onChange={rhfField.onChange}
@@ -278,7 +280,7 @@ function FieldRenderer({
             case 'datetime':
               return (
                 <input
-                  id={field.fieldInstanceId}
+                  id={field.instanceId}
                   type="datetime-local"
                   value={(rhfField.value as string) ?? ''}
                   onChange={rhfField.onChange}
@@ -299,7 +301,7 @@ function FieldRenderer({
             case 'file':
               return (
                 <input
-                  id={field.fieldInstanceId}
+                  id={field.instanceId}
                   type="file"
                   onChange={(e) => rhfField.onChange(e.target.files)}
                   onBlur={rhfField.onBlur}
@@ -313,7 +315,7 @@ function FieldRenderer({
             default:
               return (
                 <input
-                  id={field.fieldInstanceId}
+                  id={field.instanceId}
                   type="text"
                   placeholder={field.placeholder ?? ''}
                   value={(rhfField.value as string) ?? ''}
@@ -379,19 +381,11 @@ export default function FormSubmitPage() {
 
   const allValues = watch();
 
-  const conditions = formData?.conditionsJson ?? [];
+  const conditions = formData?.conditions ?? [];
   const hiddenFields = useMemo(
     () => evaluateConditions(conditions, allValues),
     [conditions, allValues],
   );
-
-  const fieldMap = useMemo(() => {
-    const map = new Map<string, FieldDefinition>();
-    for (const f of formData?.resolvedFields ?? []) {
-      map.set(f.fieldInstanceId, f);
-    }
-    return map;
-  }, [formData?.resolvedFields]);
 
   const onSubmit = useCallback(
     async (values: Record<string, unknown>) => {
@@ -501,7 +495,7 @@ export default function FormSubmitPage() {
             Request Submitted Successfully
           </h2>
           <p style={{ fontSize: 15, color: 'var(--text-secondary)', margin: '0 0 24px' }}>
-            Your ticket number is <strong>{result.ticketNumber}</strong>
+            Your ticket number is <strong>TKT-{result.ticketNumber}</strong>
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link
@@ -541,7 +535,7 @@ export default function FormSubmitPage() {
 
   // ── Form Render ────────────────────────────────────────────────────────────
 
-  const sections = formData.layoutJson?.sections ?? [];
+  const sections = formData.sections ?? [];
 
   return (
     <div style={{ maxWidth: 700, margin: '0 auto' }}>
@@ -599,9 +593,8 @@ export default function FormSubmitPage() {
       <form onSubmit={(e) => void handleSubmit(onSubmit)(e)}>
         {sections.map((section) => {
           // Get the fields for this section, filtering out hidden conditional fields
-          const sectionFields = section.fieldInstanceIds
-            .map((fid) => fieldMap.get(fid))
-            .filter((f): f is FieldDefinition => f != null && !hiddenFields.has(f.fieldInstanceId));
+          const sectionFields = (section.fields ?? [])
+            .filter((f) => !hiddenFields.has(f.instanceId));
 
           if (sectionFields.length === 0) return null;
 
@@ -644,7 +637,7 @@ export default function FormSubmitPage() {
 
               {sectionFields.map((field) => (
                 <FieldRenderer
-                  key={field.fieldInstanceId}
+                  key={field.instanceId}
                   field={field}
                   control={control}
                   errors={errors as Record<string, { message?: string }>}
