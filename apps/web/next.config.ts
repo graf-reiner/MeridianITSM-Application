@@ -3,6 +3,10 @@ import type { NextConfig } from 'next';
 const API_URL = process.env.API_URL ?? 'http://localhost:4000';
 
 const config: NextConfig = {
+  env: {
+    APP_DOMAIN: process.env.APP_DOMAIN ?? '',
+    API_URL: API_URL,
+  },
   async rewrites() {
     return [
       {
