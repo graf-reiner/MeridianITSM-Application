@@ -70,6 +70,15 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 // ─── Custom Node Components ─────────────────────────────────────────────────
 
+// ─── Form Field Types (for condition_form_field) ─────────────────────────────
+
+interface FormFieldInfo {
+  key: string;
+  label: string;
+  fieldType: string;
+  options?: Array<{ label: string; value: string }>;
+}
+
 // ─── Dynamic Field Components ────────────────────────────────────────────────
 
 const FIELD_VALUE_OPTIONS: Record<string, Array<{ label: string; value: string }>> = {
@@ -83,9 +92,42 @@ const FIELD_VALUE_OPTIONS: Record<string, Array<{ label: string; value: string }
 // Text-type fields that should show a textarea instead of a single-line input
 const TEXT_FIELDS = new Set(['description', 'resolution', 'title']);
 
-function DynamicValueSelect({ selectedField, value, onChange }: { selectedField: string; value: string; onChange: (v: string) => void }) {
-  const options = FIELD_VALUE_OPTIONS[selectedField];
+function DynamicValueSelect({ selectedField, value, onChange, formFields, operator }: {
+  selectedField: string;
+  value: string;
+  onChange: (v: string) => void;
+  formFields?: FormFieldInfo[];
+  operator?: string;
+}) {
   const selectStyle = { width: '100%', padding: '7px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 13, boxSizing: 'border-box' as const };
+
+  // If operator is is_empty/is_not_empty, hide the value input entirely
+  if (operator === 'is_empty' || operator === 'is_not_empty') {
+    return null;
+  }
+
+  // If formFields are provided, look up the selected field in those
+  if (formFields && formFields.length > 0) {
+    const formField = formFields.find(f => f.key === selectedField);
+    if (formField) {
+      // Fields with options (select/multiselect/radio) → dropdown
+      if (formField.options && formField.options.length > 0 && ['select', 'multiselect', 'radio'].includes(formField.fieldType)) {
+        return (
+          <select value={value} onChange={e => onChange(e.target.value)} style={selectStyle}>
+            <option value="">-- Select --</option>
+            {formField.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        );
+      }
+      // All other form field types → text input
+      return (
+        <input type="text" value={value} onChange={e => onChange(e.target.value)} placeholder="Enter value..." style={selectStyle} />
+      );
+    }
+  }
+
+  // Standard ticket field behavior (existing logic)
+  const options = FIELD_VALUE_OPTIONS[selectedField];
 
   // Enum fields → dropdown
   if (options) {
@@ -106,7 +148,7 @@ function DynamicValueSelect({ selectedField, value, onChange }: { selectedField:
 
   // Everything else → text input
   return (
-    <input type="text" value={value} onChange={e => onChange(e.target.value)} placeholder="Enter value..." style={{ ...selectStyle }} />
+    <input type="text" value={value} onChange={e => onChange(e.target.value)} placeholder="Enter value..." style={selectStyle} />
   );
 }
 
@@ -117,7 +159,7 @@ function EntitySelect({ endpoint, value, onChange, placeholder }: { endpoint: st
       const res = await fetch(endpoint, { credentials: 'include' });
       if (!res.ok) return [];
       const json = await res.json();
-      return json.data ?? json.users ?? json.groups ?? json.queues ?? json.categories ?? (Array.isArray(json) ? json : []);
+      return json.data ?? json.users ?? json.groups ?? json.queues ?? json.categories ?? json.forms ?? (Array.isArray(json) ? json : []);
     },
     enabled: !!endpoint,
     staleTime: 60000,
@@ -209,6 +251,33 @@ export default function WorkflowBuilderPage() {
   const [publishing, setPublishing] = useState(false);
   const [validationResult, setValidationResult] = useState<{ valid: boolean; errors: Array<{ nodeId?: string; message: string }> } | null>(null);
 
+  // ── Form fields for condition_form_field node ──
+  const [formFields, setFormFields] = useState<FormFieldInfo[]>([]);
+
+  // Get selected node config for form field loading
+  const selectedNodeConfig = useMemo(() => {
+    const node = nodes.find(n => n.id === selectedNodeId);
+    return node ? (node.data as any).config as Record<string, unknown> : null;
+  }, [nodes, selectedNodeId]);
+
+  const selectedNodeType = useMemo(() => {
+    const node = nodes.find(n => n.id === selectedNodeId);
+    return node?.type ?? null;
+  }, [nodes, selectedNodeId]);
+
+  // Load form fields when formId changes on a condition_form_field node
+  useEffect(() => {
+    if (selectedNodeType !== 'condition_form_field' || !selectedNodeConfig?.formId) {
+      setFormFields([]);
+      return;
+    }
+    const formId = String(selectedNodeConfig.formId);
+    fetch(`/api/v1/custom-forms/${formId}/fields`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : [])
+      .then((fields: FormFieldInfo[]) => setFormFields(Array.isArray(fields) ? fields : []))
+      .catch(() => setFormFields([]));
+  }, [selectedNodeType, selectedNodeConfig?.formId]);
+
   // Register all node types as the same component
   const nodeTypes = useMemo(() => {
     const types: Record<string, typeof WorkflowNodeComponent> = {};
@@ -218,7 +287,7 @@ export default function WorkflowBuilderPage() {
       'trigger_ticket_created', 'trigger_ticket_updated', 'trigger_ticket_assigned',
       'trigger_ticket_commented', 'trigger_ticket_resolved', 'trigger_sla_warning',
       'trigger_sla_breach', 'trigger_ticket_status_changed',
-      'condition_field', 'condition_group',
+      'condition_field', 'condition_form_field', 'condition_group',
       'action_send_email', 'action_send_in_app', 'action_send_slack', 'action_send_teams',
       'action_send_webhook', 'action_send_push', 'action_escalate', 'action_update_field',
       'action_change_status', 'action_change_priority', 'action_assign_ticket', 'action_add_comment',
@@ -604,6 +673,31 @@ export default function WorkflowBuilderPage() {
                     onChange={v => updateNodeConfig(selectedNode.id, field.key, v)}
                     placeholder={field.placeholder}
                   />
+                ) : field.type === 'dynamic_select' && field.helpText === 'dependsOn:formId' ? (
+                  // Dynamic select for fieldKey — populated from form fields loaded via formId
+                  <select
+                    value={String((selectedNode.data as any).config?.[field.key] ?? '')}
+                    onChange={e => updateNodeConfig(selectedNode.id, field.key, e.target.value)}
+                    style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 13, boxSizing: 'border-box' }}
+                  >
+                    <option value="">-- Select field --</option>
+                    {formFields.map(f => <option key={f.key} value={f.key}>{f.label} ({f.key})</option>)}
+                  </select>
+                ) : field.type === 'dynamic_select' && field.helpText === 'dependsOn:fieldKey' ? (
+                  // Dynamic value select for form field conditions — uses form field options
+                  (() => {
+                    const currentOperator = String((selectedNode.data as any).config?.operator ?? '');
+                    if (currentOperator === 'is_empty' || currentOperator === 'is_not_empty') return null;
+                    return (
+                      <DynamicValueSelect
+                        selectedField={String((selectedNode.data as any).config?.fieldKey ?? '')}
+                        value={String((selectedNode.data as any).config?.[field.key] ?? '')}
+                        onChange={v => updateNodeConfig(selectedNode.id, field.key, v)}
+                        formFields={formFields}
+                        operator={currentOperator}
+                      />
+                    );
+                  })()
                 ) : field.type === 'dynamic_select' ? (
                   <DynamicValueSelect
                     selectedField={String((selectedNode.data as any).config?.field ?? '')}
@@ -620,7 +714,7 @@ export default function WorkflowBuilderPage() {
                   />
                 )}
 
-                {field.helpText && field.type !== 'checkbox' && (
+                {field.helpText && field.type !== 'checkbox' && !field.helpText.startsWith('endpoint:') && !field.helpText.startsWith('dependsOn:') && (
                   <p style={{ margin: '3px 0 0', fontSize: 11, color: 'var(--text-placeholder)' }}>{field.helpText}</p>
                 )}
               </div>

@@ -31,6 +31,7 @@ export interface CreateTicketData {
   slaId?: string;
   tags?: string[];
   source?: string;
+  customFields?: Record<string, unknown>;
 }
 
 export interface UpdateTicketData {
@@ -207,6 +208,7 @@ export async function createTicket(
         slaId: data.slaId,
         tags: data.tags ?? [],
         source: data.source ?? 'SERVICE_DESK',
+        customFields: data.customFields ? (data.customFields as any) : null,
       },
       include: TICKET_LIST_INCLUDE,
     });

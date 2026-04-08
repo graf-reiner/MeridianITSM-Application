@@ -13,6 +13,7 @@ import './triggers/ticket-status-changed.js';
 
 // Conditions
 import './conditions/field-condition.js';
+import './conditions/form-field-condition.js';
 import './conditions/condition-group.js';
 
 // Actions

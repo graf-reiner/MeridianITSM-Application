@@ -427,21 +427,25 @@ export async function customFormRoutes(
             | 'CRITICAL')
         : undefined;
 
-      // Collect unmapped field values into customFields
-      const mappedFieldIds = new Set(Object.values(mapping));
-      const customFields: Record<string, unknown> = {};
+      // Collect ALL field values into customFields keyed by field key (stable identifier)
+      // Also store form metadata so workflows can identify which form created the ticket
+      const customFields: Record<string, unknown> = {
+        __formId: form.id,
+        __formSlug: form.slug,
+        __formName: form.name,
+      };
       for (const [instanceId, fieldInfo] of fieldInstanceMap) {
         if (hiddenFields.has(instanceId)) continue;
-        if (mappedFieldIds.has(instanceId)) continue;
         const val = values[instanceId];
         if (val !== null && val !== undefined && val !== '') {
-          customFields[fieldInfo.label] = val;
+          customFields[fieldInfo.def.key] = val;
         }
       }
 
       const ticketData = {
         title,
         description,
+        customFields,
         type: form.ticketType as
           | 'INCIDENT'
           | 'SERVICE_REQUEST'
@@ -915,6 +919,74 @@ export async function customFormRoutes(
           totalPages: Math.ceil(total / pageSize),
         },
       });
+    },
+  );
+
+  // ─── GET form field definitions (for workflow builder) ──────────────────
+
+  fastify.get(
+    '/api/v1/custom-forms/:id/fields',
+    async (request, reply) => {
+      const user = request.user as { tenantId: string };
+      const { id } = request.params as { id: string };
+
+      const form = await prisma.customForm.findFirst({
+        where: { id, tenantId: user.tenantId },
+        select: { layoutJson: true, tenantId: true },
+      });
+
+      if (!form) return reply.status(404).send({ error: 'Form not found' });
+
+      const layout = form.layoutJson as any;
+      const sections = layout?.sections ?? (Array.isArray(layout) ? layout : []);
+
+      // Collect all field definition IDs from the layout
+      const fieldDefIds: string[] = [];
+      for (const section of sections) {
+        for (const field of section.fields ?? []) {
+          fieldDefIds.push(field.fieldDefinitionId);
+        }
+      }
+
+      // Load field definitions
+      const fieldDefs = await prisma.fieldDefinition.findMany({
+        where: { id: { in: fieldDefIds }, tenantId: user.tenantId },
+        select: { id: true, key: true, label: true, fieldType: true, optionsJson: true },
+      });
+
+      const fieldDefMap = new Map(fieldDefs.map(fd => [fd.id, fd]));
+
+      // Build the fields list with overrides applied
+      const fields: Array<{
+        key: string;
+        label: string;
+        fieldType: string;
+        options?: Array<{ label: string; value: string }>;
+      }> = [];
+      const seenKeys = new Set<string>();
+
+      for (const section of sections) {
+        for (const fieldInstance of section.fields ?? []) {
+          const def = fieldDefMap.get(fieldInstance.fieldDefinitionId);
+          if (!def || seenKeys.has(def.key)) continue;
+          seenKeys.add(def.key);
+
+          const overrides = fieldInstance.overrides ?? fieldInstance;
+          const entry: (typeof fields)[number] = {
+            key: def.key,
+            label: overrides.labelOverride ?? overrides.label ?? def.label,
+            fieldType: def.fieldType,
+          };
+
+          if (def.optionsJson && Array.isArray(def.optionsJson)) {
+            entry.options = def.optionsJson as Array<{ label: string; value: string }>;
+          }
+
+          fields.push(entry);
+        }
+      }
+
+      return reply.status(200).send(fields);
     },
   );
 }
