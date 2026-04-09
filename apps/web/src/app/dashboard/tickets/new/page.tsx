@@ -10,6 +10,7 @@ import { mdiArrowLeft, mdiFileDocumentEdit } from '@mdi/js';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import RichTextField from '@/components/RichTextField';
+import ClassifySuggestions from '@/components/ClassifySuggestions';
 
 interface TicketTemplate {
   id: string;
@@ -307,6 +308,13 @@ export default function NewTicketPage() {
               minHeight={120}
             />
           </div>
+
+          {/* AI Classification Suggestions */}
+          <ClassifySuggestions
+            title={watch('title') ?? ''}
+            description={watch('description') ?? ''}
+            onApply={(field, value) => setValue(field as keyof CreateTicketForm, value, { shouldValidate: true })}
+          />
 
           {/* Type & Priority row */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>

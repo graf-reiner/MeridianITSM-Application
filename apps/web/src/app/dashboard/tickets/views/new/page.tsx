@@ -4,10 +4,10 @@ import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiArrowLeft, mdiViewDashboard } from '@mdi/js';
 import ViewForm from '@/components/ViewForm';
+import { useSession } from '@/hooks/useSession';
 
 export default function NewViewPage() {
-  // TODO: detect admin role from session — for now assume admin for the form
-  const isAdmin = true;
+  const { isAdmin } = useSession();
 
   return (
     <div style={{ maxWidth: 760, margin: '0 auto' }}>

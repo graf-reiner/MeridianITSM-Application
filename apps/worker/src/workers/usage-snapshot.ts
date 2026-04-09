@@ -11,9 +11,9 @@ import { QUEUE_NAMES } from '../queues/definitions.js';
  *
  * Metrics captured:
  * - activeUsers: count of ACTIVE users for the tenant
- * - activeAgents: count of enrolled agents (placeholder 0 until agent module complete)
- * - ticketCount: total open tickets (placeholder 0 until integrated)
- * - storageBytes: total storage used in bytes (placeholder 0 until storage module complete)
+ * - activeAgents: count of enrolled/active agents for the tenant
+ * - ticketCount: total non-cancelled tickets for the tenant
+ * - storageBytes: total storage used in bytes (placeholder 0 until storage tracking added)
  */
 export const usageSnapshotWorker = new Worker(
   QUEUE_NAMES.USAGE_SNAPSHOT,
@@ -42,10 +42,24 @@ export const usageSnapshotWorker = new Worker(
           },
         });
 
-        // Placeholder values — will be populated when agent/ticket/storage modules are complete
-        const activeAgents = 0;   // Phase 4: Agent module
-        const ticketCount = 0;    // Will be updated when ticket aggregation is added
-        const storageBytes = 0;   // Phase: Storage module
+        // Count enrolled agents for this tenant
+        const activeAgents = await prisma.agent.count({
+          where: {
+            tenantId: tenant.id,
+            status: { in: ['ACTIVE', 'ENROLLING'] },
+          },
+        });
+
+        // Count total tickets (all statuses except CANCELLED)
+        const ticketCount = await prisma.ticket.count({
+          where: {
+            tenantId: tenant.id,
+            status: { not: 'CANCELLED' },
+          },
+        });
+
+        // Storage bytes — placeholder until storage tracking is added to upload pipeline
+        const storageBytes = 0;
 
         // Upsert snapshot for today — @@unique([tenantId, snapshotDate]) prevents duplicates
         await prisma.tenantUsageSnapshot.upsert({

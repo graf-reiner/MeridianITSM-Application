@@ -295,6 +295,102 @@ async function executeTeams(
   return { type: 'teams', success: true };
 }
 
+async function executeDiscord(
+  config: ActionConfig,
+  context: EventContext,
+  _tenantId: string,
+): Promise<ActionResult> {
+  const channelId = config.alertChannelId as string | undefined;
+  if (!channelId) {
+    return { type: 'discord', success: false, error: 'No alertChannelId configured' };
+  }
+
+  const alertConfig = await prisma.alertConfiguration.findFirst({
+    where: { id: channelId, isActive: true },
+  });
+  if (!alertConfig) {
+    return { type: 'discord', success: false, error: 'AlertConfiguration not found or inactive' };
+  }
+
+  const cfgData = alertConfig.config as Record<string, unknown>;
+  const webhookUrl = cfgData.webhookUrl as string | undefined;
+  if (!webhookUrl) {
+    return { type: 'discord', success: false, error: 'No webhookUrl in alert config' };
+  }
+
+  const message = renderTemplate(
+    (config.message as string) ?? 'Notification from MeridianITSM',
+    context,
+  );
+
+  // Discord webhook embed format
+  const payload = {
+    content: message,
+    embeds: context.ticket
+      ? [
+          {
+            title: `${context.ticket.ticketNumber ? `TKT-${String(context.ticket.ticketNumber).padStart(5, '0')}: ` : ''}${context.ticket.title ?? ''}`,
+            color: 0x5865f2, // Discord blurple
+          },
+        ]
+      : undefined,
+  };
+
+  const resp = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!resp.ok) {
+    return { type: 'discord', success: false, error: `Discord webhook returned ${resp.status}` };
+  }
+
+  return { type: 'discord', success: true };
+}
+
+async function executeTelegram(
+  config: ActionConfig,
+  context: EventContext,
+  _tenantId: string,
+): Promise<ActionResult> {
+  const channelId = config.alertChannelId as string | undefined;
+  if (!channelId) {
+    return { type: 'telegram', success: false, error: 'No alertChannelId configured' };
+  }
+
+  const alertConfig = await prisma.alertConfiguration.findFirst({
+    where: { id: channelId, isActive: true },
+  });
+  if (!alertConfig) {
+    return { type: 'telegram', success: false, error: 'AlertConfiguration not found or inactive' };
+  }
+
+  const cfgData = alertConfig.config as Record<string, unknown>;
+  const botToken = cfgData.botToken as string | undefined;
+  const chatId = cfgData.chatId as string | undefined;
+  if (!botToken || !chatId) {
+    return { type: 'telegram', success: false, error: 'Missing botToken or chatId in alert config' };
+  }
+
+  const message = renderTemplate(
+    (config.message as string) ?? 'Notification from MeridianITSM',
+    context,
+  );
+
+  const resp = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML' }),
+  });
+
+  if (!resp.ok) {
+    return { type: 'telegram', success: false, error: `Telegram API returned ${resp.status}` };
+  }
+
+  return { type: 'telegram', success: true };
+}
+
 async function executeWebhook(
   config: ActionConfig,
   context: EventContext,
@@ -549,6 +645,8 @@ const ACTION_EXECUTORS: Record<
   email: executeEmail,
   slack: executeSlack,
   teams: executeTeams,
+  discord: executeDiscord,
+  telegram: executeTelegram,
   webhook: executeWebhook,
   sms: executeSms,
   push: executePush,

@@ -4,6 +4,7 @@ import { getMfaUser } from '@/lib/mfa/auth-helper';
 import { generateTotpSecret, generateTotpQrCode } from '@/lib/mfa/totp';
 import { generateWebAuthnRegistration } from '@/lib/mfa/webauthn';
 import { generateCode, createChallenge } from '@/lib/mfa/codes';
+import { sendMfaCodeEmail } from '@/lib/mfa/send-code-email';
 
 /**
  * POST /api/mfa/enroll
@@ -120,10 +121,12 @@ export async function POST(request: NextRequest) {
       const code = generateCode();
       const challengeId = await createChallenge(user.userId, type, code);
 
-      // TODO: Send the code via email/SMS service integration
-      // For email: integrate with existing email service
-      // For SMS: use twilio
-      console.log(`[MFA] ${type} verification code for ${contactValue}: ${code}`);
+      if (type === 'email') {
+        await sendMfaCodeEmail(contactValue, code);
+      } else {
+        // SMS delivery not yet implemented — log for development
+        console.log(`[MFA] SMS verification code for ${contactValue}: ${code}`);
+      }
 
       return NextResponse.json({ deviceId: device.id, challengeId });
     }

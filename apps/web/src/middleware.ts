@@ -168,5 +168,5 @@ export async function middleware(request: NextRequest) {
  * TanStack Query fetches and Next.js internal paths.
  */
 export const config = {
-  matcher: ['/((?!api|auth-action|_next/static|_next/image|images|favicon.ico|login|signup|mfa|public).*)'],
+  matcher: ['/((?!api|auth-action|_next/static|_next/image|images|favicon.ico|login|signup|mfa|public|suspended|billing).*)'],
 };

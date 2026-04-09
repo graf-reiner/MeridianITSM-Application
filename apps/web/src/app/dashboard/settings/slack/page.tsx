@@ -1,12 +1,111 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiSlack } from '@mdi/js';
+import { mdiArrowLeft, mdiSlack, mdiCheckCircle, mdiAlertCircle, mdiSend, mdiLoading } from '@mdi/js';
+
+interface AlertChannel {
+  id: string;
+  name: string;
+  channelType: string;
+  genericConfig: { webhookUrl?: string };
+  isActive: boolean;
+}
 
 export default function SlackSettingsPage() {
+  const [channels, setChannels] = useState<AlertChannel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [name, setName] = useState('');
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const [editId, setEditId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const fetchChannels = async () => {
+    try {
+      const res = await fetch('/api/v1/settings/alerts', { credentials: 'include' });
+      if (res.ok) {
+        const all = (await res.json()) as AlertChannel[];
+        setChannels(all.filter((c) => c.channelType === 'SLACK'));
+      }
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { void fetchChannels(); }, []);
+
+  const handleSave = async () => {
+    if (!name.trim() || !webhookUrl.trim()) {
+      setMessage({ type: 'error', text: 'Name and Webhook URL are required' });
+      return;
+    }
+    if (!webhookUrl.startsWith('https://hooks.slack.com/')) {
+      setMessage({ type: 'error', text: 'Webhook URL must start with https://hooks.slack.com/' });
+      return;
+    }
+    setSaving(true);
+    setMessage(null);
+    try {
+      const url = editId ? `/api/v1/settings/alerts/${editId}` : '/api/v1/settings/alerts';
+      const res = await fetch(url, {
+        method: editId ? 'PATCH' : 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(),
+          channelType: 'SLACK',
+          genericConfig: { webhookUrl: webhookUrl.trim() },
+          isActive: true,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? 'Failed to save');
+      }
+      setMessage({ type: 'success', text: editId ? 'Updated successfully' : 'Channel created' });
+      setName('');
+      setWebhookUrl('');
+      setEditId(null);
+      void fetchChannels();
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to save' });
+    } finally { setSaving(false); }
+  };
+
+  const handleTest = async (channelId: string) => {
+    setTesting(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/v1/settings/alerts/${channelId}/test`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (res.ok) {
+        setMessage({ type: 'success', text: 'Test message sent to Slack!' });
+      } else {
+        const data = await res.json();
+        setMessage({ type: 'error', text: data.error ?? 'Test failed' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Test failed' });
+    } finally { setTesting(false); }
+  };
+
+  const handleDelete = async (id: string) => {
+    await fetch(`/api/v1/settings/alerts/${id}`, { method: 'DELETE', credentials: 'include' });
+    void fetchChannels();
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '10px 12px', borderRadius: 8,
+    border: '1px solid var(--border-primary)', backgroundColor: 'var(--bg-primary)',
+    color: 'var(--text-primary)', fontSize: 14, outline: 'none',
+  };
+
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto' }}>
+    <div style={{ maxWidth: 640, margin: '0 auto' }}>
       <Link href="/dashboard/settings" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--accent-primary)', textDecoration: 'none', fontSize: 14, marginBottom: 16 }}>
         <Icon path={mdiArrowLeft} size={0.7} /> Back to Settings
       </Link>
@@ -16,17 +115,86 @@ export default function SlackSettingsPage() {
           <Icon path={mdiSlack} size={1.3} color="#4a154b" />
         </div>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>Slack</h1>
-          <p style={{ margin: 0, fontSize: 14, color: 'var(--text-muted)' }}>Send ticket notifications to Slack channels</p>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>Slack Integration</h1>
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--text-muted)' }}>Send notifications to Slack via incoming webhooks</p>
         </div>
       </div>
 
-      <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: 40, textAlign: 'center' }}>
-        <Icon path={mdiSlack} size={2.5} color="var(--text-placeholder)" />
-        <h2 style={{ margin: '16px 0 8px', fontSize: 18, fontWeight: 600, color: 'var(--text-secondary)' }}>Coming Soon</h2>
-        <p style={{ margin: 0, fontSize: 14, color: 'var(--text-muted)', maxWidth: 400, marginInline: 'auto' }}>
-          Slack integration will allow you to send ticket notifications, updates, and alerts directly to Slack channels using incoming webhooks or the Slack API.
-        </p>
+      {message && (
+        <div style={{
+          padding: '10px 14px', borderRadius: 8, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, fontSize: 13,
+          backgroundColor: message.type === 'success' ? '#f0fdf4' : '#fef2f2',
+          border: `1px solid ${message.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
+          color: message.type === 'success' ? '#166534' : '#991b1b',
+        }}>
+          <Icon path={message.type === 'success' ? mdiCheckCircle : mdiAlertCircle} size={0.65} color="currentColor" />
+          {message.text}
+        </div>
+      )}
+
+      {/* Existing channels */}
+      {!loading && channels.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <h2 style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)' }}>Active Channels</h2>
+          {channels.map((ch) => (
+            <div key={ch.id} style={{
+              display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px',
+              border: '1px solid var(--border-primary)', borderRadius: 8, marginBottom: 8,
+            }}>
+              <Icon path={mdiSlack} size={0.8} color="#4a154b" />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{ch.name}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{ch.genericConfig.webhookUrl ? '***' + ch.genericConfig.webhookUrl.slice(-20) : ''}</div>
+              </div>
+              <button onClick={() => handleTest(ch.id)} disabled={testing} style={{
+                padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border-primary)',
+                backgroundColor: 'transparent', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 4,
+              }}>
+                <Icon path={testing ? mdiLoading : mdiSend} size={0.5} color="currentColor" spin={testing} />
+                Test
+              </button>
+              <button onClick={() => { setEditId(ch.id); setName(ch.name); setWebhookUrl(ch.genericConfig.webhookUrl ?? ''); }} style={{
+                padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border-primary)',
+                backgroundColor: 'transparent', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer',
+              }}>Edit</button>
+              <button onClick={() => void handleDelete(ch.id)} style={{
+                padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border-primary)',
+                backgroundColor: 'transparent', color: 'var(--accent-danger)', fontSize: 12, cursor: 'pointer',
+              }}>Delete</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add/Edit form */}
+      <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: 24 }}>
+        <h2 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>
+          {editId ? 'Edit Channel' : 'Add Slack Channel'}
+        </h2>
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>Channel Name</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., #it-alerts" style={inputStyle} />
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>Webhook URL</label>
+          <input value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} placeholder="https://hooks.slack.com/services/..." style={inputStyle} />
+          <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
+            Create an incoming webhook in your Slack workspace settings under Apps &rarr; Incoming Webhooks.
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={handleSave} disabled={saving} style={{
+            padding: '9px 18px', borderRadius: 8, border: 'none', backgroundColor: 'var(--accent-primary)',
+            color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: saving ? 0.7 : 1,
+          }}>{saving ? 'Saving...' : editId ? 'Update' : 'Add Channel'}</button>
+          {editId && (
+            <button onClick={() => { setEditId(null); setName(''); setWebhookUrl(''); }} style={{
+              padding: '9px 18px', borderRadius: 8, border: '1px solid var(--border-primary)',
+              backgroundColor: 'transparent', color: 'var(--text-secondary)', fontSize: 14, cursor: 'pointer',
+            }}>Cancel</button>
+          )}
+        </div>
       </div>
     </div>
   );

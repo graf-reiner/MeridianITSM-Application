@@ -6,11 +6,12 @@ import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiArrowLeft, mdiViewDashboard } from '@mdi/js';
 import ViewForm from '@/components/ViewForm';
+import { useSession } from '@/hooks/useSession';
 
 export default function EditViewPage() {
   const params = useParams();
   const viewId = params.id as string;
-  const isAdmin = true; // TODO: detect from session
+  const { isAdmin } = useSession();
 
   const { data: view, isLoading } = useQuery({
     queryKey: ['ticket-view', viewId],

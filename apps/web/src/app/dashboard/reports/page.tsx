@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Icon from '@mdi/react';
 import {
@@ -9,6 +10,8 @@ import {
   mdiAlertCircle,
   mdiDownload,
   mdiClockOutline,
+  mdiShieldCheck,
+  mdiSwapHorizontal,
 } from '@mdi/js';
 import {
   LineChart,
@@ -106,17 +109,64 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 const PIE_COLORS = ['#4f46e5', '#0891b2', '#059669', '#d97706', '#7c3aed', '#dc2626'];
 
+interface SlaCompliance {
+  totalTickets: number;
+  breachedTickets: number;
+  complianceRate: number;
+  avgResponseMinutes: number;
+  avgResolutionMinutes: number;
+  byPriority: Array<{
+    priority: string;
+    total: number;
+    breached: number;
+    avgResponseMinutes: number;
+    avgResolutionMinutes: number;
+  }>;
+}
+
+interface ChangeStats {
+  totalChanges: number;
+  byStatus: Record<string, number>;
+  byType: Record<string, number>;
+  byRiskLevel: Record<string, number>;
+}
+
+type DateRange = '7d' | '30d' | '90d';
+
 // ─── Reports Page ─────────────────────────────────────────────────────────────
 
 export default function ReportsPage() {
+  const [dateRange, setDateRange] = useState<DateRange>('30d');
+
   const { data: stats, isLoading, error } = useQuery<DashboardStats>({
-    queryKey: ['dashboard-stats'],
+    queryKey: ['dashboard-stats', dateRange],
     queryFn: async () => {
-      const res = await fetch('/api/v1/dashboard', { credentials: 'include' });
+      const days = dateRange === '7d' ? 7 : dateRange === '90d' ? 90 : 30;
+      const res = await fetch(`/api/v1/dashboard?days=${days}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to load dashboard data');
       return res.json() as Promise<DashboardStats>;
     },
     staleTime: 60_000,
+  });
+
+  const { data: slaData } = useQuery<SlaCompliance>({
+    queryKey: ['sla-compliance'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/reports/sla-compliance', { credentials: 'include' });
+      if (!res.ok) return null;
+      return res.json() as Promise<SlaCompliance>;
+    },
+    staleTime: 120_000,
+  });
+
+  const { data: changeData } = useQuery<ChangeStats>({
+    queryKey: ['change-stats'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/reports/changes', { credentials: 'include' });
+      if (!res.ok) return null;
+      return res.json() as Promise<ChangeStats>;
+    },
+    staleTime: 120_000,
   });
 
   if (isLoading) {
@@ -140,7 +190,27 @@ export default function ReportsPage() {
           <Icon path={mdiChartBar} size={1} color="var(--accent-primary)" />
           Reports
         </h1>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {/* Date range selector */}
+          <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border-primary)' }}>
+            {(['7d', '30d', '90d'] as DateRange[]).map((range) => (
+              <button
+                key={range}
+                onClick={() => setDateRange(range)}
+                style={{
+                  padding: '6px 12px',
+                  border: 'none',
+                  backgroundColor: dateRange === range ? 'var(--accent-primary)' : 'var(--bg-primary)',
+                  color: dateRange === range ? '#fff' : 'var(--text-secondary)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : '90 Days'}
+              </button>
+            ))}
+          </div>
           <a
             href="/api/v1/reports/tickets?format=csv"
             download
@@ -288,6 +358,102 @@ export default function ReportsPage() {
                 </div>
               ))}
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── SLA Compliance & Change Stats ─────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 16 }}>
+
+        {/* SLA Compliance */}
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: '20px 24px' }}>
+          <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Icon path={mdiShieldCheck} size={0.8} color="#059669" />
+            SLA Compliance
+          </h2>
+          {slaData ? (
+            <>
+              <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
+                <div style={{ flex: 1, padding: '12px 14px', borderRadius: 8, backgroundColor: 'var(--bg-secondary)', textAlign: 'center' }}>
+                  <p style={{ margin: 0, fontSize: 28, fontWeight: 700, color: slaData.complianceRate >= 90 ? '#059669' : slaData.complianceRate >= 70 ? '#d97706' : '#dc2626' }}>
+                    {slaData.complianceRate.toFixed(1)}%
+                  </p>
+                  <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--text-muted)' }}>Compliance Rate</p>
+                </div>
+                <div style={{ flex: 1, padding: '12px 14px', borderRadius: 8, backgroundColor: 'var(--bg-secondary)', textAlign: 'center' }}>
+                  <p style={{ margin: 0, fontSize: 28, fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {slaData.breachedTickets}
+                  </p>
+                  <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--text-muted)' }}>Breached</p>
+                </div>
+              </div>
+              {slaData.byPriority.length > 0 && (
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border-primary)' }}>
+                      <th style={{ textAlign: 'left', padding: '6px 8px', color: 'var(--text-muted)', fontWeight: 600 }}>Priority</th>
+                      <th style={{ textAlign: 'center', padding: '6px 8px', color: 'var(--text-muted)', fontWeight: 600 }}>Total</th>
+                      <th style={{ textAlign: 'center', padding: '6px 8px', color: 'var(--text-muted)', fontWeight: 600 }}>Breached</th>
+                      <th style={{ textAlign: 'right', padding: '6px 8px', color: 'var(--text-muted)', fontWeight: 600 }}>Avg Response</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {slaData.byPriority.map((row) => (
+                      <tr key={row.priority} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                        <td style={{ padding: '6px 8px', color: PRIORITY_COLORS[row.priority] ?? 'var(--text-secondary)', fontWeight: 600 }}>{row.priority}</td>
+                        <td style={{ padding: '6px 8px', textAlign: 'center', color: 'var(--text-secondary)' }}>{row.total}</td>
+                        <td style={{ padding: '6px 8px', textAlign: 'center', color: row.breached > 0 ? '#dc2626' : 'var(--text-muted)' }}>{row.breached}</td>
+                        <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--text-secondary)' }}>{row.avgResponseMinutes > 0 ? `${Math.round(row.avgResponseMinutes)}m` : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </>
+          ) : (
+            <p style={{ color: 'var(--text-placeholder)', fontSize: 14 }}>Loading SLA data...</p>
+          )}
+        </div>
+
+        {/* Change Management Stats */}
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: '20px 24px' }}>
+          <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Icon path={mdiSwapHorizontal} size={0.8} color="#7c3aed" />
+            Change Management
+          </h2>
+          {changeData ? (
+            <>
+              <div style={{ padding: '12px 14px', borderRadius: 8, backgroundColor: 'var(--bg-secondary)', textAlign: 'center', marginBottom: 16 }}>
+                <p style={{ margin: 0, fontSize: 28, fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {changeData.totalChanges}
+                </p>
+                <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--text-muted)' }}>Total Changes</p>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {/* By Type */}
+                <div>
+                  <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>By Type</p>
+                  {Object.entries(changeData.byType).map(([type, count]) => (
+                    <div key={type} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: 13 }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>{type.replace(/_/g, ' ')}</span>
+                      <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{count as number}</span>
+                    </div>
+                  ))}
+                </div>
+                {/* By Risk */}
+                <div>
+                  <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>By Risk</p>
+                  {Object.entries(changeData.byRiskLevel).map(([risk, count]) => (
+                    <div key={risk} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: 13 }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>{risk}</span>
+                      <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{count as number}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <p style={{ color: 'var(--text-placeholder)', fontSize: 14 }}>Loading change data...</p>
           )}
         </div>
       </div>

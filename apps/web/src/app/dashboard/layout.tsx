@@ -15,7 +15,6 @@ import {
   mdiTicketOutline,
   mdiBookOpenVariant,
   mdiChartBar,
-  mdiBell,
   mdiAccountCircle,
   mdiLogout,
   mdiCog,
@@ -30,8 +29,13 @@ import {
   mdiCellphone,
   mdiRobotOutline,
   mdiCheckDecagram,
+  mdiAlertDecagramOutline,
 } from '@mdi/js';
 import AiChatPanel from '@/components/AiChatPanel';
+import UpgradeModal from '@/components/UpgradeModal';
+import TrialBanner from '@/components/TrialBanner';
+import NotificationDropdown from '@/components/NotificationDropdown';
+import GlobalSearch from '@/components/GlobalSearch';
 import { usePlan } from '@/hooks/usePlan';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -53,6 +57,7 @@ const queryClient = new QueryClient({
 const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: mdiViewDashboard },
   { href: '/dashboard/tickets', label: 'Tickets', icon: mdiTicketOutline },
+  { href: '/dashboard/problems', label: 'Problems', icon: mdiAlertDecagramOutline },
   { href: '/dashboard/approvals', label: 'Approvals', icon: mdiCheckDecagram },
   { href: '/dashboard/assets', label: 'Assets', icon: mdiPackageVariantClosed },
   { href: '/dashboard/cmdb', label: 'CMDB', icon: mdiServerNetwork },
@@ -97,28 +102,16 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
-  const { hasFeature } = usePlan();
+  const { plan, hasFeature, isActive, isLoading: planLoading } = usePlan();
 
-  // Fetch unread notification count
+  // Redirect suspended/canceled tenants to paywall
   useEffect(() => {
-    async function fetchUnreadCount() {
-      try {
-        const res = await fetch('/api/v1/notifications?unread=true&count=true', {
-          credentials: 'include',
-        });
-        if (res.ok) {
-          const data = (await res.json()) as { count: number };
-          setUnreadCount(data.count ?? 0);
-        }
-      } catch {
-        // Non-critical
-      }
+    if (!planLoading && plan && !isActive()) {
+      router.push('/suspended');
     }
-    void fetchUnreadCount();
-  }, []);
+  }, [planLoading, plan, isActive, router]);
 
   const handleLogout = async () => {
     try {
@@ -259,43 +252,8 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
           <div style={{ flex: 1 }} />
 
-          {/* Notification bell */}
-          <button
-            style={{
-              position: 'relative',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '6px',
-              color: 'var(--text-secondary)',
-              borderRadius: 6,
-              marginRight: 8,
-            }}
-            aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
-          >
-            <Icon path={mdiBell} size={0.9} color="currentColor" />
-            {unreadCount > 0 && (
-              <span
-                style={{
-                  position: 'absolute',
-                  top: 2,
-                  right: 2,
-                  backgroundColor: 'var(--accent-danger)',
-                  color: '#fff',
-                  borderRadius: '50%',
-                  width: 16,
-                  height: 16,
-                  fontSize: 10,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 700,
-                }}
-              >
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </button>
+          {/* Notification bell + dropdown */}
+          <NotificationDropdown />
 
           {/* User menu */}
           <div style={{ position: 'relative' }}>
@@ -340,6 +298,28 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                   }}
                 >
                   <ThemeToggle />
+                  <Link
+                    href="/dashboard/profile"
+                    onClick={() => setUserMenuOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      width: '100%',
+                      padding: '10px 14px',
+                      background: 'none',
+                      border: 'none',
+                      borderBottom: '1px solid var(--bg-tertiary)',
+                      cursor: 'pointer',
+                      textDecoration: 'none',
+                      textAlign: 'left',
+                      fontSize: 14,
+                      color: 'var(--text-secondary)',
+                    }}
+                  >
+                    <Icon path={mdiAccountCircle} size={0.8} color="var(--text-muted)" />
+                    My Profile
+                  </Link>
                   <Link
                     href="/dashboard/settings/security"
                     onClick={() => setUserMenuOpen(false)}
@@ -416,6 +396,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
+        {/* ── Trial Banner ──────────────────────────────────────────────────── */}
+        <TrialBanner />
+
         {/* ── Page Content ──────────────────────────────────────────────────── */}
         <main style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
           <ErrorBoundary>{children}</ErrorBoundary>
@@ -470,6 +453,8 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           <AiChatPanel isOpen={chatOpen} onClose={() => setChatOpen(false)} />
         </>
       )}
+      <UpgradeModal />
+      <GlobalSearch />
     </div>
   );
 }

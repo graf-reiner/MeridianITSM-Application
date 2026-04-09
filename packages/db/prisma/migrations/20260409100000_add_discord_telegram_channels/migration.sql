@@ -1,0 +1,3 @@
+-- Add DISCORD and TELEGRAM to AlertChannelType enum
+ALTER TYPE "AlertChannelType" ADD VALUE IF NOT EXISTS 'DISCORD';
+ALTER TYPE "AlertChannelType" ADD VALUE IF NOT EXISTS 'TELEGRAM';

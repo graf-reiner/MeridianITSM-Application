@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Icon from '@mdi/react';
-import { mdiFormSelect, mdiFileDocumentOutline } from '@mdi/js';
+import { mdiFormSelect, mdiFileDocumentOutline, mdiMagnify, mdiClockOutline } from '@mdi/js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -82,10 +82,26 @@ function FormCard({ form }: { form: PublishedForm }) {
 
 // ─── Service Forms Catalog ────────────────────────────────────────────────────
 
+const RECENT_FORMS_KEY = 'meridian_recent_forms';
+
+function getRecentFormSlugs(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    return JSON.parse(localStorage.getItem(RECENT_FORMS_KEY) ?? '[]') as string[];
+  } catch { return []; }
+}
+
+function addRecentForm(slug: string) {
+  const recent = getRecentFormSlugs().filter((s) => s !== slug);
+  recent.unshift(slug);
+  localStorage.setItem(RECENT_FORMS_KEY, JSON.stringify(recent.slice(0, 5)));
+}
+
 export default function ServiceFormsPage() {
   const [forms, setForms] = useState<PublishedForm[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     async function fetchForms() {
@@ -103,20 +119,60 @@ export default function ServiceFormsPage() {
     void fetchForms();
   }, []);
 
+  const recentSlugs = getRecentFormSlugs();
+  const recentForms = recentSlugs
+    .map((slug) => forms.find((f) => f.slug === slug))
+    .filter(Boolean) as PublishedForm[];
+
+  const filtered = search
+    ? forms.filter(
+        (f) =>
+          f.name.toLowerCase().includes(search.toLowerCase()) ||
+          f.description?.toLowerCase().includes(search.toLowerCase()),
+      )
+    : forms;
+
   return (
     <div style={{ maxWidth: 720, margin: '0 auto' }}>
       {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <div style={{ marginBottom: 28 }}>
+      <div style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
           <Icon path={mdiFormSelect} size={1.1} color="var(--accent-primary)" />
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>
-            Service Forms
+            Service Catalog
           </h1>
         </div>
         <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 14 }}>
-          Submit a request using one of the forms below
+          Browse available services and submit a request
         </p>
       </div>
+
+      {/* ── Search ─────────────────────────────────────────────────────────── */}
+      {forms.length > 3 && (
+        <div style={{ position: 'relative', marginBottom: 20 }}>
+          <Icon
+            path={mdiMagnify}
+            size={0.75}
+            color="var(--text-muted)"
+            style={{ position: 'absolute', left: 12, top: 10 }}
+          />
+          <input
+            placeholder="Search services..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '10px 12px 10px 36px',
+              borderRadius: 8,
+              border: '1px solid var(--border-primary)',
+              backgroundColor: 'var(--bg-primary)',
+              color: 'var(--text-primary)',
+              fontSize: 14,
+              outline: 'none',
+            }}
+          />
+        </div>
+      )}
 
       {/* ── Content ─────────────────────────────────────────────────────────── */}
       {loading ? (
@@ -152,17 +208,60 @@ export default function ServiceFormsPage() {
           </p>
         </div>
       ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-            gap: 12,
-          }}
-        >
-          {forms.map((form) => (
-            <FormCard key={form.id} form={form} />
-          ))}
-        </div>
+        <>
+          {/* Recently Used */}
+          {!search && recentForms.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                <Icon path={mdiClockOutline} size={0.65} color="var(--text-muted)" />
+                <h2 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Recently Used
+                </h2>
+              </div>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                  gap: 10,
+                }}
+              >
+                {recentForms.map((form) => (
+                  <div key={form.id} onClick={() => addRecentForm(form.slug)}>
+                    <FormCard form={form} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* All Services */}
+          <div>
+            {!search && recentForms.length > 0 && (
+              <h2 style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                All Services
+              </h2>
+            )}
+            {filtered.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 24 }}>
+                No services match &ldquo;{search}&rdquo;
+              </p>
+            ) : (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                  gap: 12,
+                }}
+              >
+                {filtered.map((form) => (
+                  <div key={form.id} onClick={() => addRecentForm(form.slug)}>
+                    <FormCard form={form} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

@@ -15,7 +15,7 @@ import { requirePermission } from '../../../plugins/rbac.js';
 // DELETE /api/v1/settings/alerts/:id       — Delete alert channel
 // POST   /api/v1/settings/alerts/:id/test  — Send test message to channel
 
-type AlertChannelType = 'EMAIL' | 'SLACK' | 'TEAMS';
+type AlertChannelType = 'EMAIL' | 'SLACK' | 'TEAMS' | 'DISCORD' | 'TELEGRAM';
 
 interface EmailConfig {
   recipients: string[];
@@ -27,6 +27,15 @@ interface SlackConfig {
 
 interface TeamsConfig {
   webhookUrl: string;
+}
+
+interface DiscordConfig {
+  webhookUrl: string;
+}
+
+interface TelegramConfig {
+  botToken: string;
+  chatId: string;
 }
 
 function validateConfig(channelType: AlertChannelType, config: Record<string, unknown>): string | null {
@@ -62,6 +71,28 @@ function validateConfig(channelType: AlertChannelType, config: Record<string, un
       }
       if (!teamsConfig.webhookUrl.startsWith('https://')) {
         return 'TEAMS webhookUrl must start with https://';
+      }
+      return null;
+    }
+
+    case 'DISCORD': {
+      const discordConfig = config as Partial<DiscordConfig>;
+      if (!discordConfig.webhookUrl || typeof discordConfig.webhookUrl !== 'string') {
+        return 'DISCORD config must include a webhookUrl string';
+      }
+      if (!discordConfig.webhookUrl.startsWith('https://discord.com/api/webhooks/')) {
+        return 'DISCORD webhookUrl must start with https://discord.com/api/webhooks/';
+      }
+      return null;
+    }
+
+    case 'TELEGRAM': {
+      const telegramConfig = config as Partial<TelegramConfig>;
+      if (!telegramConfig.botToken || typeof telegramConfig.botToken !== 'string') {
+        return 'TELEGRAM config must include a botToken string';
+      }
+      if (!telegramConfig.chatId || typeof telegramConfig.chatId !== 'string') {
+        return 'TELEGRAM config must include a chatId string';
       }
       return null;
     }

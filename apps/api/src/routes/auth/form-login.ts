@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '@meridian/db';
 import { validateCredentials, getUserRoles, generateTokens } from '../../services/auth.service.js';
+import { AUTH_RATE_LIMIT } from '../../plugins/rate-limit.js';
 
 /**
  * POST /api/auth/form-login
@@ -11,7 +12,7 @@ export async function formLoginRoute(app: FastifyInstance): Promise<void> {
   // Register formbody parser for application/x-www-form-urlencoded
   app.register(import('@fastify/formbody'));
 
-  app.post('/api/auth/form-login', async (request, reply) => {
+  app.post('/api/auth/form-login', { config: { rateLimit: AUTH_RATE_LIMIT } }, async (request, reply) => {
     const body = request.body as {
       email?: string;
       password?: string;

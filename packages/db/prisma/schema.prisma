@@ -336,6 +336,8 @@ enum AlertChannelType {
   SMS
   SLACK
   TEAMS
+  DISCORD
+  TELEGRAM
 }
 
 // ─── Core Tenancy & Identity ──────────────────────────────────────────────────
@@ -414,6 +416,7 @@ model Tenant {
   cmdbChangeLinks          CmdbChangeLink[]
   cmdbIncidentLinks        CmdbIncidentLink[]
   cmdbProblemLinks         CmdbProblemLink[]
+  incidentProblemLinks     IncidentProblemLink[]
   cmdbAttestations         CmdbAttestation[]
   cmdbDuplicateCandidates  CmdbDuplicateCandidate[]
   changeApplications       ChangeApplication[]
@@ -711,11 +714,14 @@ model Ticket {
   resolution      String?
   tags            String[]
   customFields    Json?
-  parentId        String?        @db.Uuid // Parent ticket for sub-task hierarchy
-  mergedIntoId    String?        @db.Uuid // If merged, points to the target ticket
-  source          String         @default("PORTAL")
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  parentId            String?        @db.Uuid // Parent ticket for sub-task hierarchy
+  mergedIntoId        String?        @db.Uuid // If merged, points to the target ticket
+  rootCause           String?        // Problem management: root cause analysis (type=PROBLEM)
+  workaround          String?        // Problem management: known workaround (type=PROBLEM)
+  knowledgeArticleId  String?        @db.Uuid // Problem management: link to known error KB article
+  source              String         @default("PORTAL")
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
 
   tenant            Tenant                   @relation(fields: [tenantId], references: [id])
   assignedTo        User?                    @relation("AssignedTo", fields: [assignedToId], references: [id])
@@ -728,6 +734,7 @@ model Ticket {
   children          Ticket[]                 @relation("TicketParentChild")
   mergedInto        Ticket?                  @relation("TicketMerge", fields: [mergedIntoId], references: [id])
   mergedFrom        Ticket[]                 @relation("TicketMerge")
+  knowledgeArticle  KnowledgeArticle?        @relation("ProblemKnownError", fields: [knowledgeArticleId], references: [id])
   comments          TicketComment[]
   attachments       TicketAttachment[]
   activities        TicketActivity[]
@@ -741,6 +748,8 @@ model Ticket {
   surveyResponse    SurveyResponse?
   approvals         TicketApproval[]
   customFormSubmissions CustomFormSubmission[]
+  incidentProblems  IncidentProblemLink[]     @relation("IncidentProblems") // When this ticket is an incident linked to problems
+  problemIncidents  IncidentProblemLink[]     @relation("ProblemIncidents") // When this ticket is a problem with linked incidents
 
   @@unique([tenantId, ticketNumber])
   @@index([tenantId])
@@ -1549,6 +1558,7 @@ model KnowledgeArticle {
 
   tenant         Tenant                   @relation(fields: [tenantId], references: [id])
   ticketArticles TicketKnowledgeArticle[]
+  problemTickets Ticket[]                 @relation("ProblemKnownError") // Problems linked as known errors
 
   @@unique([tenantId, articleNumber])
   @@index([tenantId])
@@ -2498,6 +2508,26 @@ model CmdbProblemLink {
   @@index([tenantId])
   @@index([tenantId, ticketId])
   @@map("cmdb_problem_links")
+}
+
+// ─── Problem Management ──────────────────────────────────────────────────────
+
+// Links incident tickets to problem tickets for root cause tracking
+model IncidentProblemLink {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @db.Uuid
+  incidentId String   @db.Uuid
+  problemId  String   @db.Uuid
+  createdAt  DateTime @default(now())
+
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  incident Ticket @relation("IncidentProblems", fields: [incidentId], references: [id], onDelete: Cascade)
+  problem  Ticket @relation("ProblemIncidents", fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, incidentId, problemId])
+  @@index([tenantId])
+  @@index([tenantId, problemId])
+  @@map("incident_problem_links")
 }
 
 // ─── CMDB Governance Tables ──────────────────────────────────────────────────

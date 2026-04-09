@@ -35,6 +35,7 @@ import {
   mdiFormTextbox,
   mdiFormSelect,
   mdiWeb,
+  mdiMapMarkerOutline,
 } from '@mdi/js';
 
 // ─── Settings Hub ─────────────────────────────────────────────────────────────
@@ -76,6 +77,13 @@ const SETTINGS_GROUPS: SettingsGroup[] = [
         description: 'Organize users into teams and assign to queues',
         icon: mdiAccountMultiple,
         color: '#059669',
+      },
+      {
+        href: '/dashboard/settings/sites',
+        label: 'Sites & Locations',
+        description: 'Manage physical sites, addresses, and contacts',
+        icon: mdiMapMarkerOutline,
+        color: '#0d9488',
       },
       {
         href: '/dashboard/settings/queues',

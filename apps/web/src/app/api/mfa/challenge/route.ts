@@ -3,6 +3,7 @@ import { ssoPrisma as prisma } from '@/lib/sso/db';
 import { getMfaUser } from '@/lib/mfa/auth-helper';
 import { generateCode, createChallenge } from '@/lib/mfa/codes';
 import { generateWebAuthnAuthenticationOpts } from '@/lib/mfa/webauthn';
+import { sendMfaCodeEmail } from '@/lib/mfa/send-code-email';
 
 /**
  * GET /api/mfa/challenge
@@ -126,10 +127,12 @@ export async function POST(request: NextRequest) {
         code,
       );
 
-      // TODO: Send code via email/SMS service
-      console.log(
-        `[MFA] ${device.type} challenge code for ${device.contactValue}: ${code}`,
-      );
+      if (device.type === 'email') {
+        await sendMfaCodeEmail(device.contactValue, code);
+      } else {
+        // SMS delivery not yet implemented — log for development
+        console.log(`[MFA] SMS challenge code for ${device.contactValue}: ${code}`);
+      }
 
       // Mask the contact value for display
       const masked =

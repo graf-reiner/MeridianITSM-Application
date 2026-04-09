@@ -26,6 +26,9 @@ import { recurringTicketRoutes } from './recurring-tickets/index.js';
 import { ticketTemplateRoutes } from './ticket-templates/index.js';
 import { fieldDefinitionRoutes } from './field-definitions/index.js';
 import { customFormRoutes } from './custom-forms/index.js';
+import { profileRoutes } from './profile.js';
+import { problemRoutes } from './problems/index.js';
+import { searchRoutes } from './search.js';
 
 /**
  * V1 API routes — protected scope (requires JWT + tenant + RBAC).
@@ -115,4 +118,13 @@ export async function v1Routes(app: FastifyInstance): Promise<void> {
 
   // Custom forms — form builder, portal rendering, submission → ticket creation
   await app.register(customFormRoutes);
+
+  // Self-service user profile — read/update own profile without admin permissions
+  await app.register(profileRoutes);
+
+  // Problem management — list, detail, incident linking, root cause tracking
+  await app.register(problemRoutes);
+
+  // Global search — FTS across tickets, KB articles, comments, documents
+  await app.register(searchRoutes);
 }
