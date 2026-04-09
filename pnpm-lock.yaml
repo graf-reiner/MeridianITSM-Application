@@ -368,7 +368,7 @@ importers:
     dependencies:
       '@auth/core':
         specifier: ^0.34.3
-        version: 0.34.3(@simplewebauthn/browser@13.3.0)(@simplewebauthn/server@13.3.0)
+        version: 0.34.3(@simplewebauthn/browser@13.3.0)(@simplewebauthn/server@13.3.0)(nodemailer@8.0.5)
       '@boxyhq/saml-jackson':
         specifier: ^26.2.0
         version: 26.2.0(@azure/core-client@1.10.1)(@types/node@22.19.15)(ioredis@5.10.1)(socks@2.8.7)
@@ -437,7 +437,10 @@ importers:
         version: 16.2.0(@opentelemetry/api@1.9.0)(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       next-auth:
         specifier: 5.0.0-beta.30
-        version: 5.0.0-beta.30(@simplewebauthn/browser@13.3.0)(@simplewebauthn/server@13.3.0)(next@16.2.0(@opentelemetry/api@1.9.0)(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)
+        version: 5.0.0-beta.30(@simplewebauthn/browser@13.3.0)(@simplewebauthn/server@13.3.0)(next@16.2.0(@opentelemetry/api@1.9.0)(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(nodemailer@8.0.5)(react@19.2.4)
+      nodemailer:
+        specifier: ^8.0.5
+        version: 8.0.5
       otpauth:
         specifier: ^9.5.0
         version: 9.5.0
@@ -484,6 +487,9 @@ importers:
       '@types/node':
         specifier: ^22.13.10
         version: 22.19.15
+      '@types/nodemailer':
+        specifier: ^8.0.0
+        version: 8.0.0
       '@types/papaparse':
         specifier: ^5.5.2
         version: 5.5.2
@@ -3752,6 +3758,9 @@ packages:
   '@types/nodemailer@7.0.11':
     resolution: {integrity: sha512-E+U4RzR2dKrx+u3N4DlsmLaDC6mMZOM/TPROxA0UAPiTgI0y4CEFBmZE+coGWTjakDriRsXG368lNk1u9Q0a2g==}
 
+  '@types/nodemailer@8.0.0':
+    resolution: {integrity: sha512-fyf8jWULsCo0d0BuoQ75i6IeoHs47qcqxWc7yUdUcV0pOZGjUTTOvwdG1PRXUDqN/8A64yQdQdnA2pZgcdi+cA==}
+
   '@types/papaparse@5.5.2':
     resolution: {integrity: sha512-gFnFp/JMzLHCwRf7tQHrNnfhN4eYBVYYI897CGX4MY1tzY9l2aLkVyx2IlKZ/SAqDbB3I1AOZW5gTMGGsqWliA==}
 
@@ -6445,6 +6454,10 @@ packages:
     resolution: {integrity: sha512-JQNBqvK+bj3NMhUFR3wmCl3SYcOeMotDiwDBvIoCuQdF0PvlIY0BH+FJ2CG7u4cXKPChplE78oowlH/Otsc4ZQ==}
     engines: {node: '>=6.0.0'}
 
+  nodemailer@8.0.5:
+    resolution: {integrity: sha512-0PF8Yb1yZuQfQbq+5/pZJrtF6WQcjTd5/S4JOHs9PGFxuTqoB/icwuB44pOdURHJbRKX1PPoJZtY7R4VUoCC8w==}
+    engines: {node: '>=6.0.0'}
+
   normalize-path@3.0.0:
     resolution: {integrity: sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==}
     engines: {node: '>=0.10.0'}
@@ -8322,7 +8335,7 @@ packages:
 
 snapshots:
 
-  '@auth/core@0.34.3(@simplewebauthn/browser@13.3.0)(@simplewebauthn/server@13.3.0)':
+  '@auth/core@0.34.3(@simplewebauthn/browser@13.3.0)(@simplewebauthn/server@13.3.0)(nodemailer@8.0.5)':
     dependencies:
       '@panva/hkdf': 1.2.1
       '@types/cookie': 0.6.0
@@ -8334,8 +8347,9 @@ snapshots:
     optionalDependencies:
       '@simplewebauthn/browser': 13.3.0
       '@simplewebauthn/server': 13.3.0
+      nodemailer: 8.0.5
 
-  '@auth/core@0.41.0(@simplewebauthn/browser@13.3.0)(@simplewebauthn/server@13.3.0)':
+  '@auth/core@0.41.0(@simplewebauthn/browser@13.3.0)(@simplewebauthn/server@13.3.0)(nodemailer@8.0.5)':
     dependencies:
       '@panva/hkdf': 1.2.1
       jose: 6.2.2
@@ -8345,6 +8359,7 @@ snapshots:
     optionalDependencies:
       '@simplewebauthn/browser': 13.3.0
       '@simplewebauthn/server': 13.3.0
+      nodemailer: 8.0.5
 
   '@aws-crypto/crc32@5.2.0':
     dependencies:
@@ -12719,6 +12734,10 @@ snapshots:
     dependencies:
       '@types/node': 22.19.15
 
+  '@types/nodemailer@8.0.0':
+    dependencies:
+      '@types/node': 22.19.15
+
   '@types/papaparse@5.5.2':
     dependencies:
       '@types/node': 22.19.15
@@ -15746,14 +15765,15 @@ snapshots:
 
   neo-async@2.6.2: {}
 
-  next-auth@5.0.0-beta.30(@simplewebauthn/browser@13.3.0)(@simplewebauthn/server@13.3.0)(next@16.2.0(@opentelemetry/api@1.9.0)(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4):
+  next-auth@5.0.0-beta.30(@simplewebauthn/browser@13.3.0)(@simplewebauthn/server@13.3.0)(next@16.2.0(@opentelemetry/api@1.9.0)(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(nodemailer@8.0.5)(react@19.2.4):
     dependencies:
-      '@auth/core': 0.41.0(@simplewebauthn/browser@13.3.0)(@simplewebauthn/server@13.3.0)
+      '@auth/core': 0.41.0(@simplewebauthn/browser@13.3.0)(@simplewebauthn/server@13.3.0)(nodemailer@8.0.5)
       next: 16.2.0(@opentelemetry/api@1.9.0)(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react: 19.2.4
     optionalDependencies:
       '@simplewebauthn/browser': 13.3.0
       '@simplewebauthn/server': 13.3.0
+      nodemailer: 8.0.5
 
   next@16.2.0(@opentelemetry/api@1.9.0)(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
@@ -15824,6 +15844,8 @@ snapshots:
   nodemailer@8.0.2: {}
 
   nodemailer@8.0.3: {}
+
+  nodemailer@8.0.5: {}
 
   normalize-path@3.0.0: {}
 
