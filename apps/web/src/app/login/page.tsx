@@ -1,8 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ThemeProvider from '@/components/ThemeProvider';
+
+interface SsoConnectionInfo {
+  id: string;
+  name: string;
+  protocol: string;
+}
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -17,6 +23,22 @@ export default function LoginPage() {
   const [tenantSlug, setTenantSlug] = useState(tenantParam || 'msp-default');
   const [error, setError] = useState(errorParam);
   const [loading, setLoading] = useState(false);
+  const [ssoConnections, setSsoConnections] = useState<SsoConnectionInfo[]>([]);
+
+  // Fetch SSO connections for the current tenant
+  useEffect(() => {
+    if (!tenantSlug) return;
+    async function fetchSso() {
+      try {
+        const res = await fetch(`/api/auth/sso/connections/${encodeURIComponent(tenantSlug)}`);
+        if (res.ok) {
+          const data = (await res.json()) as SsoConnectionInfo[];
+          setSsoConnections(data);
+        }
+      } catch { /* ignore */ }
+    }
+    void fetchSso();
+  }, [tenantSlug]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -168,6 +190,40 @@ export default function LoginPage() {
           >
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
+
+          {ssoConnections.length > 0 && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0' }}>
+                <div style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
+                <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 500 }}>or</span>
+                <div style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
+              </div>
+              {ssoConnections.map((conn) => (
+                <a
+                  key={conn.id}
+                  href={`/api/auth/sso/oidc/${conn.id}/authorize?callbackUrl=${encodeURIComponent(callbackUrl)}`}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    padding: '11px 16px',
+                    marginBottom: 8,
+                    background: '#f8fafc',
+                    color: '#1e293b',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: 8,
+                    fontSize: 14,
+                    fontWeight: 500,
+                    textAlign: 'center',
+                    textDecoration: 'none',
+                    boxSizing: 'border-box',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Sign in with {conn.name}
+                </a>
+              ))}
+            </>
+          )}
         </form>
       </div>
 

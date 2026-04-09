@@ -4,6 +4,7 @@ import { formLoginRoute } from './form-login.js';
 import { refreshRoute } from './refresh.js';
 import { passwordResetRoutes } from './password-reset.js';
 import { signupRoute } from './signup.js';
+import { ssoOidcRoutes } from './sso-oidc.js';
 
 /**
  * Auth routes plugin — no JWT authentication required.
@@ -24,4 +25,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
 
   // Self-service signup — public, rate limited, creates tenant + trial subscription
   await app.register(signupRoute);
+
+  // SSO OIDC — authorize redirect, callback handler, connection listing
+  await app.register(ssoOidcRoutes);
 }
