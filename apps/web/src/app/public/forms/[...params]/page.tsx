@@ -346,20 +346,33 @@ function FieldRenderer({
 // ─── Public Form Page ─────────────────────────────────────────────────────────
 
 export default function PublicFormPage() {
-  const params = useParams();
-  const formId = params.formId as string;
+  const rawParams = useParams();
+  // Catch-all route: params.params is an array
+  // Single segment = UUID: /public/forms/{formId}
+  // Two segments = slug: /public/forms/{tenantSlug}/{formSlug}
+  const segments = rawParams.params as string[];
+  const isSlugRoute = segments.length >= 2;
+  const formIdOrNull = segments.length === 1 ? segments[0] : null;
+  const tenantSlug = isSlugRoute ? segments[0] : null;
+  const formSlug = isSlugRoute ? segments[1] : null;
 
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<SubmitResponse | null>(null);
   const [formData, setFormData] = useState<FormData | null>(null);
+  const [resolvedFormId, setResolvedFormId] = useState<string | null>(formIdOrNull);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadForm() {
       try {
-        const res = await fetch(`/api/v1/public/forms/${formId}`);
+        // Build fetch URL based on route pattern
+        const fetchUrl = isSlugRoute
+          ? `/api/v1/public/forms/by-slug/${encodeURIComponent(tenantSlug!)}/${encodeURIComponent(formSlug!)}`
+          : `/api/v1/public/forms/${formIdOrNull}`;
+
+        const res = await fetch(fetchUrl);
         if (res.status === 403) {
           setLoadError('This form is not available. Please contact the organization.');
           return;
@@ -367,6 +380,7 @@ export default function PublicFormPage() {
         if (!res.ok) throw new Error('Failed to load form');
         const data = await res.json();
         setFormData(data);
+        setResolvedFormId(data.id); // Store form ID for submission
       } catch (err) {
         setLoadError(
           err instanceof Error ? err.message : 'Failed to load form',
@@ -376,7 +390,7 @@ export default function PublicFormPage() {
       }
     }
     void loadForm();
-  }, [formId]);
+  }, [isSlugRoute, tenantSlug, formSlug, formIdOrNull]);
 
   const {
     control,
@@ -414,7 +428,7 @@ export default function PublicFormPage() {
       }
 
       try {
-        const res = await fetch(`/api/v1/public/forms/${formId}/submit`, {
+        const res = await fetch(`/api/v1/public/forms/${resolvedFormId}/submit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -438,7 +452,7 @@ export default function PublicFormPage() {
         setSubmitting(false);
       }
     },
-    [formData, hiddenFields, formId],
+    [formData, hiddenFields, resolvedFormId],
   );
 
   // ── Loading State ──────────────────────────────────────────────────────────
