@@ -384,11 +384,17 @@ export default function NewTicketPage() {
                 </select>
               </div>
             </div>
-            {watch('impact') && watch('urgency') && PRIORITY_MATRIX[watch('impact') ?? '']?.[watch('urgency') ?? ''] && (
-              <div style={{ marginTop: -10, marginBottom: 18, padding: '6px 12px', borderRadius: 6, backgroundColor: 'var(--bg-secondary)', fontSize: 12, color: 'var(--text-muted)' }}>
-                Calculated priority from Impact x Urgency matrix: <strong style={{ color: 'var(--text-primary)' }}>{PRIORITY_MATRIX[watch('impact')!][watch('urgency')!]}</strong>
-              </div>
-            )}
+            {(() => {
+              const imp = watch('impact');
+              const urg = watch('urgency');
+              const calc = imp && urg ? PRIORITY_MATRIX[imp]?.[urg] : null;
+              if (!calc) return null;
+              return (
+                <div style={{ marginTop: -10, marginBottom: 18, padding: '6px 12px', borderRadius: 6, backgroundColor: 'var(--bg-secondary)', fontSize: 12, color: 'var(--text-muted)' }}>
+                  Calculated priority from Impact x Urgency matrix: <strong style={{ color: 'var(--text-primary)' }}>{calc}</strong>
+                </div>
+              );
+            })()}
           )}
 
           {/* Category & Queue row */}
