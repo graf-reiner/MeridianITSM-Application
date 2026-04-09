@@ -30,6 +30,7 @@ import {
   mdiRobotOutline,
   mdiCheckDecagram,
   mdiAlertDecagramOutline,
+  mdiAlertOctagonOutline,
 } from '@mdi/js';
 import AiChatPanel from '@/components/AiChatPanel';
 import UpgradeModal from '@/components/UpgradeModal';
@@ -57,6 +58,7 @@ const queryClient = new QueryClient({
 const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: mdiViewDashboard },
   { href: '/dashboard/tickets', label: 'Tickets', icon: mdiTicketOutline },
+  { href: '/dashboard/major-incidents', label: 'Major Incidents', icon: mdiAlertOctagonOutline },
   { href: '/dashboard/problems', label: 'Problems', icon: mdiAlertDecagramOutline },
   { href: '/dashboard/approvals', label: 'Approvals', icon: mdiCheckDecagram },
   { href: '/dashboard/assets', label: 'Assets', icon: mdiPackageVariantClosed },

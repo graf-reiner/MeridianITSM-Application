@@ -79,6 +79,8 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
         slaId?: unknown;
         tags?: unknown;
         source?: unknown;
+        isMajorIncident?: unknown;
+        majorIncidentCoordinatorId?: unknown;
       };
 
       // Validate required fields
@@ -112,6 +114,8 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
           slaId: typeof body.slaId === 'string' ? body.slaId : undefined,
           tags: Array.isArray(body.tags) ? (body.tags as string[]) : undefined,
           source: typeof body.source === 'string' ? body.source : 'SERVICE_DESK',
+          isMajorIncident: body.isMajorIncident === true ? true : undefined,
+          majorIncidentCoordinatorId: typeof body.majorIncidentCoordinatorId === 'string' ? body.majorIncidentCoordinatorId : undefined,
         },
         userId,
       );
@@ -139,6 +143,7 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
       source?: string;
       tags?: string;
       search?: string;
+      isMajorIncident?: string;
       dateFrom?: string;
       dateTo?: string;
       updatedFrom?: string;
@@ -166,6 +171,7 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
       source: query.source,
       tags: query.tags ? query.tags.split(',') : undefined,
       search: query.search,
+      isMajorIncident: query.isMajorIncident === 'true' ? true : query.isMajorIncident === 'false' ? false : undefined,
       dateFrom: query.dateFrom,
       dateTo: query.dateTo,
       updatedFrom: query.updatedFrom,
@@ -221,6 +227,8 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
       slaPolicyId?: string;
       resolution?: string;
       tags?: string[];
+      isMajorIncident?: boolean;
+      majorIncidentCoordinatorId?: string;
     };
 
     // Normalize: frontend may send slaPolicyId, API expects slaId

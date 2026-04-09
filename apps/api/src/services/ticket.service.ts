@@ -16,6 +16,32 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   CANCELLED: [],
 };
 
+// ─── Priority Matrix (ITIL Impact x Urgency) ────────────────────────────────
+
+type PriorityLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+const PRIORITY_MATRIX: Record<string, Record<string, PriorityLevel>> = {
+  CRITICAL: { CRITICAL: 'CRITICAL', HIGH: 'CRITICAL', MEDIUM: 'HIGH',     LOW: 'MEDIUM' },
+  HIGH:     { CRITICAL: 'CRITICAL', HIGH: 'HIGH',     MEDIUM: 'HIGH',     LOW: 'MEDIUM' },
+  MEDIUM:   { CRITICAL: 'HIGH',     HIGH: 'HIGH',     MEDIUM: 'MEDIUM',   LOW: 'LOW' },
+  LOW:      { CRITICAL: 'MEDIUM',   HIGH: 'MEDIUM',   MEDIUM: 'LOW',      LOW: 'LOW' },
+};
+
+/**
+ * Calculate priority from Impact x Urgency matrix (ITIL standard).
+ * If either value is missing, returns the explicit priority or MEDIUM default.
+ */
+export function calculatePriorityFromMatrix(
+  impact?: string,
+  urgency?: string,
+  explicitPriority?: string,
+): PriorityLevel {
+  if (impact && urgency && PRIORITY_MATRIX[impact]?.[urgency]) {
+    return PRIORITY_MATRIX[impact][urgency];
+  }
+  return (explicitPriority as PriorityLevel) ?? 'MEDIUM';
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface CreateTicketData {
@@ -23,6 +49,8 @@ export interface CreateTicketData {
   description?: string;
   type?: 'INCIDENT' | 'SERVICE_REQUEST' | 'PROBLEM';
   priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  impact?: string;
+  urgency?: string;
   categoryId?: string;
   queueId?: string;
   assignedToId?: string;
@@ -32,6 +60,8 @@ export interface CreateTicketData {
   tags?: string[];
   source?: string;
   customFields?: Record<string, unknown>;
+  isMajorIncident?: boolean;
+  majorIncidentCoordinatorId?: string;
 }
 
 export interface UpdateTicketData {
@@ -47,6 +77,8 @@ export interface UpdateTicketData {
   slaId?: string;
   resolution?: string;
   tags?: string[];
+  isMajorIncident?: boolean;
+  majorIncidentCoordinatorId?: string;
 }
 
 export interface AddCommentData {
@@ -68,6 +100,7 @@ export interface TicketListFilters {
   source?: string;
   tags?: string[];
   search?: string;
+  isMajorIncident?: boolean;
   dateFrom?: string;
   dateTo?: string;
   updatedFrom?: string;
@@ -96,6 +129,9 @@ const TICKET_LIST_INCLUDE = {
   },
   queue: {
     select: { id: true, name: true },
+  },
+  majorIncidentCoordinator: {
+    select: { id: true, firstName: true, lastName: true, email: true },
   },
 } as const;
 
@@ -128,6 +164,9 @@ const TICKET_DETAIL_INCLUDE = {
   },
   category: {
     select: { id: true, name: true },
+  },
+  majorIncidentCoordinator: {
+    select: { id: true, firstName: true, lastName: true, email: true },
   },
   comments: {
     include: {
@@ -191,6 +230,9 @@ export async function createTicket(
       }
     }
 
+    // Calculate priority from Impact x Urgency matrix (ITIL) if impact/urgency provided
+    const calculatedPriority = calculatePriorityFromMatrix(data.impact, data.urgency, data.priority);
+
     // Create ticket
     const ticket = await tx.ticket.create({
       data: {
@@ -199,7 +241,9 @@ export async function createTicket(
         title: data.title,
         description: data.description,
         type: data.type ?? 'INCIDENT',
-        priority: data.priority ?? 'MEDIUM',
+        priority: calculatedPriority,
+        impact: data.impact,
+        urgency: data.urgency,
         categoryId: data.categoryId,
         queueId: data.queueId,
         assignedToId,
@@ -209,6 +253,8 @@ export async function createTicket(
         tags: data.tags ?? [],
         source: data.source ?? 'SERVICE_DESK',
         customFields: data.customFields ? (data.customFields as any) : null,
+        isMajorIncident: data.isMajorIncident ?? false,
+        majorIncidentCoordinatorId: data.majorIncidentCoordinatorId,
       },
       include: TICKET_LIST_INCLUDE,
     });
@@ -318,6 +364,8 @@ export async function updateTicket(
   trackChange('categoryId', existing.categoryId, data.categoryId);
   trackChange('slaId', existing.slaId, data.slaId);
   trackChange('resolution', existing.resolution, data.resolution);
+  trackChange('isMajorIncident', existing.isMajorIncident, data.isMajorIncident);
+  trackChange('majorIncidentCoordinatorId', existing.majorIncidentCoordinatorId, data.majorIncidentCoordinatorId);
 
   // Handle tags (compare as JSON string)
   if (data.tags !== undefined) {
@@ -564,6 +612,7 @@ export async function getTicketList(tenantId: string, filters: TicketListFilters
   if (filters.slaId) where.slaId = filters.slaId;
   if (filters.source) where.source = filters.source;
   if (filters.tags?.length) where.tags = { hasSome: filters.tags };
+  if (filters.isMajorIncident !== undefined) where.isMajorIncident = filters.isMajorIncident;
 
   // Date range filters
   const dateRanges: [string, string, string | undefined, string | undefined][] = [

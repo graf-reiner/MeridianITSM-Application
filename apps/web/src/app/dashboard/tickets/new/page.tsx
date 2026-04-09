@@ -12,6 +12,14 @@ import { useQuery } from '@tanstack/react-query';
 import RichTextField from '@/components/RichTextField';
 import ClassifySuggestions from '@/components/ClassifySuggestions';
 
+// ITIL Impact x Urgency → Priority Matrix
+const PRIORITY_MATRIX: Record<string, Record<string, string>> = {
+  CRITICAL: { CRITICAL: 'CRITICAL', HIGH: 'CRITICAL', MEDIUM: 'HIGH',   LOW: 'MEDIUM' },
+  HIGH:     { CRITICAL: 'CRITICAL', HIGH: 'HIGH',     MEDIUM: 'HIGH',   LOW: 'MEDIUM' },
+  MEDIUM:   { CRITICAL: 'HIGH',     HIGH: 'HIGH',     MEDIUM: 'MEDIUM', LOW: 'LOW' },
+  LOW:      { CRITICAL: 'MEDIUM',   HIGH: 'MEDIUM',   MEDIUM: 'LOW',    LOW: 'LOW' },
+};
+
 interface TicketTemplate {
   id: string;
   name: string;
@@ -343,7 +351,14 @@ export default function NewTicketPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
               <div>
                 <label style={labelStyle}>Impact{requiredFields.includes('impact') ? ' *' : ''}</label>
-                <select {...register('impact')} style={inputStyle}>
+                <select {...register('impact')} onChange={(e) => {
+                  const impact = e.target.value;
+                  setValue('impact', impact);
+                  const urg = watch('urgency');
+                  if (impact && urg && PRIORITY_MATRIX[impact]?.[urg]) {
+                    setValue('priority', PRIORITY_MATRIX[impact][urg] as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL');
+                  }
+                }} style={inputStyle}>
                   <option value="">-- Select --</option>
                   <option value="LOW">Low</option>
                   <option value="MEDIUM">Medium</option>
@@ -353,7 +368,14 @@ export default function NewTicketPage() {
               </div>
               <div>
                 <label style={labelStyle}>Urgency{requiredFields.includes('urgency') ? ' *' : ''}</label>
-                <select {...register('urgency')} style={inputStyle}>
+                <select {...register('urgency')} onChange={(e) => {
+                  const urgency = e.target.value;
+                  setValue('urgency', urgency);
+                  const imp = watch('impact');
+                  if (imp && urgency && PRIORITY_MATRIX[imp]?.[urgency]) {
+                    setValue('priority', PRIORITY_MATRIX[imp][urgency] as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL');
+                  }
+                }} style={inputStyle}>
                   <option value="">-- Select --</option>
                   <option value="LOW">Low</option>
                   <option value="MEDIUM">Medium</option>
@@ -362,6 +384,11 @@ export default function NewTicketPage() {
                 </select>
               </div>
             </div>
+            {watch('impact') && watch('urgency') && PRIORITY_MATRIX[watch('impact') ?? '']?.[watch('urgency') ?? ''] && (
+              <div style={{ marginTop: -10, marginBottom: 18, padding: '6px 12px', borderRadius: 6, backgroundColor: 'var(--bg-secondary)', fontSize: 12, color: 'var(--text-muted)' }}>
+                Calculated priority from Impact x Urgency matrix: <strong style={{ color: 'var(--text-primary)' }}>{PRIORITY_MATRIX[watch('impact')!][watch('urgency')!]}</strong>
+              </div>
+            )}
           )}
 
           {/* Category & Queue row */}
