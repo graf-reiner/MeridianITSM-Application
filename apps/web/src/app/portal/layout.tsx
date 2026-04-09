@@ -79,11 +79,11 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { plan, isActive, isLoading: planLoading } = usePlan();
+  const { plan, isActive: isPlanActive, isLoading: planLoading } = usePlan();
 
   // Redirect suspended/canceled tenants to paywall
   useEffect(() => {
-    if (!planLoading && plan && !isActive()) {
+    if (!planLoading && plan && !isPlanActive()) {
       router.push('/suspended');
     }
   }, [planLoading, plan, isActive, router]);

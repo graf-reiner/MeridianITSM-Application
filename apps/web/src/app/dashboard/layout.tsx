@@ -104,11 +104,11 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
-  const { plan, hasFeature, isActive, isLoading: planLoading } = usePlan();
+  const { plan, hasFeature, isActive: isPlanActive, isLoading: planLoading } = usePlan();
 
   // Redirect suspended/canceled tenants to paywall
   useEffect(() => {
-    if (!planLoading && plan && !isActive()) {
+    if (!planLoading && plan && !isPlanActive()) {
       router.push('/suspended');
     }
   }, [planLoading, plan, isActive, router]);
