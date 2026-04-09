@@ -9,7 +9,7 @@ interface AlertChannel {
   id: string;
   name: string;
   channelType: string;
-  genericConfig: { webhookUrl?: string };
+  config: { webhookUrl?: string };
   isActive: boolean;
 }
 
@@ -56,7 +56,7 @@ export default function SlackSettingsPage() {
         body: JSON.stringify({
           name: name.trim(),
           channelType: 'SLACK',
-          genericConfig: { webhookUrl: webhookUrl.trim() },
+          config: { webhookUrl: webhookUrl.trim() },
           isActive: true,
         }),
       });
@@ -144,7 +144,7 @@ export default function SlackSettingsPage() {
               <Icon path={mdiSlack} size={0.8} color="#4a154b" />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{ch.name}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{ch.genericConfig.webhookUrl ? '***' + ch.genericConfig.webhookUrl.slice(-20) : ''}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{ch.config.webhookUrl ? '***' + ch.config.webhookUrl.slice(-20) : ''}</div>
               </div>
               <button onClick={() => handleTest(ch.id)} disabled={testing} style={{
                 padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border-primary)',
@@ -154,7 +154,7 @@ export default function SlackSettingsPage() {
                 <Icon path={testing ? mdiLoading : mdiSend} size={0.5} color="currentColor" spin={testing} />
                 Test
               </button>
-              <button onClick={() => { setEditId(ch.id); setName(ch.name); setWebhookUrl(ch.genericConfig.webhookUrl ?? ''); }} style={{
+              <button onClick={() => { setEditId(ch.id); setName(ch.name); setWebhookUrl(ch.config.webhookUrl ?? ''); }} style={{
                 padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border-primary)',
                 backgroundColor: 'transparent', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer',
               }}>Edit</button>

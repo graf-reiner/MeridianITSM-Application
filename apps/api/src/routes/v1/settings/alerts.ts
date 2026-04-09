@@ -122,7 +122,7 @@ export async function alertChannelRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(400).send({ error: 'name is required' });
       }
 
-      const validChannelTypes: AlertChannelType[] = ['EMAIL', 'SLACK', 'TEAMS'];
+      const validChannelTypes: AlertChannelType[] = ['EMAIL', 'SLACK', 'TEAMS', 'DISCORD', 'TELEGRAM'];
       const channelType = body.channelType?.toUpperCase() as AlertChannelType;
       if (!channelType || !validChannelTypes.includes(channelType)) {
         return reply.code(400).send({
@@ -169,6 +169,7 @@ export async function alertChannelRoutes(app: FastifyInstance): Promise<void> {
           id: true,
           name: true,
           channelType: true,
+          config: true,
           isActive: true,
           createdAt: true,
         },
@@ -372,6 +373,51 @@ export async function alertChannelRoutes(app: FastifyInstance): Promise<void> {
               return reply.send({
                 success: false,
                 error: `Teams webhook returned ${response.status}: ${text}`,
+              });
+            }
+
+            return reply.send({ success: true });
+          }
+
+          case 'DISCORD': {
+            const discordCfg = config as unknown as DiscordConfig;
+            const response = await fetch(discordCfg.webhookUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ content: 'Test alert from MeridianITSM' }),
+            });
+
+            if (!response.ok) {
+              const text = await response.text();
+              return reply.send({
+                success: false,
+                error: `Discord webhook returned ${response.status}: ${text}`,
+              });
+            }
+
+            return reply.send({ success: true });
+          }
+
+          case 'TELEGRAM': {
+            const telegramCfg = config as unknown as TelegramConfig;
+            const response = await fetch(
+              `https://api.telegram.org/bot${telegramCfg.botToken}/sendMessage`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  chat_id: telegramCfg.chatId,
+                  text: 'Test alert from MeridianITSM',
+                  parse_mode: 'HTML',
+                }),
+              },
+            );
+
+            if (!response.ok) {
+              const data = (await response.json()) as { description?: string };
+              return reply.send({
+                success: false,
+                error: `Telegram API returned ${response.status}: ${data.description ?? 'Unknown error'}`,
               });
             }
 

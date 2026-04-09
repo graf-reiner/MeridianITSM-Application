@@ -9,7 +9,7 @@ interface AlertChannel {
   id: string;
   name: string;
   channelType: string;
-  genericConfig: { botToken?: string; chatId?: string };
+  config: { botToken?: string; chatId?: string };
   isActive: boolean;
 }
 
@@ -48,7 +48,7 @@ export default function TelegramSettingsPage() {
       const res = await fetch(url, {
         method: editId ? 'PATCH' : 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), channelType: 'TELEGRAM', genericConfig: { botToken: botToken.trim(), chatId: chatId.trim() }, isActive: true }),
+        body: JSON.stringify({ name: name.trim(), channelType: 'TELEGRAM', config: { botToken: botToken.trim(), chatId: chatId.trim() }, isActive: true }),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error ?? 'Failed'); }
       setMessage({ type: 'success', text: editId ? 'Updated' : 'Channel created' });
@@ -112,12 +112,12 @@ export default function TelegramSettingsPage() {
               <Icon path={mdiSend} size={0.8} color="#0088cc" />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{ch.name}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Chat: {ch.genericConfig.chatId}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Chat: {ch.config.chatId}</div>
               </div>
               <button onClick={() => handleTest(ch.id)} disabled={testing} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border-primary)', backgroundColor: 'transparent', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                 <Icon path={testing ? mdiLoading : mdiSend} size={0.5} color="currentColor" spin={testing} /> Test
               </button>
-              <button onClick={() => { setEditId(ch.id); setName(ch.name); setBotToken(ch.genericConfig.botToken ?? ''); setChatId(ch.genericConfig.chatId ?? ''); }} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border-primary)', backgroundColor: 'transparent', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer' }}>Edit</button>
+              <button onClick={() => { setEditId(ch.id); setName(ch.name); setBotToken(ch.config.botToken ?? ''); setChatId(ch.config.chatId ?? ''); }} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border-primary)', backgroundColor: 'transparent', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer' }}>Edit</button>
               <button onClick={() => void handleDelete(ch.id)} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border-primary)', backgroundColor: 'transparent', color: 'var(--accent-danger)', fontSize: 12, cursor: 'pointer' }}>Delete</button>
             </div>
           ))}

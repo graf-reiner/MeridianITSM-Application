@@ -9,7 +9,7 @@ interface AlertChannel {
   id: string;
   name: string;
   channelType: string;
-  genericConfig: { webhookUrl?: string };
+  config: { webhookUrl?: string };
   isActive: boolean;
 }
 
@@ -45,7 +45,7 @@ export default function DiscordSettingsPage() {
       const res = await fetch(url, {
         method: editId ? 'PATCH' : 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), channelType: 'DISCORD', genericConfig: { webhookUrl: webhookUrl.trim() }, isActive: true }),
+        body: JSON.stringify({ name: name.trim(), channelType: 'DISCORD', config: { webhookUrl: webhookUrl.trim() }, isActive: true }),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error ?? 'Failed'); }
       setMessage({ type: 'success', text: editId ? 'Updated' : 'Channel created' });
@@ -113,7 +113,7 @@ export default function DiscordSettingsPage() {
               <button onClick={() => handleTest(ch.id)} disabled={testing} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border-primary)', backgroundColor: 'transparent', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                 <Icon path={testing ? mdiLoading : mdiSend} size={0.5} color="currentColor" spin={testing} /> Test
               </button>
-              <button onClick={() => { setEditId(ch.id); setName(ch.name); setWebhookUrl(ch.genericConfig.webhookUrl ?? ''); }} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border-primary)', backgroundColor: 'transparent', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer' }}>Edit</button>
+              <button onClick={() => { setEditId(ch.id); setName(ch.name); setWebhookUrl(ch.config.webhookUrl ?? ''); }} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border-primary)', backgroundColor: 'transparent', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer' }}>Edit</button>
               <button onClick={() => void handleDelete(ch.id)} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border-primary)', backgroundColor: 'transparent', color: 'var(--accent-danger)', fontSize: 12, cursor: 'pointer' }}>Delete</button>
             </div>
           ))}
