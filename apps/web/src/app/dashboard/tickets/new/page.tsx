@@ -348,6 +348,7 @@ export default function NewTicketPage() {
 
           {/* Impact & Urgency row — shown for INCIDENT type or when required */}
           {(currentType === 'INCIDENT' || requiredFields.includes('impact') || requiredFields.includes('urgency')) && (
+            <>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
               <div>
                 <label style={labelStyle}>Impact{requiredFields.includes('impact') ? ' *' : ''}</label>
@@ -395,6 +396,7 @@ export default function NewTicketPage() {
                 </div>
               );
             })()}
+            </>
           )}
 
           {/* Category & Queue row */}
