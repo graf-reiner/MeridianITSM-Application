@@ -417,6 +417,7 @@ model Tenant {
   cmdbIncidentLinks        CmdbIncidentLink[]
   cmdbProblemLinks         CmdbProblemLink[]
   incidentProblemLinks     IncidentProblemLink[]
+  chatBotSessions          ChatBotSession[]
   cmdbAttestations         CmdbAttestation[]
   cmdbDuplicateCandidates  CmdbDuplicateCandidate[]
   changeApplications       ChangeApplication[]
@@ -3276,7 +3277,28 @@ model ChatMessage {
   @@map("chat_messages")
 }
 
-// Model 73: DocumentContent (extracted text from PDFs for AI search)
+// Chat Bot Sessions (multi-turn form conversations from Discord/Telegram)
+model ChatBotSession {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @db.Uuid
+  platform        String   // 'discord' | 'telegram'
+  platformUserId  String
+  channelId       String?
+  formId          String?  @db.Uuid
+  currentFieldIdx Int      @default(0)
+  collectedValues Json     @default("{}")
+  status          String   @default("active")
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, platform, platformUserId])
+  @@map("chat_bot_sessions")
+}
+
+// Model 74: DocumentContent (extracted text from PDFs for AI search)
 model DocumentContent {
   id            String   @id @default(uuid()) @db.Uuid
   tenantId      String   @db.Uuid

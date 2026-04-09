@@ -22,6 +22,8 @@ import './actions/send-in-app.js';
 import './actions/send-slack.js';
 import './actions/send-teams.js';
 import './actions/send-webhook.js';
+import './actions/send-discord.js';
+import './actions/send-telegram.js';
 import './actions/send-push.js';
 import './actions/escalate-ticket.js';
 import './actions/update-field.js';
