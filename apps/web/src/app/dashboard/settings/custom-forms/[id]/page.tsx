@@ -1096,11 +1096,13 @@ function SettingsConfigTab({
   onUpdateSettings,
   formId,
   formStatus,
+  tenantSlug,
 }: {
   settings: FormSettings;
   onUpdateSettings: (updates: Partial<FormSettings>) => void;
   formId: string;
   formStatus: 'DRAFT' | 'PUBLISHED';
+  tenantSlug: string | null;
 }) {
   // Fetch queues, categories, SLAs
   const { data: queues } = useQuery<SelectOption[]>({
@@ -1712,7 +1714,7 @@ export default function CustomFormBuilderPage() {
               <ConditionsConfigTab conditions={conditions} allFields={allFields} onUpdateConditions={updateConditions} />
             )}
             {activeTab === 'settings' && (
-              <SettingsConfigTab settings={settings} onUpdateSettings={updateSettings} formId={formId} formStatus={formStatus} />
+              <SettingsConfigTab settings={settings} onUpdateSettings={updateSettings} formId={formId} formStatus={formStatus} tenantSlug={tenantSlug} />
             )}
           </div>
         </div>
