@@ -95,7 +95,7 @@ export default function DetectedProblemsPage() {
         formal Problem tickets and investigate root causes.
       </p>
 
-      {isLoading && <SkeletonTable rows={5} columns={3} />}
+      {isLoading && <SkeletonTable rows={5} cols={3} />}
 
       {!isLoading && patterns.length === 0 && (
         <div style={{
