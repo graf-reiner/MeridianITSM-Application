@@ -1227,7 +1227,14 @@ function SettingsConfigTab({
       {/* Show in Portal */}
       <div style={{ marginBottom: 14 }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, color: 'var(--text-primary)' }}>
-          <input type="checkbox" checked={settings.showInPortal} onChange={(e) => onUpdateSettings({ showInPortal: e.target.checked })} style={{ width: 16, height: 16, accentColor: 'var(--accent-primary)' }} />
+          <input type="checkbox" checked={settings.showInPortal} onChange={(e) => {
+            onUpdateSettings({ showInPortal: e.target.checked });
+            void fetch(`/api/v1/custom-forms/${formId}`, {
+              method: 'PATCH', credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ showInPortal: e.target.checked }),
+            });
+          }} style={{ width: 16, height: 16, accentColor: 'var(--accent-primary)' }} />
           Show in Portal
         </label>
       </div>
@@ -1235,7 +1242,15 @@ function SettingsConfigTab({
       {/* Require Auth */}
       <div style={{ marginBottom: 14 }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, color: 'var(--text-primary)' }}>
-          <input type="checkbox" checked={settings.requireAuth} onChange={(e) => onUpdateSettings({ requireAuth: e.target.checked })} style={{ width: 16, height: 16, accentColor: 'var(--accent-primary)' }} />
+          <input type="checkbox" checked={settings.requireAuth} onChange={(e) => {
+            onUpdateSettings({ requireAuth: e.target.checked });
+            // Auto-save this critical toggle immediately via PATCH
+            void fetch(`/api/v1/custom-forms/${formId}`, {
+              method: 'PATCH', credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ requireAuth: e.target.checked }),
+            });
+          }} style={{ width: 16, height: 16, accentColor: 'var(--accent-primary)' }} />
           Require Authentication
         </label>
         {!settings.requireAuth && (
@@ -1603,7 +1618,7 @@ export default function CustomFormBuilderPage() {
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
           <button onClick={() => void saveDraft()} disabled={saving} style={{ ...btnOutline, opacity: saving ? 0.6 : 1 }}>
             <Icon path={mdiContentSave} size={0.7} color="currentColor" />
-            {saving ? 'Saving...' : 'Save Draft'}
+            {saving ? 'Saving...' : formStatus === 'PUBLISHED' ? 'Save' : 'Save Draft'}
           </button>
           <button onClick={() => setShowPreview(true)} style={btnOutline}>
             <Icon path={mdiEye} size={0.7} color="currentColor" />
