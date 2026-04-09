@@ -111,7 +111,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     if (!planLoading && plan && !isPlanActive()) {
       router.push('/suspended');
     }
-  }, [planLoading, plan, isActive, router]);
+  }, [planLoading, plan, isPlanActive, router]);
 
   const handleLogout = async () => {
     try {
