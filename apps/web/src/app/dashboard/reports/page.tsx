@@ -149,7 +149,7 @@ export default function ReportsPage() {
     staleTime: 60_000,
   });
 
-  const { data: slaData } = useQuery<SlaCompliance>({
+  const { data: slaData } = useQuery<SlaCompliance | null>({
     queryKey: ['sla-compliance'],
     queryFn: async () => {
       const res = await fetch('/api/v1/reports/sla-compliance', { credentials: 'include' });
@@ -159,7 +159,7 @@ export default function ReportsPage() {
     staleTime: 120_000,
   });
 
-  const { data: changeData } = useQuery<ChangeStats>({
+  const { data: changeData } = useQuery<ChangeStats | null>({
     queryKey: ['change-stats'],
     queryFn: async () => {
       const res = await fetch('/api/v1/reports/changes', { credentials: 'include' });
