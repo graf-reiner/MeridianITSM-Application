@@ -561,6 +561,9 @@ export async function customFormRoutes(
         createdBy: {
           select: { id: true, firstName: true, lastName: true },
         },
+        tenant: {
+          select: { slug: true },
+        },
         _count: { select: { submissions: true } },
       },
     });

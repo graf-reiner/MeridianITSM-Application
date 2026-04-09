@@ -114,8 +114,8 @@ export async function middleware(request: NextRequest) {
             if (formRes.ok) {
               const formData = await formRes.json() as { id?: string; requireAuth?: boolean };
               if (formData.id && formData.requireAuth === false) {
-                // Form is public — redirect to the anonymous form renderer
-                return NextResponse.redirect(new URL(`/public/forms/${formData.id}`, request.url));
+                // Form is public — redirect to the slug-based anonymous form renderer
+                return NextResponse.redirect(new URL(`/public/forms/${resolvedSlug}/${formMatch[1]}`, request.url));
               }
             }
           } catch {

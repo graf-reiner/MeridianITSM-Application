@@ -1263,14 +1263,14 @@ function SettingsConfigTab({
                 <input
                   type="text"
                   readOnly
-                  value={`${typeof window !== 'undefined' ? window.location.origin : ''}/public/forms/${formId}`}
+                  value={`${typeof window !== 'undefined' ? window.location.origin : ''}/public/forms/${tenantSlug ?? 'unknown'}/${settings.slug}`}
                   style={{ ...inputStyle, flex: 1, fontSize: 12, fontFamily: 'monospace', backgroundColor: 'var(--bg-secondary)' }}
                   onFocus={(e) => e.target.select()}
                 />
                 <button
                   type="button"
                   onClick={() => {
-                    void navigator.clipboard.writeText(`${window.location.origin}/public/forms/${formId}`);
+                    void navigator.clipboard.writeText(`${window.location.origin}/public/forms/${tenantSlug ?? 'unknown'}/${settings.slug}`);
                   }}
                   style={{ padding: '6px 12px', fontSize: 12, fontWeight: 600, border: '1px solid var(--border-secondary)', borderRadius: 6, backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)', cursor: 'pointer', whiteSpace: 'nowrap' }}
                 >
@@ -1296,6 +1296,9 @@ export default function CustomFormBuilderPage() {
   const params = useParams();
   const router = useRouter();
   const formId = params.id as string;
+
+  // ── Tenant slug for public URL construction (loaded from form's tenant relation) ──
+  const [tenantSlug, setTenantSlug] = useState<string | null>(null);
 
   // ── State ──
   const [sections, setSections] = useState<FormSection[]>([]);
@@ -1375,6 +1378,7 @@ export default function CustomFormBuilderPage() {
       requireAuth: formData.requireAuth ?? true,
     });
     setFormStatus(formData.status);
+    if (formData.tenant?.slug) setTenantSlug(formData.tenant.slug);
     setDataLoaded(true);
   }, [formData, dataLoaded]);
 
