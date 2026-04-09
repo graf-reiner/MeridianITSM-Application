@@ -43,7 +43,7 @@ export default function ClassifySuggestions({ title, description, onApply }: Pro
   const [loading, setLoading] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [appliedFields, setAppliedFields] = useState<Set<string>>(new Set());
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     // Reset when input changes significantly

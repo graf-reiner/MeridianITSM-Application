@@ -71,7 +71,7 @@ export default function GlobalSearch() {
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Keyboard shortcut: Cmd+K / Ctrl+K to open
   useEffect(() => {
