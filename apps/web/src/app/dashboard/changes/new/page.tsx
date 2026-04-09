@@ -1,14 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Icon from '@mdi/react';
-import { mdiSwapHorizontal, mdiArrowLeft, mdiCheck, mdiAlertCircle } from '@mdi/js';
+import { mdiSwapHorizontal, mdiArrowLeft, mdiCheck, mdiAlertCircle, mdiFileDocumentOutline } from '@mdi/js';
 import RichTextField from '@/components/RichTextField';
+
+// ─── Change Template Type ────────────────────────────────────────────────────
+
+interface ChangeTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  changeType: 'STANDARD' | 'NORMAL' | 'EMERGENCY';
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  defaultTitle: string | null;
+  defaultDescription: string | null;
+  defaultBackoutPlan: string | null;
+}
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -46,6 +59,29 @@ export default function NewChangePage() {
       riskLevel: 'MEDIUM',
     },
   });
+
+  // ─── Template loading ──────────────────────────────────────────────────────
+  const [templates, setTemplates] = useState<ChangeTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
+
+  useEffect(() => {
+    fetch('/api/v1/change-templates', { credentials: 'include' })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setTemplates(Array.isArray(data) ? data as ChangeTemplate[] : []))
+      .catch(() => setTemplates([]));
+  }, []);
+
+  const applyTemplate = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+    if (!templateId) return;
+    const tpl = templates.find((t) => t.id === templateId);
+    if (!tpl) return;
+    setValue('type', tpl.changeType, { shouldValidate: true });
+    setValue('riskLevel', tpl.riskLevel, { shouldValidate: true });
+    if (tpl.defaultTitle) setValue('title', tpl.defaultTitle, { shouldValidate: true });
+    if (tpl.defaultDescription) setValue('description', tpl.defaultDescription, { shouldValidate: true });
+    if (tpl.defaultBackoutPlan) setValue('backoutPlan', tpl.defaultBackoutPlan);
+  };
 
   const changeType = watch('type');
 
@@ -146,6 +182,39 @@ export default function NewChangePage() {
       </div>
 
       <form onSubmit={(e) => { void handleSubmit(onSubmit)(e); }}>
+        {/* ── Template Picker ──────────────────────────────────────────────────── */}
+        {templates.length > 0 && (
+          <div style={{ marginBottom: 16, backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Icon path={mdiFileDocumentOutline} size={0.9} color="var(--text-muted)" />
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 4, display: 'block' }}>
+                Start from Template
+              </label>
+              <select
+                value={selectedTemplateId}
+                onChange={(e) => applyTemplate(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 10px',
+                  border: '1px solid var(--border-secondary)',
+                  borderRadius: 6,
+                  fontSize: 14,
+                  backgroundColor: 'var(--bg-primary)',
+                  cursor: 'pointer',
+                  outline: 'none',
+                }}
+              >
+                <option value="">-- Select a template to pre-fill fields --</option>
+                {templates.map((tpl) => (
+                  <option key={tpl.id} value={tpl.id}>
+                    {tpl.name}{tpl.description ? ` — ${tpl.description}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+
         <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 24 }}>
 
           {/* ── Change Type (controls field visibility) ────────────────────────── */}

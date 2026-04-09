@@ -31,6 +31,9 @@ import {
   mdiCertificate,
   mdiInformationOutline,
   mdiMonitor,
+  mdiContentCopy,
+  mdiCompare,
+  mdiPlus,
 } from '@mdi/js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -270,7 +273,7 @@ function EmptyState({ message }: { message: string }) {
 
 // ─── Tab definitions ─────────────────────────────────────────────────────────
 
-type Tab = 'general' | 'ownership' | 'technical' | 'service' | 'relationships' | 'governance' | 'linked';
+type Tab = 'general' | 'ownership' | 'technical' | 'service' | 'relationships' | 'governance' | 'linked' | 'baselines';
 
 // ─── Inventory Snapshot Section (for CIs with linked agents) ─────────────────
 
@@ -537,6 +540,7 @@ const TAB_DEFS: { key: Tab; label: string; icon: string }[] = [
   { key: 'relationships', label: 'Relationships', icon: mdiLanConnect },
   { key: 'governance', label: 'Governance', icon: mdiCertificate },
   { key: 'linked', label: 'Linked Records', icon: mdiLink },
+  { key: 'baselines', label: 'Baselines', icon: mdiContentCopy },
 ];
 
 // ─── CMDB CI Detail Page ──────────────────────────────────────────────────────
@@ -550,6 +554,15 @@ export default function CMDBDetailPage() {
   const [impactLoading, setImpactLoading] = useState(false);
   const [mapDepth, setMapDepth] = useState(2);
   const [attestLoading, setAttestLoading] = useState(false);
+
+  // Baselines state
+  const [baselines, setBaselines] = useState<Array<{ id: string; name: string; createdById: string | null; createdAt: string }>>([]);
+  const [baselinesLoading, setBaselinesLoading] = useState(false);
+  const [baselinesFetched, setBaselinesFetched] = useState(false);
+  const [newBaselineName, setNewBaselineName] = useState('');
+  const [baselineCreating, setBaselineCreating] = useState(false);
+  const [compareData, setCompareData] = useState<{ baseline: { id: string; name: string; createdAt: string }; totalDifferences: number; differences: Array<{ field: string; baseline: unknown; current: unknown }> } | null>(null);
+  const [compareLoading, setCompareLoading] = useState(false);
 
   const { data: ci, isLoading, error, refetch } = useQuery<CIDetail>({
     queryKey: ['cmdb-ci', id],
@@ -591,6 +604,57 @@ export default function CMDBDetailPage() {
       setAttestLoading(false);
     }
   }, [id, refetch]);
+
+  // Baselines helpers
+  const fetchBaselines = useCallback(async () => {
+    setBaselinesLoading(true);
+    try {
+      const res = await fetch(`/api/v1/cmdb/cis/${id}/baselines`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load baselines');
+      const data = await res.json() as Array<{ id: string; name: string; createdById: string | null; createdAt: string }>;
+      setBaselines(data);
+      setBaselinesFetched(true);
+    } catch {
+      setBaselines([]);
+    } finally {
+      setBaselinesLoading(false);
+    }
+  }, [id]);
+
+  const createBaseline = useCallback(async () => {
+    if (!newBaselineName.trim()) return;
+    setBaselineCreating(true);
+    try {
+      const res = await fetch(`/api/v1/cmdb/cis/${id}/baselines`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newBaselineName.trim() }),
+      });
+      if (!res.ok) throw new Error('Failed to create baseline');
+      setNewBaselineName('');
+      await fetchBaselines();
+    } catch {
+      // could add toast
+    } finally {
+      setBaselineCreating(false);
+    }
+  }, [id, newBaselineName, fetchBaselines]);
+
+  const compareBaseline = useCallback(async (baselineId: string) => {
+    setCompareLoading(true);
+    setCompareData(null);
+    try {
+      const res = await fetch(`/api/v1/cmdb/cis/${id}/baselines/${baselineId}/compare`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Compare failed');
+      const data = await res.json() as typeof compareData;
+      setCompareData(data);
+    } catch {
+      setCompareData(null);
+    } finally {
+      setCompareLoading(false);
+    }
+  }, [id]);
 
   if (isLoading) {
     return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading CI...</div>;
@@ -1402,6 +1466,166 @@ export default function CMDBDetailPage() {
            (ci.cmdbProblemLinks ?? []).length === 0 &&
            (ci.ticketLinks ?? []).length === 0 && (
             <EmptyState message="No linked records found" />
+          )}
+        </div>
+      )}
+
+      {/* ── Baselines Tab ──────────────────────────────────────────────────────── */}
+      {activeTab === 'baselines' && (
+        <div>
+          {/* Create baseline */}
+          <Card title="Create Baseline" icon={mdiPlus}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                  Baseline Name
+                </label>
+                <input
+                  type="text"
+                  value={newBaselineName}
+                  onChange={(e) => setNewBaselineName(e.target.value)}
+                  placeholder="e.g. Pre-upgrade snapshot"
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    border: '1px solid var(--border-secondary)',
+                    borderRadius: 6,
+                    fontSize: 14,
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+              <button
+                onClick={() => void createBaseline()}
+                disabled={baselineCreating || !newBaselineName.trim()}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: 'var(--accent-primary)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 6,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: baselineCreating || !newBaselineName.trim() ? 'not-allowed' : 'pointer',
+                  opacity: baselineCreating || !newBaselineName.trim() ? 0.6 : 1,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {baselineCreating ? 'Creating...' : 'Create Baseline'}
+              </button>
+            </div>
+          </Card>
+
+          {/* Baseline list */}
+          <Card title="Saved Baselines" icon={mdiContentCopy}>
+            {!baselinesFetched ? (
+              <div style={{ textAlign: 'center', padding: 20 }}>
+                <button
+                  onClick={() => void fetchBaselines()}
+                  disabled={baselinesLoading}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: 'var(--accent-primary)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 6,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {baselinesLoading ? 'Loading...' : 'Load Baselines'}
+                </button>
+              </div>
+            ) : baselines.length === 0 ? (
+              <EmptyState message="No baselines saved yet" />
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border-primary)' }}>
+                      <th style={thStyle}>Name</th>
+                      <th style={thStyle}>Created</th>
+                      <th style={{ ...thStyle, textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {baselines.map((bl) => (
+                      <tr key={bl.id} style={{ borderBottom: '1px solid var(--border-primary)' }}>
+                        <td style={{ ...tdStyle, fontWeight: 500 }}>{bl.name}</td>
+                        <td style={{ ...tdStyle, fontSize: 13, color: 'var(--text-muted)' }}>
+                          {new Date(bl.createdAt).toLocaleString()}
+                        </td>
+                        <td style={{ ...tdStyle, textAlign: 'right' }}>
+                          <button
+                            onClick={() => void compareBaseline(bl.id)}
+                            style={{
+                              padding: '4px 10px',
+                              backgroundColor: 'var(--bg-tertiary)',
+                              color: 'var(--text-secondary)',
+                              border: '1px solid var(--border-secondary)',
+                              borderRadius: 4,
+                              fontSize: 12,
+                              fontWeight: 500,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                          >
+                            <Icon path={mdiCompare} size={0.6} color="currentColor" />
+                            Compare to Current
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+
+          {/* Compare result */}
+          {compareLoading && (
+            <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>Comparing...</div>
+          )}
+          {compareData && (
+            <Card title={`Comparison: "${compareData.baseline.name}" vs Current`} icon={mdiCompare}>
+              {compareData.totalDifferences === 0 ? (
+                <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)', fontSize: 14 }}>
+                  No differences found -- CI matches the baseline snapshot.
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <div style={{ marginBottom: 12, fontSize: 13, color: 'var(--text-secondary)' }}>
+                    {compareData.totalDifferences} difference{compareData.totalDifferences !== 1 ? 's' : ''} found
+                  </div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border-primary)' }}>
+                        <th style={thStyle}>Field</th>
+                        <th style={thStyle}>Baseline Value</th>
+                        <th style={thStyle}>Current Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {compareData.differences.map((diff) => (
+                        <tr key={diff.field} style={{ borderBottom: '1px solid var(--border-primary)' }}>
+                          <td style={{ ...tdStyle, fontWeight: 500, fontSize: 13 }}>{diff.field}</td>
+                          <td style={{ ...tdStyle, fontSize: 13, color: '#991b1b', backgroundColor: '#fff1f2' }}>
+                            {diff.baseline === null || diff.baseline === undefined ? <em style={{ color: 'var(--text-placeholder)' }}>null</em> : String(typeof diff.baseline === 'object' ? JSON.stringify(diff.baseline) : diff.baseline)}
+                          </td>
+                          <td style={{ ...tdStyle, fontSize: 13, color: '#065f46', backgroundColor: '#ecfdf5' }}>
+                            {diff.current === null || diff.current === undefined ? <em style={{ color: 'var(--text-placeholder)' }}>null</em> : String(typeof diff.current === 'object' ? JSON.stringify(diff.current) : diff.current)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
           )}
         </div>
       )}

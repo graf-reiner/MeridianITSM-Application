@@ -465,6 +465,8 @@ model Tenant {
   fieldDefinitions         FieldDefinition[]
   customForms              CustomForm[]
   customFormSubmissions    CustomFormSubmission[]
+  changeTemplates          ChangeTemplate[]
+  cmdbBaselines            CmdbBaseline[]
 
   @@map("tenants")
 }
@@ -553,6 +555,7 @@ model User {
   fieldDefinitionsCreated FieldDefinition[]        @relation("FieldDefinitionCreatedBy")
   customFormsCreated      CustomForm[]             @relation("CustomFormCreatedBy")
   customFormSubmissions   CustomFormSubmission[]   @relation("CustomFormSubmittedBy")
+  majorIncidentCoordinations Ticket[]              @relation("MajorIncidentCoordinator")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -719,6 +722,8 @@ model Ticket {
   rootCause           String?        // Problem management: root cause analysis (type=PROBLEM)
   workaround          String?        // Problem management: known workaround (type=PROBLEM)
   knowledgeArticleId  String?        @db.Uuid // Problem management: link to known error KB article
+  isMajorIncident         Boolean        @default(false)
+  majorIncidentCoordinatorId String?     @db.Uuid
   source              String         @default("PORTAL")
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
@@ -735,6 +740,7 @@ model Ticket {
   mergedInto        Ticket?                  @relation("TicketMerge", fields: [mergedIntoId], references: [id])
   mergedFrom        Ticket[]                 @relation("TicketMerge")
   knowledgeArticle  KnowledgeArticle?        @relation("ProblemKnownError", fields: [knowledgeArticleId], references: [id])
+  majorIncidentCoordinator User?            @relation("MajorIncidentCoordinator", fields: [majorIncidentCoordinatorId], references: [id])
   comments          TicketComment[]
   attachments       TicketAttachment[]
   activities        TicketActivity[]
@@ -1388,6 +1394,30 @@ model Change {
   @@index([tenantId, createdAt])
   @@index([tenantId, scheduledStart])
   @@map("changes")
+}
+
+// Model 19b: ChangeTemplate
+model ChangeTemplate {
+  id                 String     @id @default(uuid()) @db.Uuid
+  tenantId           String     @db.Uuid
+  name               String
+  description        String?
+  changeType         ChangeType @default(NORMAL)
+  riskLevel          RiskLevel  @default(MEDIUM)
+  defaultTitle       String?
+  defaultDescription String?    @db.Text
+  defaultBackoutPlan String?    @db.Text
+  defaultAssigneeId  String?    @db.Uuid
+  defaultQueueId     String?    @db.Uuid
+  isActive           Boolean    @default(true)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("change_templates")
 }
 
 // Model 20: ChangeApproval
@@ -2164,6 +2194,7 @@ model CmdbConfigurationItem {
   sourceRels    CmdbRelationship[] @relation("CmdbRelSource")
   targetRels    CmdbRelationship[] @relation("CmdbRelTarget")
   changeRecords CmdbChangeRecord[]
+  baselines     CmdbBaseline[]
   ticketLinks   CmdbTicketLink[]
 
   // Extension tables (1:1)
@@ -2269,6 +2300,24 @@ model CmdbChangeRecord {
   @@index([tenantId, ciId])
   @@index([tenantId, createdAt])
   @@map("cmdb_change_records")
+}
+
+// Model 48b: CmdbBaseline
+model CmdbBaseline {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  ciId        String   @db.Uuid
+  name        String
+  snapshot    Json
+  createdById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+
+  tenant Tenant                @relation(fields: [tenantId], references: [id])
+  ci     CmdbConfigurationItem @relation(fields: [ciId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, ciId])
+  @@map("cmdb_baselines")
 }
 
 // Model 49: CmdbTicketLink (legacy — will be replaced by CmdbIncidentLink/CmdbProblemLink)

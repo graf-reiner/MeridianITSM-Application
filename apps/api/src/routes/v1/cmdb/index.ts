@@ -17,6 +17,7 @@ import {
   deleteCategory,
 } from '../../../services/cmdb.service.js';
 import { importCIs } from '../../../services/cmdb-import.service.js';
+import { prisma } from '@meridian/db';
 
 /**
  * CMDB REST API routes.
@@ -572,6 +573,141 @@ export async function cmdbRoutes(fastify: FastifyInstance): Promise<void> {
         const error = err as Error;
         return reply.status(500).send({ error: error.message });
       }
+    },
+  );
+
+  // ─── POST /api/v1/cmdb/cis/:id/baselines — Create baseline snapshot ────────
+
+  fastify.post(
+    '/api/v1/cmdb/cis/:id/baselines',
+    { preHandler: [requirePermission('cmdb.edit')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string; userId: string };
+      const { tenantId, userId } = user;
+      const { id } = request.params as { id: string };
+
+      const body = request.body as { name?: unknown };
+
+      if (!body.name || typeof body.name !== 'string' || (body.name as string).trim().length === 0) {
+        return reply.status(400).send({ error: 'name is required' });
+      }
+
+      // Fetch the current CI with all its attributes
+      const ci = await getCI(tenantId, id);
+      if (!ci) {
+        return reply.status(404).send({ error: 'CI not found' });
+      }
+
+      // Build snapshot from CI attributes (exclude relations, keep flat data)
+      const snapshot: Record<string, unknown> = {};
+      const excludeKeys = new Set([
+        'tenant', 'category', 'asset', 'agent', 'ciClass', 'lifecycleStatus',
+        'operationalStatus', 'cmdbEnvironment', 'manufacturer', 'supportGroup',
+        'businessOwner', 'technicalOwner', 'sourceRels', 'targetRels',
+        'changeRecords', 'ticketLinks', 'serverExt', 'applicationExt',
+        'databaseExt', 'networkDeviceExt', 'cloudResourceExt', 'endpointExt',
+        'serviceExt', 'cmdbChangeLinks', 'cmdbIncidentLinks', 'cmdbProblemLinks',
+        'attestations', 'duplicateCandidates1', 'duplicateCandidates2', 'hostedVMs',
+        'baselines',
+      ]);
+
+      for (const [key, value] of Object.entries(ci as Record<string, unknown>)) {
+        if (!excludeKeys.has(key)) {
+          snapshot[key] = value;
+        }
+      }
+
+      const baseline = await prisma.cmdbBaseline.create({
+        data: {
+          tenantId,
+          ciId: id,
+          name: (body.name as string).trim(),
+          snapshot,
+          createdById: userId,
+        },
+      });
+
+      return reply.status(201).send(baseline);
+    },
+  );
+
+  // ─── GET /api/v1/cmdb/cis/:id/baselines — List baselines ───────────────────
+
+  fastify.get(
+    '/api/v1/cmdb/cis/:id/baselines',
+    { preHandler: [requirePermission('cmdb.view')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string };
+      const { tenantId } = user;
+      const { id } = request.params as { id: string };
+
+      const baselines = await prisma.cmdbBaseline.findMany({
+        where: { tenantId, ciId: id },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return reply.status(200).send(baselines);
+    },
+  );
+
+  // ─── GET /api/v1/cmdb/cis/:id/baselines/:baselineId/compare — Compare ──────
+
+  fastify.get(
+    '/api/v1/cmdb/cis/:id/baselines/:baselineId/compare',
+    { preHandler: [requirePermission('cmdb.view')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string };
+      const { tenantId } = user;
+      const { id, baselineId } = request.params as { id: string; baselineId: string };
+
+      const baseline = await prisma.cmdbBaseline.findFirst({
+        where: { id: baselineId, tenantId, ciId: id },
+      });
+
+      if (!baseline) {
+        return reply.status(404).send({ error: 'Baseline not found' });
+      }
+
+      const ci = await getCI(tenantId, id);
+      if (!ci) {
+        return reply.status(404).send({ error: 'CI not found' });
+      }
+
+      // Compare snapshot to current CI state
+      const snapshotData = baseline.snapshot as Record<string, unknown>;
+      const currentData = ci as Record<string, unknown>;
+      const differences: Array<{ field: string; baseline: unknown; current: unknown }> = [];
+
+      const allKeys = new Set([...Object.keys(snapshotData), ...Object.keys(currentData)]);
+      const excludeKeys = new Set([
+        'tenant', 'category', 'asset', 'agent', 'ciClass', 'lifecycleStatus',
+        'operationalStatus', 'cmdbEnvironment', 'manufacturer', 'supportGroup',
+        'businessOwner', 'technicalOwner', 'sourceRels', 'targetRels',
+        'changeRecords', 'ticketLinks', 'serverExt', 'applicationExt',
+        'databaseExt', 'networkDeviceExt', 'cloudResourceExt', 'endpointExt',
+        'serviceExt', 'cmdbChangeLinks', 'cmdbIncidentLinks', 'cmdbProblemLinks',
+        'attestations', 'duplicateCandidates1', 'duplicateCandidates2', 'hostedVMs',
+        'baselines', 'updatedAt',
+      ]);
+
+      for (const key of allKeys) {
+        if (excludeKeys.has(key)) continue;
+        const baselineVal = snapshotData[key];
+        const currentVal = currentData[key];
+        if (JSON.stringify(baselineVal) !== JSON.stringify(currentVal)) {
+          differences.push({ field: key, baseline: baselineVal, current: currentVal });
+        }
+      }
+
+      return reply.status(200).send({
+        baseline: {
+          id: baseline.id,
+          name: baseline.name,
+          createdAt: baseline.createdAt,
+        },
+        totalDifferences: differences.length,
+        differences,
+      });
     },
   );
 }
