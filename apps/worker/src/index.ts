@@ -11,6 +11,7 @@ import { webhookDeliveryWorker } from './workers/webhook-delivery.js';
 import { webhookCleanupWorker } from './workers/webhook-cleanup.js';
 import { pushNotificationWorker } from './workers/push-notification.js';
 import { chatCleanupWorker } from './workers/chat-cleanup.js';
+import { problemDetectionWorker } from './workers/problem-detection.js';
 import {
   usageSnapshotQueue,
   trialExpiryQueue,
@@ -19,6 +20,7 @@ import {
   scheduledReportQueue,
   webhookCleanupQueue,
   chatCleanupQueue,
+  problemDetectionQueue,
 } from './queues/definitions.js';
 
 const workers = [
@@ -34,6 +36,7 @@ const workers = [
   { name: 'webhook-cleanup', worker: webhookCleanupWorker },
   { name: 'push-notification', worker: pushNotificationWorker },
   { name: 'chat-cleanup', worker: chatCleanupWorker },
+  { name: 'problem-detection', worker: problemDetectionWorker },
 ];
 
 // Schedule SLA breach check every minute
@@ -103,6 +106,16 @@ void chatCleanupQueue.add(
   {
     repeat: { pattern: '30 3 * * *' },
     jobId: 'chat-cleanup-repeatable',
+  },
+);
+
+// Schedule proactive problem detection daily at 4 AM UTC
+void problemDetectionQueue.add(
+  'detect-problems',
+  {},
+  {
+    repeat: { pattern: '0 4 * * *' },
+    jobId: 'problem-detection-repeatable',
   },
 );
 

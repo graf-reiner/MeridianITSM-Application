@@ -6,6 +6,7 @@ import { requirePermission } from '../../../plugins/rbac.js';
  * Problem Management Routes
  *
  * GET    /api/v1/problems                        — List problem tickets with incident counts
+ * GET    /api/v1/problems/detected               — List auto-detected problem patterns (SYSTEM notifications)
  * GET    /api/v1/problems/:id                    — Problem detail with linked incidents, CIs, root cause
  * PATCH  /api/v1/problems/:id/root-cause         — Update root cause, workaround, KB article link
  * GET    /api/v1/problems/:id/incidents           — List incidents linked to a problem
@@ -79,6 +80,55 @@ export async function problemRoutes(fastify: FastifyInstance): Promise<void> {
 
       return reply.status(200).send({
         data: problems,
+        total,
+        page,
+        pageSize,
+        pageCount: Math.ceil(total / pageSize),
+      });
+    },
+  );
+
+  // ─── GET /api/v1/problems/detected — Auto-detected problem patterns ──────
+  // Must be registered before the :id parameter route to avoid route collision
+
+  fastify.get(
+    '/api/v1/problems/detected',
+    { preHandler: [requirePermission('tickets:read')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string; userId: string };
+      const { tenantId, userId } = user;
+
+      const query = request.query as { page?: string; pageSize?: string };
+      const page = Math.max(1, Number(query.page) || 1);
+      const pageSize = Math.min(100, Math.max(1, Number(query.pageSize) || 25));
+      const skip = (page - 1) * pageSize;
+
+      const where = {
+        tenantId,
+        userId,
+        type: 'SYSTEM' as const,
+        title: { contains: 'recurring problem' },
+      };
+
+      const [notifications, total] = await Promise.all([
+        prisma.notification.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: pageSize,
+          select: {
+            id: true,
+            title: true,
+            body: true,
+            isRead: true,
+            createdAt: true,
+          },
+        }),
+        prisma.notification.count({ where }),
+      ]);
+
+      return reply.status(200).send({
+        data: notifications,
         total,
         page,
         pageSize,

@@ -14,6 +14,7 @@ export const QUEUE_NAMES = {
   WEBHOOK_CLEANUP: 'webhook-cleanup',
   PUSH_NOTIFICATION: 'push-notification',
   CHAT_CLEANUP: 'chat-cleanup',
+  PROBLEM_DETECTION: 'problem-detection',
 } as const;
 
 export interface TenantJobData {
@@ -45,3 +46,4 @@ export const webhookDeliveryQueue = new Queue(QUEUE_NAMES.WEBHOOK_DELIVERY, { co
 export const webhookCleanupQueue = new Queue(QUEUE_NAMES.WEBHOOK_CLEANUP, { connection: bullmqConnection });
 export const pushNotificationQueue = new Queue(QUEUE_NAMES.PUSH_NOTIFICATION, { connection: bullmqConnection });
 export const chatCleanupQueue = new Queue(QUEUE_NAMES.CHAT_CLEANUP, { connection: bullmqConnection });
+export const problemDetectionQueue = new Queue(QUEUE_NAMES.PROBLEM_DETECTION, { connection: bullmqConnection });
