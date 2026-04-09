@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { SkeletonStatCards, SkeletonTable } from '@/components/Skeleton';
 import { useQuery } from '@tanstack/react-query';
 import Icon from '@mdi/react';
 import {
@@ -170,7 +171,12 @@ export default function ReportsPage() {
   });
 
   if (isLoading) {
-    return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading reports...</div>;
+    return (
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        <SkeletonStatCards count={4} />
+        <div style={{ marginTop: 32 }}><SkeletonTable rows={4} cols={3} /></div>
+      </div>
+    );
   }
 
   if (error || !stats) {

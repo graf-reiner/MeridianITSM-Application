@@ -10,6 +10,7 @@ import { scheduledReportWorker } from './workers/scheduled-report.js';
 import { webhookDeliveryWorker } from './workers/webhook-delivery.js';
 import { webhookCleanupWorker } from './workers/webhook-cleanup.js';
 import { pushNotificationWorker } from './workers/push-notification.js';
+import { chatCleanupWorker } from './workers/chat-cleanup.js';
 import {
   usageSnapshotQueue,
   trialExpiryQueue,
@@ -17,6 +18,7 @@ import {
   emailPollingQueue,
   scheduledReportQueue,
   webhookCleanupQueue,
+  chatCleanupQueue,
 } from './queues/definitions.js';
 
 const workers = [
@@ -31,6 +33,7 @@ const workers = [
   { name: 'webhook-delivery', worker: webhookDeliveryWorker },
   { name: 'webhook-cleanup', worker: webhookCleanupWorker },
   { name: 'push-notification', worker: pushNotificationWorker },
+  { name: 'chat-cleanup', worker: chatCleanupWorker },
 ];
 
 // Schedule SLA breach check every minute
@@ -89,7 +92,17 @@ void webhookCleanupQueue.add(
   {},
   {
     repeat: { pattern: '0 3 * * *' },
-    jobId: 'webhook-cleanup-repeatable', // Stable jobId prevents duplicate schedules on restart
+    jobId: 'webhook-cleanup-repeatable',
+  },
+);
+
+// Schedule AI chat conversation cleanup daily at 3:30 AM UTC
+void chatCleanupQueue.add(
+  'cleanup-conversations',
+  {},
+  {
+    repeat: { pattern: '30 3 * * *' },
+    jobId: 'chat-cleanup-repeatable',
   },
 );
 

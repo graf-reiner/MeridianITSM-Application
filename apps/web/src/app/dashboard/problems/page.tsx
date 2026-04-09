@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
+import { SkeletonTable } from '@/components/Skeleton';
 import {
   mdiAlertDecagramOutline,
   mdiPlus,
@@ -127,7 +128,7 @@ export default function ProblemsPage() {
 
       {/* Table */}
       {isLoading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading problems...</div>
+        <SkeletonTable rows={8} cols={6} />
       ) : problems.length === 0 ? (
         <div style={{ padding: 48, textAlign: 'center', border: '1px dashed var(--border-primary)', borderRadius: 12, backgroundColor: 'var(--bg-secondary)' }}>
           <Icon path={mdiAlertDecagramOutline} size={2} color="var(--text-muted)" style={{ opacity: 0.3 }} />

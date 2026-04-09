@@ -6,8 +6,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import DOMPurify from 'dompurify';
 import Icon from '@mdi/react';
+import Breadcrumb from '@/components/Breadcrumb';
 import {
-  mdiArrowLeft,
   mdiAlertDecagramOutline,
   mdiLinkVariant,
   mdiServerNetwork,
@@ -168,11 +168,12 @@ export default function ProblemDetailPage() {
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
-      {/* Header */}
+      {/* Breadcrumb + Header */}
+      <Breadcrumb items={[
+        { label: 'Problems', href: '/dashboard/problems' },
+        { label: `PRB-${String(problem.ticketNumber).padStart(5, '0')}` },
+      ]} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-        <Link href="/dashboard/problems" style={{ display: 'flex', color: 'var(--text-muted)' }}>
-          <Icon path={mdiArrowLeft} size={0.9} color="currentColor" />
-        </Link>
         <Icon path={mdiAlertDecagramOutline} size={1} color="var(--accent-primary)" />
         <span style={{ fontFamily: 'monospace', fontSize: 13, color: 'var(--text-muted)' }}>
           PRB-{String(problem.ticketNumber).padStart(5, '0')}

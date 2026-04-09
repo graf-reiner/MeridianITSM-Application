@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Icon from '@mdi/react';
+import Breadcrumb from '@/components/Breadcrumb';
 import {
   mdiAccountCircle,
   mdiContentSave,
@@ -123,6 +124,7 @@ export default function ProfilePage() {
 
   return (
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
+      <Breadcrumb items={[{ label: 'Settings', href: '/dashboard/settings' }, { label: 'My Profile' }]} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
         <Icon path={mdiAccountCircle} size={1.2} color="var(--accent-primary)" />
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>

@@ -5,9 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiEye, mdiThumbUpOutline, mdiTagOutline } from '@mdi/js';
+import { mdiEye, mdiThumbUpOutline, mdiTagOutline } from '@mdi/js';
 import ArticleEditor from '../../../../components/ArticleEditor';
 import RichTextField from '@/components/RichTextField';
+import Breadcrumb from '@/components/Breadcrumb';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -149,13 +150,11 @@ export default function ArticleDetailPage() {
 
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-      {/* Back link */}
-      <div style={{ marginBottom: 16 }}>
-        <Link href="/dashboard/knowledge" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', textDecoration: 'none', fontSize: 14 }}>
-          <Icon path={mdiArrowLeft} size={0.8} color="currentColor" />
-          Back to knowledge base
-        </Link>
-      </div>
+      {/* Breadcrumb */}
+      <Breadcrumb items={[
+        { label: 'Knowledge', href: '/dashboard/knowledge' },
+        { label: article.title },
+      ]} />
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: 16, alignItems: 'start' }}>
 

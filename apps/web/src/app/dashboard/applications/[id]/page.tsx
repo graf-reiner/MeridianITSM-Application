@@ -6,7 +6,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
 import {
-  mdiArrowLeft,
   mdiApplicationCog,
   mdiLinkVariant,
   mdiFileDocument,
@@ -15,8 +14,8 @@ import {
   mdiPlus,
   mdiAlertCircle,
   mdiOpenInNew,
-  mdiChevronRight,
 } from '@mdi/js';
+import Breadcrumb from '@/components/Breadcrumb';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -290,15 +289,11 @@ export default function ApplicationDetailPage() {
 
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-      {/* Back */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-        <Link href="/dashboard/applications" style={{ color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13 }}>
-          <Icon path={mdiArrowLeft} size={0.8} color="currentColor" />
-          Application Portfolio
-        </Link>
-        <Icon path={mdiChevronRight} size={0.7} color="var(--text-placeholder)" />
-        <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 600 }}>{app.name}</span>
-      </div>
+      {/* Breadcrumb */}
+      <Breadcrumb items={[
+        { label: 'Applications', href: '/dashboard/applications' },
+        { label: app.name },
+      ]} />
 
       {/* Header */}
       <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: '18px 22px', marginBottom: 16 }}>

@@ -5,9 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiPaperclip, mdiSend, mdiAccountCircle, mdiClockOutline, mdiCloudUploadOutline, mdiPlus, mdiLinkVariant, mdiMerge, mdiEyeOutline, mdiEyeOffOutline, mdiCheckDecagram, mdiClose } from '@mdi/js';
+import { mdiPaperclip, mdiSend, mdiAccountCircle, mdiClockOutline, mdiCloudUploadOutline, mdiPlus, mdiLinkVariant, mdiMerge, mdiEyeOutline, mdiEyeOffOutline, mdiCheckDecagram, mdiClose } from '@mdi/js';
 import CannedResponsePicker from '@/components/CannedResponsePicker';
 import RichTextField from '@/components/RichTextField';
+import Breadcrumb from '@/components/Breadcrumb';
 import SlaCountdown from '../../../../components/SlaCountdown';
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import { UnsavedChangesToast } from '@/components/UnsavedChangesToast';
@@ -578,13 +579,11 @@ export default function TicketDetailPage() {
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
 
-      {/* ── Back link ─────────────────────────────────────────────────────────── */}
-      <div style={{ marginBottom: 16 }}>
-        <Link href="/dashboard/tickets" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', textDecoration: 'none', fontSize: 14 }}>
-          <Icon path={mdiArrowLeft} size={0.8} color="currentColor" />
-          Back to tickets
-        </Link>
-      </div>
+      {/* ── Breadcrumb ──────────────────────────────────────────────────────── */}
+      <Breadcrumb items={[
+        { label: 'Tickets', href: '/dashboard/tickets' },
+        { label: ticket.ticketNumber },
+      ]} />
 
       {/* ── Header ────────────────────────────────────────────────────────────── */}
       <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: 24, marginBottom: 16 }}>

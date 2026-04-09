@@ -24,6 +24,7 @@ import {
   mdiClipboardTextOutline,
 } from '@mdi/js';
 import { usePlan } from '@/hooks/usePlan';
+import GlobalSearch from '@/components/GlobalSearch';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -404,6 +405,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         }
       `}</style>
       <MobileLauncherModal />
+      <GlobalSearch />
     </div>
     </ThemeProvider>
   );

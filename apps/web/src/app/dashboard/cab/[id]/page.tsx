@@ -1,13 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Icon from '@mdi/react';
 import {
   mdiAccountGroup,
-  mdiArrowLeft,
   mdiCalendarExport,
   mdiVideoOutline,
   mdiMapMarkerOutline,
@@ -18,6 +17,7 @@ import {
   mdiSwapHorizontal,
   mdiAccountPlus,
 } from '@mdi/js';
+import Breadcrumb from '@/components/Breadcrumb';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -280,7 +280,6 @@ function VotingButtons({
 
 export default function CABMeetingDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const queryClient = useQueryClient();
   const id = params.id as string;
 
@@ -312,16 +311,12 @@ export default function CABMeetingDetailPage() {
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
 
-      {/* ── Back + Header ─────────────────────────────────────────────────────── */}
+      {/* ── Breadcrumb + Header ──────────────────────────────────────────────── */}
+      <Breadcrumb items={[
+        { label: 'CAB Meetings', href: '/dashboard/cab' },
+        { label: meeting.title },
+      ]} />
       <div style={{ marginBottom: 20 }}>
-        <button
-          onClick={() => router.back()}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14, padding: 0, marginBottom: 12 }}
-        >
-          <Icon path={mdiArrowLeft} size={0.8} color="currentColor" />
-          Back to CAB Meetings
-        </button>
-
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>
             <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
