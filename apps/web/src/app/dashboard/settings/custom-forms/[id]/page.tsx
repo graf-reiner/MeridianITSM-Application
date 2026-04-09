@@ -120,6 +120,7 @@ interface CustomFormData {
   layoutJson: FormSection[] | null;
   mappingJson: FieldMapping | null;
   conditionsJson: FormCondition[] | null;
+  tenant?: { slug: string };
 }
 
 interface SelectOption {
