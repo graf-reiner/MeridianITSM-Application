@@ -61,7 +61,8 @@ export function VariableInput({
   return (
     <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6 }}>
       <input
-        ref={picker.inputRef as unknown as React.Ref<HTMLInputElement>}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ref={picker.inputRef as any}
         id={id}
         type="text"
         value={value}

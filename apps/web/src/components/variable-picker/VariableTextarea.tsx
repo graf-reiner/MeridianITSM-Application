@@ -51,7 +51,8 @@ export function VariableTextarea({
   return (
     <div style={{ position: 'relative' }}>
       <textarea
-        ref={picker.inputRef as unknown as React.Ref<HTMLTextAreaElement>}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ref={picker.inputRef as any}
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
