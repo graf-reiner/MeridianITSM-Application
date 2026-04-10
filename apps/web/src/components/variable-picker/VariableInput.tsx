@@ -61,7 +61,7 @@ export function VariableInput({
   return (
     <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6 }}>
       <input
-        ref={picker.inputRef as React.Ref<HTMLInputElement>}
+        ref={picker.inputRef as unknown as React.Ref<HTMLInputElement>}
         id={id}
         type="text"
         value={value}

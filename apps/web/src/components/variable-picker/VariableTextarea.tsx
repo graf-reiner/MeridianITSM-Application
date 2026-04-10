@@ -51,7 +51,7 @@ export function VariableTextarea({
   return (
     <div style={{ position: 'relative' }}>
       <textarea
-        ref={picker.inputRef as React.Ref<HTMLTextAreaElement>}
+        ref={picker.inputRef as unknown as React.Ref<HTMLTextAreaElement>}
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
