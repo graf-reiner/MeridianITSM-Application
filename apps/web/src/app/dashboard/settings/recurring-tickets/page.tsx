@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiArrowLeft, mdiUpdate, mdiPlus, mdiPencil, mdiTrashCan } from '@mdi/js';
+import { VariableInput, VariableTextarea } from '@/components/variable-picker';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -96,11 +97,24 @@ function RecurringTicketModal({ item, onClose, onSaved }: { item: RecurringTicke
           </div>
           <div style={{ marginBottom: 16 }}>
             <label htmlFor="title" style={labelStyle}>Ticket Title *</label>
-            <input id="title" type="text" value={title} onChange={(e) => setTitle(e.target.value)} required style={inputStyle} />
+            <VariableInput
+              id="title"
+              value={title}
+              onChange={setTitle}
+              context={['tenant', 'now']}
+              placeholder="e.g. Weekly Server Check — {{now.date}}"
+            />
           </div>
           <div style={{ marginBottom: 16 }}>
             <label htmlFor="description" style={labelStyle}>Ticket Description</label>
-            <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
+            <VariableTextarea
+              id="description"
+              value={description}
+              onChange={setDescription}
+              context={['tenant', 'now']}
+              placeholder="Type / to insert a variable (e.g. {{tenant.name}}, {{now.date}})"
+              rows={3}
+            />
           </div>
           <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
             <div style={{ flex: 1 }}>

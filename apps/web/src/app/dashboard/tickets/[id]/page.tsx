@@ -835,7 +835,10 @@ export default function TicketDetailPage() {
                       <option value="PUBLIC">Public</option>
                       <option value="INTERNAL">Internal</option>
                     </select>
-                    <CannedResponsePicker onSelect={(content) => setCommentBody(prev => prev ? prev + content : content)} />
+                    <CannedResponsePicker
+                      ticketId={ticketId}
+                      onSelect={(content) => setCommentBody(prev => prev ? prev + content : content)}
+                    />
                     <button
                       onClick={() => void handleAddComment()}
                       disabled={commentSubmitting || !commentBody.trim()}

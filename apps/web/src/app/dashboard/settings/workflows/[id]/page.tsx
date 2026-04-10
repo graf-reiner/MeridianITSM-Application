@@ -23,6 +23,8 @@ import '@xyflow/react/dist/style.css';
 import dagre from '@dagrejs/dagre';
 import Icon from '@mdi/react';
 import { mdiArrowLeft, mdiContentSave, mdiCheckCircle, mdiRocketLaunch, mdiPlay, mdiMagnify, mdiAutoFix } from '@mdi/js';
+import { VariableInput, VariableTextarea } from '@/components/variable-picker';
+import type { VariableContextKey } from '@meridian/core/template';
 import Link from 'next/link';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -36,7 +38,7 @@ interface NodeDef {
   color: string;
   inputs: Array<{ id: string; label: string; type: string }>;
   outputs: Array<{ id: string; label: string; type: string }>;
-  configSchema: Array<{ key: string; label: string; type: string; required?: boolean; placeholder?: string; helpText?: string; options?: Array<{ label: string; value: string }>; defaultValue?: unknown }>;
+  configSchema: Array<{ key: string; label: string; type: string; required?: boolean; placeholder?: string; helpText?: string; options?: Array<{ label: string; value: string }>; defaultValue?: unknown; variableContext?: string[] }>;
 }
 
 interface WorkflowData {
@@ -615,7 +617,22 @@ export default function WorkflowBuilderPage() {
                   {field.label}{field.required ? ' *' : ''}
                 </label>
 
-                {field.type === 'select' ? (
+                {field.variableContext && field.type === 'textarea' ? (
+                  <VariableTextarea
+                    value={String((selectedNode.data as any).config?.[field.key] ?? '')}
+                    onChange={(v) => updateNodeConfig(selectedNode.id, field.key, v)}
+                    context={field.variableContext as VariableContextKey[]}
+                    placeholder={field.placeholder}
+                    rows={3}
+                  />
+                ) : field.variableContext && field.type === 'text' ? (
+                  <VariableInput
+                    value={String((selectedNode.data as any).config?.[field.key] ?? '')}
+                    onChange={(v) => updateNodeConfig(selectedNode.id, field.key, v)}
+                    context={field.variableContext as VariableContextKey[]}
+                    placeholder={field.placeholder}
+                  />
+                ) : field.type === 'select' ? (
                   <select
                     value={String((selectedNode.data as any).config?.[field.key] ?? field.defaultValue ?? '')}
                     onChange={e => updateNodeConfig(selectedNode.id, field.key, e.target.value)}

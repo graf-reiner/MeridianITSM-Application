@@ -24,3 +24,4 @@ export {
   isFeatureResource,
   getLimitKey,
 } from './plan-config.js';
+export * from './template/index.js';

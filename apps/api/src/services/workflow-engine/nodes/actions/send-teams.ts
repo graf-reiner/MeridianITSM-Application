@@ -13,8 +13,8 @@ registerNode({
   outputs: [{ id: 'out', label: 'Next', type: 'default' }],
   configSchema: [
     { key: 'alertChannelId', label: 'Channel ID', type: 'text', placeholder: 'Teams channel webhook URL' },
-    { key: 'title', label: 'Title', type: 'text', placeholder: 'Card title with {{variables}}' },
-    { key: 'body', label: 'Body', type: 'textarea', placeholder: 'Card body with {{variables}}' },
+    { key: 'title', label: 'Title', type: 'text', placeholder: 'Type / to insert a variable', variableContext: ['ticket', 'requester', 'assignee', 'tenant', 'now'] },
+    { key: 'body', label: 'Body', type: 'textarea', placeholder: 'Type / to insert a variable', variableContext: ['ticket', 'requester', 'assignee', 'tenant', 'now'] },
   ],
   execute: async (config: Record<string, unknown>, context: ExecutionContext): Promise<NodeResult> => {
     if (context.isSimulation) {

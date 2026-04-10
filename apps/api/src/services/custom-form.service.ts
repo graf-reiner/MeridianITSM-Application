@@ -1,4 +1,5 @@
 import { prisma } from '@meridian/db';
+import { renderTemplate } from '@meridian/core';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -82,14 +83,57 @@ export function evaluateFormConditions(
 
 // ─── Helper: Interpolate template strings with field values ─────────────────
 
+/**
+ * Legacy pre-pass: rewrites raw `{{<field-instance-uuid>}}` tokens
+ * inline with their current submission value. Kept here so un-migrated
+ * forms continue to render correctly while the one-shot
+ * `migrate-form-templates.ts` script is rolled out across tenants.
+ * After migration, templates use `{{field.<key>}}` which the shared
+ * renderTemplate() handles natively — this pre-pass then becomes a no-op.
+ */
+function substituteLegacyUuidTokens(
+  template: string,
+  valuesByInstanceId: Record<string, unknown>,
+): string {
+  return template.replace(/\{\{([0-9a-f-]{36})\}\}/gi, (match, uuid: string) => {
+    if (!(uuid in valuesByInstanceId)) return match; // leave unknown UUID alone
+    const value = valuesByInstanceId[uuid];
+    if (value === null || value === undefined) return '';
+    return Array.isArray(value) ? value.join(', ') : String(value);
+  });
+}
+
+/**
+ * Renders a custom-form template string using the unified engine.
+ * Accepts a fully-built context with `field.<key>`, `form.*`, and
+ * `submission.*` paths, plus the raw values-by-instance-id map for the
+ * legacy UUID pre-pass.
+ */
+export function renderFormTemplate(
+  template: string,
+  context: {
+    field: Record<string, unknown>;
+    form: { name: string; slug: string };
+    submission: { date: string; submitterEmail: string | null };
+  },
+  valuesByInstanceId: Record<string, unknown>,
+): string {
+  const legacyReplaced = substituteLegacyUuidTokens(template, valuesByInstanceId);
+  return renderTemplate(legacyReplaced, context as unknown as Record<string, unknown>);
+}
+
+/**
+ * @deprecated Kept for backwards compatibility with callers that still
+ * expect the old `{ [instanceId]: { label, value } }` shape. New code
+ * should use `renderFormTemplate()`.
+ */
 export function interpolateTemplate(
   template: string,
   fieldValues: Record<string, { label: string; value: unknown }>,
 ): string {
-  return template.replace(/\{\{(\w+)\}\}/g, (_, fieldId) => {
-    const field = fieldValues[fieldId];
-    return field ? String(field.value ?? '') : '';
-  });
+  const rawValues: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(fieldValues)) rawValues[k] = v.value;
+  return substituteLegacyUuidTokens(template, rawValues);
 }
 
 // ─── Resolve form layout for rendering ──────────────────────────────────────
@@ -153,6 +197,7 @@ export async function resolveFormForRendering(
 export async function buildTicketDataFromForm(
   form: {
     name: string;
+    slug?: string;
     ticketType: string;
     layoutJson: unknown;
     mappingJson: unknown;
@@ -169,6 +214,9 @@ export async function buildTicketDataFromForm(
   },
   values: Record<string, unknown>,
   tenantId: string,
+  submissionMeta?: {
+    submitterEmail?: string | null;
+  },
 ) {
   const layout = form.layoutJson as unknown as LayoutJson;
   const mapping = (form.mappingJson ?? {}) as Record<string, string>;
@@ -237,22 +285,26 @@ export async function buildTicketDataFromForm(
     }
   }
 
-  // Build fieldValues lookup for templates
-  const fieldValues: Record<
-    string,
-    { label: string; value: unknown }
-  > = {};
-  for (const [instanceId, fieldInfo] of fieldInstanceMap) {
-    fieldValues[instanceId] = {
-      label: fieldInfo.label,
-      value: values[instanceId],
-    };
+  // Build the unified template context addressed by `field.<key>`,
+  // `form.*`, and `submission.*`. Stable field keys come from
+  // FieldDefinition.key, NOT from the volatile instance UUIDs.
+  const fieldContext: Record<string, unknown> = {};
+  for (const [instanceId, info] of fieldInstanceMap) {
+    if (info.def.key) fieldContext[info.def.key] = values[instanceId];
   }
+  const templateContext = {
+    field: fieldContext,
+    form: { name: form.name, slug: form.slug ?? '' },
+    submission: {
+      date: new Date().toISOString().slice(0, 10),
+      submitterEmail: submissionMeta?.submitterEmail ?? null,
+    },
+  };
 
   // Determine title
   let title: string | undefined;
   if (form.titleTemplate) {
-    title = interpolateTemplate(form.titleTemplate, fieldValues);
+    title = renderFormTemplate(form.titleTemplate, templateContext, values);
   } else if (mapping.title) {
     title = String(values[mapping.title] ?? '');
   } else {
@@ -280,9 +332,10 @@ export async function buildTicketDataFromForm(
   // Determine description
   let description: string | undefined;
   if (form.descriptionTemplate) {
-    description = interpolateTemplate(
+    description = renderFormTemplate(
       form.descriptionTemplate,
-      fieldValues,
+      templateContext,
+      values,
     );
   } else if (mapping.description) {
     description = String(values[mapping.description] ?? '');

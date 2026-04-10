@@ -18,6 +18,13 @@ interface CannedResponse {
 
 interface CannedResponsePickerProps {
   onSelect: (content: string) => void;
+  /**
+   * When provided, the picker asks the API to render the canned response
+   * with ticket context before calling `onSelect`. Variables like
+   * `{{ticket.number}}` and `{{requester.firstName}}` get substituted
+   * server-side so the comment box receives ready-to-post text.
+   */
+  ticketId?: string;
 }
 
 /** Strip HTML tags for plain-text preview (no dangerouslySetInnerHTML needed). */
@@ -25,7 +32,7 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, '').trim();
 }
 
-export default function CannedResponsePicker({ onSelect }: CannedResponsePickerProps) {
+export default function CannedResponsePicker({ onSelect, ticketId }: CannedResponsePickerProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -151,8 +158,26 @@ export default function CannedResponsePicker({ onSelect }: CannedResponsePickerP
                   return (
                     <button
                       key={item.id}
-                      onClick={() => {
-                        onSelect(item.content);
+                      onClick={async () => {
+                        // If the caller gave us a ticketId, ask the server
+                        // to render `{{ticket.*}}`, `{{requester.*}}`, etc.
+                        // Otherwise insert the raw template for the user.
+                        let content = item.content;
+                        if (ticketId) {
+                          try {
+                            const res = await fetch(
+                              `/api/v1/canned-responses/${item.id}/rendered?ticketId=${ticketId}`,
+                              { credentials: 'include' },
+                            );
+                            if (res.ok) {
+                              const data = (await res.json()) as { content: string };
+                              content = data.content;
+                            }
+                          } catch {
+                            // Fall back to raw template on network failure
+                          }
+                        }
+                        onSelect(content);
                         setOpen(false);
                         setSearch('');
                       }}

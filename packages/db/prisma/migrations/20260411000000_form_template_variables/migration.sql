@@ -1,0 +1,17 @@
+-- Form Template Variable Migration (marker — no schema change)
+--
+-- This migration has no DDL. It exists as a marker so the deployment
+-- pipeline records that form templates have been migrated to the new
+-- {{field.<key>}} syntax.
+--
+-- The actual data rewrite is performed by a TypeScript script:
+--   pnpm --filter @meridian/db tsx scripts/migrate-form-templates.ts
+--
+-- Why a separate script instead of raw SQL: the rewrite needs to join
+-- CustomFormField -> FieldDefinition to map each field instance UUID to
+-- its stable `fieldKey`, and walk the layoutJson structure per form —
+-- easier to express in application code than in Postgres DDL.
+--
+-- This marker file is intentionally empty so `prisma migrate deploy`
+-- records the migration as applied.
+SELECT 1;

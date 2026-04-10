@@ -217,32 +217,75 @@ export function evaluateConditionGroups(
 
 // ─── Template Renderer ───────────────────────────────────────────────────────
 
+import { renderTemplate as renderSharedTemplate } from "@meridian/core";
+
+/**
+ * Renders a notification-rule template using the shared `@meridian/core`
+ * engine. Builds a dual-shape context that exposes:
+ *
+ *   - **Flat legacy keys** — `{{ticketNumber}}`, `{{ticketTitle}}`,
+ *     `{{priority}}`, `{{status}}`, `{{assigneeName}}`, `{{requesterName}}`,
+ *     `{{queueName}}`, `{{categoryName}}`, `{{tenantName}}`, `{{timestamp}}`
+ *     so old templates (authored before the unified registry) keep working
+ *     without a data migration.
+ *
+ *   - **Nested paths** — `{{ticket.number}}`, `{{ticket.title}}`,
+ *     `{{ticket.priority}}`, `{{requester.displayName}}`,
+ *     `{{assignee.displayName}}`, `{{tenant.name}}`, `{{now.iso}}` —
+ *     these are the keys the variable picker UI offers going forward
+ *     and match the shared registry in @meridian/core.
+ *
+ * The single source of truth is the shared engine in @meridian/core;
+ * this wrapper only assembles the context object.
+ */
 export function renderTemplate(template: string, context: EventContext): string {
-  return template.replace(/\{\{(\w+)\}\}/g, (_match, variable: string) => {
-    switch (variable) {
-      case "ticketNumber":
-        return context.ticket?.ticketNumber?.toString() ?? "";
-      case "ticketTitle":
-        return context.ticket?.title ?? "";
-      case "priority":
-        return context.ticket?.priority ?? "";
-      case "status":
-        return context.ticket?.status ?? "";
-      case "assigneeName":
-        return (context.ticket?.assigneeName as string | undefined) ?? "";
-      case "requesterName":
-        return (context.ticket?.requesterName as string | undefined) ?? "";
-      case "queueName":
-        return (context.ticket?.queueName as string | undefined) ?? "";
-      case "categoryName":
-        return (context.ticket?.categoryName as string | undefined) ?? "";
-      case "tenantName":
-        return (context.tenantName as string | undefined) ?? "";
-      case "timestamp":
-        return new Date().toISOString();
-      default:
-        // Try direct context field
-        return context[variable] != null ? String(context[variable]) : "";
-    }
-  });
+  const t: Record<string, unknown> = (context.ticket ?? {}) as Record<string, unknown>;
+  const now = new Date();
+  const ticketNumber = typeof t.ticketNumber === 'number' ? t.ticketNumber.toString() : '';
+  const title = typeof t.title === 'string' ? t.title : '';
+  const priority = typeof t.priority === 'string' ? t.priority : '';
+  const status = typeof t.status === 'string' ? t.status : '';
+  const assigneeName = typeof t.assigneeName === 'string' ? t.assigneeName : '';
+  const requesterName = typeof t.requesterName === 'string' ? t.requesterName : '';
+  const queueName = typeof t.queueName === 'string' ? t.queueName : '';
+  const categoryName = typeof t.categoryName === 'string' ? t.categoryName : '';
+  const tenantName = typeof context.tenantName === 'string' ? context.tenantName : '';
+
+  // Dual-shape context: flat legacy keys AND nested paths.
+  const ctx: Record<string, unknown> = {
+    // flat legacy
+    ticketNumber,
+    ticketTitle: title,
+    priority,
+    status,
+    assigneeName,
+    requesterName,
+    queueName,
+    categoryName,
+    tenantName,
+    timestamp: now.toISOString(),
+    // nested (picker registry paths)
+    ticket: {
+      number: ticketNumber,
+      title,
+      priority,
+      status,
+      category: categoryName,
+      queue: queueName,
+    },
+    requester: { displayName: requesterName },
+    assignee: { displayName: assigneeName },
+    tenant: { name: tenantName },
+    now: {
+      iso: now.toISOString(),
+      date: now.toISOString().slice(0, 10),
+      time: now.toISOString().slice(11, 16),
+    },
+  };
+  // Also expose every direct context field as a top-level legacy key
+  // (some callers pass extras like `slaPolicy`, `breachType`, etc.)
+  for (const [k, v] of Object.entries(context)) {
+    if (ctx[k] === undefined) ctx[k] = v;
+  }
+  return renderSharedTemplate(template, ctx);
 }

@@ -1,6 +1,7 @@
 import { registerNode } from '../../node-registry.js';
 import type { ExecutionContext, NodeResult } from '../../types.js';
 import { prisma } from '@meridian/db';
+import { renderTemplate as renderNotificationTemplate } from '../../../notification-rules-conditions.js';
 
 registerNode({
   type: 'action_add_comment',
@@ -12,7 +13,7 @@ registerNode({
   inputs: [{ id: 'in', label: 'Input', type: 'default' }],
   outputs: [{ id: 'out', label: 'Next', type: 'default' }],
   configSchema: [
-    { key: 'content', label: 'Comment Content', type: 'textarea', required: true, placeholder: 'Comment text with {{variables}}' },
+    { key: 'content', label: 'Comment Content', type: 'textarea', required: true, placeholder: 'Type / to insert a variable', variableContext: ['ticket', 'requester', 'assignee', 'tenant', 'now'] },
     {
       key: 'visibility',
       label: 'Visibility',
@@ -34,7 +35,11 @@ registerNode({
       return { success: false, error: 'No ticket in context' };
     }
 
-    const content = config.content as string;
+    // Render template variables in the comment content (ticket, requester, etc.)
+    const content = renderNotificationTemplate(
+      (config.content as string) ?? '',
+      context.eventContext,
+    );
     const visibility = (config.visibility as string) ?? 'INTERNAL';
 
     // Use the actor from event context, or the ticket requester as fallback

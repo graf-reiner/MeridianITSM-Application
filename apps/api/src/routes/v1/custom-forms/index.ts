@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '@meridian/db';
 import { createTicket } from '../../../services/ticket.service.js';
+import { renderFormTemplate } from '../../../services/custom-form.service.js';
 
 // ─── Helper: Generate URL-friendly slug from name ───────────────────────────
 
@@ -64,17 +65,8 @@ function evaluateFormConditions(
   return hiddenFields;
 }
 
-// ─── Helper: Interpolate template strings with field values ─────────────────
-
-function interpolateTemplate(
-  template: string,
-  fieldValues: Record<string, { label: string; value: unknown }>,
-): string {
-  return template.replace(/\{\{(\w+)\}\}/g, (_, fieldId) => {
-    const field = fieldValues[fieldId];
-    return field ? String(field.value ?? '') : '';
-  });
-}
+// Template interpolation is owned by custom-form.service (renderFormTemplate);
+// we import it above and build the context in-place at each submission site.
 
 // ─── Layout type helpers ────────────────────────────────────────────────────
 
@@ -362,10 +354,25 @@ export async function customFormRoutes(
         };
       }
 
+      // Unified template context — see custom-form.service.renderFormTemplate
+      // for how it's consumed. Paths exposed: field.<key>, form.*, submission.*
+      const fieldContext: Record<string, unknown> = {};
+      for (const [instanceId, info] of fieldInstanceMap) {
+        if (info.def.key) fieldContext[info.def.key] = values[instanceId];
+      }
+      const templateContext = {
+        field: fieldContext,
+        form: { name: form.name, slug: form.slug },
+        submission: {
+          date: new Date().toISOString().slice(0, 10),
+          submitterEmail: null as string | null,
+        },
+      };
+
       // Determine title
       let title: string | undefined;
       if (form.titleTemplate) {
-        title = interpolateTemplate(form.titleTemplate, fieldValues);
+        title = renderFormTemplate(form.titleTemplate, templateContext, values);
       } else if (mapping.title) {
         title = String(values[mapping.title] ?? '');
       } else {
@@ -393,9 +400,10 @@ export async function customFormRoutes(
       // Determine description
       let description: string | undefined;
       if (form.descriptionTemplate) {
-        description = interpolateTemplate(
+        description = renderFormTemplate(
           form.descriptionTemplate,
-          fieldValues,
+          templateContext,
+          values,
         );
       } else if (mapping.description) {
         description = String(values[mapping.description] ?? '');

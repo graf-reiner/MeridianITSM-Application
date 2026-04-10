@@ -4,6 +4,7 @@
 
 import { Queue, Worker, type Job } from 'bullmq';
 import { prisma } from '@meridian/db';
+import { renderTemplate } from '@meridian/core';
 import { redis } from '../lib/redis.js';
 import { getNextCronDate } from '../services/cron.service.js';
 
@@ -43,13 +44,31 @@ export const recurringTicketWorker = new Worker(
         `;
         const ticketNumber = result[0].next;
 
+        // Build a template context so recurring tickets can embed
+        // `{{now.date}}`, `{{tenant.name}}`, etc. in their title/description.
+        const tenant = await prisma.tenant.findUnique({
+          where: { id: item.tenantId },
+          select: { name: true, subdomain: true },
+        });
+        const nowForTemplate = new Date();
+        const templateContext: Record<string, unknown> = {
+          tenant: { name: tenant?.name ?? '', subdomain: tenant?.subdomain ?? '' },
+          now: {
+            iso: nowForTemplate.toISOString(),
+            date: nowForTemplate.toISOString().slice(0, 10),
+            time: nowForTemplate.toISOString().slice(11, 16),
+          },
+        };
+        const renderedTitle = renderTemplate(item.title, templateContext);
+        const renderedDescription = renderTemplate(item.description ?? '', templateContext);
+
         // Create the ticket
         const ticket = await prisma.ticket.create({
           data: {
             tenantId: item.tenantId,
             ticketNumber,
-            title: item.title,
-            description: item.description,
+            title: renderedTitle,
+            description: renderedDescription,
             type: item.type,
             priority: item.priority,
             status: 'NEW',

@@ -58,6 +58,14 @@ export interface FieldSchema {
   helpText?: string;
   options?: Array<{ label: string; value: string }>;
   defaultValue?: unknown;
+  /**
+   * When set, the workflow builder renders this field with the variable
+   * picker (`<VariableInput>` or `<VariableTextarea>`) instead of a
+   * plain input. The values are the catalog keys from
+   * `@meridian/core`'s `VariableContextKey` — e.g.
+   * `['ticket', 'requester', 'tenant', 'now']`.
+   */
+  variableContext?: string[];
 }
 
 // ─── Execution Types ────────────────────────────────────────────────────────

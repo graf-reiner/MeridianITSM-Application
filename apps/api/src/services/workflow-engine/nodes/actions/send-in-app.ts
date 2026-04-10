@@ -22,8 +22,8 @@ registerNode({
         { label: 'Group Members', value: 'group_members' },
       ],
     },
-    { key: 'title', label: 'Title', type: 'text', placeholder: 'Notification title with {{variables}}' },
-    { key: 'body', label: 'Body', type: 'textarea', placeholder: 'Notification body with {{variables}}' },
+    { key: 'title', label: 'Title', type: 'text', placeholder: 'Type / to insert a variable', variableContext: ['ticket', 'requester', 'assignee', 'tenant', 'now'] },
+    { key: 'body', label: 'Body', type: 'textarea', placeholder: 'Type / to insert a variable', variableContext: ['ticket', 'requester', 'assignee', 'tenant', 'now'] },
   ],
   execute: async (config: Record<string, unknown>, context: ExecutionContext): Promise<NodeResult> => {
     if (context.isSimulation) {

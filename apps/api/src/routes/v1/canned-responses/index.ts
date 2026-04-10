@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '@meridian/db';
+import { renderTemplate } from '@meridian/core';
 
 /**
  * Canned Response / Quick Reply REST API routes.
@@ -200,6 +201,95 @@ export async function cannedResponseRoutes(fastify: FastifyInstance): Promise<vo
 
     return reply.status(200).send(updated);
   });
+
+  // ─── GET /api/v1/canned-responses/:id/rendered — Render with ticket context ─
+
+  /**
+   * Returns the canned response content with `{{ticket.*}}`, `{{requester.*}}`,
+   * `{{assignee.*}}`, `{{tenant.*}}`, `{{now.*}}` tokens substituted.
+   * Requires `ticketId` query param so the server can load the right context.
+   * Used by the `CannedResponsePicker` when the user is inserting a response
+   * into a specific ticket comment.
+   */
+  fastify.get(
+    '/api/v1/canned-responses/:id/rendered',
+    async (request, reply) => {
+      const user = request.user as { tenantId: string };
+      const { id } = request.params as { id: string };
+      const { ticketId } = request.query as { ticketId?: string };
+
+      if (!ticketId) {
+        return reply.status(400).send({ error: 'ticketId query parameter is required' });
+      }
+
+      const response = await prisma.cannedResponse.findFirst({
+        where: { id, tenantId: user.tenantId },
+      });
+      if (!response) {
+        return reply.status(404).send({ error: 'Canned response not found' });
+      }
+
+      const ticket = await prisma.ticket.findFirst({
+        where: { id: ticketId, tenantId: user.tenantId },
+        include: {
+          assignedTo: { select: { id: true, firstName: true, lastName: true, email: true } },
+          requestedBy: { select: { id: true, firstName: true, lastName: true, email: true } },
+          category: { select: { id: true, name: true } },
+          queue: { select: { id: true, name: true } },
+        },
+      });
+      if (!ticket) {
+        return reply.status(404).send({ error: 'Ticket not found' });
+      }
+
+      const tenant = await prisma.tenant.findFirst({
+        where: { id: user.tenantId },
+        select: { name: true, subdomain: true },
+      });
+
+      const now = new Date();
+      const ctx: Record<string, unknown> = {
+        ticket: {
+          number: `T-${ticket.ticketNumber}`,
+          title: ticket.title,
+          description: ticket.description ?? '',
+          status: ticket.status,
+          priority: ticket.priority,
+          type: ticket.type,
+          category: ticket.category?.name ?? '',
+          queue: ticket.queue?.name ?? '',
+          tags: (ticket.tags ?? []).join(', '),
+          createdAt: ticket.createdAt.toISOString(),
+          resolvedAt: ticket.resolvedAt?.toISOString() ?? '',
+        },
+        requester: ticket.requestedBy
+          ? {
+              firstName: ticket.requestedBy.firstName,
+              lastName: ticket.requestedBy.lastName,
+              displayName: `${ticket.requestedBy.firstName} ${ticket.requestedBy.lastName}`,
+              email: ticket.requestedBy.email,
+            }
+          : {},
+        assignee: ticket.assignedTo
+          ? {
+              firstName: ticket.assignedTo.firstName,
+              lastName: ticket.assignedTo.lastName,
+              displayName: `${ticket.assignedTo.firstName} ${ticket.assignedTo.lastName}`,
+              email: ticket.assignedTo.email,
+            }
+          : {},
+        tenant: { name: tenant?.name ?? '', subdomain: tenant?.subdomain ?? '' },
+        now: {
+          iso: now.toISOString(),
+          date: now.toISOString().slice(0, 10),
+          time: now.toISOString().slice(11, 16),
+        },
+      };
+
+      const rendered = renderTemplate(response.content, ctx);
+      return reply.status(200).send({ content: rendered });
+    },
+  );
 
   // ─── DELETE /api/v1/canned-responses/:id — Delete ──────────────────────────
 

@@ -13,6 +13,7 @@ import {
   mdiTrashCan,
 } from '@mdi/js';
 import RichTextField from '@/components/RichTextField';
+import { VariableRichEditor } from '@/components/variable-picker';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -404,12 +405,12 @@ function ActionCard({
           </div>
           <div style={{ marginTop: 12 }}>
             <label style={labelStyle}>Message Template</label>
-            <RichTextField
+            <VariableRichEditor
               value={action.messageTemplate ?? ''}
               onChange={(val) => update({ messageTemplate: val })}
-              placeholder="Use {{ticket.id}}, {{ticket.subject}}, etc."
-              minHeight={80}
-              compact
+              context={['ticket', 'requester', 'assignee', 'tenant', 'now']}
+              placeholder="Type / to insert a variable"
+              minHeight={100}
             />
           </div>
         </>
@@ -433,12 +434,12 @@ function ActionCard({
           </div>
           <div style={{ marginTop: 12 }}>
             <label style={labelStyle}>Message Template</label>
-            <RichTextField
+            <VariableRichEditor
               value={action.messageTemplate ?? ''}
               onChange={(val) => update({ messageTemplate: val })}
-              placeholder="Use {{ticket.id}}, {{ticket.subject}}, etc."
-              minHeight={80}
-              compact
+              context={['ticket', 'requester', 'assignee', 'tenant', 'now']}
+              placeholder="Type / to insert a variable"
+              minHeight={100}
             />
           </div>
         </>

@@ -20,6 +20,8 @@ import {
   mdiFormSelect,
   mdiAlertCircleOutline,
 } from '@mdi/js';
+import { VariableInput, VariableTextarea } from '@/components/variable-picker';
+import { getFormFieldVariables } from '@meridian/core/template';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -904,6 +906,21 @@ function MappingConfigTab({
 }) {
   const selectFields = allFields.filter(f => ['select', 'multiselect', 'radio'].includes(f.fieldType));
 
+  // Build dynamic per-form variables so the picker can offer
+  // `{{field.<key>}}` for every field currently on this form.
+  const dynamicVariables = useMemo(
+    () =>
+      getFormFieldVariables(
+        allFields.map((f) => ({
+          fieldKey: f.key,
+          label: f.labelOverride || f.label,
+          helpText: f.helpTextOverride ?? null,
+          fieldType: f.fieldType,
+        })),
+      ),
+    [allFields],
+  );
+
   const renderMappingSelect = (label: string, field: keyof FieldMapping, restrictToSelect?: boolean) => {
     const options = restrictToSelect ? selectFields : allFields;
     const value = mapping[field] as string | null;
@@ -927,37 +944,44 @@ function MappingConfigTab({
   return (
     <div style={{ padding: 16 }}>
       <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
-        Map form fields to ticket fields. Unmapped fields will be stored in ticket custom fields.
+        Map form fields to ticket fields. Use the templates below to combine multiple form fields into a single ticket field — type <code>/</code> or click the Variables button to insert a field reference.
       </div>
 
-      {renderMappingSelect('Title', 'title')}
-      {renderMappingSelect('Description', 'description')}
+      {renderMappingSelect('Title (simple mapping)', 'title')}
+      {renderMappingSelect('Description (simple mapping)', 'description')}
       {renderMappingSelect('Priority', 'priority', true)}
       {renderMappingSelect('Category', 'category', true)}
       {renderMappingSelect('Type', 'type', true)}
 
+      <div style={{ marginTop: 20, marginBottom: 10, paddingTop: 16, borderTop: '1px solid var(--border-primary)' }}>
+        <h4 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          Templates (multi-field)
+        </h4>
+        <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-placeholder)' }}>
+          If a template is set, it overrides the simple mapping above for that field. Combine multiple form answers into one ticket field using <code>{'{{field.<key>}}'}</code> tokens.
+        </p>
+      </div>
+
       <div style={{ marginBottom: 14 }}>
         <label style={labelStyle}>Title Template</label>
-        <input
-          type="text"
+        <VariableInput
           value={mapping.titleTemplate}
-          onChange={(e) => onUpdateMapping({ titleTemplate: e.target.value })}
-          placeholder="e.g. {{field_key}} request"
-          style={inputStyle}
+          onChange={(v) => onUpdateMapping({ titleTemplate: v })}
+          context={['form', 'submission']}
+          dynamicVariables={dynamicVariables}
+          placeholder="e.g. {{field.first_name}} — {{field.subject}}"
         />
-        <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, display: 'block' }}>
-          Use {'{{field_key}}'} to insert field values
-        </span>
       </div>
 
       <div style={{ marginBottom: 14 }}>
         <label style={labelStyle}>Description Template</label>
-        <textarea
+        <VariableTextarea
           value={mapping.descriptionTemplate}
-          onChange={(e) => onUpdateMapping({ descriptionTemplate: e.target.value })}
-          placeholder={'Submitted from {{form_name}}\\n{{submission_summary}}'}
-          rows={3}
-          style={{ ...inputStyle, resize: 'vertical' }}
+          onChange={(v) => onUpdateMapping({ descriptionTemplate: v })}
+          context={['form', 'submission']}
+          dynamicVariables={dynamicVariables}
+          placeholder="Submitted by {{field.first_name}}. Issue: {{field.issue_details}}"
+          rows={4}
         />
       </div>
     </div>

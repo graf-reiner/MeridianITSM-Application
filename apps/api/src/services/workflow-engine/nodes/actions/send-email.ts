@@ -23,8 +23,8 @@ registerNode({
       ],
     },
     { key: 'emails', label: 'Additional Emails', type: 'text', placeholder: 'comma-separated' },
-    { key: 'subject', label: 'Subject', type: 'text', required: true, placeholder: 'Ticket {{ticketNumber}}: {{ticketTitle}}' },
-    { key: 'body', label: 'Body', type: 'textarea', placeholder: 'Email body with {{variables}}' },
+    { key: 'subject', label: 'Subject', type: 'text', required: true, placeholder: 'Ticket {{ticket.number}}: {{ticket.title}}', variableContext: ['ticket', 'requester', 'assignee', 'tenant', 'now'] },
+    { key: 'body', label: 'Body', type: 'textarea', placeholder: 'Type / to insert a variable', variableContext: ['ticket', 'requester', 'assignee', 'tenant', 'now'] },
   ],
   execute: async (config: Record<string, unknown>, context: ExecutionContext): Promise<NodeResult> => {
     if (context.isSimulation) {

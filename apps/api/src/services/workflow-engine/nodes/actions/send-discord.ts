@@ -13,7 +13,7 @@ registerNode({
   outputs: [{ id: 'out', label: 'Next', type: 'default' }],
   configSchema: [
     { key: 'alertChannelId', label: 'Discord Channel', type: 'text', placeholder: 'Alert channel ID' },
-    { key: 'message', label: 'Message', type: 'textarea', placeholder: 'Discord message with {{variables}}' },
+    { key: 'message', label: 'Message', type: 'textarea', placeholder: 'Type / to insert a variable', variableContext: ['ticket', 'requester', 'assignee', 'tenant', 'now'] },
   ],
   execute: async (config: Record<string, unknown>, context: ExecutionContext): Promise<NodeResult> => {
     if (context.isSimulation) {

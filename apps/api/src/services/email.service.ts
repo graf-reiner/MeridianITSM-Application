@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import { ImapFlow } from 'imapflow';
 import { randomUUID } from 'node:crypto';
 import { prisma, PrismaClient } from '@meridian/db';
-import { decrypt } from '@meridian/core';
+import { decrypt, renderTemplate as renderSharedTemplate } from '@meridian/core';
 import { logEmailActivity } from './email-activity.service.js';
 
 // Derive EmailAccount type from PrismaClient inference to avoid direct @prisma/client dependency
@@ -178,13 +178,12 @@ export async function renderTemplate(
     );
   }
 
-  // Replace {{variableName}} placeholders
-  const substitute = (text: string): string =>
-    text.replace(/\{\{(\w+)\}\}/g, (_, key: string) => variables[key] ?? '');
-
+  // Shared template engine: supports dotted paths and falls back to ""
+  // for missing variables. HTML escaping is applied to the HTML body so
+  // user-supplied values can't inject markup into the email.
   return {
-    subject: substitute(subject),
-    html: substitute(htmlBody),
+    subject: renderSharedTemplate(subject, variables),
+    html: renderSharedTemplate(htmlBody, variables, { escapeHtml: true }),
   };
 }
 

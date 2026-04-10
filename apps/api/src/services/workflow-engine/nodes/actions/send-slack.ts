@@ -13,7 +13,7 @@ registerNode({
   outputs: [{ id: 'out', label: 'Next', type: 'default' }],
   configSchema: [
     { key: 'alertChannelId', label: 'Channel ID', type: 'text', placeholder: 'Slack channel ID' },
-    { key: 'message', label: 'Message', type: 'textarea', placeholder: 'Slack message with {{variables}}' },
+    { key: 'message', label: 'Message', type: 'textarea', placeholder: 'Type / to insert a variable', variableContext: ['ticket', 'requester', 'assignee', 'tenant', 'now'] },
   ],
   execute: async (config: Record<string, unknown>, context: ExecutionContext): Promise<NodeResult> => {
     if (context.isSimulation) {

@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiArrowLeft, mdiTextBoxMultiple, mdiPlus, mdiPencil, mdiTrashCan } from '@mdi/js';
+import { VariableTextarea } from '@/components/variable-picker';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -74,7 +75,17 @@ function CannedResponseModal({ item, onClose, onSaved }: { item: CannedResponse 
           </div>
           <div style={{ marginBottom: 16 }}>
             <label htmlFor="content" style={labelStyle}>Content *</label>
-            <textarea id="content" value={content} onChange={(e) => setContent(e.target.value)} required rows={5} style={{ ...inputStyle, resize: 'vertical' }} />
+            <VariableTextarea
+              id="content"
+              value={content}
+              onChange={setContent}
+              context={['ticket', 'requester', 'assignee', 'tenant', 'now']}
+              placeholder="Type / to insert a variable like {{requester.firstName}} or {{ticket.number}}"
+              rows={5}
+            />
+            <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-placeholder)' }}>
+              Variables are substituted when the canned response is inserted into a ticket comment.
+            </p>
           </div>
           <div style={{ marginBottom: 16 }}>
             <label htmlFor="shortcut" style={labelStyle}>Shortcut</label>
