@@ -73,6 +73,8 @@ queues: id(uuid PK), "tenantId"(uuid FK→tenants), name(text), description(text
 
 slas: id(uuid PK), "tenantId"(uuid FK→tenants), name(text), description(text), "businessHoursStart"(text), "businessHoursEnd"(text), "businessDays"(text[]), timezone(text), "isActive"(bool), "createdAt"(timestamptz)
 
+holidays: id(uuid PK), "tenantId"(uuid FK→tenants), date(date — the holiday date), name(text), recurring(bool — true means matches month-day every year, e.g. Christmas), "createdAt"(timestamptz) — used by SLA business-hours calc to skip working time on holidays
+
 categories: id(uuid PK), "tenantId"(uuid FK→tenants), name(text), description(text), "parentId"(uuid FK→categories self-ref), "createdAt"(timestamptz)
 
 -- CHANGE MANAGEMENT --
@@ -83,7 +85,7 @@ change_approvals: id(uuid PK), "tenantId"(uuid FK→tenants), "changeId"(uuid FK
 cab_meetings: id(uuid PK), "tenantId"(uuid FK→tenants), title(text), "scheduledAt"(timestamptz), status(SCHEDULED|IN_PROGRESS|COMPLETED|CANCELLED), notes(text), "createdAt"(timestamptz)
 
 -- KNOWLEDGE BASE --
-knowledge_articles: id(uuid PK), "tenantId"(uuid FK→tenants), "articleNumber"(int), title(text), summary(text), content(text — full article body), tags(text[]), visibility(PUBLIC|INTERNAL), status(DRAFT|IN_REVIEW|PUBLISHED|RETIRED), "authorId"(uuid FK→users), "viewCount"(int), "helpfulCount"(int), "publishedAt"(timestamptz), "createdAt"(timestamptz)
+knowledge_articles: id(uuid PK), "tenantId"(uuid FK→tenants), "articleNumber"(int), title(text), summary(text), content(text — full article body), tags(text[]), visibility(PUBLIC|INTERNAL), status(DRAFT|IN_REVIEW|PUBLISHED|RETIRED), "isKnownError"(bool — true marks the article as a Known Error in the KEDB), "authorId"(uuid FK→users), "viewCount"(int), "helpfulCount"(int), "publishedAt"(timestamptz), "createdAt"(timestamptz)
 
 ticket_knowledge_articles: id(uuid PK), "tenantId"(uuid FK→tenants), "ticketId"(uuid FK→tickets), "articleId"(uuid FK→knowledge_articles)
 

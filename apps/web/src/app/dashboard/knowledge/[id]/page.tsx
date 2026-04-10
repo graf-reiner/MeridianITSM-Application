@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
-import { mdiEye, mdiThumbUpOutline, mdiTagOutline } from '@mdi/js';
+import { mdiEye, mdiThumbUpOutline, mdiTagOutline, mdiAlertOctagonOutline } from '@mdi/js';
 import ArticleEditor from '../../../../components/ArticleEditor';
 import RichTextField from '@/components/RichTextField';
 import Breadcrumb from '@/components/Breadcrumb';
@@ -19,6 +19,7 @@ interface ArticleDetail {
   content: string;
   status: string;
   visibility: string;
+  isKnownError: boolean;
   tags: string[];
   viewCount: number;
   helpfulCount: number;
@@ -62,6 +63,7 @@ export default function ArticleDetailPage() {
   const [editContent, setEditContent] = useState('');
   const [editTags, setEditTags] = useState('');
   const [editVisibility, setEditVisibility] = useState<'PUBLIC' | 'INTERNAL'>('PUBLIC');
+  const [editKnownError, setEditKnownError] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [statusUpdating, setStatusUpdating] = useState(false);
@@ -84,6 +86,7 @@ export default function ArticleDetailPage() {
       setEditContent(article.content);
       setEditTags(article.tags.join(', '));
       setEditVisibility(article.visibility as 'PUBLIC' | 'INTERNAL');
+      setEditKnownError(article.isKnownError);
     }
   }, [article]);
 
@@ -103,6 +106,7 @@ export default function ArticleDetailPage() {
           content: editContent,
           tags: parsedTags,
           visibility: editVisibility,
+          isKnownError: editKnownError,
         }),
       });
       if (!res.ok) throw new Error('Failed to save article');
@@ -167,6 +171,25 @@ export default function ArticleDetailPage() {
                 {article.status.replace(/_/g, ' ')}
               </span>
               <span style={{ fontSize: 13, color: 'var(--text-placeholder)' }}>{article.visibility}</span>
+              {article.isKnownError && (
+                <span
+                  title="Known Error (KEDB)"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: '2px 8px',
+                    borderRadius: 12,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    backgroundColor: 'var(--badge-red-bg-subtle)',
+                    color: 'var(--accent-danger)',
+                  }}
+                >
+                  <Icon path={mdiAlertOctagonOutline} size={0.6} color="currentColor" />
+                  Known Error
+                </span>
+              )}
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               {transitions.map((nextStatus) => (
@@ -247,6 +270,17 @@ export default function ArticleDetailPage() {
                     <option value="INTERNAL">Internal</option>
                   </select>
                 </div>
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  <input
+                    type="checkbox"
+                    checked={editKnownError}
+                    onChange={(e) => setEditKnownError(e.target.checked)}
+                    style={{ width: 16, height: 16, cursor: 'pointer' }}
+                  />
+                  Known Error (KEDB)
+                </label>
               </div>
               <div style={{ marginBottom: 16 }}>
                 <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Content</label>

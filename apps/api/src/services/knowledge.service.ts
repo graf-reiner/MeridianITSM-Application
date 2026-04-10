@@ -13,6 +13,7 @@ export interface CreateArticleData {
   content: string;
   tags?: string[];
   visibility?: 'PUBLIC' | 'INTERNAL';
+  isKnownError?: boolean;
 }
 
 export interface UpdateArticleData {
@@ -22,6 +23,7 @@ export interface UpdateArticleData {
   tags?: string[];
   visibility?: 'PUBLIC' | 'INTERNAL';
   status?: 'DRAFT' | 'IN_REVIEW' | 'PUBLISHED' | 'RETIRED';
+  isKnownError?: boolean;
 }
 
 export interface ArticleListFilters {
@@ -30,6 +32,7 @@ export interface ArticleListFilters {
   search?: string;
   tags?: string[];
   authorId?: string;
+  knownError?: boolean;
   page?: number;
   pageSize?: number;
 }
@@ -87,6 +90,7 @@ export async function createArticle(
         tags: data.tags ?? [],
         visibility: data.visibility ?? 'INTERNAL',
         status: 'DRAFT',
+        isKnownError: data.isKnownError ?? false,
         authorId,
       },
     });
@@ -120,6 +124,7 @@ export async function updateArticle(
     visibility?: 'PUBLIC' | 'INTERNAL';
     status?: 'DRAFT' | 'IN_REVIEW' | 'PUBLISHED' | 'RETIRED';
     publishedAt?: Date;
+    isKnownError?: boolean;
   } = {};
 
   if (data.title !== undefined) updateData.title = data.title;
@@ -127,6 +132,7 @@ export async function updateArticle(
   if (data.content !== undefined) updateData.content = data.content;
   if (data.tags !== undefined) updateData.tags = data.tags;
   if (data.visibility !== undefined) updateData.visibility = data.visibility;
+  if (data.isKnownError !== undefined) updateData.isKnownError = data.isKnownError;
 
   if (data.status !== undefined) {
     const currentStatus = existing.status as string;
@@ -165,6 +171,7 @@ export async function getArticleList(
     search,
     tags,
     authorId,
+    knownError,
     page = 1,
     pageSize = 20,
   } = filters;
@@ -177,6 +184,7 @@ export async function getArticleList(
     status?: ArticleStatus;
     visibility?: ArticleVisibility;
     authorId?: string;
+    isKnownError?: boolean;
     OR?: Array<{
       title?: { contains: string; mode: 'insensitive' };
       summary?: { contains: string; mode: 'insensitive' };
@@ -188,6 +196,7 @@ export async function getArticleList(
   if (status) where.status = status as ArticleStatus;
   if (visibility) where.visibility = visibility as ArticleVisibility;
   if (authorId) where.authorId = authorId;
+  if (knownError !== undefined) where.isKnownError = knownError;
 
   if (search) {
     where.OR = [

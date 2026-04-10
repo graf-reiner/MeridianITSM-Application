@@ -126,6 +126,80 @@ describe('calculateBreachAt (businessHours=true, Mon-Fri 09:00-17:00 UTC)', () =
   });
 });
 
+describe('calculateBreachAt with holidays', () => {
+  it('skips a one-off holiday and lands on the next business day', () => {
+    // Tuesday Mar 24 is a holiday. Friday-style work: 60 min target on Monday
+    // Mar 23 16:30 should normally land Tuesday 09:30 — but with Tuesday blocked,
+    // it should land Wednesday Mar 25 09:30 instead.
+    const sla = {
+      ...businessHoursSla,
+      holidays: [
+        { date: new Date(Date.UTC(2026, 2, 24)), recurring: false }, // Tue Mar 24, 2026
+      ],
+    };
+    const start = new Date('2026-03-23T16:30:00Z'); // Monday 16:30 UTC
+    const result = calculateBreachAt(start, 60, sla);
+    expect(result).toEqual(new Date('2026-03-25T09:30:00Z')); // Wed 09:30
+  });
+
+  it('skips multiple consecutive holidays', () => {
+    // Block Tue Mar 24, Wed Mar 25 — 60 min from Monday 16:30 should land Thu 09:30.
+    const sla = {
+      ...businessHoursSla,
+      holidays: [
+        { date: new Date(Date.UTC(2026, 2, 24)), recurring: false },
+        { date: new Date(Date.UTC(2026, 2, 25)), recurring: false },
+      ],
+    };
+    const start = new Date('2026-03-23T16:30:00Z');
+    const result = calculateBreachAt(start, 60, sla);
+    expect(result).toEqual(new Date('2026-03-26T09:30:00Z')); // Thu 09:30
+  });
+
+  it('treats recurring holidays as month-day matches in any year', () => {
+    // Christmas 2026 (Dec 25) is a Friday. Add a recurring entry stored under
+    // an arbitrary year (2020) — it should still block Dec 25 2026.
+    const sla = {
+      ...businessHoursSla,
+      holidays: [
+        { date: new Date(Date.UTC(2020, 11, 25)), recurring: true }, // Dec 25 (any year)
+      ],
+    };
+    // Thursday Dec 24, 2026 16:30: 30 min remain → 30 min carry. Friday Dec 25
+    // is blocked, Sat/Sun are weekend, so it should land Monday Dec 28 09:30.
+    const start = new Date('2026-12-24T16:30:00Z');
+    const result = calculateBreachAt(start, 60, sla);
+    expect(result).toEqual(new Date('2026-12-28T09:30:00Z')); // Mon 09:30
+  });
+
+  it('snaps off the start day if the start falls on a holiday', () => {
+    // Monday Mar 23 is a holiday. Starting at Monday 10:00, 60 min target should
+    // snap to Tuesday 09:00 + 60 min = Tuesday 10:00.
+    const sla = {
+      ...businessHoursSla,
+      holidays: [
+        { date: new Date(Date.UTC(2026, 2, 23)), recurring: false },
+      ],
+    };
+    const start = new Date('2026-03-23T10:00:00Z');
+    const result = calculateBreachAt(start, 60, sla);
+    expect(result).toEqual(new Date('2026-03-24T10:00:00Z'));
+  });
+
+  it('does not affect calculation when no holiday touches the window', () => {
+    // Holiday is far in the future — should be a no-op.
+    const sla = {
+      ...businessHoursSla,
+      holidays: [
+        { date: new Date(Date.UTC(2027, 5, 1)), recurring: false }, // Jun 1, 2027
+      ],
+    };
+    const start = new Date('2026-03-23T09:00:00Z'); // Monday 09:00
+    const result = calculateBreachAt(start, 60, sla);
+    expect(result).toEqual(new Date('2026-03-23T10:00:00Z'));
+  });
+});
+
 describe('calculateBreachAt with timezone (America/New_York)', () => {
   it('correctly handles America/New_York timezone', () => {
     // New York is UTC-4 in March (EDT). Business hours 09:00-17:00 NY = 13:00-21:00 UTC

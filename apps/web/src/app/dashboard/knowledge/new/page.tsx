@@ -17,6 +17,7 @@ export default function NewArticlePage() {
   const [content, setContent] = useState('');
   const [tags, setTags] = useState('');
   const [visibility, setVisibility] = useState<'PUBLIC' | 'INTERNAL'>('PUBLIC');
+  const [isKnownError, setIsKnownError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -37,6 +38,7 @@ export default function NewArticlePage() {
           content,
           tags: parsedTags,
           visibility,
+          isKnownError,
         }),
       });
       if (!res.ok) {
@@ -137,6 +139,22 @@ export default function NewArticlePage() {
                 <option value="INTERNAL">Internal (staff only)</option>
               </select>
             </div>
+          </div>
+
+          {/* Known Error flag */}
+          <div style={{ marginBottom: 18 }}>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
+              <input
+                type="checkbox"
+                checked={isKnownError}
+                onChange={(e) => setIsKnownError(e.target.checked)}
+                style={{ width: 16, height: 16, cursor: 'pointer' }}
+              />
+              Known Error (KEDB)
+            </label>
+            <p style={{ margin: '4px 0 0 24px', fontSize: 12, color: 'var(--text-placeholder)' }}>
+              Mark this article as a documented Known Error so it appears in the KEDB filter and can be linked from problem tickets.
+            </p>
           </div>
 
           {/* Content */}

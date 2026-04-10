@@ -30,6 +30,7 @@ import { profileRoutes } from './profile.js';
 import { problemRoutes } from './problems/index.js';
 import { searchRoutes } from './search.js';
 import { changeTemplateRoutes } from './change-templates/index.js';
+import { holidayRoutes } from './holidays/index.js';
 
 /**
  * V1 API routes — protected scope (requires JWT + tenant + RBAC).
@@ -131,4 +132,7 @@ export async function v1Routes(app: FastifyInstance): Promise<void> {
 
   // Change templates — reusable change request templates with default fields
   await app.register(changeTemplateRoutes);
+
+  // Holiday calendar — date-based SLA exclusions (skipped from business hours)
+  await app.register(holidayRoutes);
 }

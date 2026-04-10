@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import Icon from '@mdi/react';
-import { mdiBookOpenVariant, mdiPlus, mdiMagnify, mdiEye, mdiThumbUpOutline } from '@mdi/js';
+import { mdiBookOpenVariant, mdiPlus, mdiMagnify, mdiEye, mdiThumbUpOutline, mdiAlertOctagonOutline } from '@mdi/js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -14,6 +14,7 @@ interface Article {
   summary: string | null;
   status: string;
   visibility: string;
+  isKnownError: boolean;
   author: { firstName: string; lastName: string } | null;
   viewCount: number;
   helpfulCount: number;
@@ -53,16 +54,18 @@ export default function DashboardKnowledgePage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [visibility, setVisibility] = useState('');
+  const [kedbOnly, setKedbOnly] = useState(false);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 25;
 
   const { data, isLoading, error } = useQuery<ArticleListResponse>({
-    queryKey: ['knowledge', search, status, visibility, page],
+    queryKey: ['knowledge', search, status, visibility, kedbOnly, page],
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
       if (search) params.set('search', search);
       if (status) params.set('status', status);
       if (visibility) params.set('visibility', visibility);
+      if (kedbOnly) params.set('knownError', 'true');
       const res = await fetch(`/api/v1/knowledge?${params.toString()}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to load articles');
       return res.json() as Promise<ArticleListResponse>;
@@ -136,6 +139,28 @@ export default function DashboardKnowledgePage() {
           <option value="PUBLIC">Public</option>
           <option value="INTERNAL">Internal</option>
         </select>
+        <button
+          type="button"
+          onClick={() => { setKedbOnly((v) => !v); setPage(1); }}
+          aria-pressed={kedbOnly}
+          title="Show only Known Errors (KEDB)"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '8px 12px',
+            border: `1px solid ${kedbOnly ? 'var(--accent-danger)' : 'var(--border-secondary)'}`,
+            borderRadius: 8,
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+            backgroundColor: kedbOnly ? 'var(--badge-red-bg-subtle)' : 'var(--bg-primary)',
+            color: kedbOnly ? 'var(--accent-danger)' : 'var(--text-secondary)',
+          }}
+        >
+          <Icon path={mdiAlertOctagonOutline} size={0.75} color="currentColor" />
+          KEDB only
+        </button>
       </div>
 
       {/* ── Table ─────────────────────────────────────────────────────────────── */}
@@ -170,9 +195,32 @@ export default function DashboardKnowledgePage() {
                 return (
                   <tr key={article.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
                     <td style={{ padding: '10px 14px' }}>
-                      <Link href={`/dashboard/knowledge/${article.id}`} style={{ color: 'var(--text-primary)', textDecoration: 'none', fontWeight: 500 }}>
-                        {article.title}
-                      </Link>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Link href={`/dashboard/knowledge/${article.id}`} style={{ color: 'var(--text-primary)', textDecoration: 'none', fontWeight: 500 }}>
+                          {article.title}
+                        </Link>
+                        {article.isKnownError && (
+                          <span
+                            title="Known Error"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 3,
+                              padding: '1px 6px',
+                              borderRadius: 10,
+                              fontSize: 10,
+                              fontWeight: 600,
+                              backgroundColor: 'var(--badge-red-bg-subtle)',
+                              color: 'var(--accent-danger)',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.04em',
+                            }}
+                          >
+                            <Icon path={mdiAlertOctagonOutline} size={0.5} color="currentColor" />
+                            KE
+                          </span>
+                        )}
+                      </div>
                       {article.summary && (
                         <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-placeholder)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 320 }}>
                           {article.summary}

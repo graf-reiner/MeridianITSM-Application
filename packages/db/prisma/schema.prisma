@@ -468,6 +468,7 @@ model Tenant {
   customFormSubmissions    CustomFormSubmission[]
   changeTemplates          ChangeTemplate[]
   cmdbBaselines            CmdbBaseline[]
+  holidays                 Holiday[]
 
   @@map("tenants")
 }
@@ -949,6 +950,25 @@ model SLA {
   @@unique([tenantId, name])
   @@index([tenantId])
   @@map("slas")
+}
+
+// Model 13b: Holiday — date-based SLA exclusions (ITIL Gap 8)
+// Used by sla.service.ts business-hours calc to skip working time on holidays.
+// `recurring=true` matches by month-day every year (e.g. Christmas).
+model Holiday {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  date      DateTime @db.Date
+  name      String
+  recurring Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, date])
+  @@index([tenantId])
+  @@map("holidays")
 }
 
 // Model 17: Category
@@ -1580,6 +1600,7 @@ model KnowledgeArticle {
   tags          String[]
   visibility    ArticleVisibility @default(INTERNAL)
   status        ArticleStatus     @default(DRAFT)
+  isKnownError  Boolean           @default(false)
   authorId      String?           @db.Uuid
   viewCount     Int               @default(0)
   helpfulCount  Int               @default(0)
@@ -1595,6 +1616,7 @@ model KnowledgeArticle {
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([tenantId, createdAt])
+  @@index([tenantId, isKnownError])
   @@map("knowledge_articles")
 }
 

@@ -34,6 +34,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance): Promise<void> {
       search?: string;
       tags?: string;
       authorId?: string;
+      knownError?: string;
       page?: string;
       pageSize?: string;
     };
@@ -42,12 +43,20 @@ export async function knowledgeRoutes(fastify: FastifyInstance): Promise<void> {
       ? query.tags.split(',').map((t) => t.trim()).filter(Boolean)
       : undefined;
 
+    const knownError =
+      query.knownError === 'true'
+        ? true
+        : query.knownError === 'false'
+          ? false
+          : undefined;
+
     const result = await getArticleList(tenantId, {
       status: query.status,
       visibility: query.visibility,
       search: query.search,
       tags,
       authorId: query.authorId,
+      knownError,
       page: query.page ? parseInt(query.page, 10) : undefined,
       pageSize: query.pageSize ? parseInt(query.pageSize, 10) : undefined,
     });
@@ -98,6 +107,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance): Promise<void> {
         content: string;
         tags?: string[];
         visibility?: 'PUBLIC' | 'INTERNAL';
+        isKnownError?: boolean;
       };
 
       // Validate required fields
@@ -151,6 +161,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance): Promise<void> {
         tags?: string[];
         visibility?: 'PUBLIC' | 'INTERNAL';
         status?: 'DRAFT' | 'IN_REVIEW' | 'PUBLISHED' | 'RETIRED';
+        isKnownError?: boolean;
       };
 
       // Validate title length if provided

@@ -30,6 +30,7 @@ import {
   mdiArrowDecisionOutline,
   mdiCheckDecagram,
   mdiCalendarClock,
+  mdiCalendarRemoveOutline,
   mdiEmoticonHappy,
   mdiSitemap,
   mdiFormTextbox,
@@ -105,6 +106,13 @@ const SETTINGS_GROUPS: SettingsGroup[] = [
         description: 'Define response and resolution SLA targets',
         icon: mdiClockAlert,
         color: '#d97706',
+      },
+      {
+        href: '/dashboard/settings/holidays',
+        label: 'Holiday Calendar',
+        description: 'Tenant holidays excluded from SLA business hours',
+        icon: mdiCalendarRemoveOutline,
+        color: '#dc2626',
       },
       {
         href: '/dashboard/settings/tags',

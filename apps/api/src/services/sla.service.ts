@@ -5,7 +5,18 @@ export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type SlaStatusValue = 'OK' | 'WARNING' | 'CRITICAL' | 'BREACHED';
 
 /**
+ * Holiday entry consumed by business-hours calculation.
+ * `recurring=true` matches by month-day every year (e.g. Christmas).
+ * Pass dates as `Date` (UTC midnight is fine — only year/month/day are used).
+ */
+export interface HolidayEntry {
+  date: Date;
+  recurring: boolean;
+}
+
+/**
  * Minimal SLA policy shape — matches the Prisma SLA model fields needed for calculations.
+ * `holidays` is optional and defaults to no holidays when omitted.
  */
 export interface SlaPolicy {
   businessHours: boolean;
@@ -23,6 +34,7 @@ export interface SlaPolicy {
   p3ResolutionMinutes: number;
   p4ResponseMinutes: number;
   p4ResolutionMinutes: number;
+  holidays?: HolidayEntry[];
 }
 
 const PRIORITY_MAP: Record<Priority, { response: keyof SlaPolicy; resolution: keyof SlaPolicy }> = {
@@ -64,6 +76,32 @@ function setTimeOnDate(zonedDate: Date, hours: number, minutes: number): Date {
 }
 
 /**
+ * Returns true if the given zoned date falls on a holiday.
+ *
+ * `recurring=false` holidays match the exact year-month-day; `recurring=true`
+ * holidays match by month-day in any year (so adding "2026-12-25" recurring=true
+ * also blocks 2027-12-25, 2028-12-25, etc.).
+ *
+ * Comparison is done in the SLA's local time (the `zonedDate` already lives there).
+ */
+function isHoliday(zonedDate: Date, holidays: HolidayEntry[] | undefined): boolean {
+  if (!holidays || holidays.length === 0) return false;
+  const y = zonedDate.getFullYear();
+  const m = zonedDate.getMonth();
+  const d = zonedDate.getDate();
+  for (const h of holidays) {
+    const hm = h.date.getUTCMonth();
+    const hd = h.date.getUTCDate();
+    if (h.recurring) {
+      if (hm === m && hd === d) return true;
+    } else if (h.date.getUTCFullYear() === y && hm === m && hd === d) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Calculates the breach timestamp given a start time, target minutes, and SLA policy.
  *
  * When businessHours=false: simple addMinutes.
@@ -95,9 +133,13 @@ export function calculateBreachAt(startTime: Date, targetMinutes: number, sla: S
   const endMinuteOfDay = bhEnd.hours * 60 + bhEnd.minutes;
   const currentDayOfWeek = current.getDay(); // 0 = Sunday
 
-  if (!businessDays.includes(currentDayOfWeek) || currentMinuteOfDay >= endMinuteOfDay) {
-    // Advance to next business day at start of business hours
-    current = advanceToNextBusinessDay(current, businessDays, bhStart);
+  if (
+    !businessDays.includes(currentDayOfWeek) ||
+    currentMinuteOfDay >= endMinuteOfDay ||
+    isHoliday(current, sla.holidays)
+  ) {
+    // Advance to next non-holiday business day at start of business hours
+    current = advanceToNextBusinessDay(current, businessDays, bhStart, sla.holidays);
   } else if (currentMinuteOfDay < startMinuteOfDay) {
     // Snap to business hours start
     current = setTimeOnDate(current, bhStart.hours, bhStart.minutes);
@@ -111,7 +153,7 @@ export function calculateBreachAt(startTime: Date, targetMinutes: number, sla: S
 
     if (minutesRemainingInDay <= 0) {
       // Should not happen due to snapping above, but safety guard
-      current = advanceToNextBusinessDay(current, businessDays, bhStart);
+      current = advanceToNextBusinessDay(current, businessDays, bhStart, sla.holidays);
       continue;
     }
 
@@ -122,7 +164,7 @@ export function calculateBreachAt(startTime: Date, targetMinutes: number, sla: S
     } else {
       // Consume the rest of this business day and move to next
       remainingMinutes -= minutesRemainingInDay;
-      current = advanceToNextBusinessDay(current, businessDays, bhStart);
+      current = advanceToNextBusinessDay(current, businessDays, bhStart, sla.holidays);
     }
   }
 
@@ -131,19 +173,25 @@ export function calculateBreachAt(startTime: Date, targetMinutes: number, sla: S
 }
 
 /**
- * Advances the zoned date to the start of the next valid business day.
+ * Advances the zoned date to the start of the next valid business day,
+ * skipping weekends, configured non-business days, and holidays.
  */
 function advanceToNextBusinessDay(
   zonedDate: Date,
   businessDays: number[],
   bhStart: { hours: number; minutes: number },
+  holidays: HolidayEntry[] | undefined,
 ): Date {
   // Move to next day first
   let next = addDays(startOfDay(zonedDate), 1);
 
-  // Keep advancing until we hit a business day
+  // Keep advancing until we hit a business day that is not a holiday.
+  // Cap at ~1 year of skipping to defend against pathological holiday lists.
   let safety = 0;
-  while (!businessDays.includes(next.getDay()) && safety < 14) {
+  while (
+    (!businessDays.includes(next.getDay()) || isHoliday(next, holidays)) &&
+    safety < 366
+  ) {
     next = addDays(next, 1);
     safety++;
   }

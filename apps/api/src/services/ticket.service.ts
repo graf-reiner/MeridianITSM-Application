@@ -1,7 +1,19 @@
 import { prisma } from '@meridian/db';
-import { calculateBreachAt, getResolutionMinutes, type Priority as SlaPriority } from './sla.service.js';
+import { calculateBreachAt, getResolutionMinutes, type Priority as SlaPriority, type HolidayEntry } from './sla.service.js';
 import { dispatchNotificationEvent } from './notification-rules.service.js';
 import { clearSlaAlerts } from '../workers/sla-monitor.worker.js';
+
+/**
+ * Loads the tenant's holiday list for use in SLA business-hours calculations.
+ * Returns an empty array if the tenant has no holidays configured.
+ */
+async function loadTenantHolidays(tenantId: string): Promise<HolidayEntry[]> {
+  const rows = await prisma.holiday.findMany({
+    where: { tenantId },
+    select: { date: true, recurring: true },
+  });
+  return rows.map((r) => ({ date: r.date, recurring: r.recurring }));
+}
 
 // ─── Status Transition Map ────────────────────────────────────────────────────
 
@@ -267,7 +279,8 @@ export async function createTicket(
       if (sla) {
         const priority = (data.priority ?? 'MEDIUM') as SlaPriority;
         const targetMinutes = getResolutionMinutes(sla as any, priority);
-        const slaBreachAt = calculateBreachAt(ticket.createdAt, targetMinutes, sla as any);
+        const holidays = await loadTenantHolidays(tenantId);
+        const slaBreachAt = calculateBreachAt(ticket.createdAt, targetMinutes, { ...(sla as any), holidays });
         await tx.ticket.update({
           where: { id: ticket.id },
           data: { slaBreachAt },
@@ -389,7 +402,8 @@ export async function updateTicket(
     if (sla) {
       const priority = (data.priority ?? existing.priority ?? 'MEDIUM') as SlaPriority;
       const targetMinutes = getResolutionMinutes(sla as any, priority);
-      const slaBreachAt = calculateBreachAt(existing.createdAt, targetMinutes, sla as any);
+      const holidays = await loadTenantHolidays(tenantId);
+      const slaBreachAt = calculateBreachAt(existing.createdAt, targetMinutes, { ...(sla as any), holidays });
       updates.slaBreachAt = slaBreachAt;
     }
   }
@@ -401,7 +415,8 @@ export async function updateTicket(
     });
     if (sla) {
       const targetMinutes = getResolutionMinutes(sla as any, data.priority as SlaPriority);
-      const slaBreachAt = calculateBreachAt(existing.createdAt, targetMinutes, sla as any);
+      const holidays = await loadTenantHolidays(tenantId);
+      const slaBreachAt = calculateBreachAt(existing.createdAt, targetMinutes, { ...(sla as any), holidays });
       updates.slaBreachAt = slaBreachAt;
     }
   }
