@@ -172,7 +172,9 @@ export async function cmdbReferenceRoutes(fastify: FastifyInstance): Promise<voi
 
   fastify.get('/api/v1/cmdb/vendors', { preHandler: [requirePermission('cmdb.view')] }, async (request, reply) => {
     const user = request.user as { tenantId: string };
-    const result = await listVendors(user.tenantId);
+    const query = request.query as { activeOnly?: string };
+    const activeOnly = query.activeOnly === 'true' || query.activeOnly === '1';
+    const result = await listVendors(user.tenantId, activeOnly);
     return reply.send(result);
   });
 

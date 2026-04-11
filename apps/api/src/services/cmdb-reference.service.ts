@@ -65,17 +65,28 @@ export interface UpdateRelationshipTypeData {
 export interface CreateVendorData {
   name: string;
   vendorType?: string;
+  websiteUrl?: string;
   supportUrl?: string;
   contactEmail?: string;
   contactPhone?: string;
+  accountNumber?: string;
+  accountManagerName?: string;
+  accountManagerEmail?: string;
+  notes?: string;
 }
 
 export interface UpdateVendorData {
   name?: string;
   vendorType?: string | null;
+  websiteUrl?: string | null;
   supportUrl?: string | null;
   contactEmail?: string | null;
   contactPhone?: string | null;
+  accountNumber?: string | null;
+  accountManagerName?: string | null;
+  accountManagerEmail?: string | null;
+  notes?: string | null;
+  isActive?: boolean;
 }
 
 // ─── CmdbCiClass ─────────────────────────────────────────────────────────────
@@ -270,9 +281,14 @@ export async function deleteRelationshipType(tenantId: string, id: string) {
 
 // ─── CmdbVendor ──────────────────────────────────────────────────────────────
 
-export async function listVendors(tenantId: string) {
+/**
+ * List vendors for a tenant. By default returns all vendors (including
+ * inactive) so the settings page can manage them; pass `activeOnly=true`
+ * from dropdowns that should only show selectable options.
+ */
+export async function listVendors(tenantId: string, activeOnly = false) {
   return prisma.cmdbVendor.findMany({
-    where: { tenantId, isActive: true },
+    where: { tenantId, ...(activeOnly ? { isActive: true } : {}) },
     orderBy: { name: 'asc' },
   });
 }
@@ -283,9 +299,14 @@ export async function createVendor(tenantId: string, data: CreateVendorData) {
       tenantId,
       name: data.name,
       vendorType: data.vendorType,
+      websiteUrl: data.websiteUrl,
       supportUrl: data.supportUrl,
       contactEmail: data.contactEmail,
       contactPhone: data.contactPhone,
+      accountNumber: data.accountNumber,
+      accountManagerName: data.accountManagerName,
+      accountManagerEmail: data.accountManagerEmail,
+      notes: data.notes,
     },
   });
 }

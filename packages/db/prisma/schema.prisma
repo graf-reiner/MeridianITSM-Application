@@ -2106,16 +2106,24 @@ model CmdbRelationshipTypeRef {
 
 // Model 44: CmdbVendor
 model CmdbVendor {
-  id           String   @id @default(uuid()) @db.Uuid
-  tenantId     String   @db.Uuid
-  name         String
-  vendorType   String?
-  supportUrl   String?
-  contactEmail String?
-  contactPhone String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                  String   @id @default(uuid()) @db.Uuid
+  tenantId            String   @db.Uuid
+  name                String
+  vendorType          String?
+  // Contact URLs / channels
+  websiteUrl          String?  // marketing / main site (distinct from support portal)
+  supportUrl          String?  // support portal URL
+  contactEmail        String?  // generic support inbox
+  contactPhone        String?  // generic support hotline
+  // Account relationship — used when opening tickets or renewing contracts
+  accountNumber       String?  // our customer/account number with the vendor
+  accountManagerName  String?  // named sales/account contact
+  accountManagerEmail String?  // named sales/account email
+  // Free-form operational notes
+  notes               String?
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   tenant      Tenant                  @relation(fields: [tenantId], references: [id])
   configItems CmdbConfigurationItem[]

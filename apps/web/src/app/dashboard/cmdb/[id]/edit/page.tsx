@@ -20,6 +20,7 @@ import {
   mdiPencil,
   mdiChevronRight,
 } from '@mdi/js';
+import { VendorPicker } from '@/components/VendorPicker';
 
 // ---- Types ------------------------------------------------------------------
 
@@ -752,10 +753,16 @@ export default function CMDBEditPage() {
           </div>
           <div style={fieldGroup}>
             <label style={labelStyle}>Manufacturer / Vendor</label>
-            <select style={selectStyle} value={manufacturerId} onChange={(e) => setManufacturerId(e.target.value)}>
-              <option value="">-- Select --</option>
-              {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
-            </select>
+            <VendorPicker
+              value={manufacturerId}
+              onChange={setManufacturerId}
+              style={selectStyle}
+              onVendorCreated={(v) =>
+                setVendors((prev) =>
+                  prev.some((p) => p.id === v.id) ? prev : [...prev, { id: v.id, name: v.name }],
+                )
+              }
+            />
           </div>
         </div>
       </div>
