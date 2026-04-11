@@ -773,6 +773,27 @@ export default function ApplicationDetailPage() {
               )}
             </div>
           </div>
+          <Link
+            href={`/dashboard/applications/${id}/edit`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '8px 14px',
+              backgroundColor: 'var(--accent-primary)',
+              color: 'var(--bg-primary)',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              textDecoration: 'none',
+              flexShrink: 0,
+            }}
+          >
+            <Icon path={mdiPencil} size={0.75} color="currentColor" />
+            Edit
+          </Link>
         </div>
       </div>
 

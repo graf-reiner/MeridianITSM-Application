@@ -3,6 +3,7 @@
 import { useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiApplicationCog, mdiAlertOctagon, mdiArchive, mdiCurrencyUsd, mdiPlus, mdiFilter, mdiRefresh } from '@mdi/js';
 import {
@@ -309,12 +310,13 @@ export default function ApplicationsPage() {
           <Icon path={mdiRefresh} size={0.8} color="currentColor" />
           Refresh
         </button>
-        <button
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', backgroundColor: 'var(--accent-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+        <Link
+          href="/dashboard/applications/new"
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', backgroundColor: 'var(--accent-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', textDecoration: 'none' }}
         >
           <Icon path={mdiPlus} size={0.8} color="currentColor" />
           New Application
-        </button>
+        </Link>
       </div>
 
       {/* Section 1: Stat Cards */}
