@@ -48,7 +48,8 @@ export type VariableContextKey =
   | 'sla'
   | 'change'
   | 'comment'
-  | 'now';
+  | 'now'
+  | 'cert';
 
 /**
  * Options for `renderTemplate()`.

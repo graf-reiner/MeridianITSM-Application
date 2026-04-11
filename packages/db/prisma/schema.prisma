@@ -149,6 +149,8 @@ enum NotificationType {
   MENTION
   SYSTEM
   CAB_INVITATION
+  // APM ↔ CMDB bridge — fired by cert-expiry-monitor worker
+  CERT_EXPIRY_WARNING
 }
 
 enum AuditAction {
@@ -1725,10 +1727,25 @@ model Application {
   strategicRating    Int?
   description        String?
   customFields       Json?
+
+  // APM ↔ CMDB bridge — primary CI is the canonical CmdbConfigurationItem
+  // for this Application (class = application_instance). Auto-created on
+  // Application save; nullable for backfill + ON DELETE SET NULL safety.
+  primaryCiId        String?           @db.Uuid
+
+  // APM-only portfolio fields (don't belong in CMDB — they describe the
+  // application contract, not the deployed infrastructure)
+  supportNotes       String?           // narrative runbook content
+  specialNotes       String?           // operational quirks ("Win10+ only")
+  osRequirements     String?           // declared platform requirements
+  vendorContact      String?           // vendor support phone/email
+  licenseInfo        String?           // plain text; full ApplicationLicense model is a future milestone
+
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
 
   tenant             Tenant                  @relation(fields: [tenantId], references: [id])
+  primaryCi          CmdbConfigurationItem?  @relation("ApplicationPrimaryCi", fields: [primaryCiId], references: [id], onDelete: SetNull)
   dependencies       ApplicationDependency[] @relation("SourceApp")
   dependents         ApplicationDependency[] @relation("TargetApp")
   documents          ApplicationDocument[]
@@ -1740,6 +1757,7 @@ model Application {
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([tenantId, createdAt])
+  @@index([tenantId, primaryCiId])
   @@map("applications")
 }
 
@@ -2241,6 +2259,9 @@ model CmdbConfigurationItem {
 
   // Server extension reverse (hypervisor host)
   hostedVMs CmdbCiServer[] @relation("CmdbHypervisorHost")
+
+  // APM ↔ CMDB bridge — applications for which this CI is the primary
+  primaryForApplications Application[] @relation("ApplicationPrimaryCi")
 
   @@unique([tenantId, ciNumber])
   @@index([tenantId])

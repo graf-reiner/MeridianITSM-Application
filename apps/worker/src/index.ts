@@ -12,6 +12,7 @@ import { webhookCleanupWorker } from './workers/webhook-cleanup.js';
 import { pushNotificationWorker } from './workers/push-notification.js';
 import { chatCleanupWorker } from './workers/chat-cleanup.js';
 import { problemDetectionWorker } from './workers/problem-detection.js';
+import { certExpiryMonitorWorker } from './workers/cert-expiry-monitor.js';
 import {
   usageSnapshotQueue,
   trialExpiryQueue,
@@ -21,6 +22,7 @@ import {
   webhookCleanupQueue,
   chatCleanupQueue,
   problemDetectionQueue,
+  certExpiryMonitorQueue,
 } from './queues/definitions.js';
 
 const workers = [
@@ -37,6 +39,7 @@ const workers = [
   { name: 'push-notification', worker: pushNotificationWorker },
   { name: 'chat-cleanup', worker: chatCleanupWorker },
   { name: 'problem-detection', worker: problemDetectionWorker },
+  { name: 'cert-expiry-monitor', worker: certExpiryMonitorWorker },
 ];
 
 // Schedule SLA breach check every minute
@@ -116,6 +119,16 @@ void problemDetectionQueue.add(
   {
     repeat: { pattern: '0 4 * * *' },
     jobId: 'problem-detection-repeatable',
+  },
+);
+
+// Schedule APM cert expiry scan daily at 7 AM UTC
+void certExpiryMonitorQueue.add(
+  'scan-cert-expiry',
+  {},
+  {
+    repeat: { pattern: '0 7 * * *' },
+    jobId: 'cert-expiry-monitor-repeatable',
   },
 );
 

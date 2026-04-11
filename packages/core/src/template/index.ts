@@ -16,6 +16,7 @@ export {
   CHANGE_VARIABLES,
   COMMENT_VARIABLES,
   NOW_VARIABLES,
+  CERT_VARIABLES,
   getVariablesForContext,
 } from './registry.js';
 

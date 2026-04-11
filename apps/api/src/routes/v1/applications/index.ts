@@ -14,6 +14,10 @@ import {
   unlinkAsset,
   getPortfolioStats,
   getDependencyGraph,
+  getApplicationInfrastructure,
+  getApplicationSslCertificates,
+  linkCiToApplication,
+  createPrimaryCiForApplication,
 } from '../../../services/application.service.js';
 
 /**
@@ -64,6 +68,11 @@ export async function applicationRoutes(fastify: FastifyInstance): Promise<void>
         strategicRating?: unknown;
         description?: unknown;
         customFields?: unknown;
+        supportNotes?: unknown;
+        specialNotes?: unknown;
+        osRequirements?: unknown;
+        vendorContact?: unknown;
+        licenseInfo?: unknown;
       };
 
       if (!body.name || typeof body.name !== 'string' || body.name.trim().length === 0) {
@@ -97,6 +106,13 @@ export async function applicationRoutes(fastify: FastifyInstance): Promise<void>
               body.customFields && typeof body.customFields === 'object'
                 ? (body.customFields as Record<string, unknown>)
                 : undefined,
+            supportNotes: typeof body.supportNotes === 'string' ? body.supportNotes : undefined,
+            specialNotes: typeof body.specialNotes === 'string' ? body.specialNotes : undefined,
+            osRequirements:
+              typeof body.osRequirements === 'string' ? body.osRequirements : undefined,
+            vendorContact:
+              typeof body.vendorContact === 'string' ? body.vendorContact : undefined,
+            licenseInfo: typeof body.licenseInfo === 'string' ? body.licenseInfo : undefined,
           },
           user.userId,
         );
@@ -181,6 +197,24 @@ export async function applicationRoutes(fastify: FastifyInstance): Promise<void>
     },
   );
 
+  // ─── GET /api/v1/applications/ssl-certificates — Tenant cert dashboard ─────
+  // NOTE: Defined before /:id to prevent parameterized route conflict
+
+  fastify.get(
+    '/api/v1/applications/ssl-certificates',
+    { preHandler: [requirePermission('settings.read')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string };
+      try {
+        const rows = await getApplicationSslCertificates(user.tenantId);
+        return reply.send({ data: rows, total: rows.length });
+      } catch (err) {
+        const error = err as Error;
+        return reply.status(500).send({ error: error.message });
+      }
+    },
+  );
+
   // ─── GET /api/v1/applications/:id — Get application detail ─────────────────
 
   fastify.get(
@@ -225,6 +259,11 @@ export async function applicationRoutes(fastify: FastifyInstance): Promise<void>
         strategicRating?: unknown;
         description?: unknown;
         customFields?: unknown;
+        supportNotes?: unknown;
+        specialNotes?: unknown;
+        osRequirements?: unknown;
+        vendorContact?: unknown;
+        licenseInfo?: unknown;
       };
 
       try {
@@ -253,6 +292,36 @@ export async function applicationRoutes(fastify: FastifyInstance): Promise<void>
               body.customFields && typeof body.customFields === 'object'
                 ? (body.customFields as Record<string, unknown>)
                 : undefined,
+            supportNotes:
+              typeof body.supportNotes === 'string'
+                ? body.supportNotes
+                : body.supportNotes === null
+                  ? null
+                  : undefined,
+            specialNotes:
+              typeof body.specialNotes === 'string'
+                ? body.specialNotes
+                : body.specialNotes === null
+                  ? null
+                  : undefined,
+            osRequirements:
+              typeof body.osRequirements === 'string'
+                ? body.osRequirements
+                : body.osRequirements === null
+                  ? null
+                  : undefined,
+            vendorContact:
+              typeof body.vendorContact === 'string'
+                ? body.vendorContact
+                : body.vendorContact === null
+                  ? null
+                  : undefined,
+            licenseInfo:
+              typeof body.licenseInfo === 'string'
+                ? body.licenseInfo
+                : body.licenseInfo === null
+                  ? null
+                  : undefined,
           },
           user.userId,
         );
@@ -472,6 +541,118 @@ export async function applicationRoutes(fastify: FastifyInstance): Promise<void>
       } catch (err) {
         const error = err as Error;
         if (error.message === 'Application-asset link not found') {
+          return reply.status(404).send({ error: error.message });
+        }
+        return reply.status(500).send({ error: error.message });
+      }
+    },
+  );
+
+  // ─── APM ↔ CMDB Bridge ────────────────────────────────────────────────────
+
+  // GET /api/v1/applications/:id/infrastructure
+  // Composite loader for the Infrastructure / Support / Network /
+  // Certificates tabs on the Application detail page. Walks one hop from
+  // the primary CI through CmdbRelationship.
+  fastify.get(
+    '/api/v1/applications/:id/infrastructure',
+    { preHandler: [requirePermission('settings.read')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string };
+      const { id } = request.params as { id: string };
+      try {
+        const infra = await getApplicationInfrastructure(user.tenantId, id);
+        if (!infra) return reply.status(404).send({ error: 'Application not found' });
+        return reply.send(infra);
+      } catch (err) {
+        const error = err as Error;
+        return reply.status(500).send({ error: error.message });
+      }
+    },
+  );
+
+  // POST /api/v1/applications/:id/create-primary-ci
+  // For Applications that lack a primary CI (e.g. created before the
+  // bridge or in tenants missing the CMDB seed). Powers the yellow banner
+  // button on the Support tab.
+  fastify.post(
+    '/api/v1/applications/:id/create-primary-ci',
+    { preHandler: [requirePermission('settings.update')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string; userId: string };
+      const { id } = request.params as { id: string };
+      try {
+        const ci = await createPrimaryCiForApplication(user.tenantId, id, user.userId);
+        return reply.status(201).send(ci);
+      } catch (err) {
+        const error = err as Error;
+        if (error.message === 'Application not found') {
+          return reply.status(404).send({ error: error.message });
+        }
+        if (error.message === 'Application already has a primary CI') {
+          return reply.status(409).send({ error: error.message });
+        }
+        if (error.message.includes("missing the 'application_instance'")) {
+          return reply.status(412).send({ error: error.message });
+        }
+        return reply.status(500).send({ error: error.message });
+      }
+    },
+  );
+
+  // POST /api/v1/applications/:id/link-ci/:ciId
+  // Manually point primaryCiId at a different existing CI (swap or
+  // initial link). Verifies the target CI belongs to the calling tenant.
+  fastify.post(
+    '/api/v1/applications/:id/link-ci/:ciId',
+    { preHandler: [requirePermission('settings.update')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string; userId: string };
+      const { id, ciId } = request.params as { id: string; ciId: string };
+      try {
+        const updated = await linkCiToApplication(user.tenantId, id, ciId, user.userId);
+        return reply.send(updated);
+      } catch (err) {
+        const error = err as Error;
+        if (error.message === 'Application not found' || error.message === 'CI not found in this tenant') {
+          return reply.status(404).send({ error: error.message });
+        }
+        return reply.status(500).send({ error: error.message });
+      }
+    },
+  );
+
+  // PATCH /api/v1/applications/:id/primary-ci
+  // Set/clear the primary CI by JSON body { ciId: string | null }.
+  // Setting → delegates to linkCiToApplication. Clearing → uses updateApp.
+  fastify.patch(
+    '/api/v1/applications/:id/primary-ci',
+    { preHandler: [requirePermission('settings.update')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string; userId: string };
+      const { id } = request.params as { id: string };
+      const body = request.body as { ciId?: unknown };
+
+      const ciId = body.ciId;
+      if (ciId !== null && typeof ciId !== 'string') {
+        return reply.status(400).send({ error: 'ciId must be a string or null' });
+      }
+
+      try {
+        if (ciId === null) {
+          const updated = await updateApp(
+            user.tenantId,
+            id,
+            { primaryCiId: null },
+            user.userId,
+          );
+          return reply.send(updated);
+        }
+        const updated = await linkCiToApplication(user.tenantId, id, ciId, user.userId);
+        return reply.send(updated);
+      } catch (err) {
+        const error = err as Error;
+        if (error.message === 'Application not found' || error.message === 'CI not found in this tenant') {
           return reply.status(404).send({ error: error.message });
         }
         return reply.status(500).send({ error: error.message });

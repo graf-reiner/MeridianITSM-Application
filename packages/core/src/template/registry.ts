@@ -78,6 +78,18 @@ export const NOW_VARIABLES: VariableDefinition[] = [
   { key: 'now.iso', label: 'Current Timestamp', description: 'Current time as an ISO 8601 string.', example: '2026-04-10T14:30:00Z', category: 'System' },
 ];
 
+// APM ↔ CMDB bridge — variables available in CERT_EXPIRY_WARNING templates.
+// Populated by the cert-expiry-monitor worker via context.certExpiry.
+export const CERT_VARIABLES: VariableDefinition[] = [
+  { key: 'cert.applicationName', label: 'Application Name', description: 'The Application that this certificate belongs to.', example: 'Acme Portal', category: 'Certificate' },
+  { key: 'cert.ciName', label: 'CI Name', description: 'The CMDB endpoint CI that holds the certificate.', example: 'portal.acme.com', category: 'Certificate' },
+  { key: 'cert.url', label: 'Endpoint URL', description: 'The URL the certificate is served at.', example: 'https://portal.acme.com', category: 'Certificate' },
+  { key: 'cert.daysUntilExpiry', label: 'Days Until Expiry', description: 'Number of days until the certificate expires (negative if already expired).', example: '14', category: 'Certificate' },
+  { key: 'cert.certificateExpiryDate', label: 'Expiry Date', description: 'ISO timestamp when the certificate expires.', example: '2026-05-01T00:00:00Z', category: 'Certificate' },
+  { key: 'cert.certificateIssuer', label: 'Issuer', description: 'The certificate authority that issued the cert.', example: "Let's Encrypt R3", category: 'Certificate' },
+  { key: 'cert.threshold', label: 'Threshold Crossed', description: 'Which alert threshold was crossed: 60, 30, 14, 7, or expired.', example: '14', category: 'Certificate' },
+];
+
 /**
  * Lookup table — one catalog per `VariableContextKey`.
  * `formFields` is intentionally empty here because form field variables
@@ -95,6 +107,7 @@ const CATALOGS: Record<VariableContextKey, VariableDefinition[]> = {
   change: CHANGE_VARIABLES,
   comment: COMMENT_VARIABLES,
   now: NOW_VARIABLES,
+  cert: CERT_VARIABLES,
 };
 
 /**

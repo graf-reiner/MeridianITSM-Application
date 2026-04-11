@@ -45,6 +45,18 @@ export interface EventContext {
     [key: string]: unknown;
   };
   comment?: { id: string; visibility: string; [key: string]: unknown };
+  // APM ↔ CMDB bridge — context for cert_expiry_warning notifications
+  certExpiry?: {
+    applicationId: string;
+    applicationName: string;
+    ciId: string;
+    ciName: string;
+    url: string | null;
+    certificateExpiryDate: string;
+    certificateIssuer: string | null;
+    daysUntilExpiry: number;
+    threshold: '60' | '30' | '14' | '7' | 'expired';
+  };
   actorId?: string;
   newAssignedToId?: string;
   changedFields?: string[];
@@ -62,6 +74,14 @@ export function resolveFieldValue(field: string, context: EventContext): unknown
   if (field.startsWith("customFields.")) {
     const key = field.slice("customFields.".length);
     return context.ticket?.customFields?.[key];
+  }
+
+  // Cert expiry fields: "cert.daysUntilExpiry" etc. — APM ↔ CMDB bridge
+  if (field.startsWith("cert.")) {
+    const key = field.slice("cert.".length);
+    return context.certExpiry
+      ? (context.certExpiry as Record<string, unknown>)[key]
+      : undefined;
   }
 
   switch (field) {

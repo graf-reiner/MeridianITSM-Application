@@ -95,7 +95,7 @@ assets: id(uuid PK), "tenantId"(uuid FK→tenants), "assetTag"(text), "serialNum
 sites: id(uuid PK), "tenantId"(uuid FK→tenants), name(text), address(text), city(text), state(text), country(text), "postalCode"(text)
 
 -- APPLICATION PORTFOLIO --
-applications: id(uuid PK), "tenantId"(uuid FK→tenants), name(text), description(text), type(WEB|MOBILE|DESKTOP|API|SERVICE|DATABASE_APP|MIDDLEWARE|INFRASTRUCTURE|OTHER), status(ACTIVE|INACTIVE|DECOMMISSIONED|PLANNED|IN_DEVELOPMENT), criticality(LOW|MEDIUM|HIGH|CRITICAL), "hostingModel"(ON_PREMISE|CLOUD|HYBRID|SAAS), "lifecycleStage"(PLANNING|DEVELOPMENT|PRODUCTION|RETIREMENT), "techStack"(text[]), "annualCost"(decimal), rpo(text), rto(text), "createdAt"(timestamptz)
+applications: id(uuid PK), "tenantId"(uuid FK→tenants), name(text), description(text), type(WEB|MOBILE|DESKTOP|API|SERVICE|DATABASE_APP|MIDDLEWARE|INFRASTRUCTURE|OTHER), status(ACTIVE|INACTIVE|DECOMMISSIONED|PLANNED|IN_DEVELOPMENT), criticality(LOW|MEDIUM|HIGH|CRITICAL), "hostingModel"(ON_PREMISE|CLOUD|HYBRID|SAAS), "lifecycleStage"(PLANNING|DEVELOPMENT|PRODUCTION|RETIREMENT), "techStack"(text[]), "annualCost"(decimal), rpo(text), rto(text), "primaryCiId"(uuid FK→cmdb_configuration_items NULLABLE — APM↔CMDB bridge, points at the application_instance CI that holds owners + relationships to servers/databases/endpoints/cloud/network), "supportNotes"(text — narrative runbook), "specialNotes"(text — operational quirks), "osRequirements"(text), "vendorContact"(text), "licenseInfo"(text), "createdAt"(timestamptz)
 
 application_dependencies: id(uuid PK), "tenantId"(uuid FK→tenants), "applicationId"(uuid FK→applications), "dependsOnId"(uuid FK→applications), type(HARD|SOFT), description(text)
 
