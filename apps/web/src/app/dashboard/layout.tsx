@@ -31,6 +31,7 @@ import {
   mdiCheckDecagram,
   mdiAlertDecagramOutline,
   mdiAlertOctagonOutline,
+  mdiCertificate,
 } from '@mdi/js';
 import AiChatPanel from '@/components/AiChatPanel';
 import UpgradeModal from '@/components/UpgradeModal';
@@ -66,6 +67,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard/changes', label: 'Changes', icon: mdiSwapHorizontal },
   { href: '/dashboard/cab', label: 'CAB Meetings', icon: mdiAccountGroup },
   { href: '/dashboard/applications', label: 'Applications', icon: mdiApplicationBracketsOutline },
+  { href: '/dashboard/applications/ssl-certificates', label: 'SSL Certificates', icon: mdiCertificate },
   { href: '/dashboard/knowledge', label: 'Knowledge Base', icon: mdiBookOpenVariant },
   { href: '/dashboard/reports', label: 'Reports', icon: mdiChartBar },
   { href: '/dashboard/settings', label: 'Settings', icon: mdiCog },
@@ -126,7 +128,16 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
   const isActive = (href: string) => {
     if (href === '/dashboard') return pathname === '/dashboard';
-    return pathname.startsWith(href);
+    if (!pathname.startsWith(href)) return false;
+    // Longest-prefix wins: don't mark a parent route active when a more
+    // specific sibling nav entry also matches (e.g. /applications stays
+    // inactive when on /applications/ssl-certificates).
+    return !navItems.some(
+      (other) =>
+        other.href !== href &&
+        other.href.startsWith(href + '/') &&
+        pathname.startsWith(other.href),
+    );
   };
 
   return (

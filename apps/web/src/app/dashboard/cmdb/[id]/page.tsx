@@ -807,6 +807,21 @@ export default function CMDBDetailPage() {
             <InfoRow label="Availability" value={ci.availabilityClass} />
           </Card>
 
+          {/* APM ↔ CMDB bridge — show the linked Application when this CI
+              has a CmdbCiApplication extension that points back at one. */}
+          {ci.applicationExt?.application && (
+            <Card title="Linked Application" icon={mdiApplication}>
+              <InfoRow
+                label="Application"
+                value={ci.applicationExt.application.name}
+                link={`/dashboard/applications/${ci.applicationExt.application.id}`}
+              />
+              <p style={{ margin: '8px 0 0', fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                This CI is the primary infrastructure record for the linked Application. Open the Application to see its full APM context.
+              </p>
+            </Card>
+          )}
+
           {ci.attributesJson && Object.keys(ci.attributesJson).length > 0 && (
             <Card title="Custom Attributes">
               {Object.entries(ci.attributesJson).map(([key, value]) => (
