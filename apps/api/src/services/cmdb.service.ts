@@ -994,6 +994,102 @@ export async function getImpactAnalysis(
   };
 }
 
+// ─── Affected Applications (Blast Radius) ────────────────────────────────────
+
+export interface AffectedApplication {
+  applicationId: string;
+  applicationName: string;
+  criticality: string;
+  status: string;
+  viaPath: string;
+  viaCiId: string | null;
+  viaCiName: string | null;
+  viaRelType: string | null;
+  isDirect: boolean;
+}
+
+/**
+ * Compute which Applications would be impacted if a CI became unavailable.
+ *
+ * 1. Direct: Applications whose primaryCiId points to this CI.
+ * 2. 1-hop: CIs that DEPEND_ON / RUN_ON / etc. this CI, and those CIs are
+ *    linked to Applications via primaryCiId.
+ *
+ * Returns deduplicated, sorted by direct-first then criticality.
+ */
+export async function getAffectedApplications(
+  tenantId: string,
+  ciId: string,
+): Promise<AffectedApplication[]> {
+  const CRIT_ORDER: Record<string, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+
+  // 1. Direct: apps whose primaryCiId = this CI
+  const directApps = await prisma.application.findMany({
+    where: { tenantId, primaryCiId: ciId },
+    select: { id: true, name: true, criticality: true, status: true },
+  });
+
+  const seen = new Map<string, AffectedApplication>();
+  for (const app of directApps) {
+    seen.set(app.id, {
+      applicationId: app.id,
+      applicationName: app.name,
+      criticality: app.criticality,
+      status: app.status,
+      viaPath: 'Direct link — this CI is the primary infrastructure record for this Application',
+      viaCiId: null,
+      viaCiName: null,
+      viaRelType: null,
+      isDirect: true,
+    });
+  }
+
+  // 2. 1-hop incoming: CIs that depend on this CI
+  const incomingRels = await prisma.cmdbRelationship.findMany({
+    where: { targetId: ciId, tenantId, isActive: true },
+    include: {
+      source: { select: { id: true, name: true } },
+      relationshipTypeRef: { select: { forwardLabel: true } },
+    },
+  });
+
+  if (incomingRels.length > 0) {
+    const sourceCiIds = incomingRels.map((r) => r.source.id);
+
+    // Batch query: apps whose primaryCiId is one of the source CIs
+    const hopApps = await prisma.application.findMany({
+      where: { tenantId, primaryCiId: { in: sourceCiIds } },
+      select: { id: true, name: true, criticality: true, status: true, primaryCiId: true },
+    });
+
+    // Map primaryCiId → relationship info for label building
+    const relByCiId = new Map(incomingRels.map((r) => [r.source.id, r]));
+
+    for (const app of hopApps) {
+      if (seen.has(app.id)) continue; // direct link already captured
+      const rel = relByCiId.get(app.primaryCiId!);
+      if (!rel) continue;
+      const relLabel = rel.relationshipTypeRef?.forwardLabel ?? rel.relationshipType;
+      seen.set(app.id, {
+        applicationId: app.id,
+        applicationName: app.name,
+        criticality: app.criticality,
+        status: app.status,
+        viaPath: `CI "${rel.source.name}" ${relLabel} this CI`,
+        viaCiId: rel.source.id,
+        viaCiName: rel.source.name,
+        viaRelType: rel.relationshipType,
+        isDirect: false,
+      });
+    }
+  }
+
+  return [...seen.values()].sort((a, b) => {
+    if (a.isDirect !== b.isDirect) return a.isDirect ? -1 : 1;
+    return (CRIT_ORDER[a.criticality] ?? 9) - (CRIT_ORDER[b.criticality] ?? 9);
+  });
+}
+
 // ─── Change History ───────────────────────────────────────────────────────────
 
 /**

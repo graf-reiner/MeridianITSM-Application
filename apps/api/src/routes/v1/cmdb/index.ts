@@ -15,6 +15,7 @@ import {
   listCategories,
   updateCategory,
   deleteCategory,
+  getAffectedApplications,
 } from '../../../services/cmdb.service.js';
 import { importCIs } from '../../../services/cmdb-import.service.js';
 import { prisma } from '@meridian/db';
@@ -36,6 +37,9 @@ import { prisma } from '@meridian/db';
  *
  * Impact analysis:
  * GET    /api/v1/cmdb/cis/:id/impact         — Impact analysis (cmdb.view)
+ *
+ * Blast radius:
+ * GET    /api/v1/cmdb/cis/:id/affected-applications — Affected Applications (cmdb.view)
  *
  * Change history:
  * GET    /api/v1/cmdb/cis/:id/history        — Change history (cmdb.view)
@@ -381,6 +385,25 @@ export async function cmdbRoutes(fastify: FastifyInstance): Promise<void> {
       }
 
       return reply.status(200).send(result);
+    },
+  );
+
+  // ─── GET /api/v1/cmdb/cis/:id/affected-applications — Blast radius ────────
+
+  fastify.get(
+    '/api/v1/cmdb/cis/:id/affected-applications',
+    { preHandler: [requirePermission('cmdb.view')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string };
+      const { id } = request.params as { id: string };
+
+      const ci = await getCI(user.tenantId, id);
+      if (!ci) {
+        return reply.status(404).send({ error: 'CI not found' });
+      }
+
+      const affected = await getAffectedApplications(user.tenantId, id);
+      return reply.status(200).send({ affected });
     },
   );
 

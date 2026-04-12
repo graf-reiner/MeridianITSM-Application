@@ -158,6 +158,18 @@ interface ImpactCI {
   depth: number;
 }
 
+interface AffectedApplication {
+  applicationId: string;
+  applicationName: string;
+  criticality: string;
+  status: string;
+  viaPath: string;
+  viaCiId: string | null;
+  viaCiName: string | null;
+  viaRelType: string | null;
+  isDirect: boolean;
+}
+
 // ─── Dynamic ReactFlow Import (SSR safe) ─────────────────────────────────────
 
 const RelationshipMap = dynamic(() => import('./RelationshipMap'), {
@@ -571,6 +583,18 @@ export default function CMDBDetailPage() {
       if (!res.ok) throw new Error(`Failed to load CI: ${res.status}`);
       return res.json() as Promise<CIDetail>;
     },
+  });
+
+  // Blast radius: affected applications (lazy — only when Relationships tab)
+  const { data: affectedAppsData, isLoading: affectedAppsLoading } = useQuery<{ affected: AffectedApplication[] }>({
+    queryKey: ['cmdb-ci-affected-apps', id],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/cmdb/cis/${id}/affected-applications`, { credentials: 'include' });
+      if (!res.ok) throw new Error(`Failed to load affected applications: ${res.status}`);
+      return res.json() as Promise<{ affected: AffectedApplication[] }>;
+    },
+    enabled: activeTab === 'relationships',
+    staleTime: 60_000,
   });
 
   const runImpactAnalysis = useCallback(async () => {
@@ -994,6 +1018,77 @@ export default function CMDBDetailPage() {
       {/* ── Tab: Relationships ───────────────────────────────────────────────── */}
       {activeTab === 'relationships' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Affected Applications (Blast Radius) */}
+          <Card title="Affected Applications" icon={mdiApplication}>
+            {affectedAppsLoading ? (
+              <div style={{ padding: '12px 0', fontSize: 13, color: 'var(--text-muted)' }}>
+                Computing blast radius…
+              </div>
+            ) : !affectedAppsData || affectedAppsData.affected.length === 0 ? (
+              <div style={{ padding: '12px 0', fontSize: 13, color: 'var(--text-placeholder)', fontStyle: 'italic' }}>
+                No applications are linked to this CI or depend on it via relationships.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--text-muted)' }}>
+                  {affectedAppsData.affected.length} application{affectedAppsData.affected.length !== 1 ? 's' : ''} would be impacted if this CI became unavailable.
+                </p>
+                {affectedAppsData.affected.map((app, idx) => {
+                  const critStyle = getCriticalityStyle(app.criticality);
+                  const statStyle = getStatusBadgeStyle(app.status);
+                  const isLast = idx === affectedAppsData.affected.length - 1;
+                  return (
+                    <div
+                      key={app.applicationId}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        justifyContent: 'space-between',
+                        padding: '10px 0',
+                        borderBottom: isLast ? 'none' : '1px solid var(--bg-tertiary)',
+                        gap: 12,
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <Link
+                            href={`/dashboard/applications/${app.applicationId}`}
+                            style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, fontSize: 14 }}
+                          >
+                            {app.applicationName}
+                          </Link>
+                          {app.isDirect && (
+                            <span style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                              (direct)
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ marginTop: 4, fontSize: 12, color: 'var(--text-muted)' }}>
+                          {app.viaPath}
+                          {app.viaCiId && (
+                            <>
+                              {' — '}
+                              <Link
+                                href={`/dashboard/cmdb/${app.viaCiId}`}
+                                style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}
+                              >
+                                view CI
+                              </Link>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                        <Badge label={app.criticality} bg={critStyle.bg} text={critStyle.text} />
+                        <Badge label={humanize(app.status)} bg={statStyle.bg} text={statStyle.text} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+
           {/* Controls */}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
