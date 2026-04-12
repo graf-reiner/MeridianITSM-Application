@@ -627,6 +627,372 @@ function SupportNotesEditor({
   );
 }
 
+// ─── Add Dependency Form ──────────────────────────────────────────────────────
+
+const DEPENDENCY_TYPES = [
+  'DATA_FLOW',
+  'API_CALL',
+  'SHARED_DATABASE',
+  'AUTHENTICATION',
+  'FILE_TRANSFER',
+  'MESSAGE_QUEUE',
+  'OTHER',
+] as const;
+
+function AddDependencyForm({ appId, currentAppName, onDone }: { appId: string; currentAppName: string; onDone: () => void }) {
+  const [search, setSearch] = useState('');
+  const [selectedApp, setSelectedApp] = useState<{ id: string; name: string } | null>(null);
+  const [dependencyType, setDependencyType] = useState<string>('DEPENDS_ON');
+  const [description, setDescription] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Search for applications
+  const { data: searchResults } = useQuery<{ data: Array<{ id: string; name: string; status: string; criticality: string }> }>({
+    queryKey: ['app-search', search],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/applications?search=${encodeURIComponent(search)}&pageSize=10`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Search failed');
+      return res.json() as Promise<{ data: Array<{ id: string; name: string; status: string; criticality: string }> }>;
+    },
+    enabled: search.length >= 2 && !selectedApp,
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedApp) return;
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/v1/applications/${appId}/dependencies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          targetApplicationId: selectedApp.id,
+          dependencyType,
+          description: description.trim() || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: string };
+        throw new Error(data.error ?? 'Failed to add dependency');
+      }
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add dependency');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const inputStyle = {
+    width: '100%',
+    padding: '7px 10px',
+    border: '1px solid var(--border-secondary)',
+    borderRadius: 7,
+    fontSize: 13,
+    outline: 'none',
+    boxSizing: 'border-box' as const,
+  };
+
+  const filteredResults = (searchResults?.data ?? []).filter((a) => a.id !== appId);
+
+  return (
+    <form
+      onSubmit={(e) => void handleSubmit(e)}
+      style={{
+        backgroundColor: 'var(--bg-secondary)',
+        border: '1px solid var(--border-primary)',
+        borderRadius: 8,
+        padding: 14,
+        marginBottom: 12,
+      }}
+    >
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+        <div style={{ position: 'relative' }}>
+          <label style={{ display: 'block', marginBottom: 3, fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
+            Target Application *
+          </label>
+          {selectedApp ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{selectedApp.name}</span>
+              <button
+                type="button"
+                onClick={() => { setSelectedApp(null); setSearch(''); }}
+                style={{ background: 'none', border: 'none', color: 'var(--accent-danger)', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
+              >
+                Change
+              </button>
+            </div>
+          ) : (
+            <>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={inputStyle}
+                placeholder="Search applications..."
+                autoFocus
+              />
+              {filteredResults.length > 0 && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    backgroundColor: 'var(--bg-primary)',
+                    border: '1px solid var(--border-secondary)',
+                    borderRadius: 6,
+                    maxHeight: 160,
+                    overflowY: 'auto',
+                    zIndex: 10,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  }}
+                >
+                  {filteredResults.map((a) => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => { setSelectedApp({ id: a.id, name: a.name }); setSearch(''); }}
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '8px 10px',
+                        border: 'none',
+                        background: 'none',
+                        cursor: 'pointer',
+                        fontSize: 13,
+                        color: 'var(--text-primary)',
+                        borderBottom: '1px solid var(--border-primary)',
+                      }}
+                    >
+                      {a.name}
+                      <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--text-muted)' }}>{a.criticality}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+        <div>
+          <label style={{ display: 'block', marginBottom: 3, fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Dependency Type *</label>
+          <select value={dependencyType} onChange={(e) => setDependencyType(e.target.value)} style={inputStyle}>
+            {DEPENDENCY_TYPES.map((t) => (
+              <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div style={{ marginBottom: 10 }}>
+        <label style={{ display: 'block', marginBottom: 3, fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Description</label>
+        <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} style={inputStyle} placeholder="Optional description of this dependency" />
+      </div>
+      {error && (
+        <div style={{ padding: '6px 10px', backgroundColor: 'var(--badge-red-bg-subtle)', border: '1px solid #fecaca', borderRadius: 6, color: 'var(--accent-danger)', fontSize: 12, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Icon path={mdiAlertCircle} size={0.65} color="currentColor" />
+          {error}
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <button type="button" onClick={onDone} style={{ padding: '6px 14px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
+          Cancel
+        </button>
+        <button type="submit" disabled={isSubmitting || !selectedApp} style={{ padding: '6px 14px', backgroundColor: isSubmitting || !selectedApp ? '#a5b4fc' : 'var(--accent-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: isSubmitting || !selectedApp ? 'not-allowed' : 'pointer' }}>
+          {isSubmitting ? 'Adding...' : 'Add Dependency'}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+// ─── Link Asset Form ─────────────────────────────────────────────────────────
+
+const ASSET_REL_TYPES = ['RUNS_ON', 'HOSTED_BY', 'USES'] as const;
+
+function LinkAssetForm({ appId, onDone }: { appId: string; onDone: () => void }) {
+  const [search, setSearch] = useState('');
+  const [selectedAsset, setSelectedAsset] = useState<{ id: string; assetTag: string; manufacturer: string | null; model: string | null } | null>(null);
+  const [relationshipType, setRelationshipType] = useState<string>('RUNS_ON');
+  const [isPrimary, setIsPrimary] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const { data: searchResults } = useQuery<{ data: Array<{ id: string; assetTag: string; manufacturer: string | null; model: string | null; hostname: string | null }> }>({
+    queryKey: ['asset-search', search],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/assets?search=${encodeURIComponent(search)}&pageSize=10`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Search failed');
+      return res.json() as Promise<{ data: Array<{ id: string; assetTag: string; manufacturer: string | null; model: string | null; hostname: string | null }> }>;
+    },
+    enabled: search.length >= 2 && !selectedAsset,
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedAsset) return;
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/v1/applications/${appId}/assets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          assetId: selectedAsset.id,
+          relationshipType,
+          isPrimary,
+        }),
+      });
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: string };
+        throw new Error(data.error ?? 'Failed to link asset');
+      }
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to link asset');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const inputStyle = {
+    width: '100%',
+    padding: '7px 10px',
+    border: '1px solid var(--border-secondary)',
+    borderRadius: 7,
+    fontSize: 13,
+    outline: 'none',
+    boxSizing: 'border-box' as const,
+  };
+
+  const results = searchResults?.data ?? [];
+
+  return (
+    <form
+      onSubmit={(e) => void handleSubmit(e)}
+      style={{
+        backgroundColor: 'var(--bg-secondary)',
+        border: '1px solid var(--border-primary)',
+        borderRadius: 8,
+        padding: 14,
+        marginBottom: 12,
+      }}
+    >
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+        <div style={{ position: 'relative' }}>
+          <label style={{ display: 'block', marginBottom: 3, fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
+            Asset *
+          </label>
+          {selectedAsset ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+                {selectedAsset.assetTag}
+                {(selectedAsset.manufacturer || selectedAsset.model) && (
+                  <span style={{ fontWeight: 400, color: 'var(--text-muted)', marginLeft: 6 }}>
+                    {[selectedAsset.manufacturer, selectedAsset.model].filter(Boolean).join(' ')}
+                  </span>
+                )}
+              </span>
+              <button
+                type="button"
+                onClick={() => { setSelectedAsset(null); setSearch(''); }}
+                style={{ background: 'none', border: 'none', color: 'var(--accent-danger)', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
+              >
+                Change
+              </button>
+            </div>
+          ) : (
+            <>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={inputStyle}
+                placeholder="Search assets by tag, serial, hostname..."
+                autoFocus
+              />
+              {results.length > 0 && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    backgroundColor: 'var(--bg-primary)',
+                    border: '1px solid var(--border-secondary)',
+                    borderRadius: 6,
+                    maxHeight: 160,
+                    overflowY: 'auto',
+                    zIndex: 10,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  }}
+                >
+                  {results.map((a) => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => { setSelectedAsset({ id: a.id, assetTag: a.assetTag, manufacturer: a.manufacturer, model: a.model }); setSearch(''); }}
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '8px 10px',
+                        border: 'none',
+                        background: 'none',
+                        cursor: 'pointer',
+                        fontSize: 13,
+                        color: 'var(--text-primary)',
+                        borderBottom: '1px solid var(--border-primary)',
+                      }}
+                    >
+                      {a.assetTag}
+                      <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--text-muted)' }}>
+                        {[a.manufacturer, a.model, a.hostname].filter(Boolean).join(' — ')}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+        <div>
+          <label style={{ display: 'block', marginBottom: 3, fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Relationship Type *</label>
+          <select value={relationshipType} onChange={(e) => setRelationshipType(e.target.value)} style={inputStyle}>
+            {ASSET_REL_TYPES.map((t) => (
+              <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div style={{ marginBottom: 10 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-secondary)', cursor: 'pointer' }}>
+          <input type="checkbox" checked={isPrimary} onChange={(e) => setIsPrimary(e.target.checked)} />
+          Mark as primary asset
+        </label>
+      </div>
+      {error && (
+        <div style={{ padding: '6px 10px', backgroundColor: 'var(--badge-red-bg-subtle)', border: '1px solid #fecaca', borderRadius: 6, color: 'var(--accent-danger)', fontSize: 12, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Icon path={mdiAlertCircle} size={0.65} color="currentColor" />
+          {error}
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <button type="button" onClick={onDone} style={{ padding: '6px 14px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
+          Cancel
+        </button>
+        <button type="submit" disabled={isSubmitting || !selectedAsset} style={{ padding: '6px 14px', backgroundColor: isSubmitting || !selectedAsset ? '#a5b4fc' : 'var(--accent-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: isSubmitting || !selectedAsset ? 'not-allowed' : 'pointer' }}>
+          {isSubmitting ? 'Linking...' : 'Link Asset'}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
 type Tab =
@@ -665,6 +1031,8 @@ export default function ApplicationDetailPage() {
 
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [showAddDoc, setShowAddDoc] = useState(false);
+  const [showAddDep, setShowAddDep] = useState(false);
+  const [showLinkAsset, setShowLinkAsset] = useState(false);
   const [editingNotes, setEditingNotes] = useState(false);
   const [creatingPrimary, setCreatingPrimary] = useState(false);
 
@@ -1010,6 +1378,7 @@ export default function ApplicationDetailPage() {
           iconColor="#8b5cf6"
           action={
             <button
+              onClick={() => setShowAddDep((v) => !v)}
               style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', backgroundColor: 'var(--accent-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
             >
               <Icon path={mdiPlus} size={0.65} color="currentColor" />
@@ -1017,6 +1386,16 @@ export default function ApplicationDetailPage() {
             </button>
           }
         >
+          {showAddDep && (
+            <AddDependencyForm
+              appId={id}
+              currentAppName={app.name}
+              onDone={() => {
+                setShowAddDep(false);
+                void qc.invalidateQueries({ queryKey: ['application', id] });
+              }}
+            />
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
               <h3 style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)' }}>
@@ -1140,12 +1519,24 @@ export default function ApplicationDetailPage() {
           icon={mdiDesktopClassic}
           iconColor="var(--accent-warning)"
           action={
-            <button style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', backgroundColor: 'var(--accent-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+            <button
+              onClick={() => setShowLinkAsset((v) => !v)}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', backgroundColor: 'var(--accent-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+            >
               <Icon path={mdiPlus} size={0.65} color="currentColor" />
               Link Asset
             </button>
           }
         >
+          {showLinkAsset && (
+            <LinkAssetForm
+              appId={id}
+              onDone={() => {
+                setShowLinkAsset(false);
+                void qc.invalidateQueries({ queryKey: ['application', id] });
+              }}
+            />
+          )}
           <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>
             Linked Assets are procurement records (warranty, asset tag). For operational infrastructure see the Infrastructure tab.
           </p>

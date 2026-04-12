@@ -86,6 +86,9 @@ interface CIDetailFull {
   technicalOwnerId?: string;
   supportGroupId?: string;
   manufacturerId?: string;
+  confidentialityClass?: string;
+  integrityClass?: string;
+  availabilityClass?: string;
   ciClass?: CmdbClass;
   serverExt?: Record<string, unknown>;
   applicationExt?: Record<string, unknown>;
@@ -216,6 +219,11 @@ export default function CMDBEditPage() {
   const [technicalOwnerId, setTechnicalOwnerId] = useState('');
   const [supportGroupId, setSupportGroupId] = useState('');
   const [manufacturerId, setManufacturerId] = useState('');
+
+  // Governance (CIA classification)
+  const [confidentialityClass, setConfidentialityClass] = useState('');
+  const [integrityClass, setIntegrityClass] = useState('');
+  const [availabilityClass, setAvailabilityClass] = useState('');
 
   // Technical details (common)
   const [hostname, setHostname] = useState('');
@@ -350,6 +358,11 @@ export default function CMDBEditPage() {
     setSupportGroupId(ci.supportGroupId ?? '');
     setManufacturerId(ci.manufacturerId ?? '');
 
+    // Governance
+    setConfidentialityClass(ci.confidentialityClass ?? '');
+    setIntegrityClass(ci.integrityClass ?? '');
+    setAvailabilityClass(ci.availabilityClass ?? '');
+
     // Technical
     setHostname(ci.hostname ?? '');
     setFqdn(ci.fqdn ?? '');
@@ -474,6 +487,9 @@ export default function CMDBEditPage() {
       technicalOwnerId: technicalOwnerId || undefined,
       supportGroupId: supportGroupId || undefined,
       manufacturerId: manufacturerId || undefined,
+      confidentialityClass: confidentialityClass || undefined,
+      integrityClass: integrityClass || undefined,
+      availabilityClass: availabilityClass || undefined,
       hostname: hostname || undefined,
       fqdn: fqdn || undefined,
       ipAddress: ipAddress || undefined,
@@ -763,6 +779,40 @@ export default function CMDBEditPage() {
                 )
               }
             />
+          </div>
+        </div>
+
+        <h3 style={{ margin: '24px 0 12px', fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-primary)', paddingBottom: 8 }}>Governance (CIA Classification)</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0 20px' }}>
+          <div style={fieldGroup}>
+            <label style={labelStyle}>Confidentiality</label>
+            <select style={selectStyle} value={confidentialityClass} onChange={(e) => setConfidentialityClass(e.target.value)}>
+              <option value="">-- Select --</option>
+              <option value="PUBLIC">Public</option>
+              <option value="INTERNAL">Internal</option>
+              <option value="CONFIDENTIAL">Confidential</option>
+              <option value="RESTRICTED">Restricted</option>
+            </select>
+          </div>
+          <div style={fieldGroup}>
+            <label style={labelStyle}>Integrity</label>
+            <select style={selectStyle} value={integrityClass} onChange={(e) => setIntegrityClass(e.target.value)}>
+              <option value="">-- Select --</option>
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+              <option value="CRITICAL">Critical</option>
+            </select>
+          </div>
+          <div style={fieldGroup}>
+            <label style={labelStyle}>Availability</label>
+            <select style={selectStyle} value={availabilityClass} onChange={(e) => setAvailabilityClass(e.target.value)}>
+              <option value="">-- Select --</option>
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+              <option value="CRITICAL">Critical</option>
+            </select>
           </div>
         </div>
       </div>
