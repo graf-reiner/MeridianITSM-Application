@@ -86,6 +86,8 @@ interface CIDetailFull {
   technicalOwnerId?: string;
   supportGroupId?: string;
   manufacturerId?: string;
+  assetId?: string;
+  asset?: { assetTag: string; manufacturer: string | null; model: string | null } | null;
   confidentialityClass?: string;
   integrityClass?: string;
   availabilityClass?: string;
@@ -219,6 +221,12 @@ export default function CMDBEditPage() {
   const [technicalOwnerId, setTechnicalOwnerId] = useState('');
   const [supportGroupId, setSupportGroupId] = useState('');
   const [manufacturerId, setManufacturerId] = useState('');
+
+  // Linked Asset
+  const [assetId, setAssetId] = useState('');
+  const [assetLabel, setAssetLabel] = useState(''); // display label for selected asset
+  const [assetSearch, setAssetSearch] = useState('');
+  const [assetResults, setAssetResults] = useState<Array<{ id: string; assetTag: string; manufacturer: string | null; model: string | null; hostname: string | null }>>([]);
 
   // Governance (CIA classification)
   const [confidentialityClass, setConfidentialityClass] = useState('');
@@ -358,6 +366,14 @@ export default function CMDBEditPage() {
     setSupportGroupId(ci.supportGroupId ?? '');
     setManufacturerId(ci.manufacturerId ?? '');
 
+    // Linked Asset
+    if (ci.assetId) {
+      setAssetId(ci.assetId);
+      if (ci.asset) {
+        setAssetLabel([ci.asset.assetTag, ci.asset.manufacturer, ci.asset.model].filter(Boolean).join(' — '));
+      }
+    }
+
     // Governance
     setConfidentialityClass(ci.confidentialityClass ?? '');
     setIntegrityClass(ci.integrityClass ?? '');
@@ -474,6 +490,16 @@ export default function CMDBEditPage() {
 
   // ---- Build payload --------------------------------------------------------
 
+  async function searchAssets(query: string) {
+    if (query.length < 2) { setAssetResults([]); return; }
+    try {
+      const res = await fetch(`/api/v1/assets?search=${encodeURIComponent(query)}&pageSize=8`, { credentials: 'include' });
+      if (!res.ok) return;
+      const data = await res.json() as { data: Array<{ id: string; assetTag: string; manufacturer: string | null; model: string | null; hostname: string | null }> };
+      setAssetResults(data.data ?? []);
+    } catch { /* ignore */ }
+  }
+
   function buildPayload() {
     const payload: Record<string, unknown> = {
       name,
@@ -487,6 +513,7 @@ export default function CMDBEditPage() {
       technicalOwnerId: technicalOwnerId || undefined,
       supportGroupId: supportGroupId || undefined,
       manufacturerId: manufacturerId || undefined,
+      assetId: assetId || null,
       confidentialityClass: confidentialityClass || undefined,
       integrityClass: integrityClass || undefined,
       availabilityClass: availabilityClass || undefined,
@@ -813,6 +840,84 @@ export default function CMDBEditPage() {
               <option value="HIGH">High</option>
               <option value="CRITICAL">Critical</option>
             </select>
+          </div>
+        </div>
+
+        <h3 style={{ margin: '24px 0 12px', fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-primary)', paddingBottom: 8 }}>Linked Asset</h3>
+        <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--text-muted)' }}>
+          Optionally link this CI to a procurement Asset record (for warranty, cost, and asset tag tracking).
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0 20px' }}>
+          <div style={{ ...fieldGroup, position: 'relative' as const }}>
+            <label style={labelStyle}>Asset</label>
+            {assetId ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{assetLabel || assetId}</span>
+                <button
+                  type="button"
+                  onClick={() => { setAssetId(''); setAssetLabel(''); setAssetSearch(''); setAssetResults([]); }}
+                  style={{ background: 'none', border: 'none', color: 'var(--accent-danger)', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <>
+                <input
+                  style={inputStyle}
+                  value={assetSearch}
+                  onChange={(e) => { setAssetSearch(e.target.value); void searchAssets(e.target.value); }}
+                  placeholder="Search by asset tag, serial, hostname..."
+                />
+                {assetResults.length > 0 && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      backgroundColor: 'var(--bg-primary)',
+                      border: '1px solid var(--border-secondary)',
+                      borderRadius: 6,
+                      maxHeight: 160,
+                      overflowY: 'auto',
+                      zIndex: 10,
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    }}
+                  >
+                    {assetResults.map((a) => (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => {
+                          setAssetId(a.id);
+                          setAssetLabel([a.assetTag, a.manufacturer, a.model].filter(Boolean).join(' — '));
+                          setAssetSearch('');
+                          setAssetResults([]);
+                        }}
+                        style={{
+                          display: 'block',
+                          width: '100%',
+                          textAlign: 'left',
+                          padding: '8px 10px',
+                          border: 'none',
+                          background: 'none',
+                          cursor: 'pointer',
+                          fontSize: 13,
+                          color: 'var(--text-primary)',
+                          borderBottom: '1px solid var(--border-primary)',
+                        }}
+                      >
+                        {a.assetTag}
+                        <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--text-muted)' }}>
+                          {[a.manufacturer, a.model, a.hostname].filter(Boolean).join(' — ')}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -1199,11 +1304,15 @@ export default function CMDBEditPage() {
             ['Description', description],
           ]} />
 
-          <ReviewSection title="Ownership" entries={[
+          <ReviewSection title="Ownership & Governance" entries={[
             ['Business Owner', businessOwnerId ? ownerLabel(businessOwnerId) : undefined],
             ['Technical Owner', technicalOwnerId ? ownerLabel(technicalOwnerId) : undefined],
             ['Support Group', supportGroupId ? groupLabel(supportGroupId) : undefined],
             ['Manufacturer', manufacturerId ? vendorLabel(manufacturerId) : undefined],
+            ['Confidentiality', confidentialityClass || undefined],
+            ['Integrity', integrityClass || undefined],
+            ['Availability', availabilityClass || undefined],
+            ['Linked Asset', assetLabel || undefined],
           ]} />
 
           <ReviewSection title="Technical Details" entries={[

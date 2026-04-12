@@ -100,6 +100,7 @@ interface CIDetail {
   operationalStatus: { id: string; statusKey: string; statusName: string } | null;
   cmdbEnvironment: { id: string; envKey: string; envName: string } | null;
   manufacturer: { id: string; name: string } | null;
+  asset: { id: string; assetTag: string; serialNumber: string | null; manufacturer: string | null; model: string | null; status: string; purchaseCost: number | null; warrantyExpiry: string | null; hostname: string | null } | null;
   supportGroup: { id: string; name: string; email: string | null } | null;
   category: { id: string; name: string } | null;
   agentId: string | null;
@@ -843,6 +844,23 @@ export default function CMDBDetailPage() {
               <p style={{ margin: '8px 0 0', fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>
                 This CI is the primary infrastructure record for the linked Application. Open the Application to see its full APM context.
               </p>
+            </Card>
+          )}
+
+          {ci.asset && (
+            <Card title="Linked Asset" icon={mdiPackageVariant}>
+              <InfoRow label="Asset Tag" value={ci.asset.assetTag} />
+              {ci.asset.serialNumber && <InfoRow label="Serial Number" value={ci.asset.serialNumber} />}
+              {(ci.asset.manufacturer || ci.asset.model) && (
+                <InfoRow label="Hardware" value={[ci.asset.manufacturer, ci.asset.model].filter(Boolean).join(' ')} />
+              )}
+              <InfoRow label="Status" value={ci.asset.status ? humanize(ci.asset.status) : null} />
+              {ci.asset.purchaseCost != null && (
+                <InfoRow label="Purchase Cost" value={`$${ci.asset.purchaseCost.toLocaleString()}`} />
+              )}
+              {ci.asset.warrantyExpiry && (
+                <InfoRow label="Warranty Expiry" value={formatDate(ci.asset.warrantyExpiry)} />
+              )}
             </Card>
           )}
 

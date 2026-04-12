@@ -457,6 +457,7 @@ export async function getCI(tenantId: string, ciId: string) {
       operationalStatus: true,
       cmdbEnvironment: true,
       manufacturer: true,
+      asset: { select: { id: true, assetTag: true, serialNumber: true, manufacturer: true, model: true, status: true, purchaseCost: true, warrantyExpiry: true, hostname: true } },
       supportGroup: { select: { id: true, name: true, email: true } },
       businessOwner: { select: { id: true, firstName: true, lastName: true, email: true, displayName: true } },
       technicalOwner: { select: { id: true, firstName: true, lastName: true, email: true, displayName: true } },
