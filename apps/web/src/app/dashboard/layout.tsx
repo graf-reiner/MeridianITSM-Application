@@ -37,6 +37,7 @@ import AiChatPanel from '@/components/AiChatPanel';
 import UpgradeModal from '@/components/UpgradeModal';
 import TrialBanner from '@/components/TrialBanner';
 import NotificationDropdown from '@/components/NotificationDropdown';
+import ViewToggle from '@/components/ViewToggle';
 import GlobalSearch from '@/components/GlobalSearch';
 import { usePlan } from '@/hooks/usePlan';
 
@@ -264,6 +265,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           </button>
 
           <div style={{ flex: 1 }} />
+
+          {/* Dashboard / Portal toggle */}
+          <ViewToggle />
 
           {/* Notification bell + dropdown */}
           <NotificationDropdown />

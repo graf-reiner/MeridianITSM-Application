@@ -9,6 +9,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import MobileLauncherModal from '@/components/MobileLauncherModal';
 import { clearDevicePreference } from '@/lib/device-preference';
+import ViewToggle from '@/components/ViewToggle';
 import {
   mdiHome,
   mdiTicketOutline,
@@ -250,6 +251,9 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           </button>
 
           <div style={{ flex: 1 }} />
+
+          {/* Dashboard / Portal toggle */}
+          <ViewToggle />
 
           {/* Notification bell */}
           <button
