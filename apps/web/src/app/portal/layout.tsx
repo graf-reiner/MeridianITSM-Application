@@ -9,6 +9,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import MobileLauncherModal from '@/components/MobileLauncherModal';
 import { clearDevicePreference } from '@/lib/device-preference';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ViewToggle from '@/components/ViewToggle';
 import {
   mdiHome,
@@ -26,6 +27,10 @@ import {
 } from '@mdi/js';
 import { usePlan } from '@/hooks/usePlan';
 import GlobalSearch from '@/components/GlobalSearch';
+
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
+});
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -186,6 +191,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   );
 
   return (
+    <QueryClientProvider client={queryClient}>
     <ThemeProvider>
     <div style={{ display: 'flex', height: '100vh', backgroundColor: 'var(--bg-secondary)', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
 
@@ -412,5 +418,6 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       <GlobalSearch />
     </div>
     </ThemeProvider>
+    </QueryClientProvider>
   );
 }
