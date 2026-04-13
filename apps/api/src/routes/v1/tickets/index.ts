@@ -127,7 +127,7 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
   // ─── GET /api/v1/tickets — List tickets ────────────────────────────────────
 
   fastify.get('/api/v1/tickets', async (request, reply) => {
-    const user = request.user as { tenantId: string };
+    const user = request.user as { tenantId: string; userId: string };
     const tenantId = user.tenantId;
 
     const query = request.query as {
@@ -162,9 +162,9 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
       status: query.status,
       priority: query.priority,
       type: query.type,
-      assignedToId: query.assignedToId,
+      assignedToId: query.assignedToId === 'me' ? user.userId : query.assignedToId,
       assignedGroupId: query.assignedGroupId,
-      requestedById: query.requestedById,
+      requestedById: query.requestedById === 'me' ? user.userId : query.requestedById,
       categoryId: query.categoryId,
       queueId: query.queueId,
       slaId: query.slaId,
