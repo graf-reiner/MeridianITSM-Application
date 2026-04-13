@@ -183,25 +183,27 @@ function ConversationList({
   onSelect,
   onNew,
   onClose,
+  apiBase = '/api/v1/ai-chat',
 }: {
   onSelect: (id: string) => void;
   onNew: () => void;
   onClose: () => void;
+  apiBase?: string;
 }) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/v1/ai-chat/conversations', { credentials: 'include' })
+    fetch(`${apiBase}/conversations`, { credentials: 'include' })
       .then((r) => r.json())
       .then((data) => setConversations(data as Conversation[]))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [apiBase]);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    await fetch(`/api/v1/ai-chat/conversations/${id}`, {
+    await fetch(`${apiBase}/conversations/${id}`, {
       method: 'DELETE',
       credentials: 'include',
     });
@@ -341,7 +343,8 @@ const SUGGESTIONS = [
   'Find knowledge articles about password resets',
 ];
 
-function WelcomeView({ onSend }: { onSend: (text: string) => void }) {
+function WelcomeView({ onSend, suggestions }: { onSend: (text: string) => void; suggestions?: string[] }) {
+  const items = suggestions ?? SUGGESTIONS;
   return (
     <div
       style={{
@@ -372,11 +375,13 @@ function WelcomeView({ onSend }: { onSend: (text: string) => void }) {
           AI Assistant
         </div>
         <div style={{ fontSize: 13, color: 'var(--text-muted)', maxWidth: 280 }}>
-          Ask questions about your tickets, CMDB items, inventory, knowledge base, and more.
+          {suggestions
+            ? 'Ask questions about your tickets and knowledge base articles.'
+            : 'Ask questions about your tickets, CMDB items, inventory, knowledge base, and more.'}
         </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 300 }}>
-        {SUGGESTIONS.map((s) => (
+        {items.map((s) => (
           <button
             key={s}
             onClick={() => onSend(s)}
@@ -413,9 +418,13 @@ function WelcomeView({ onSend }: { onSend: (text: string) => void }) {
 export default function AiChatPanel({
   isOpen,
   onClose,
+  apiBase,
+  suggestions: customSuggestions,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  apiBase?: string;
+  suggestions?: string[];
 }) {
   const {
     messages,
@@ -426,7 +435,7 @@ export default function AiChatPanel({
     stopStreaming,
     newConversation,
     loadConversation,
-  } = useAiChat();
+  } = useAiChat(apiBase ? { apiBase } : undefined);
 
   const [showHistory, setShowHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -546,7 +555,7 @@ export default function AiChatPanel({
           }}
         >
           {messages.length === 0 ? (
-            <WelcomeView onSend={sendMessage} />
+            <WelcomeView onSend={sendMessage} suggestions={customSuggestions} />
           ) : (
             <>
               {messages.map((msg) => (
@@ -588,6 +597,7 @@ export default function AiChatPanel({
               onSelect={loadConversation}
               onNew={newConversation}
               onClose={() => setShowHistory(false)}
+              apiBase={apiBase}
             />
           )}
         </div>

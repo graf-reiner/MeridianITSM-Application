@@ -31,7 +31,8 @@ interface SSEEvent {
 
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
-export function useAiChat() {
+export function useAiChat(options?: { apiBase?: string }) {
+  const apiBase = options?.apiBase ?? '/api/v1/ai-chat';
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -67,8 +68,8 @@ export function useAiChat() {
 
     try {
       const url = conversationId
-        ? `/api/v1/ai-chat/conversations/${conversationId}/messages`
-        : '/api/v1/ai-chat/conversations';
+        ? `${apiBase}/conversations/${conversationId}/messages`
+        : `${apiBase}/conversations`;
 
       const response = await fetch(url, {
         method: 'POST',
@@ -159,7 +160,7 @@ export function useAiChat() {
       setActiveToolCall(null);
       abortRef.current = null;
     }
-  }, [conversationId, isStreaming]);
+  }, [conversationId, isStreaming, apiBase]);
 
   const stopStreaming = useCallback(() => {
     abortRef.current?.abort();
@@ -174,7 +175,7 @@ export function useAiChat() {
 
   const loadConversation = useCallback(async (id: string) => {
     try {
-      const res = await fetch(`/api/v1/ai-chat/conversations/${id}`, { credentials: 'include' });
+      const res = await fetch(`${apiBase}/conversations/${id}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to load conversation');
       const data = await res.json() as {
         id: string;
@@ -195,7 +196,7 @@ export function useAiChat() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load conversation');
     }
-  }, []);
+  }, [apiBase]);
 
   return {
     messages,

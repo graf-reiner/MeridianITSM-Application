@@ -25,9 +25,11 @@ import {
   mdiCellphone,
   mdiClipboardTextOutline,
   mdiShieldLock,
+  mdiRobotOutline,
 } from '@mdi/js';
 import { usePlan } from '@/hooks/usePlan';
 import GlobalSearch from '@/components/GlobalSearch';
+import AiChatPanel from '@/components/AiChatPanel';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
@@ -97,7 +99,8 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { plan, isActive: isPlanActive, isLoading: planLoading } = usePlan();
+  const [chatOpen, setChatOpen] = useState(false);
+  const { plan, hasFeature, isActive: isPlanActive, isLoading: planLoading } = usePlan();
 
   // Redirect suspended/canceled tenants to paywall
   useEffect(() => {
@@ -469,6 +472,54 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
       `}</style>
       <MobileLauncherModal />
       <GlobalSearch />
+
+      {/* ── AI Assistant FAB + Panel ──────────────────────────────────────────── */}
+      {hasFeature('ai_assistant') && (
+        <>
+          {!chatOpen && (
+            <button
+              onClick={() => setChatOpen(true)}
+              title="AI Assistant"
+              className="portal-ai-fab"
+              style={{
+                position: 'fixed',
+                bottom: 24,
+                right: 24,
+                width: 52,
+                height: 52,
+                borderRadius: '50%',
+                backgroundColor: 'var(--accent-primary)',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                zIndex: 30,
+              }}
+            >
+              <Icon path={mdiRobotOutline} size={1.15} color="#fff" />
+            </button>
+          )}
+          <AiChatPanel
+            isOpen={chatOpen}
+            onClose={() => setChatOpen(false)}
+            apiBase="/api/v1/portal-ai-chat"
+            suggestions={[
+              "What's the status of my open tickets?",
+              'Show my recently resolved tickets',
+              'Find knowledge articles about password reset',
+              'How do I submit a new service request?',
+            ]}
+          />
+        </>
+      )}
+
+      <style>{`
+        @media (max-width: 768px) {
+          .portal-ai-fab { bottom: 88px !important; }
+        }
+      `}</style>
     </div>
   );
 }

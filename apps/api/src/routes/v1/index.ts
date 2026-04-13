@@ -19,6 +19,7 @@ import { ticketRoutes } from './tickets/index.js';
 import { webhookRoutes } from './webhooks/index.js';
 import { preferencesRoutes } from './preferences.js';
 import { aiChatRoutes } from './ai-chat/index.js';
+import { portalAiChatRoutes } from './portal-ai-chat/index.js';
 import { cannedResponseRoutes } from './canned-responses/index.js';
 import { surveyRoutes } from './surveys/index.js';
 import { escalationPolicyRoutes } from './escalation-policies/index.js';
@@ -99,6 +100,9 @@ export async function v1Routes(app: FastifyInstance): Promise<void> {
 
   // AI Assistant — chat conversations with function-calling over ITSM data
   await app.register(aiChatRoutes);
+
+  // Portal AI Assistant — governed chatbot for portal users (own tickets + published KB only)
+  await app.register(portalAiChatRoutes);
 
   // Canned responses / quick replies for ticket comments
   await app.register(cannedResponseRoutes);
