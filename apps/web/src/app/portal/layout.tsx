@@ -24,6 +24,7 @@ import {
   mdiClose,
   mdiCellphone,
   mdiClipboardTextOutline,
+  mdiShieldLock,
 } from '@mdi/js';
 import { usePlan } from '@/hooks/usePlan';
 import GlobalSearch from '@/components/GlobalSearch';
@@ -344,12 +345,56 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                     border: '1px solid var(--border-primary)',
                     borderRadius: 8,
                     boxShadow: '0 4px 6px -1px var(--shadow-sm)',
-                    minWidth: 160,
+                    minWidth: 180,
                     zIndex: 20,
                     overflow: 'hidden',
                   }}
                 >
                   <ThemeToggle />
+                  <Link
+                    href="/dashboard/profile"
+                    onClick={() => setUserMenuOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      width: '100%',
+                      padding: '10px 14px',
+                      background: 'none',
+                      border: 'none',
+                      borderBottom: '1px solid var(--bg-tertiary)',
+                      cursor: 'pointer',
+                      textDecoration: 'none',
+                      textAlign: 'left',
+                      fontSize: 14,
+                      color: 'var(--text-secondary)',
+                    }}
+                  >
+                    <Icon path={mdiAccountCircle} size={0.8} color="var(--text-muted)" />
+                    My Profile
+                  </Link>
+                  <Link
+                    href="/dashboard/settings/security"
+                    onClick={() => setUserMenuOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      width: '100%',
+                      padding: '10px 14px',
+                      background: 'none',
+                      border: 'none',
+                      borderBottom: '1px solid var(--bg-tertiary)',
+                      cursor: 'pointer',
+                      textDecoration: 'none',
+                      textAlign: 'left',
+                      fontSize: 14,
+                      color: 'var(--text-secondary)',
+                    }}
+                  >
+                    <Icon path={mdiShieldLock} size={0.8} color="var(--text-muted)" />
+                    Security &amp; MFA
+                  </Link>
                   <button
                     type="button"
                     onClick={() => {

@@ -127,8 +127,9 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
   // ─── GET /api/v1/tickets — List tickets ────────────────────────────────────
 
   fastify.get('/api/v1/tickets', async (request, reply) => {
-    const user = request.user as { tenantId: string; userId: string };
+    const user = request.user as { tenantId: string; userId: string; roles: string[] };
     const tenantId = user.tenantId;
+    const isEndUser = (user.roles ?? []).includes('end_user') && !(user.roles ?? []).some((r) => ['admin', 'msp_admin', 'agent'].includes(r));
 
     const query = request.query as {
       status?: string;
@@ -164,7 +165,7 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
       type: query.type,
       assignedToId: query.assignedToId === 'me' ? user.userId : query.assignedToId,
       assignedGroupId: query.assignedGroupId,
-      requestedById: query.requestedById === 'me' ? user.userId : query.requestedById,
+      requestedById: isEndUser ? user.userId : (query.requestedById === 'me' ? user.userId : query.requestedById),
       categoryId: query.categoryId,
       queueId: query.queueId,
       slaId: query.slaId,
