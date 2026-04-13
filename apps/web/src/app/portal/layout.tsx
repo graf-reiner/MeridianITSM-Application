@@ -81,6 +81,16 @@ function NavLink({ item, isActive, onClick }: { item: NavItem; isActive: boolean
 // ─── Portal Layout ────────────────────────────────────────────────────────────
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <PortalLayoutInner>{children}</PortalLayoutInner>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+}
+
+function PortalLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -191,8 +201,6 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   );
 
   return (
-    <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
     <div style={{ display: 'flex', height: '100vh', backgroundColor: 'var(--bg-secondary)', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
 
       {/* ── Desktop Sidebar ───────────────────────────────────────────────────── */}
@@ -417,7 +425,5 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       <MobileLauncherModal />
       <GlobalSearch />
     </div>
-    </ThemeProvider>
-    </QueryClientProvider>
   );
 }
