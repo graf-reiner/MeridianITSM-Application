@@ -191,6 +191,11 @@ export default function NewAssetPage() {
           </div>
         </div>
 
+        {/* CI linking hint */}
+        <div style={{ padding: '10px 14px', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
+          You can link Configuration Items (CIs) to this asset after creating it, from the asset detail page.
+        </div>
+
         {error && (
           <div style={{ padding: '10px 14px', backgroundColor: 'var(--badge-red-bg-subtle)', border: '1px solid #fecaca', borderRadius: 8, color: 'var(--accent-danger)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
             <Icon path={mdiAlertCircle} size={0.8} color="currentColor" />

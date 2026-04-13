@@ -4,11 +4,16 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Icon from '@mdi/react';
+import Link from 'next/link';
 import {
   mdiDesktopClassic,
   mdiPencil,
   mdiCheck,
   mdiClose,
+  mdiServerNetwork,
+  mdiPlus,
+  mdiDelete,
+  mdiMagnify,
 } from '@mdi/js';
 import RichTextField from '@/components/RichTextField';
 import Breadcrumb from '@/components/Breadcrumb';
@@ -32,6 +37,15 @@ interface AssetDetail {
   assignedTo: { id: string; firstName: string; lastName: string; email: string } | null;
   site: { id: string; name: string } | null;
   notes: string | null;
+  cmdbConfigItems: Array<{
+    id: string;
+    ciNumber: number;
+    name: string;
+    hostname: string | null;
+    type: string;
+    criticality: string;
+    status: string;
+  }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -109,6 +123,15 @@ function StatusLifecycle({ current }: { current: string }) {
 
 // ─── Edit Form ────────────────────────────────────────────────────────────────
 
+interface CiResult {
+  id: string;
+  ciNumber: number;
+  name: string;
+  hostname: string | null;
+  type: string;
+  criticality: string;
+}
+
 function EditAssetForm({ asset, onCancel, onSaved }: {
   asset: AssetDetail;
   onCancel: () => void;
@@ -127,6 +150,54 @@ function EditAssetForm({ asset, onCancel, onSaved }: {
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  // CI linking state
+  const [linkedCis, setLinkedCis] = useState<CiResult[]>(asset.cmdbConfigItems ?? []);
+  const [ciSearch, setCiSearch] = useState('');
+  const [ciResults, setCiResults] = useState<CiResult[]>([]);
+  const [ciLinking, setCiLinking] = useState(false);
+
+  const searchCis = async (query: string) => {
+    if (query.length < 2) { setCiResults([]); return; }
+    try {
+      const res = await fetch(`/api/v1/cmdb/cis?search=${encodeURIComponent(query)}&pageSize=8`, { credentials: 'include' });
+      if (!res.ok) return;
+      const data = await res.json() as { data: CiResult[] };
+      // Filter out already-linked CIs
+      const linkedIds = new Set(linkedCis.map((c) => c.id));
+      setCiResults((data.data ?? []).filter((c) => !linkedIds.has(c.id)));
+    } catch { /* ignore */ }
+  };
+
+  const linkCi = async (ci: CiResult) => {
+    setCiLinking(true);
+    try {
+      const res = await fetch(`/api/v1/assets/${asset.id}/link-ci`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ ciId: ci.id }),
+      });
+      if (res.ok) {
+        setLinkedCis((prev) => [...prev, ci]);
+        setCiSearch('');
+        setCiResults([]);
+      }
+    } catch { /* ignore */ }
+    finally { setCiLinking(false); }
+  };
+
+  const unlinkCi = async (ciId: string) => {
+    try {
+      const res = await fetch(`/api/v1/assets/${asset.id}/link-ci/${ciId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (res.ok) {
+        setLinkedCis((prev) => prev.filter((c) => c.id !== ciId));
+      }
+    } catch { /* ignore */ }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -194,6 +265,66 @@ function EditAssetForm({ asset, onCancel, onSaved }: {
           compact
         />
       </div>
+      {/* CI Linking Section */}
+      <div style={{ marginBottom: 16, padding: 16, borderRadius: 8, border: '1px solid var(--border-primary)', backgroundColor: 'var(--bg-primary)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <Icon path={mdiServerNetwork} size={0.8} color="var(--accent-primary)" />
+          <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Linked Configuration Items</h4>
+        </div>
+
+        {/* Currently linked CIs */}
+        {linkedCis.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+            {linkedCis.map((ci) => (
+              <div key={ci.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', borderRadius: 6, backgroundColor: 'var(--bg-secondary)', fontSize: 13 }}>
+                <span style={{ color: 'var(--text-primary)' }}>CI-{ci.ciNumber}: {ci.name}{ci.hostname ? ` (${ci.hostname})` : ''}</span>
+                <button
+                  onClick={() => void unlinkCi(ci.id)}
+                  title="Unlink CI"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--text-placeholder)' }}
+                >
+                  <Icon path={mdiDelete} size={0.7} color="currentColor" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Search to add */}
+        <div style={{ position: 'relative' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Icon path={mdiMagnify} size={0.7} color="var(--text-placeholder)" />
+            <input
+              type="text"
+              value={ciSearch}
+              onChange={(e) => { setCiSearch(e.target.value); void searchCis(e.target.value); }}
+              placeholder="Search CIs by name, hostname, or CI number..."
+              disabled={ciLinking}
+              style={{ flex: 1, padding: '7px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 13, boxSizing: 'border-box' }}
+            />
+          </div>
+          {ciResults.length > 0 && (
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-secondary)', borderRadius: 6, maxHeight: 160, overflowY: 'auto', zIndex: 10, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+              {ciResults.map((ci) => (
+                <button
+                  key={ci.id}
+                  onClick={() => void linkCi(ci)}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '8px 10px', borderBottom: '1px solid var(--border-primary)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 13, color: 'var(--text-primary)' }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 500 }}>CI-{ci.ciNumber}: {ci.name}</div>
+                    {ci.hostname && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{ci.hostname}</div>}
+                  </div>
+                  <span style={{ padding: '2px 6px', borderRadius: 8, fontSize: 11, backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
+                    {ci.type?.replace(/_/g, ' ')}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {error && <p style={{ color: 'var(--accent-danger)', fontSize: 13, margin: '0 0 12px' }}>{error}</p>}
       <div style={{ display: 'flex', gap: 8 }}>
         <button
@@ -352,6 +483,72 @@ export default function AssetDetailPage() {
               <span style={{ color: 'var(--text-muted)' }}>Warranty</span>
               <span style={{ color: warrantyInfo.color, fontWeight: 500 }}>{warrantyInfo.label}</span>
             </div>
+          </div>
+
+          {/* Linked CIs Card */}
+          <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              <Icon path={mdiServerNetwork} size={0.8} color="var(--accent-primary)" />
+              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Linked Configuration Items</h2>
+            </div>
+            {asset.cmdbConfigItems && asset.cmdbConfigItems.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {asset.cmdbConfigItems.map((ci) => (
+                  <Link
+                    key={ci.id}
+                    href={`/dashboard/cmdb/${ci.id}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '8px 12px',
+                      borderRadius: 8,
+                      border: '1px solid var(--border-primary)',
+                      textDecoration: 'none',
+                      color: 'inherit',
+                      fontSize: 13,
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
+                        CI-{ci.ciNumber}: {ci.name}
+                      </div>
+                      {ci.hostname && (
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{ci.hostname}</div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <span style={{
+                        padding: '2px 8px',
+                        borderRadius: 10,
+                        fontSize: 11,
+                        fontWeight: 500,
+                        backgroundColor: 'var(--bg-tertiary)',
+                        color: 'var(--text-secondary)',
+                      }}>
+                        {ci.type?.replace(/_/g, ' ')}
+                      </span>
+                      {ci.criticality && (
+                        <span style={{
+                          padding: '2px 8px',
+                          borderRadius: 10,
+                          fontSize: 11,
+                          fontWeight: 500,
+                          backgroundColor: ci.criticality === 'CRITICAL' ? 'var(--badge-red-bg)' : ci.criticality === 'HIGH' ? 'var(--badge-orange-bg)' : 'var(--bg-tertiary)',
+                          color: ci.criticality === 'CRITICAL' ? '#991b1b' : ci.criticality === 'HIGH' ? '#9a3412' : 'var(--text-secondary)',
+                        }}>
+                          {ci.criticality}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--text-placeholder)' }}>
+                No linked configuration items. Use the Edit button to link CIs to this asset.
+              </p>
+            )}
           </div>
         </div>
       </div>

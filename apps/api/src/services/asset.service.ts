@@ -147,6 +147,9 @@ export async function getAsset(
     where: { id: assetId, tenantId },
     include: {
       site: { select: { id: true, name: true } },
+      cmdbConfigItems: {
+        select: { id: true, ciNumber: true, name: true, hostname: true, type: true, criticality: true, status: true },
+      },
     },
   });
   return asset;

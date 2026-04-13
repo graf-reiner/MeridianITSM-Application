@@ -231,4 +231,70 @@ export async function assetRoutes(fastify: FastifyInstance): Promise<void> {
       return reply.status(200).send(result);
     },
   );
+
+  // ─── POST /api/v1/assets/:id/link-ci — Link a CI to this asset ────────────
+
+  fastify.post(
+    '/api/v1/assets/:id/link-ci',
+    { preHandler: [requirePermission('assets.update')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string };
+      const tenantId = user.tenantId;
+      const { id } = request.params as { id: string };
+      const body = request.body as { ciId?: string };
+
+      if (!body.ciId || typeof body.ciId !== 'string') {
+        return reply.status(400).send({ error: 'ciId is required' });
+      }
+
+      // Verify asset exists in this tenant
+      const asset = await getAsset(prisma, tenantId, id);
+      if (!asset) {
+        return reply.status(404).send({ error: 'Asset not found' });
+      }
+
+      // Verify CI exists in this tenant
+      const ci = await prisma.cmdbConfigurationItem.findFirst({
+        where: { id: body.ciId, tenantId },
+      });
+      if (!ci) {
+        return reply.status(404).send({ error: 'Configuration item not found' });
+      }
+
+      // Link CI to asset
+      await prisma.cmdbConfigurationItem.update({
+        where: { id: body.ciId },
+        data: { assetId: id },
+      });
+
+      return reply.status(200).send({ linked: true });
+    },
+  );
+
+  // ─── DELETE /api/v1/assets/:id/link-ci/:ciId — Unlink a CI from this asset ─
+
+  fastify.delete(
+    '/api/v1/assets/:id/link-ci/:ciId',
+    { preHandler: [requirePermission('assets.update')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string };
+      const tenantId = user.tenantId;
+      const { id, ciId } = request.params as { id: string; ciId: string };
+
+      // Verify CI exists, belongs to tenant, and is linked to this asset
+      const ci = await prisma.cmdbConfigurationItem.findFirst({
+        where: { id: ciId, tenantId, assetId: id },
+      });
+      if (!ci) {
+        return reply.status(404).send({ error: 'Linked configuration item not found' });
+      }
+
+      await prisma.cmdbConfigurationItem.update({
+        where: { id: ciId },
+        data: { assetId: null },
+      });
+
+      return reply.status(200).send({ unlinked: true });
+    },
+  );
 }
