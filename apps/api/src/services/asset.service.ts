@@ -33,6 +33,7 @@ export interface CreateAssetData {
   warrantyExpiry?: string | Date;
   assignedToId?: string;
   siteId?: string;
+  assetTypeId?: string;
   hostname?: string;
   operatingSystem?: string;
   osVersion?: string;
@@ -55,6 +56,7 @@ export interface UpdateAssetData {
   warrantyExpiry?: string | Date | null;
   assignedToId?: string | null;
   siteId?: string | null;
+  assetTypeId?: string | null;
   hostname?: string | null;
   operatingSystem?: string | null;
   osVersion?: string | null;
@@ -71,6 +73,7 @@ export interface AssetListFilters {
   status?: string;
   assignedToId?: string;
   siteId?: string;
+  assetTypeId?: string;
   search?: string;
   page?: number;
   pageSize?: number;
@@ -115,6 +118,7 @@ export async function createAsset(
         warrantyExpiry: data.warrantyExpiry ? new Date(data.warrantyExpiry as string) : undefined,
         assignedToId: data.assignedToId,
         siteId: data.siteId,
+        assetTypeId: data.assetTypeId,
         hostname: data.hostname,
         operatingSystem: data.operatingSystem,
         osVersion: data.osVersion,
@@ -128,6 +132,7 @@ export async function createAsset(
       },
       include: {
         site: { select: { id: true, name: true } },
+        assetType: { select: { id: true, name: true, icon: true, color: true } },
       },
     });
 
@@ -147,6 +152,7 @@ export async function getAsset(
     where: { id: assetId, tenantId },
     include: {
       site: { select: { id: true, name: true } },
+      assetType: { select: { id: true, name: true, icon: true, color: true } },
       cmdbConfigItems: {
         select: { id: true, ciNumber: true, name: true, hostname: true, type: true, criticality: true, status: true },
       },
@@ -181,6 +187,10 @@ export async function listAssets(
     where.siteId = filters.siteId;
   }
 
+  if (filters.assetTypeId) {
+    where.assetTypeId = filters.assetTypeId;
+  }
+
   if (filters.search) {
     where.OR = [
       { assetTag: { contains: filters.search, mode: 'insensitive' } },
@@ -196,6 +206,7 @@ export async function listAssets(
       where: where as any,
       include: {
         site: { select: { id: true, name: true } },
+        assetType: { select: { id: true, name: true, icon: true, color: true } },
       },
       orderBy: { createdAt: 'desc' },
       skip,
@@ -247,6 +258,7 @@ export async function updateAsset(
   }
   if (data.assignedToId !== undefined) updateData.assignedToId = data.assignedToId;
   if (data.siteId !== undefined) updateData.siteId = data.siteId;
+  if (data.assetTypeId !== undefined) updateData.assetTypeId = data.assetTypeId;
   if (data.hostname !== undefined) updateData.hostname = data.hostname;
   if (data.operatingSystem !== undefined) updateData.operatingSystem = data.operatingSystem;
   if (data.osVersion !== undefined) updateData.osVersion = data.osVersion;
@@ -263,6 +275,7 @@ export async function updateAsset(
     data: updateData as any,
     include: {
       site: { select: { id: true, name: true } },
+      assetType: { select: { id: true, name: true, icon: true, color: true } },
     },
   });
 

@@ -24,6 +24,7 @@ import { notificationRulesYamlRoutes } from './notification-rules-yaml.js';
 import { aiSettingsRoutes } from './ai.js';
 import { requiredFieldsRoutes } from './required-fields.js';
 import { workflowRoutes } from './workflows.js';
+import { assetTypesSettingsRoutes } from './asset-types.js';
 
 /**
  * Settings routes registrar.
@@ -71,4 +72,5 @@ export async function settingsRoutes(fastify: FastifyInstance): Promise<void> {
   await fastify.register(aiSettingsRoutes);
   await fastify.register(requiredFieldsRoutes);
   await fastify.register(workflowRoutes);
+  await fastify.register(assetTypesSettingsRoutes);
 }

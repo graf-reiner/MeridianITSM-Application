@@ -44,6 +44,7 @@ export async function assetRoutes(fastify: FastifyInstance): Promise<void> {
         warrantyExpiry?: unknown;
         assignedToId?: unknown;
         siteId?: unknown;
+        assetTypeId?: unknown;
         hostname?: unknown;
         operatingSystem?: unknown;
         osVersion?: unknown;
@@ -75,6 +76,7 @@ export async function assetRoutes(fastify: FastifyInstance): Promise<void> {
             warrantyExpiry: body.warrantyExpiry as string | undefined,
             assignedToId: body.assignedToId as string | undefined,
             siteId: body.siteId as string | undefined,
+            assetTypeId: body.assetTypeId as string | undefined,
             hostname: body.hostname as string | undefined,
             operatingSystem: body.operatingSystem as string | undefined,
             osVersion: body.osVersion as string | undefined,
@@ -113,6 +115,7 @@ export async function assetRoutes(fastify: FastifyInstance): Promise<void> {
         status?: string;
         assignedToId?: string;
         siteId?: string;
+        assetTypeId?: string;
         search?: string;
         page?: string;
         pageSize?: string;
@@ -126,6 +129,7 @@ export async function assetRoutes(fastify: FastifyInstance): Promise<void> {
         status: query.status,
         assignedToId,
         siteId: query.siteId,
+        assetTypeId: query.assetTypeId,
         search: query.search,
         page: query.page ? parseInt(query.page, 10) : undefined,
         pageSize: query.pageSize ? parseInt(query.pageSize, 10) : undefined,
@@ -180,6 +184,7 @@ export async function assetRoutes(fastify: FastifyInstance): Promise<void> {
         warrantyExpiry?: unknown;
         assignedToId?: unknown;
         siteId?: unknown;
+        assetTypeId?: unknown;
         hostname?: unknown;
         operatingSystem?: unknown;
         osVersion?: unknown;

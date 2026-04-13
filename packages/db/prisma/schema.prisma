@@ -394,6 +394,7 @@ model Tenant {
   cabMeetingChanges        CABMeetingChange[]
   knowledgeArticles        KnowledgeArticle[]
   assets                   Asset[]
+  assetTypes               AssetType[]
   sites                    Site[]
   businessUnits            BusinessUnit[]
   applications             Application[]
@@ -1665,6 +1666,29 @@ model BusinessUnit {
   @@map("business_units")
 }
 
+// ─── Asset Types ─────────────────────────────────────────────────────────────
+
+model AssetType {
+  id          String      @id @default(uuid()) @db.Uuid
+  tenantId    String      @db.Uuid
+  name        String
+  description String?
+  icon        String?
+  color       String?
+  parentId    String?     @db.Uuid
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  parent      AssetType?  @relation("AssetTypeHierarchy", fields: [parentId], references: [id])
+  children    AssetType[] @relation("AssetTypeHierarchy")
+  assets      Asset[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("asset_types")
+}
+
 // Model 30: Asset
 model Asset {
   id                String      @id @default(uuid()) @db.Uuid
@@ -1690,11 +1714,14 @@ model Asset {
   softwareInventory Json?
   lastInventoryAt   DateTime?
   customFields      Json?
+  notes             String?
+  assetTypeId       String?     @db.Uuid
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
   tenant            Tenant                  @relation(fields: [tenantId], references: [id])
   site              Site?                   @relation(fields: [siteId], references: [id])
+  assetType         AssetType?              @relation(fields: [assetTypeId], references: [id])
   changeAssets      ChangeAsset[]
   applicationAssets ApplicationAsset[]
   cmdbConfigItems   CmdbConfigurationItem[]

@@ -14,9 +14,15 @@ interface Asset {
   manufacturer: string | null;
   model: string | null;
   status: string;
+  assetType: { id: string; name: string; icon: string | null; color: string | null } | null;
   assignedTo: { firstName: string; lastName: string } | null;
   site: { name: string } | null;
   warrantyExpiry: string | null;
+}
+
+interface AssetTypeOption {
+  id: string;
+  name: string;
 }
 
 interface AssetListResponse {
@@ -48,16 +54,27 @@ export default function AssetsPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [siteId, setSiteId] = useState('');
+  const [assetTypeId, setAssetTypeId] = useState('');
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 25;
 
+  const { data: assetTypes } = useQuery<AssetTypeOption[]>({
+    queryKey: ['asset-types-list'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/settings/asset-types', { credentials: 'include' });
+      if (!res.ok) return [];
+      return res.json() as Promise<AssetTypeOption[]>;
+    },
+  });
+
   const { data, isLoading, error } = useQuery<AssetListResponse>({
-    queryKey: ['assets', search, status, siteId, page],
+    queryKey: ['assets', search, status, siteId, assetTypeId, page],
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
       if (search) params.set('search', search);
       if (status) params.set('status', status);
       if (siteId) params.set('siteId', siteId);
+      if (assetTypeId) params.set('assetTypeId', assetTypeId);
       const res = await fetch(`/api/v1/assets?${params.toString()}`, { credentials: 'include' });
       if (!res.ok) throw new Error(`Failed to load assets: ${res.status}`);
       return res.json() as Promise<AssetListResponse>;
@@ -135,6 +152,19 @@ export default function AssetsPage() {
             <option value="DISPOSED">Disposed</option>
           </select>
         </div>
+
+        {assetTypes && assetTypes.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <select
+              value={assetTypeId}
+              onChange={(e) => { setAssetTypeId(e.target.value); setPage(1); }}
+              style={{ padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}
+            >
+              <option value="">All Types</option>
+              {assetTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* ── Table ─────────────────────────────────────────────────────────────── */}
@@ -156,6 +186,7 @@ export default function AssetsPage() {
               <tr style={{ borderBottom: '2px solid var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Asset Tag</th>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Make / Model</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Type</th>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Status</th>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Assigned To</th>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Site</th>
@@ -177,6 +208,15 @@ export default function AssetsPage() {
                     </td>
                     <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>
                       {[asset.manufacturer, asset.model].filter(Boolean).join(' ') || '—'}
+                    </td>
+                    <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                      {asset.assetType ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 10, fontSize: 12, fontWeight: 500, backgroundColor: asset.assetType.color ? `${asset.assetType.color}22` : 'var(--bg-tertiary)', color: asset.assetType.color ?? 'var(--text-secondary)', border: `1px solid ${asset.assetType.color ?? 'var(--border-secondary)'}44` }}>
+                          {asset.assetType.name}
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--text-placeholder)', fontSize: 13 }}>—</span>
+                      )}
                     </td>
                     <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
                       <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 12, fontWeight: 500, backgroundColor: style.bg, color: style.text }}>

@@ -90,7 +90,9 @@ knowledge_articles: id(uuid PK), "tenantId"(uuid FK→tenants), "articleNumber"(
 ticket_knowledge_articles: id(uuid PK), "tenantId"(uuid FK→tenants), "ticketId"(uuid FK→tickets), "articleId"(uuid FK→knowledge_articles)
 
 -- ASSETS --
-assets: id(uuid PK), "tenantId"(uuid FK→tenants), "assetTag"(text), "serialNumber"(text), manufacturer(text), model(text), status(IN_STOCK|DEPLOYED|IN_REPAIR|RETIRED|DISPOSED), hostname(text), "operatingSystem"(text), "osVersion"(text), "cpuModel"(text), "cpuCores"(int), "ramGb"(float), "purchaseDate"(date), "purchaseCost"(decimal), "warrantyExpiry"(date), "assignedToId"(uuid FK→users), "siteId"(uuid FK→sites), "customFields"(jsonb), "createdAt"(timestamptz)
+asset_types: id(uuid PK), "tenantId"(uuid FK→tenants), name(text), description(text), icon(text), color(text), "parentId"(uuid FK→asset_types self-ref), "createdAt"(timestamptz)
+
+assets: id(uuid PK), "tenantId"(uuid FK→tenants), "assetTag"(text), "serialNumber"(text), manufacturer(text), model(text), status(IN_STOCK|DEPLOYED|IN_REPAIR|RETIRED|DISPOSED), hostname(text), "operatingSystem"(text), "osVersion"(text), "cpuModel"(text), "cpuCores"(int), "ramGb"(float), "purchaseDate"(date), "purchaseCost"(decimal), "warrantyExpiry"(date), "assignedToId"(uuid FK→users), "siteId"(uuid FK→sites), "assetTypeId"(uuid FK→asset_types), notes(text), "customFields"(jsonb), "createdAt"(timestamptz)
 
 sites: id(uuid PK), "tenantId"(uuid FK→tenants), name(text), address(text), city(text), state(text), country(text), "postalCode"(text)
 

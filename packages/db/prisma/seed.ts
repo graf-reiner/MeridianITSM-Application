@@ -191,7 +191,31 @@ async function main() {
     console.log(`Category: ${category.name}`);
   }
 
-  // 6. Subscription plans (GLOBAL — no tenantId)
+  // 6. Default asset types
+  const assetTypes = [
+    { name: 'Laptop', icon: 'laptop', color: '#8B5CF6' },
+    { name: 'Desktop', icon: 'desktop-classic', color: '#3B82F6' },
+    { name: 'Server', icon: 'server', color: '#EF4444' },
+    { name: 'Network Device', icon: 'router-wireless', color: '#10B981' },
+    { name: 'Mobile Device', icon: 'cellphone', color: '#F59E0B' },
+    { name: 'Printer', icon: 'printer', color: '#6B7280' },
+    { name: 'Monitor', icon: 'monitor', color: '#06B6D4' },
+    { name: 'Peripheral', icon: 'usb', color: '#D946EF' },
+    { name: 'Software License', icon: 'license', color: '#14B8A6' },
+    { name: 'Virtual Machine', icon: 'cloud-outline', color: '#6366F1' },
+    { name: 'Other', icon: 'help-circle-outline', color: '#9CA3AF' },
+  ];
+
+  for (const at of assetTypes) {
+    await prisma.assetType.upsert({
+      where: { tenantId_name: { tenantId: tenant.id, name: at.name } },
+      update: {},
+      create: { ...at, tenantId: tenant.id },
+    });
+    console.log(`  Asset Type: ${at.name}`);
+  }
+
+  // 7. Subscription plans (GLOBAL — no tenantId)
   const plans = [
     {
       name: 'STARTER' as const,

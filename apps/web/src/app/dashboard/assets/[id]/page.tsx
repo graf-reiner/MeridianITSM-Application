@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Icon from '@mdi/react';
@@ -20,6 +20,12 @@ import Breadcrumb from '@/components/Breadcrumb';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+interface AssetTypeOption {
+  id: string;
+  name: string;
+  color: string | null;
+}
+
 interface AssetDetail {
   id: string;
   assetTag: string;
@@ -36,6 +42,7 @@ interface AssetDetail {
   warrantyExpiry: string | null;
   assignedTo: { id: string; firstName: string; lastName: string; email: string } | null;
   site: { id: string; name: string } | null;
+  assetType: { id: string; name: string; icon: string | null; color: string | null } | null;
   notes: string | null;
   cmdbConfigItems: Array<{
     id: string;
@@ -148,8 +155,22 @@ function EditAssetForm({ asset, onCancel, onSaved }: {
     status: asset.status,
     notes: asset.notes ?? '',
   });
+  const [assetTypeId, setAssetTypeId] = useState(asset.assetType?.id ?? '');
+  const [assetTypes, setAssetTypes] = useState<AssetTypeOption[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch('/api/v1/settings/asset-types', { credentials: 'include' });
+        if (res.ok) {
+          const data = (await res.json()) as AssetTypeOption[];
+          setAssetTypes(Array.isArray(data) ? data : []);
+        }
+      } catch { /* ignore */ }
+    })();
+  }, []);
 
   // CI linking state
   const [linkedCis, setLinkedCis] = useState<CiResult[]>(asset.cmdbConfigItems ?? []);
@@ -207,7 +228,7 @@ function EditAssetForm({ asset, onCancel, onSaved }: {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ ...form, ramGb: form.ramGb ? Number(form.ramGb) : null }),
+        body: JSON.stringify({ ...form, ramGb: form.ramGb ? Number(form.ramGb) : null, assetTypeId: assetTypeId || null }),
       });
       if (!res.ok) {
         const err = await res.json() as { error?: string };
@@ -237,6 +258,19 @@ function EditAssetForm({ asset, onCancel, onSaved }: {
     <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: 8, padding: 20, marginTop: 16 }}>
       <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600 }}>Edit Asset</h3>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0 16px' }}>
+        {assetTypes.length > 0 && (
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 4 }}>Type</label>
+            <select
+              value={assetTypeId}
+              onChange={(e) => setAssetTypeId(e.target.value)}
+              style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 14, backgroundColor: 'var(--bg-primary)' }}
+            >
+              <option value="">-- No type --</option>
+              {assetTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </div>
+        )}
         {field('Manufacturer', 'manufacturer')}
         {field('Model', 'model')}
         {field('Serial Number', 'serialNumber')}
@@ -436,6 +470,14 @@ export default function AssetDetailPage() {
         {/* Asset Details Card */}
         <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
           <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Hardware Details</h2>
+          {asset.assetType && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14 }}>
+              <span style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: 8 }}>Type</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 8px', borderRadius: 10, fontSize: 12, fontWeight: 500, backgroundColor: asset.assetType.color ? `${asset.assetType.color}22` : 'var(--bg-tertiary)', color: asset.assetType.color ?? 'var(--text-secondary)', border: `1px solid ${asset.assetType.color ?? 'var(--border-secondary)'}44` }}>
+                {asset.assetType.name}
+              </span>
+            </div>
+          )}
           {[
             ['Manufacturer', asset.manufacturer],
             ['Model', asset.model],

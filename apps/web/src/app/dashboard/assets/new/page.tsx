@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Icon from '@mdi/react';
 import { mdiDesktopClassic, mdiAlertCircle, mdiContentSave, mdiArrowLeft, mdiServerNetwork, mdiMagnify, mdiClose } from '@mdi/js';
@@ -41,6 +41,12 @@ const inputStyle = {
   color: 'var(--text-primary)',
 };
 
+interface AssetTypeOption {
+  id: string;
+  name: string;
+  color: string | null;
+}
+
 interface CiSearchResult {
   id: string;
   ciNumber: number;
@@ -65,6 +71,8 @@ interface CiDetail {
 export default function NewAssetPage() {
   const router = useRouter();
 
+  const [assetTypeId, setAssetTypeId] = useState('');
+  const [assetTypes, setAssetTypes] = useState<AssetTypeOption[]>([]);
   const [manufacturer, setManufacturer] = useState('');
   const [model, setModel] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
@@ -81,6 +89,18 @@ export default function NewAssetPage() {
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch('/api/v1/settings/asset-types', { credentials: 'include' });
+        if (res.ok) {
+          const data = (await res.json()) as AssetTypeOption[];
+          setAssetTypes(Array.isArray(data) ? data : []);
+        }
+      } catch { /* ignore */ }
+    })();
+  }, []);
 
   // CI picker state
   const [selectedCi, setSelectedCi] = useState<{ id: string; label: string } | null>(null);
@@ -142,6 +162,7 @@ export default function NewAssetPage() {
     setError(null);
 
     const body: Record<string, unknown> = { status };
+    if (assetTypeId) body.assetTypeId = assetTypeId;
     if (manufacturer.trim()) body.manufacturer = manufacturer.trim();
     if (model.trim()) body.model = model.trim();
     if (serialNumber.trim()) body.serialNumber = serialNumber.trim();
@@ -264,6 +285,15 @@ export default function NewAssetPage() {
             <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>Hardware</h2>
           </div>
           <div style={{ padding: 18, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+            {assetTypes.length > 0 && (
+              <div>
+                <label style={labelStyle}>Type</label>
+                <select value={assetTypeId} onChange={(e) => setAssetTypeId(e.target.value)} style={inputStyle}>
+                  <option value="">-- Select type --</option>
+                  {assetTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+              </div>
+            )}
             <div>
               <label style={labelStyle}>Manufacturer</label>
               <input type="text" value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} style={inputStyle} placeholder="e.g. Dell, HP, Lenovo" />
