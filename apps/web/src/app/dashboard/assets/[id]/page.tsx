@@ -128,6 +128,123 @@ function StatusLifecycle({ current }: { current: string }) {
   );
 }
 
+// ─── Searchable Type Select ──────────────────────────────────────────────────
+
+function SearchableTypeSelect({
+  types,
+  value,
+  onChange,
+}: {
+  types: AssetTypeOption[];
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
+  const selected = types.find((t) => t.id === value);
+  const filtered = search
+    ? types.filter((t) => t.name.toLowerCase().includes(search.toLowerCase()))
+    : types;
+
+  return (
+    <div style={{ position: 'relative', marginBottom: 12 }}>
+      <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 4 }}>Type</label>
+      {selected && !open ? (
+        <div
+          onClick={() => { setOpen(true); setSearch(''); }}
+          style={{
+            width: '100%',
+            padding: '7px 10px',
+            border: '1px solid var(--border-secondary)',
+            borderRadius: 6,
+            fontSize: 14,
+            boxSizing: 'border-box',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: 'pointer',
+            backgroundColor: 'var(--bg-primary)',
+          }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {selected.color && (
+              <span style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: selected.color, flexShrink: 0 }} />
+            )}
+            {selected.name}
+          </span>
+          <span
+            onClick={(e) => { e.stopPropagation(); onChange(''); }}
+            style={{ cursor: 'pointer', color: 'var(--text-placeholder)', fontSize: 16, lineHeight: 1 }}
+            title="Clear"
+          >
+            &times;
+          </span>
+        </div>
+      ) : (
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          placeholder="Search asset types..."
+          autoComplete="off"
+          style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }}
+        />
+      )}
+      {open && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 9 }} onClick={() => setOpen(false)} />
+          <div style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            marginTop: 4,
+            backgroundColor: 'var(--bg-primary)',
+            border: '1px solid var(--border-secondary)',
+            borderRadius: 6,
+            maxHeight: 200,
+            overflowY: 'auto',
+            zIndex: 10,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          }}>
+            {filtered.length === 0 ? (
+              <div style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-placeholder)' }}>No types found</div>
+            ) : (
+              filtered.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => { onChange(t.id); setOpen(false); setSearch(''); }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderBottom: '1px solid var(--border-primary)',
+                    background: t.id === value ? 'var(--bg-secondary)' : 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    fontSize: 13,
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  {t.color && (
+                    <span style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: t.color, flexShrink: 0 }} />
+                  )}
+                  {t.name}
+                </button>
+              ))
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── Edit Form ────────────────────────────────────────────────────────────────
 
 interface CiResult {
@@ -259,17 +376,11 @@ function EditAssetForm({ asset, onCancel, onSaved }: {
       <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600 }}>Edit Asset</h3>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0 16px' }}>
         {assetTypes.length > 0 && (
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 4 }}>Type</label>
-            <select
-              value={assetTypeId}
-              onChange={(e) => setAssetTypeId(e.target.value)}
-              style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 14, backgroundColor: 'var(--bg-primary)' }}
-            >
-              <option value="">-- No type --</option>
-              {assetTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-          </div>
+          <SearchableTypeSelect
+            types={assetTypes}
+            value={assetTypeId}
+            onChange={setAssetTypeId}
+          />
         )}
         {field('Manufacturer', 'manufacturer')}
         {field('Model', 'model')}

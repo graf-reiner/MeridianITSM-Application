@@ -68,6 +68,122 @@ interface CiDetail {
   endpointExt: { osFamily: string | null; osVersion: string | null } | null;
 }
 
+function SearchableTypeSelect({
+  types,
+  value,
+  onChange,
+  label,
+  labelStyle: lStyle,
+  inputStyle: iStyle,
+}: {
+  types: AssetTypeOption[];
+  value: string;
+  onChange: (id: string) => void;
+  label: string;
+  labelStyle: React.CSSProperties;
+  inputStyle: React.CSSProperties;
+}) {
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
+  const selected = types.find((t) => t.id === value);
+  const filtered = search
+    ? types.filter((t) => t.name.toLowerCase().includes(search.toLowerCase()))
+    : types;
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <label style={lStyle}>{label}</label>
+      {selected && !open ? (
+        <div
+          onClick={() => { setOpen(true); setSearch(''); }}
+          style={{
+            ...iStyle,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: 'pointer',
+            minHeight: 35,
+          }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {selected.color && (
+              <span style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: selected.color, flexShrink: 0 }} />
+            )}
+            {selected.name}
+          </span>
+          <span
+            onClick={(e) => { e.stopPropagation(); onChange(''); }}
+            style={{ cursor: 'pointer', color: 'var(--text-placeholder)', fontSize: 16, lineHeight: 1 }}
+            title="Clear"
+          >
+            &times;
+          </span>
+        </div>
+      ) : (
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          placeholder="Search asset types..."
+          style={iStyle}
+          autoComplete="off"
+        />
+      )}
+      {open && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 9 }} onClick={() => setOpen(false)} />
+          <div style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            marginTop: 4,
+            backgroundColor: 'var(--bg-primary)',
+            border: '1px solid var(--border-secondary)',
+            borderRadius: 6,
+            maxHeight: 200,
+            overflowY: 'auto',
+            zIndex: 10,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          }}>
+            {filtered.length === 0 ? (
+              <div style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-placeholder)' }}>No types found</div>
+            ) : (
+              filtered.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => { onChange(t.id); setOpen(false); setSearch(''); }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderBottom: '1px solid var(--border-primary)',
+                    background: t.id === value ? 'var(--bg-secondary)' : 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    fontSize: 13,
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  {t.color && (
+                    <span style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: t.color, flexShrink: 0 }} />
+                  )}
+                  {t.name}
+                </button>
+              ))
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function NewAssetPage() {
   const router = useRouter();
 
@@ -286,13 +402,14 @@ export default function NewAssetPage() {
           </div>
           <div style={{ padding: 18, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
             {assetTypes.length > 0 && (
-              <div>
-                <label style={labelStyle}>Type</label>
-                <select value={assetTypeId} onChange={(e) => setAssetTypeId(e.target.value)} style={inputStyle}>
-                  <option value="">-- Select type --</option>
-                  {assetTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
-              </div>
+              <SearchableTypeSelect
+                types={assetTypes}
+                value={assetTypeId}
+                onChange={setAssetTypeId}
+                label="Type"
+                labelStyle={labelStyle}
+                inputStyle={inputStyle}
+              />
             )}
             <div>
               <label style={labelStyle}>Manufacturer</label>
