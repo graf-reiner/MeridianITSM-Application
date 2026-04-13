@@ -64,19 +64,20 @@ export default function PortalHomePage() {
       setIsLoading(true);
       setError(null);
       try {
-        const res = await fetch('/api/v1/tickets?pageSize=5', {
+        const res = await fetch('/api/v1/tickets?requestedById=me&pageSize=5', {
           credentials: 'include',
         });
         if (!res.ok) throw new Error(`Failed to load tickets: ${res.status}`);
-        const data = (await res.json()) as { tickets: Ticket[]; total: number };
+        const data = (await res.json()) as { data: Ticket[]; tickets?: Ticket[]; total: number };
+        const ticketList = data.data ?? data.tickets ?? [];
 
-        setTickets(data.tickets ?? []);
+        setTickets(ticketList);
 
         // Calculate stats from full list
-        const allOpen = (data.tickets ?? []).filter(
+        const allOpen = ticketList.filter(
           (t) => t.status === 'NEW' || t.status === 'OPEN' || t.status === 'IN_PROGRESS'
         ).length;
-        const allPending = (data.tickets ?? []).filter((t) => t.status === 'PENDING').length;
+        const allPending = ticketList.filter((t) => t.status === 'PENDING').length;
         setStats({ open: allOpen, pending: allPending });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load tickets');

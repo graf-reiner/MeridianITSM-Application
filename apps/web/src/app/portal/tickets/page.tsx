@@ -89,8 +89,8 @@ export default function PortalTicketsPage() {
           credentials: 'include',
         });
         if (!res.ok) throw new Error(`Failed to load tickets: ${res.status}`);
-        const data = (await res.json()) as { tickets: Ticket[]; total: number };
-        setTickets(data.tickets ?? []);
+        const data = (await res.json()) as { data: Ticket[]; tickets?: Ticket[]; total: number };
+        setTickets(data.data ?? data.tickets ?? []);
         setTotal(data.total ?? 0);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load tickets');

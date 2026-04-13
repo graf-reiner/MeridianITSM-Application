@@ -352,7 +352,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                 >
                   <ThemeToggle />
                   <Link
-                    href="/dashboard/profile"
+                    href="/portal/profile"
                     onClick={() => setUserMenuOpen(false)}
                     style={{
                       display: 'flex',
@@ -374,7 +374,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                     My Profile
                   </Link>
                   <Link
-                    href="/dashboard/settings/security"
+                    href="/portal/security"
                     onClick={() => setUserMenuOpen(false)}
                     style={{
                       display: 'flex',
