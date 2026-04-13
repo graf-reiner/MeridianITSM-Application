@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Icon from '@mdi/react';
@@ -141,17 +141,27 @@ function SearchableTypeSelect({
 }) {
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0, width: 0 });
+  const triggerRef = useRef<HTMLDivElement>(null);
   const selected = types.find((t) => t.id === value);
   const filtered = search
     ? types.filter((t) => t.name.toLowerCase().includes(search.toLowerCase()))
     : types;
 
+  const openDropdown = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setDropPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    }
+    setOpen(true);
+  };
+
   return (
-    <div style={{ position: 'relative', marginBottom: 12 }}>
+    <div ref={triggerRef} style={{ marginBottom: 12 }}>
       <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 4 }}>Type</label>
       {selected && !open ? (
         <div
-          onClick={() => { setOpen(true); setSearch(''); }}
+          onClick={() => { setSearch(''); openDropdown(); }}
           style={{
             width: '100%',
             padding: '7px 10px',
@@ -184,8 +194,8 @@ function SearchableTypeSelect({
         <input
           type="text"
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setOpen(true); }}
-          onFocus={() => setOpen(true)}
+          onChange={(e) => { setSearch(e.target.value); openDropdown(); }}
+          onFocus={openDropdown}
           placeholder="Search asset types..."
           autoComplete="off"
           style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }}
@@ -193,20 +203,19 @@ function SearchableTypeSelect({
       )}
       {open && (
         <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 9 }} onClick={() => setOpen(false)} />
+          <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setOpen(false)} />
           <div style={{
-            position: 'absolute',
-            top: '100%',
-            left: 0,
-            right: 0,
-            marginTop: 4,
+            position: 'fixed',
+            top: dropPos.top,
+            left: dropPos.left,
+            width: dropPos.width,
             backgroundColor: 'var(--bg-primary)',
             border: '1px solid var(--border-secondary)',
             borderRadius: 6,
-            maxHeight: 200,
+            maxHeight: 240,
             overflowY: 'auto',
-            zIndex: 10,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            zIndex: 100,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
           }}>
             {filtered.length === 0 ? (
               <div style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-placeholder)' }}>No types found</div>

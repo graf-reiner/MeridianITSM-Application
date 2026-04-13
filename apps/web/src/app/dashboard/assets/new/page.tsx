@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Icon from '@mdi/react';
 import { mdiDesktopClassic, mdiAlertCircle, mdiContentSave, mdiArrowLeft, mdiServerNetwork, mdiMagnify, mdiClose } from '@mdi/js';
@@ -85,17 +85,27 @@ function SearchableTypeSelect({
 }) {
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0, width: 0 });
+  const triggerRef = useRef<HTMLDivElement>(null);
   const selected = types.find((t) => t.id === value);
   const filtered = search
     ? types.filter((t) => t.name.toLowerCase().includes(search.toLowerCase()))
     : types;
 
+  const openDropdown = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setDropPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    }
+    setOpen(true);
+  };
+
   return (
-    <div style={{ position: 'relative' }}>
+    <div ref={triggerRef}>
       <label style={lStyle}>{label}</label>
       {selected && !open ? (
         <div
-          onClick={() => { setOpen(true); setSearch(''); }}
+          onClick={() => { setSearch(''); openDropdown(); }}
           style={{
             ...iStyle,
             display: 'flex',
@@ -123,8 +133,8 @@ function SearchableTypeSelect({
         <input
           type="text"
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setOpen(true); }}
-          onFocus={() => setOpen(true)}
+          onChange={(e) => { setSearch(e.target.value); openDropdown(); }}
+          onFocus={openDropdown}
           placeholder="Search asset types..."
           style={iStyle}
           autoComplete="off"
@@ -132,20 +142,19 @@ function SearchableTypeSelect({
       )}
       {open && (
         <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 9 }} onClick={() => setOpen(false)} />
+          <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setOpen(false)} />
           <div style={{
-            position: 'absolute',
-            top: '100%',
-            left: 0,
-            right: 0,
-            marginTop: 4,
+            position: 'fixed',
+            top: dropPos.top,
+            left: dropPos.left,
+            width: dropPos.width,
             backgroundColor: 'var(--bg-primary)',
             border: '1px solid var(--border-secondary)',
             borderRadius: 6,
-            maxHeight: 200,
+            maxHeight: 240,
             overflowY: 'auto',
-            zIndex: 10,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            zIndex: 100,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
           }}>
             {filtered.length === 0 ? (
               <div style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-placeholder)' }}>No types found</div>
@@ -161,9 +170,9 @@ function SearchableTypeSelect({
                     gap: 8,
                     width: '100%',
                     padding: '8px 12px',
-                    borderBottom: '1px solid var(--border-primary)',
                     background: t.id === value ? 'var(--bg-secondary)' : 'none',
                     border: 'none',
+                    borderBottom: '1px solid var(--border-primary)',
                     cursor: 'pointer',
                     textAlign: 'left',
                     fontSize: 13,
@@ -223,6 +232,17 @@ export default function NewAssetPage() {
   const [ciSearch, setCiSearch] = useState('');
   const [ciResults, setCiResults] = useState<CiSearchResult[]>([]);
   const [ciLoading, setCiLoading] = useState(false);
+  const [ciOpen, setCiOpen] = useState(false);
+  const [ciDropPos, setCiDropPos] = useState({ top: 0, left: 0, width: 0 });
+  const ciTriggerRef = useRef<HTMLDivElement>(null);
+
+  const openCiDropdown = () => {
+    if (ciTriggerRef.current) {
+      const rect = ciTriggerRef.current.getBoundingClientRect();
+      setCiDropPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    }
+    setCiOpen(true);
+  };
 
   const searchCis = async (query: string) => {
     if (query.length < 2) { setCiResults([]); return; }
@@ -340,57 +360,78 @@ export default function NewAssetPage() {
             <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>Populate from Configuration Item</h2>
             <span style={{ fontSize: 12, color: 'var(--text-placeholder)', fontWeight: 400 }}>(optional)</span>
           </div>
-          <div style={{ padding: 18 }}>
+          <div ref={ciTriggerRef} style={{ padding: 18 }}>
             {selectedCi ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Icon path={mdiServerNetwork} size={0.7} color="var(--accent-primary)" />
-                <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', flex: 1 }}>{selectedCi.label}</span>
-                <button
-                  type="button"
+              <div
+                style={{
+                  ...inputStyle,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  minHeight: 35,
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 500 }}>
+                  <Icon path={mdiServerNetwork} size={0.65} color="var(--accent-primary)" />
+                  {selectedCi.label}
+                </span>
+                <span
                   onClick={clearCi}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--text-placeholder)' }}
-                  title="Remove CI"
+                  style={{ cursor: 'pointer', color: 'var(--text-placeholder)', fontSize: 16, lineHeight: 1 }}
+                  title="Clear"
                 >
-                  <Icon path={mdiClose} size={0.7} color="currentColor" />
-                </button>
+                  &times;
+                </span>
               </div>
             ) : (
-              <div style={{ position: 'relative' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Icon path={mdiMagnify} size={0.7} color="var(--text-placeholder)" />
-                  <input
-                    type="text"
-                    value={ciSearch}
-                    onChange={(e) => { setCiSearch(e.target.value); void searchCis(e.target.value); }}
-                    placeholder="Search CIs by name, hostname, or IP to auto-populate fields..."
-                    disabled={ciLoading}
-                    style={{ ...inputStyle, flex: 1 }}
-                  />
+              <input
+                type="text"
+                value={ciSearch}
+                onChange={(e) => { setCiSearch(e.target.value); void searchCis(e.target.value); openCiDropdown(); }}
+                onFocus={openCiDropdown}
+                placeholder="Search CIs by name, hostname, or IP to auto-populate fields..."
+                disabled={ciLoading}
+                style={inputStyle}
+                autoComplete="off"
+              />
+            )}
+            {ciLoading && (
+              <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>Loading CI data...</p>
+            )}
+            {ciOpen && ciResults.length > 0 && (
+              <>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setCiOpen(false)} />
+                <div style={{
+                  position: 'fixed',
+                  top: ciDropPos.top,
+                  left: ciDropPos.left,
+                  width: ciDropPos.width,
+                  backgroundColor: 'var(--bg-primary)',
+                  border: '1px solid var(--border-secondary)',
+                  borderRadius: 6,
+                  maxHeight: 240,
+                  overflowY: 'auto',
+                  zIndex: 100,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                }}>
+                  {ciResults.map((ci) => (
+                    <button
+                      key={ci.id}
+                      type="button"
+                      onClick={() => { setCiOpen(false); void selectCi(ci); }}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '8px 12px', background: 'none', border: 'none', borderBottom: '1px solid var(--border-primary)', cursor: 'pointer', textAlign: 'left', fontSize: 13, color: 'var(--text-primary)' }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 500 }}>CI-{ci.ciNumber}: {ci.name}</div>
+                        {ci.hostname && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{ci.hostname}{ci.manufacturer ? ` — ${ci.manufacturer.name}` : ''}</div>}
+                      </div>
+                      <span style={{ padding: '2px 8px', borderRadius: 8, fontSize: 11, backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
+                        {ci.type?.replace(/_/g, ' ')}
+                      </span>
+                    </button>
+                  ))}
                 </div>
-                {ciLoading && (
-                  <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>Loading CI data...</p>
-                )}
-                {ciResults.length > 0 && (
-                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-secondary)', borderRadius: 6, maxHeight: 200, overflowY: 'auto', zIndex: 10, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-                    {ciResults.map((ci) => (
-                      <button
-                        key={ci.id}
-                        type="button"
-                        onClick={() => void selectCi(ci)}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '8px 12px', borderBottom: '1px solid var(--border-primary)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 13, color: 'var(--text-primary)' }}
-                      >
-                        <div>
-                          <div style={{ fontWeight: 500 }}>CI-{ci.ciNumber}: {ci.name}</div>
-                          {ci.hostname && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{ci.hostname}{ci.manufacturer ? ` — ${ci.manufacturer.name}` : ''}</div>}
-                        </div>
-                        <span style={{ padding: '2px 8px', borderRadius: 8, fontSize: 11, backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
-                          {ci.type?.replace(/_/g, ' ')}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              </>
             )}
           </div>
         </div>
