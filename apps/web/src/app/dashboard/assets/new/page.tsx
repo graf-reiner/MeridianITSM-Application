@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Icon from '@mdi/react';
-import { mdiDesktopClassic, mdiAlertCircle, mdiContentSave, mdiArrowLeft } from '@mdi/js';
+import { mdiDesktopClassic, mdiAlertCircle, mdiContentSave, mdiArrowLeft, mdiServerNetwork, mdiMagnify, mdiClose } from '@mdi/js';
 import Link from 'next/link';
 import Breadcrumb from '@/components/Breadcrumb';
 
@@ -41,6 +41,27 @@ const inputStyle = {
   color: 'var(--text-primary)',
 };
 
+interface CiSearchResult {
+  id: string;
+  ciNumber: number;
+  name: string;
+  hostname: string | null;
+  type: string;
+  manufacturer: { name: string } | null;
+}
+
+interface CiDetail {
+  id: string;
+  ciNumber: number;
+  name: string;
+  hostname: string | null;
+  serialNumber: string | null;
+  assetTag: string | null;
+  manufacturer: { name: string } | null;
+  serverExt: { osFamily: string | null; osVersion: string | null; cpuCores: number | null; ramGb: number | null } | null;
+  endpointExt: { osFamily: string | null; osVersion: string | null } | null;
+}
+
 export default function NewAssetPage() {
   const router = useRouter();
 
@@ -60,6 +81,60 @@ export default function NewAssetPage() {
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // CI picker state
+  const [selectedCi, setSelectedCi] = useState<{ id: string; label: string } | null>(null);
+  const [ciSearch, setCiSearch] = useState('');
+  const [ciResults, setCiResults] = useState<CiSearchResult[]>([]);
+  const [ciLoading, setCiLoading] = useState(false);
+
+  const searchCis = async (query: string) => {
+    if (query.length < 2) { setCiResults([]); return; }
+    try {
+      const res = await fetch(`/api/v1/cmdb/cis?search=${encodeURIComponent(query)}&pageSize=8`, { credentials: 'include' });
+      if (!res.ok) return;
+      const data = await res.json() as { data: CiSearchResult[] };
+      setCiResults(data.data ?? []);
+    } catch { /* ignore */ }
+  };
+
+  const selectCi = async (ci: CiSearchResult) => {
+    setCiLoading(true);
+    setCiSearch('');
+    setCiResults([]);
+    setSelectedCi({ id: ci.id, label: `CI-${ci.ciNumber}: ${ci.name}` });
+
+    // Fetch full CI detail to auto-populate fields
+    try {
+      const res = await fetch(`/api/v1/cmdb/cis/${ci.id}`, { credentials: 'include' });
+      if (!res.ok) return;
+      const detail = await res.json() as CiDetail;
+
+      // Auto-populate fields from CI data (only if field is currently empty)
+      if (!hostname && detail.hostname) setHostname(detail.hostname);
+      if (!serialNumber && detail.serialNumber) setSerialNumber(detail.serialNumber);
+      if (!manufacturer && detail.manufacturer?.name) setManufacturer(detail.manufacturer.name);
+
+      // Server extension data
+      if (detail.serverExt) {
+        if (!operatingSystem && detail.serverExt.osFamily) setOperatingSystem(detail.serverExt.osFamily);
+        if (!osVersion && detail.serverExt.osVersion) setOsVersion(detail.serverExt.osVersion);
+        if (!cpuCores && detail.serverExt.cpuCores) setCpuCores(String(detail.serverExt.cpuCores));
+        if (!ramGb && detail.serverExt.ramGb) setRamGb(String(detail.serverExt.ramGb));
+      }
+
+      // Endpoint extension data (fallback for OS)
+      if (detail.endpointExt && !detail.serverExt) {
+        if (!operatingSystem && detail.endpointExt.osFamily) setOperatingSystem(detail.endpointExt.osFamily);
+        if (!osVersion && detail.endpointExt.osVersion) setOsVersion(detail.endpointExt.osVersion);
+      }
+    } catch { /* ignore */ }
+    finally { setCiLoading(false); }
+  };
+
+  const clearCi = () => {
+    setSelectedCi(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,6 +167,17 @@ export default function NewAssetPage() {
         throw new Error(data.error ?? `Failed to create asset (${res.status})`);
       }
       const asset = (await res.json()) as { id: string };
+
+      // If a CI was selected, link it to the new asset
+      if (selectedCi) {
+        await fetch(`/api/v1/assets/${asset.id}/link-ci`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ ciId: selectedCi.id }),
+        }).catch(() => {}); // Non-critical — asset was created successfully
+      }
+
       router.push(`/dashboard/assets/${asset.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create asset');
@@ -108,6 +194,68 @@ export default function NewAssetPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
           <Icon path={mdiDesktopClassic} size={1.1} color="var(--accent-primary)" />
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', flex: 1 }}>New Asset</h1>
+        </div>
+
+        {/* Populate from CI */}
+        <div style={sectionStyle}>
+          <div style={sectionHeaderStyle}>
+            <Icon path={mdiServerNetwork} size={0.8} color="var(--accent-primary)" />
+            <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>Populate from Configuration Item</h2>
+            <span style={{ fontSize: 12, color: 'var(--text-placeholder)', fontWeight: 400 }}>(optional)</span>
+          </div>
+          <div style={{ padding: 18 }}>
+            {selectedCi ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Icon path={mdiServerNetwork} size={0.7} color="var(--accent-primary)" />
+                <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', flex: 1 }}>{selectedCi.label}</span>
+                <button
+                  type="button"
+                  onClick={clearCi}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--text-placeholder)' }}
+                  title="Remove CI"
+                >
+                  <Icon path={mdiClose} size={0.7} color="currentColor" />
+                </button>
+              </div>
+            ) : (
+              <div style={{ position: 'relative' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Icon path={mdiMagnify} size={0.7} color="var(--text-placeholder)" />
+                  <input
+                    type="text"
+                    value={ciSearch}
+                    onChange={(e) => { setCiSearch(e.target.value); void searchCis(e.target.value); }}
+                    placeholder="Search CIs by name, hostname, or IP to auto-populate fields..."
+                    disabled={ciLoading}
+                    style={{ ...inputStyle, flex: 1 }}
+                  />
+                </div>
+                {ciLoading && (
+                  <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>Loading CI data...</p>
+                )}
+                {ciResults.length > 0 && (
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-secondary)', borderRadius: 6, maxHeight: 200, overflowY: 'auto', zIndex: 10, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                    {ciResults.map((ci) => (
+                      <button
+                        key={ci.id}
+                        type="button"
+                        onClick={() => void selectCi(ci)}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '8px 12px', borderBottom: '1px solid var(--border-primary)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 13, color: 'var(--text-primary)' }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 500 }}>CI-{ci.ciNumber}: {ci.name}</div>
+                          {ci.hostname && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{ci.hostname}{ci.manufacturer ? ` — ${ci.manufacturer.name}` : ''}</div>}
+                        </div>
+                        <span style={{ padding: '2px 8px', borderRadius: 8, fontSize: 11, backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
+                          {ci.type?.replace(/_/g, ' ')}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Hardware */}
@@ -189,11 +337,6 @@ export default function NewAssetPage() {
               <input type="date" value={warrantyExpiry} onChange={(e) => setWarrantyExpiry(e.target.value)} style={inputStyle} />
             </div>
           </div>
-        </div>
-
-        {/* CI linking hint */}
-        <div style={{ padding: '10px 14px', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
-          You can link Configuration Items (CIs) to this asset after creating it, from the asset detail page.
         </div>
 
         {error && (
