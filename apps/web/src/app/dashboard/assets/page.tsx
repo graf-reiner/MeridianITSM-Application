@@ -26,7 +26,7 @@ interface AssetTypeOption {
 }
 
 interface AssetListResponse {
-  assets: Asset[];
+  data: Asset[];
   total: number;
 }
 
@@ -81,7 +81,7 @@ export default function AssetsPage() {
     },
   });
 
-  const assets = data?.assets ?? [];
+  const assets = data?.data ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
