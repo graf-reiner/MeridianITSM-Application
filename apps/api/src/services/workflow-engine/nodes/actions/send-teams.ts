@@ -13,6 +13,14 @@ registerNode({
   outputs: [{ id: 'out', label: 'Next', type: 'default' }],
   configSchema: [
     { key: 'alertChannelId', label: 'Channel ID', type: 'text', placeholder: 'Teams channel webhook URL' },
+    {
+      key: 'templateId',
+      label: 'Template',
+      type: 'template_ref',
+      templateChannel: 'TEAMS',
+      helpText: 'Optional — pick a saved template, or leave blank to type inline.',
+      hidesKeys: ['title', 'body'],
+    },
     { key: 'title', label: 'Title', type: 'text', placeholder: 'Type / to insert a variable', variableContext: ['ticket', 'requester', 'assignee', 'tenant', 'now'] },
     { key: 'body', label: 'Body', type: 'textarea', placeholder: 'Type / to insert a variable', variableContext: ['ticket', 'requester', 'assignee', 'tenant', 'now'] },
   ],
@@ -26,6 +34,12 @@ registerNode({
       alertChannelId: config.alertChannelId,
       title: config.title,
       body: config.body,
+      templateId: config.templateId,
+      // Inline fallback for Teams executor — combine title+body into a single
+      // `message` string so the pre-existing executor path works when no template is set.
+      message: config.title && config.body
+        ? `${config.title as string}\n\n${config.body as string}`
+        : (config.title ?? config.body),
     };
 
     const [result] = await executeActions([actionConfig as any], context.eventContext, context.tenantId);

@@ -472,6 +472,7 @@ model Tenant {
   changeTemplates          ChangeTemplate[]
   cmdbBaselines            CmdbBaseline[]
   holidays                 Holiday[]
+  notificationTemplates    NotificationTemplate[]
 
   @@map("tenants")
 }
@@ -561,6 +562,7 @@ model User {
   customFormsCreated      CustomForm[]             @relation("CustomFormCreatedBy")
   customFormSubmissions   CustomFormSubmission[]   @relation("CustomFormSubmittedBy")
   majorIncidentCoordinations Ticket[]              @relation("MajorIncidentCoordinator")
+  notificationTemplatesCreated NotificationTemplate[] @relation("NotificationTemplateCreatedBy")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -2983,6 +2985,44 @@ model EmailTemplate {
 
   @@index([tenantId])
   @@map("email_templates")
+}
+
+enum NotificationTemplateChannel {
+  EMAIL
+  TELEGRAM
+  SLACK
+  TEAMS
+  DISCORD
+}
+
+// Model 57b: NotificationTemplate — tenant-authored, reusable across workflows and notification rules
+model NotificationTemplate {
+  id          String                      @id @default(uuid()) @db.Uuid
+  tenantId    String                      @db.Uuid
+  name        String
+  description String?
+  channel     NotificationTemplateChannel
+  // Channel-specific payload:
+  //   EMAIL:    { subject, htmlBody, textBody? }
+  //   TELEGRAM: { message }
+  //   SLACK:    { message }
+  //   DISCORD:  { message }
+  //   TEAMS:    { title, body }
+  content     Json
+  // Variable contexts this template supports, e.g. ["ticket","requester","assignee","tenant","now"]
+  contexts    String[]                    @default([])
+  isActive    Boolean                     @default(true)
+  createdById String?                     @db.Uuid
+  createdAt   DateTime                    @default(now())
+  updatedAt   DateTime                    @updatedAt
+
+  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy User?  @relation("NotificationTemplateCreatedBy", fields: [createdById], references: [id])
+
+  @@unique([tenantId, name, channel])
+  @@index([tenantId, channel])
+  @@index([tenantId, isActive])
+  @@map("notification_templates")
 }
 
 // Model 58: AlertConfiguration

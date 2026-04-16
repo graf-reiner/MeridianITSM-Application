@@ -32,6 +32,7 @@ import { problemRoutes } from './problems/index.js';
 import { searchRoutes } from './search.js';
 import { changeTemplateRoutes } from './change-templates/index.js';
 import { holidayRoutes } from './holidays/index.js';
+import { notificationTemplateRoutes } from './notification-templates/index.js';
 
 /**
  * V1 API routes — protected scope (requires JWT + tenant + RBAC).
@@ -139,4 +140,7 @@ export async function v1Routes(app: FastifyInstance): Promise<void> {
 
   // Holiday calendar — date-based SLA exclusions (skipped from business hours)
   await app.register(holidayRoutes);
+
+  // Notification templates — tenant-authored reusable templates (email, telegram, slack, teams, discord)
+  await app.register(notificationTemplateRoutes);
 }

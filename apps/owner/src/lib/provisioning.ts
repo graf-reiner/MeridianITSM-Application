@@ -84,6 +84,72 @@ const DEFAULT_CATEGORIES = [
   { name: 'Other', icon: 'help', color: '#6B7280' },
 ];
 
+const DEFAULT_NOTIFICATION_TEMPLATES: Array<{
+  name: string;
+  description: string;
+  channel: 'EMAIL' | 'TELEGRAM' | 'SLACK' | 'TEAMS' | 'DISCORD';
+  content: Record<string, string>;
+  contexts: string[];
+}> = [
+  {
+    name: 'Ticket Assigned',
+    description: 'Sent to the assignee when a ticket is assigned to them',
+    channel: 'EMAIL',
+    content: {
+      subject: '[{{ticket.number}}] {{ticket.title}} — assigned to you',
+      htmlBody:
+        '<p>Hi {{assignee.firstName}},</p><p>Ticket <strong>{{ticket.number}}</strong> (<em>{{ticket.title}}</em>) has been assigned to you.</p><p>Priority: {{ticket.priority}} · Status: {{ticket.status}}</p>',
+      textBody:
+        'Hi {{assignee.firstName}},\n\nTicket {{ticket.number}} ({{ticket.title}}) has been assigned to you.\n\nPriority: {{ticket.priority}} · Status: {{ticket.status}}',
+    },
+    contexts: ['ticket', 'assignee', 'tenant', 'now'],
+  },
+  {
+    name: 'Ticket Resolved',
+    description: 'Sent to the requester when their ticket is resolved',
+    channel: 'EMAIL',
+    content: {
+      subject: '[{{ticket.number}}] {{ticket.title}} — resolved',
+      htmlBody:
+        '<p>Hi {{requester.firstName}},</p><p>Your ticket <strong>{{ticket.number}}</strong> (<em>{{ticket.title}}</em>) has been resolved.</p><p>If you have any further questions, reply to this email or reopen the ticket.</p>',
+      textBody:
+        'Hi {{requester.firstName}},\n\nYour ticket {{ticket.number}} ({{ticket.title}}) has been resolved.\n\nIf you have any further questions, reply to this email or reopen the ticket.',
+    },
+    contexts: ['ticket', 'requester', 'tenant', 'now'],
+  },
+  {
+    name: 'SLA Warning',
+    description: 'Sent when a ticket is approaching its SLA deadline',
+    channel: 'EMAIL',
+    content: {
+      subject: 'SLA warning: {{ticket.number}} approaching breach',
+      htmlBody:
+        '<p><strong>Heads up</strong> — ticket {{ticket.number}} ({{ticket.title}}) is approaching its SLA deadline.</p><p>Assignee: {{assignee.displayName}}<br/>Priority: {{ticket.priority}}</p>',
+    },
+    contexts: ['ticket', 'assignee', 'sla', 'tenant', 'now'],
+  },
+  {
+    name: 'New Ticket Alert (Slack)',
+    description: 'Short-form Slack alert for newly created tickets',
+    channel: 'SLACK',
+    content: {
+      message:
+        ':ticket: *New ticket {{ticket.number}}* — {{ticket.title}}\nPriority: {{ticket.priority}} · Requester: {{requester.displayName}}',
+    },
+    contexts: ['ticket', 'requester', 'tenant'],
+  },
+  {
+    name: 'Urgent Ticket (Telegram)',
+    description: 'On-call Telegram notification for critical tickets',
+    channel: 'TELEGRAM',
+    content: {
+      message:
+        '🚨 <b>Urgent ticket {{ticket.number}}</b>\n{{ticket.title}}\nPriority: {{ticket.priority}}\nAssigned: {{assignee.displayName}}',
+    },
+    contexts: ['ticket', 'assignee', 'tenant'],
+  },
+];
+
 /**
  * Provisions a new tenant with all required defaults:
  * - Tenant record
@@ -165,6 +231,29 @@ export async function provisionTenant(input: ProvisionTenantInput): Promise<Prov
         where: { tenantId_name: { tenantId: tenant.id, name: category.name } },
         update: {},
         create: { ...category, tenantId: tenant.id },
+      });
+    }
+
+    // 6.5 Seed default notification templates (email + slack + telegram starters)
+    for (const template of DEFAULT_NOTIFICATION_TEMPLATES) {
+      await tx.notificationTemplate.upsert({
+        where: {
+          tenantId_name_channel: {
+            tenantId: tenant.id,
+            name: template.name,
+            channel: template.channel,
+          },
+        },
+        update: {},
+        create: {
+          tenantId: tenant.id,
+          name: template.name,
+          description: template.description,
+          channel: template.channel,
+          content: template.content,
+          contexts: template.contexts,
+          isActive: true,
+        },
       });
     }
 

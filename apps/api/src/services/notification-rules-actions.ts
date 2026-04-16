@@ -52,6 +52,30 @@ export interface ActionResult {
   detail?: string;
 }
 
+export type TemplateChannel = 'EMAIL' | 'TELEGRAM' | 'SLACK' | 'TEAMS' | 'DISCORD';
+
+/**
+ * Load an active NotificationTemplate scoped to tenantId + channel.
+ * Returns null if templateId is missing, not found, inactive, or channel mismatch.
+ * Callers must fall back to inline config when null is returned.
+ */
+export async function resolveTemplate(
+  templateId: string | undefined,
+  tenantId: string,
+  channel: TemplateChannel,
+): Promise<{ content: Record<string, unknown>; contexts: string[] } | null> {
+  if (!templateId) return null;
+  const tpl = await prisma.notificationTemplate.findFirst({
+    where: { id: templateId, tenantId, channel, isActive: true },
+    select: { content: true, contexts: true },
+  });
+  if (!tpl) return null;
+  return {
+    content: tpl.content as Record<string, unknown>,
+    contexts: tpl.contexts,
+  };
+}
+
 // ─── Recipient Resolvers ─────────────────────────────────────────────────────
 
 /**
@@ -164,14 +188,13 @@ async function executeEmail(
     return { type: 'email', success: true, detail: 'No email recipients resolved' };
   }
 
-  const subject = renderTemplate(
-    (config.subject as string) ?? 'Notification',
-    context,
-  );
-  const body = renderTemplate(
-    (config.body as string) ?? '',
-    context,
-  );
+  // Template takes precedence over inline subject/body when templateId is set
+  const tpl = await resolveTemplate(config.templateId as string | undefined, tenantId, 'EMAIL');
+  const subjectRaw = tpl ? (tpl.content.subject as string) : ((config.subject as string) ?? 'Notification');
+  const bodyRaw = tpl ? (tpl.content.htmlBody as string) : ((config.body as string) ?? '');
+
+  const subject = renderTemplate(subjectRaw, context);
+  const body = renderTemplate(bodyRaw, context);
 
   for (const to of emails) {
     await emailNotificationQueue.add('send-email', {
@@ -194,7 +217,7 @@ async function executeEmail(
 async function executeSlack(
   config: ActionConfig,
   context: EventContext,
-  _tenantId: string,
+  tenantId: string,
 ): Promise<ActionResult> {
   const channelId = config.alertChannelId as string | undefined;
   if (!channelId) {
@@ -214,10 +237,11 @@ async function executeSlack(
     return { type: 'slack', success: false, error: 'No webhookUrl in alert config' };
   }
 
-  const message = renderTemplate(
-    (config.message as string) ?? 'Notification from MeridianITSM',
-    context,
-  );
+  const tpl = await resolveTemplate(config.templateId as string | undefined, tenantId, 'SLACK');
+  const messageRaw = tpl
+    ? (tpl.content.message as string)
+    : ((config.message as string) ?? 'Notification from MeridianITSM');
+  const message = renderTemplate(messageRaw, context);
 
   const resp = await fetch(webhookUrl, {
     method: 'POST',
@@ -235,7 +259,7 @@ async function executeSlack(
 async function executeTeams(
   config: ActionConfig,
   context: EventContext,
-  _tenantId: string,
+  tenantId: string,
 ): Promise<ActionResult> {
   const channelId = config.alertChannelId as string | undefined;
   if (!channelId) {
@@ -255,10 +279,13 @@ async function executeTeams(
     return { type: 'teams', success: false, error: 'No webhookUrl in alert config' };
   }
 
-  const message = renderTemplate(
-    (config.message as string) ?? 'Notification from MeridianITSM',
-    context,
-  );
+  // TEAMS templates carry title + body separately; collapse into a single "TITLE\n\nBODY" string
+  // for the adaptive card since the Teams action historically rendered one message block.
+  const tpl = await resolveTemplate(config.templateId as string | undefined, tenantId, 'TEAMS');
+  const messageRaw = tpl
+    ? `${tpl.content.title as string}\n\n${tpl.content.body as string}`
+    : ((config.message as string) ?? 'Notification from MeridianITSM');
+  const message = renderTemplate(messageRaw, context);
 
   // Teams Adaptive Card format
   const card = {
@@ -298,7 +325,7 @@ async function executeTeams(
 async function executeDiscord(
   config: ActionConfig,
   context: EventContext,
-  _tenantId: string,
+  tenantId: string,
 ): Promise<ActionResult> {
   const channelId = config.alertChannelId as string | undefined;
   if (!channelId) {
@@ -318,10 +345,11 @@ async function executeDiscord(
     return { type: 'discord', success: false, error: 'No webhookUrl in alert config' };
   }
 
-  const message = renderTemplate(
-    (config.message as string) ?? 'Notification from MeridianITSM',
-    context,
-  );
+  const tpl = await resolveTemplate(config.templateId as string | undefined, tenantId, 'DISCORD');
+  const messageRaw = tpl
+    ? (tpl.content.message as string)
+    : ((config.message as string) ?? 'Notification from MeridianITSM');
+  const message = renderTemplate(messageRaw, context);
 
   // Discord webhook embed format
   const payload = {
@@ -352,7 +380,7 @@ async function executeDiscord(
 async function executeTelegram(
   config: ActionConfig,
   context: EventContext,
-  _tenantId: string,
+  tenantId: string,
 ): Promise<ActionResult> {
   const channelId = config.alertChannelId as string | undefined;
   if (!channelId) {
@@ -373,10 +401,11 @@ async function executeTelegram(
     return { type: 'telegram', success: false, error: 'Missing botToken or chatId in alert config' };
   }
 
-  const message = renderTemplate(
-    (config.message as string) ?? 'Notification from MeridianITSM',
-    context,
-  );
+  const tpl = await resolveTemplate(config.templateId as string | undefined, tenantId, 'TELEGRAM');
+  const messageRaw = tpl
+    ? (tpl.content.message as string)
+    : ((config.message as string) ?? 'Notification from MeridianITSM');
+  const message = renderTemplate(messageRaw, context);
 
   const resp = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     method: 'POST',

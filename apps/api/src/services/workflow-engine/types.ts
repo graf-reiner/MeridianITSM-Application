@@ -52,7 +52,17 @@ export interface PortDefinition {
 export interface FieldSchema {
   key: string;
   label: string;
-  type: 'text' | 'textarea' | 'select' | 'multiselect' | 'checkbox' | 'number' | 'json' | 'entity_select' | 'dynamic_select';
+  type:
+    | 'text'
+    | 'textarea'
+    | 'select'
+    | 'multiselect'
+    | 'checkbox'
+    | 'number'
+    | 'json'
+    | 'entity_select'
+    | 'dynamic_select'
+    | 'template_ref';
   required?: boolean;
   placeholder?: string;
   helpText?: string;
@@ -66,6 +76,18 @@ export interface FieldSchema {
    * `['ticket', 'requester', 'tenant', 'now']`.
    */
   variableContext?: string[];
+  /**
+   * For `type: 'template_ref'` — the channel filter passed to the template
+   * picker so it only lists compatible templates. One of EMAIL / TELEGRAM /
+   * SLACK / TEAMS / DISCORD.
+   */
+  templateChannel?: 'EMAIL' | 'TELEGRAM' | 'SLACK' | 'TEAMS' | 'DISCORD';
+  /**
+   * For `type: 'template_ref'` — the keys of other fields in this node's
+   * configSchema that should be hidden when a template is selected. Lets
+   * inline subject/body fields disappear once a template takes over.
+   */
+  hidesKeys?: string[];
 }
 
 // ─── Execution Types ────────────────────────────────────────────────────────

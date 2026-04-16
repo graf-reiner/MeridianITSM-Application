@@ -204,6 +204,13 @@ const SETTINGS_GROUPS: SettingsGroup[] = [
         color: '#d97706',
       },
       {
+        href: '/dashboard/settings/notification-templates',
+        label: 'Notification Templates',
+        description: 'Reusable email, Telegram, Slack, Teams & Discord templates',
+        icon: mdiBellRing,
+        color: '#0ea5e9',
+      },
+      {
         href: '/dashboard/settings/alerts',
         label: 'Alert Channels',
         description: 'Send alerts to Slack, Teams, or email',

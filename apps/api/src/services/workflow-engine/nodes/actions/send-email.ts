@@ -23,6 +23,14 @@ registerNode({
       ],
     },
     { key: 'emails', label: 'Additional Emails', type: 'text', placeholder: 'comma-separated' },
+    {
+      key: 'templateId',
+      label: 'Template',
+      type: 'template_ref',
+      templateChannel: 'EMAIL',
+      helpText: 'Optional — pick a saved template, or leave blank to type inline.',
+      hidesKeys: ['subject', 'body'],
+    },
     { key: 'subject', label: 'Subject', type: 'text', required: true, placeholder: 'Ticket {{ticket.number}}: {{ticket.title}}', variableContext: ['ticket', 'requester', 'assignee', 'tenant', 'now'] },
     { key: 'body', label: 'Body', type: 'textarea', placeholder: 'Type / to insert a variable', variableContext: ['ticket', 'requester', 'assignee', 'tenant', 'now'] },
   ],
@@ -37,6 +45,7 @@ registerNode({
       emails: config.emails,
       subject: config.subject,
       body: config.body,
+      templateId: config.templateId,
       templateName: config.templateName,
     };
 

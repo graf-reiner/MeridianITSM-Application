@@ -26,6 +26,31 @@ import { mdiArrowLeft, mdiContentSave, mdiCheckCircle, mdiRocketLaunch, mdiPlay,
 import { VariableInput, VariableTextarea } from '@/components/variable-picker';
 import type { VariableContextKey } from '@meridian/core/template';
 import Link from 'next/link';
+import { TemplatePickerField } from '@/components/workflow-editor/TemplatePickerField';
+import { SaveAsTemplateButton } from '@/components/workflow-editor/SaveAsTemplateButton';
+import type { TemplateChannel } from '@/components/notification-templates/types';
+
+/**
+ * Gather the inline field values that a template_ref would capture when the
+ * user clicks "Save as Template". Channel-specific because EMAIL uses
+ * subject/body, TEAMS uses title/body, others use message.
+ */
+function buildInlineContent(channel: TemplateChannel, cfg: Record<string, unknown>): Record<string, unknown> {
+  switch (channel) {
+    case 'EMAIL':
+      return {
+        subject: String(cfg.subject ?? ''),
+        htmlBody: String(cfg.body ?? ''),
+      };
+    case 'TEAMS':
+      return {
+        title: String(cfg.title ?? ''),
+        body: String(cfg.body ?? ''),
+      };
+    default:
+      return { message: String(cfg.message ?? '') };
+  }
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -38,7 +63,19 @@ interface NodeDef {
   color: string;
   inputs: Array<{ id: string; label: string; type: string }>;
   outputs: Array<{ id: string; label: string; type: string }>;
-  configSchema: Array<{ key: string; label: string; type: string; required?: boolean; placeholder?: string; helpText?: string; options?: Array<{ label: string; value: string }>; defaultValue?: unknown; variableContext?: string[] }>;
+  configSchema: Array<{
+    key: string;
+    label: string;
+    type: string;
+    required?: boolean;
+    placeholder?: string;
+    helpText?: string;
+    options?: Array<{ label: string; value: string }>;
+    defaultValue?: unknown;
+    variableContext?: string[];
+    templateChannel?: TemplateChannel;
+    hidesKeys?: string[];
+  }>;
 }
 
 interface WorkflowData {
@@ -610,14 +647,41 @@ export default function WorkflowBuilderPage() {
             </div>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 16px' }}>{selectedNodeDef.description}</p>
 
-            {/* Config form from schema */}
-            {selectedNodeDef.configSchema.map(field => (
+            {/* Config form from schema.
+               * When a `template_ref` field has a value selected, hide the inline
+               * fields listed in that template_ref's `hidesKeys`. That way picking
+               * a template collapses the subject/body inputs — one source of truth. */}
+            {(() => {
+              const hidden = new Set<string>();
+              const cfg = (selectedNode.data as any).config ?? {};
+              for (const f of selectedNodeDef.configSchema) {
+                if (f.type === 'template_ref' && cfg[f.key] && f.hidesKeys) {
+                  for (const k of f.hidesKeys) hidden.add(k);
+                }
+              }
+              return selectedNodeDef.configSchema
+                .filter((f) => !hidden.has(f.key))
+                .map((field) => (
               <div key={field.key} style={{ marginBottom: 14 }}>
                 <label style={{ display: 'block', marginBottom: 4, fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
                   {field.label}{field.required ? ' *' : ''}
                 </label>
 
-                {field.variableContext && field.type === 'textarea' ? (
+                {field.type === 'template_ref' && field.templateChannel ? (
+                  <>
+                    <TemplatePickerField
+                      channel={field.templateChannel}
+                      value={String((selectedNode.data as any).config?.[field.key] ?? '')}
+                      onChange={(v) => updateNodeConfig(selectedNode.id, field.key, v)}
+                    />
+                    <SaveAsTemplateButton
+                      channel={field.templateChannel}
+                      content={buildInlineContent(field.templateChannel, (selectedNode.data as any).config ?? {})}
+                      disabled={Boolean((selectedNode.data as any).config?.[field.key])}
+                      onTemplateCreated={(id) => updateNodeConfig(selectedNode.id, field.key, id)}
+                    />
+                  </>
+                ) : field.variableContext && field.type === 'textarea' ? (
                   <VariableTextarea
                     value={String((selectedNode.data as any).config?.[field.key] ?? '')}
                     onChange={(v) => updateNodeConfig(selectedNode.id, field.key, v)}
@@ -735,7 +799,8 @@ export default function WorkflowBuilderPage() {
                   <p style={{ margin: '3px 0 0', fontSize: 11, color: 'var(--text-placeholder)' }}>{field.helpText}</p>
                 )}
               </div>
-            ))}
+            ));
+            })()}
 
             {/* Node ID for debugging */}
             <div style={{ borderTop: '1px solid var(--bg-tertiary)', paddingTop: 12, marginTop: 16 }}>
