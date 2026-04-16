@@ -213,6 +213,27 @@ Recent decisions affecting current work:
 - [Phase 05-08]: Offline photos not queued in useAddComment offline path — FormData binary blobs not serializable to AsyncStorage JSON
 - [Phase 05-08]: useOfflineSync passes dequeue as argument to replayQueue to avoid stale Zustand closure in async for-loop
 
+### Architecture Decisions
+
+Durable cross-phase architectural decisions. Single source of truth for decisions that outlive a single phase and affect long-term product security/shape.
+
+- **AUTH_RATE_LIMIT = { max: 50, timeWindow: '15 minutes' }** (logged 2026-04-16, Phase 6 paperwork cleanup)
+  - **Spec:** AUTH-08 originally specified max=5/15min for auth endpoints (login, signup, form-login, password-reset).
+  - **Shipped:** max=50/15min — ten times the spec'd value.
+  - **Rationale:** 5 requests per 15 minutes was too aggressive for dev/testing cycles (login + password-reset flows routinely burn >5 attempts during feature work). 50 is the pragmatic shipped value — still two orders of magnitude stricter than the global 100/min default, still materially harder to brute-force than no rate-limit.
+  - **Applied in:** `apps/api/src/plugins/rate-limit.ts` (line 5), imported and used in `apps/api/src/routes/auth/login.ts`, `signup.ts`, `form-login.ts`, `password-reset.ts`.
+  - **Revisit trigger:** Tighten toward 5/15min if abuse is observed in production, or at v2.0 threat-model review if brute-force resistance is reprioritised.
+  - **Source:** Intentional deviation from AUTH-08 spec; also recorded in `.planning/PROJECT.md` Key Decisions table.
+
+### Tracked Follow-ups
+
+- **api-key.test.ts is an `it.todo()` stub, not a real test** (logged 2026-04-16, Phase 6 paperwork cleanup)
+  - **File:** `apps/api/src/__tests__/api-key.test.ts`
+  - **State:** The `'rejects request without API key header'` test was swapped from a non-functional `expect(true).toBe(true)` placeholder to `it.todo('rejects request without API key header — real test tracked in STATE.md Tracked Follow-ups')`, which vitest reports as pending rather than passing-as-green-lie.
+  - **Real test requires:** A protected Fastify route registered behind `apiKeyPreHandler` in the test harness, plus a mock `prisma.apiKey.findFirst` (to return active / expired / inactive / missing scenarios), plus assertions on 401 behaviour for missing header, malformed header, unknown key, inactive key, expired key, and inactive tenant. Non-trivial test infrastructure — deferred from v1.0 to avoid blocking milestone close.
+  - **Target:** v2.0 QA milestone, or whichever milestone populates the Nyquist validation suite (`/gsd-validate-phase 1`, currently 0/5 phases compliant per v1.0-MILESTONE-AUDIT.md).
+  - **Owner:** Unassigned (tracked in STATE.md until claimed).
+
 ### Pending Todos
 
 None yet.

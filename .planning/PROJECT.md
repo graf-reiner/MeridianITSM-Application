@@ -78,6 +78,24 @@ The full specification is captured in `DOCUMENTATION .md` (1900 lines) covering 
 | Docker Compose for dev services | Simple setup on Debian dev server, consistent environments | — Pending |
 | Full spec as target | All 380 tasks including the 38% never built in the original | — Pending |
 | Stack open to research | Let research identify best current options rather than locking to original choices | — Pending |
+| AUTH_RATE_LIMIT shipped as max=50/15min (not spec'd max=5/15min) | 5/15min was too aggressive for dev/testing cycles (login + password-reset routinely burn >5 attempts during feature work); 50 is the pragmatic shipped value while still materially harder to brute-force than the global 100/min default | Applied in login.ts, signup.ts, form-login.ts, and both password-reset.ts POST handlers via `{ config: { rateLimit: AUTH_RATE_LIMIT } }`. Intentional deviation from the AUTH-08 spec. Revisit and tighten toward 5/15min if abuse is observed in production or if v2.0 threat-model review reprioritises brute-force resistance. Logged 2026-04-16 during v1.0 milestone paperwork cleanup (Phase 6). |
+
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd-transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd-complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
 
 ---
 *Last updated: 2026-03-23 — Phase 05 (agent-mobile-and-integrations) complete — all v1 phases done*
