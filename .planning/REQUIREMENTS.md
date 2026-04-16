@@ -86,42 +86,42 @@ All v2.0 requirements trace to the Field Ownership Contract at `docs/architectur
 
 ## Traceability
 
-Populated during roadmap creation.
+Phase mappings assigned 2026-04-16 during v2.0 ROADMAP creation. CAI-01/02/03 are cross-cutting invariants attached to every schema-touching phase (7, 8, 9, 10, 11, 12, 13, 14) — not a standalone phase.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CREF-01 | — | Pending |
-| CREF-02 | — | Pending |
-| CREF-03 | — | Pending |
-| CREF-04 | — | Pending |
-| CREF-05 | — | Pending |
-| CASR-01 | — | Pending |
-| CASR-02 | — | Pending |
-| CASR-03 | — | Pending |
-| CASR-04 | — | Pending |
-| CASR-05 | — | Pending |
-| CASR-06 | — | Pending |
-| CAID-01 | — | Pending |
-| CAID-02 | — | Pending |
-| CAID-03 | — | Pending |
-| CAID-04 | — | Pending |
-| CCRT-01 | — | Pending |
-| CCRT-02 | — | Pending |
-| CSVC-01 | — | Pending |
-| CSVC-02 | — | Pending |
-| CSVC-03 | — | Pending |
-| CSVC-04 | — | Pending |
-| CSVC-05 | — | Pending |
-| CSVC-06 | — | Pending |
-| CREL-01 | — | Pending |
-| CREL-02 | — | Pending |
-| CREL-03 | — | Pending |
-| CREL-04 | — | Pending |
-| CINT-01 | — | Pending |
-| CINT-02 | — | Pending |
-| CINT-03 | — | Pending |
-| CLEG-01 | — | Pending |
-| CLEG-02 | — | Pending |
-| CAI-01 | — | Pending (cross-cutting) |
-| CAI-02 | — | Pending (cross-cutting) |
-| CAI-03 | — | Pending (cross-cutting) |
+| CREF-01 | Phase 7 | Pending |
+| CREF-02 | Phase 7 | Pending |
+| CREF-03 | Phase 7 | Pending |
+| CREF-04 | Phase 7 | Pending |
+| CREF-05 | Phase 7 | Pending |
+| CASR-01 | Phase 8 | Pending |
+| CASR-02 | Phase 8 | Pending |
+| CASR-03 | Phase 8 | Pending |
+| CASR-04 | Phase 8 | Pending |
+| CASR-05 | Phase 8 | Pending |
+| CASR-06 | Phase 8 | Pending |
+| CAID-01 | Phase 9 | Pending |
+| CAID-02 | Phase 9 | Pending |
+| CAID-03 | Phase 9 | Pending |
+| CAID-04 | Phase 9 | Pending |
+| CCRT-01 | Phase 10 | Pending |
+| CCRT-02 | Phase 10 | Pending |
+| CSVC-01 | Phase 11 | Pending |
+| CSVC-02 | Phase 11 | Pending |
+| CSVC-03 | Phase 11 | Pending |
+| CSVC-04 | Phase 11 | Pending |
+| CSVC-05 | Phase 11 | Pending |
+| CSVC-06 | Phase 11 | Pending |
+| CREL-01 | Phase 12 | Pending |
+| CREL-02 | Phase 12 | Pending |
+| CREL-03 | Phase 12 | Pending |
+| CREL-04 | Phase 12 | Pending |
+| CINT-01 | Phase 13 | Pending |
+| CINT-02 | Phase 13 | Pending |
+| CINT-03 | Phase 13 | Pending |
+| CLEG-01 | Phase 14 | Pending |
+| CLEG-02 | Phase 14 | Pending |
+| CAI-01 | Phases 7, 8, 9, 10, 11, 12, 13, 14 (cross-cutting) | Pending |
+| CAI-02 | Phases 7, 8, 9, 10, 11, 12, 13, 14 (cross-cutting) | Pending |
+| CAI-03 | Phases 7, 8, 9, 10, 11, 12, 13, 14 (cross-cutting) | Pending |

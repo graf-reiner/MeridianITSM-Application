@@ -4,9 +4,9 @@ milestone: v2.0
 milestone_name: CSDM Alignment
 status: Defining requirements
 stopped_at: null
-last_updated: "2026-04-16T22:00:00.000Z"
+last_updated: "2026-04-16T22:30:00.000Z"
 progress:
-  total_phases: 0
+  total_phases: 8
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-16)
 
 **Core value:** An MSP can manage multiple customer organizations' IT service desks from a single platform with complete tenant isolation, paying via Stripe subscription, with the full ITSM lifecycle working end-to-end.
-**Current focus:** Milestone v2.0 — CSDM Alignment (defining requirements)
+**Current focus:** Milestone v2.0 — CSDM Alignment (phases 7–14 defined, awaiting plan-phase on Phase 7)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 7 (CI Reference-Table Migration) — not yet planned
 Plan: —
 Status: Defining requirements
-Last activity: 2026-04-16 — Milestone v2.0 (CSDM Alignment) started. v1.0 MVP archived and tagged. Phase 0 (Field Ownership Contract) prep work already shipped at docs/architecture/csdm-field-ownership.md.
+Last activity: 2026-04-16 — v2.0 ROADMAP.md written. 8 phases (7–14) mapped, 32 substantive REQ-IDs + 3 cross-cutting CAI invariants covered, traceability table populated in REQUIREMENTS.md. Next: `/gsd-plan-phase 7`.
 
 ## Performance Metrics
 
@@ -104,6 +104,10 @@ Recent decisions affecting current work:
 - [Roadmap]: React must be 19.2.1+ due to CVE-2025-55182 RCE vulnerability — non-negotiable
 - [Roadmap]: Shared-schema multi-tenancy (tenantId column) chosen over schema-per-tenant or RLS
 - [Roadmap]: Phase 3 SLA and Phase 2 Billing flagged for research-phase before detailed planning
+- [Roadmap v2.0]: 8 phases (7–14) derived directly from the CSDM master plan's 8-phase sequence — CREF → CASR → CAID → CCRT → CSVC → CREL → CINT → CLEG
+- [Roadmap v2.0]: CAI-01/02/03 treated as cross-cutting invariants attached to every schema-touching phase's Requirements list — not a standalone phase. Every PR in phases 7–14 must update `ai-schema-context.ts`, `portal-schema-context.ts`, and `portal-ai-sql-executor.ts` row-level rules
+- [Roadmap v2.0]: Dependency chain locked — Phase 8→7, Phase 9→8, Phase 10→7, Phase 11→7+8+9+10, Phase 12→7+11, Phase 13 parallelizable, Phase 14→7+8+9+12 with all shipped for at least one release before destructive drop
+- [Roadmap v2.0]: Phase 14 (legacy column drop) is production-canary gated — one tenant for one week before broad deploy; explicit rollback plan required
 - [Phase 01-01]: fastify-type-provider-zod (unscoped) used instead of non-existent @fastify/type-provider-zod — plan spec had wrong npm package name
 - [Phase 01-01]: ioredis@5.3.2 used (plan spec had invalid semver 3.1013.0) — ioredis v5 is current stable
 - [Phase 01-01]: turbo added to root devDependencies — omitted from plan but required for pnpm turbo build to resolve
@@ -229,6 +233,12 @@ Durable cross-phase architectural decisions. Single source of truth for decision
   - **Revisit trigger:** Tighten toward 5/15min if abuse is observed in production, or at v2.0 threat-model review if brute-force resistance is reprioritised.
   - **Source:** Intentional deviation from AUTH-08 spec; also recorded in `.planning/PROJECT.md` Key Decisions table.
 
+- **CSDM Field Ownership Contract is the authoritative source for v2.0** (logged 2026-04-16, v2.0 milestone kickoff)
+  - **Contract:** `docs/architecture/csdm-field-ownership.md` (linked from CLAUDE.md rule #7).
+  - **Scope:** Every field that exists on both `Asset` and `CmdbConfigurationItem` (or any CI extension) has a single declared owner; the other side reads via join or syncs in-request. Phases 7–14 enforce this contract end-to-end.
+  - **Non-negotiable invariants:** (1) Multi-tenancy — every query scoped by `tenantId`; (2) AI bot exposure — every schema change reflected in `ai-schema-context.ts`, `portal-schema-context.ts`, `portal-ai-sql-executor.ts` row-level rules in the same PR.
+  - **Destructive change policy:** Every destructive schema change splits into 2 deploys (migrate+switch, then column-drop one release later). Phase 14 is gated by a one-tenant one-week production canary.
+
 ### Tracked Follow-ups
 
 - **api-key.test.ts is an `it.todo()` stub, not a real test** (logged 2026-04-16, Phase 6 paperwork cleanup)
@@ -247,9 +257,13 @@ None yet.
 - [Phase 2]: Stripe webhook idempotency with BullMQ async processing has nuances — run /gsd:research-phase before planning Phase 2
 - [Phase 3]: SLA business hours timezone + pause/resume math is non-trivial — run /gsd:research-phase before planning Phase 3
 - [Phase 5]: APNs credential setup for dev/TestFlight/production environments — run /gsd:research-phase before planning Phase 5
+- [Phase 7]: Per-tenant mapping for legacy `type` / `status` / `environment` enum → FK backfill may have tenant-specific edge cases (custom values, typos, mixed case) — consider `/gsd-research-phase 7` before planning
+- [Phase 8]: Agent ingestion reroute touches the .NET agent contract + the Fastify agent routes + the CMDB reconciliation worker simultaneously — three moving parts; plan-phase should surface integration test coverage explicitly
+- [Phase 11]: Service tier introduces new `/dashboard/services` pages + `getSlaForCi` graph walk — non-trivial UI + traversal semantics, flag for `/gsd-research-phase 11` before planning
+- [Phase 14]: Destructive column drop is the riskiest phase of the milestone — the canary protocol, rollback plan, and pre-flight verification query must all be in place before plan-phase completes
 
 ## Session Continuity
 
-Last session: 2026-04-16T21:37:25.609Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-04-16T22:30:00.000Z
+Stopped at: v2.0 ROADMAP.md written (phases 7–14 defined, traceability populated)
 Resume file: None
