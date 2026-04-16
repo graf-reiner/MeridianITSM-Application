@@ -17,6 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Core ITSM** - Incident management, SLA, email-to-ticket, knowledge base, self-service portal, settings, notifications, and reporting (gap closure in progress) (completed 2026-03-21)
 - [x] **Phase 4: CMDB, Change Management, and Asset Portfolio** - ITIL expansion with asset tracking, CMDB with relationship mapping, change management with CAB workflows, and application portfolio (completed 2026-03-22)
 - [x] **Phase 5: Agent, Mobile, and Integrations** - .NET inventory agent with CMDB auto-discovery, React Native mobile app with push notifications, and webhook/API integration layer (completed 2026-03-23)
+- [ ] **Phase 6: v1.0 Paperwork Cleanup** - Close audit-identified paperwork debt before milestone close: write missing 01-07-SUMMARY, re-verify Phase 1, document AUTH_RATE_LIMIT=50 decision, fix api-key test placeholder, clear stale traceability notes *(gap closure for v1.0 — see .planning/v1.0-MILESTONE-AUDIT.md)*
 
 ## Phase Details
 
@@ -131,6 +132,19 @@ Plans:
 - [ ] 05-08-PLAN.md — Mobile push and offline: push notification registration with deep linking, offline write queue with optimistic updates, TanStack Query persistence, push preferences UI
 - [ ] 05-09-PLAN.md — Web settings pages: agent management with enrollment tokens, API key management, webhook management with delivery history, alert channel configuration
 
+### Phase 6: v1.0 Paperwork Cleanup
+**Goal**: Close all audit-identified paperwork debt for milestone v1.0 so the milestone can close cleanly. No new feature work — this phase only reconciles state between shipped code and GSD artifacts (summaries, verification records, decision logs, stale traceability notes).
+**Depends on**: Phase 5 (all v1.0 phases complete)
+**Gap Closure**: Addresses tech_debt items from `.planning/v1.0-MILESTONE-AUDIT.md` — does NOT introduce new REQ-IDs. AUTH-08 remains Complete; this phase documents the out-of-band fix that already shipped.
+**Success Criteria** (what must be TRUE):
+  1. `.planning/phases/01-foundation/01-07-SUMMARY.md` exists and documents the AUTH-08 gap closure: `AUTH_RATE_LIMIT` imported and applied in `login.ts`, `signup.ts`, `form-login.ts`, and both `password-reset.ts` endpoints; records the shipped `max=50/15min` value and rationale
+  2. `.planning/phases/01-foundation/01-VERIFICATION.md` frontmatter reads `status: passed` with a `re_verification` block documenting the post-hoc AUTH-08 closure and the `max=50` decision
+  3. `.planning/PROJECT.md` Key Decisions table and `.planning/STATE.md` Architecture Decisions section both record the `AUTH_RATE_LIMIT=50/15min` decision with rationale ("5/15min too aggressive for dev/testing; 50 is the shipped value; revisit if abuse is observed")
+  4. `apps/api/src/__tests__/api-key.test.ts` no longer contains `expect(true).toBe(true)` — has a real test or the placeholder is replaced with `it.todo()` with a tracked follow-up
+  5. `.planning/REQUIREMENTS.md` traceability for PRTL-05 and REPT-05 reads `Phase 4 | Complete` (not `Deferred`) and their checkbox annotations no longer mention Phase-4 deferral (since Phase 4 shipped them)
+
+**Plans**: To be created via `/gsd-plan-phase 6` (paperwork-only, should produce 1-2 small plans)
+
 ## Progress
 
 **Execution Order:**
@@ -143,3 +157,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 3. Core ITSM | 12/12 | Complete   | 2026-03-21 |
 | 4. CMDB, Change Management, and Asset Portfolio | 8/8 | Complete   | 2026-03-22 |
 | 5. Agent, Mobile, and Integrations | 9/9 | Complete   | 2026-03-23 |
+| 6. v1.0 Paperwork Cleanup | 0/0 | Not started | - |
