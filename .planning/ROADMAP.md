@@ -143,7 +143,10 @@ Plans:
   4. `apps/api/src/__tests__/api-key.test.ts` no longer contains `expect(true).toBe(true)` — has a real test or the placeholder is replaced with `it.todo()` with a tracked follow-up
   5. `.planning/REQUIREMENTS.md` traceability for PRTL-05 and REPT-05 reads `Phase 4 | Complete` (not `Deferred`) and their checkbox annotations no longer mention Phase-4 deferral (since Phase 4 shipped them)
 
-**Plans**: To be created via `/gsd-plan-phase 6` (paperwork-only, should produce 1-2 small plans)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 06-01-PLAN.md — Close v1.0 paperwork debt: write 01-07-SUMMARY, re-verify Phase 1, log AUTH_RATE_LIMIT=50/15min decision, swap api-key.test.ts placeholder for it.todo(), clear stale PRTL-05/REPT-05 deferral notes
 
 ## Progress
 
