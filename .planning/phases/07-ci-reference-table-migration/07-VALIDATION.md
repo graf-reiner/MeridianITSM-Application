@@ -91,7 +91,7 @@ The following test/script files MUST exist before any implementation tasks run. 
 |----------|-------------|------------|-------------------|
 | AI chat answers "how many servers do we have?" using `JOIN cmdb_ci_classes` | CAI-01 | Requires running LLM call against the dev assistant; not deterministic enough for CI | After Phase 7 deploy: open AI assistant in dev tenant, ask "how many servers do we have?", confirm response cites correct count and the underlying SQL plan (visible in dev mode) uses the JOIN |
 | Pre-flight backfill dry-run on production-shaped data | CREF-04 (relationship duplicates) | Production data shape can only be sampled from a real DB snapshot | Restore latest prod snapshot to dev DB, run `pnpm tsx packages/db/scripts/phase7-backfill.ts --dry-run`, inspect the duplicate-relationship report. Address any duplicates with operator before scheduling NOT NULL migration |
-| Migration name matches `phase7_*` convention | naming convention | Prisma generates timestamped name; convention check is by eye when reviewing the migration commit | After running `pnpm prisma migrate dev --create-only --name phase7_ci_ref_notnull`, confirm the directory created under `apps/web/prisma/migrations/` matches `*_phase7_ci_ref_notnull/` |
+| Migration name matches `phase7_*` convention | naming convention | Prisma generates timestamped name; convention check is by eye when reviewing the migration commit | After running `pnpm prisma migrate dev --create-only --name phase7_ci_ref_notnull`, confirm the directory created under `packages/db/prisma/migrations/` matches `*_phase7_ci_ref_notnull/` |
 
 ---
 

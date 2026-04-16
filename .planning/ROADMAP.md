@@ -44,7 +44,13 @@ Full details: [`milestones/v1.0-ROADMAP.md`](milestones/v1.0-ROADMAP.md)
   3. CMDB create/edit UI forms render class / status / environment / relationship dropdowns from reference-table fetches (no hard-coded enum lists)
   4. `CmdbRelationship` unique composite index uses `relationshipTypeId` and duplicate creation is rejected at the DB level
   5. `ai-schema-context.ts` + `portal-schema-context.ts` expose the reference tables with joins documented so the AI can answer "what class is this CI?" questions
-**Plans**: TBD
+**Plans**: 6 plans
+- [ ] 07-01-PLAN.md — Wave 0 verification harness (12 test/script files)
+- [ ] 07-02-PLAN.md — Wave 1 reusable seeder + reference resolver + tenant lifecycle hooks
+- [ ] 07-03-PLAN.md — Wave 2 per-tenant FK backfill + missing-tenant ref-data seeding
+- [ ] 07-04-PLAN.md — Wave 3 strip legacy enum writes + Zod route validation + grep gate enforcement
+- [ ] 07-05-PLAN.md — Wave 4 AI schema context update (CAI-01) + portal exclusion lock (CAI-02/03)
+- [ ] 07-06-PLAN.md — Wave 5 NOT NULL constraint migration + final verification gate
 
 ### Phase 8: Retire Asset Hardware/OS Duplication
 **Goal**: Hardware, OS, and installed-software data lives on the CI (via `CmdbCiServer` + `CmdbSoftwareInstalled`) and nowhere on `Asset`, with the agent ingestion pipeline rerouted so CMDB is the single source of truth for technical profile.
@@ -138,7 +144,7 @@ Full details: [`milestones/v1.0-ROADMAP.md`](milestones/v1.0-ROADMAP.md)
 | 4. CMDB, Change Management, and Asset Portfolio | v1.0 | 8/8 | Complete | 2026-03-22 |
 | 5. Agent, Mobile, and Integrations | v1.0 | 9/9 | Complete | 2026-03-23 |
 | 6. v1.0 Paperwork Cleanup | v1.0 | 1/1 | Complete | 2026-04-16 |
-| 7. CI Reference-Table Migration | v2.0 | 0/? | Not started | — |
+| 7. CI Reference-Table Migration | v2.0 | 0/6 | Planned | — |
 | 8. Retire Asset Hardware/OS Duplication | v2.0 | 0/? | Not started | — |
 | 9. Retire Asset↔CI Identity Duplication | v2.0 | 0/? | Not started | — |
 | 10. Application↔CI Criticality Normalization | v2.0 | 0/? | Not started | — |
