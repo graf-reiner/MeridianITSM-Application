@@ -27,18 +27,35 @@ An MSP can manage multiple customer organizations' IT service desks from a singl
 - [x] Asset management with manual entry and agent-collected inventory *(Validated in Phase 04: cmdb-change-management-and-asset-portfolio)*
 - [x] CMDB with CI relationships, impact analysis, agent auto-discovery *(Validated in Phase 04: cmdb-change-management-and-asset-portfolio)*
 - [x] Application portfolio management with dependency mapping *(Validated in Phase 04: cmdb-change-management-and-asset-portfolio)*
-
-### Active
-
-- [ ] Multi-tenant architecture with tenantId scoping on every query
-- [ ] Separate API server (Hono/Fastify) + Next.js frontend (architectural split)
+- [x] Multi-tenant architecture with tenantId scoping on every query *(Validated in Phase 01: foundation — `withTenantScope` Prisma extension)*
+- [x] Separate API server (Fastify 5) + Next.js frontend (architectural split) *(Validated in Phase 01: foundation)*
 - [x] Push notifications (FCM for Android, APNs for iOS) *(Validated in Phase 05: agent-mobile-and-integrations)*
-- [ ] RBAC with system roles (admin, msp_admin, agent, end_user) and custom roles
+- [x] RBAC with system roles (admin, msp_admin, agent, end_user) and custom roles *(Validated in Phase 01: foundation — 4 system roles seeded; custom roles via `Role.permissions` JSON)*
 - [x] React Native/Expo mobile app (iOS + Android) *(Validated in Phase 05: agent-mobile-and-integrations)*
 - [x] .NET cross-platform inventory agent (Windows, Linux, macOS) *(Validated in Phase 05: agent-mobile-and-integrations)*
 - [x] API key management for external integrations *(Validated in Phase 05: agent-mobile-and-integrations)*
 - [x] Webhook system with delivery tracking *(Validated in Phase 05: agent-mobile-and-integrations)*
-- [ ] MSP model: managing multiple CustomerOrganizations per tenant
+- [x] MSP model: managing multiple CustomerOrganizations per tenant *(Validated in Phase 01/02: `CustomerOrganization` model + `UserRole.customerOrganizationId` scoping)*
+
+### Active
+
+**v2.0 CSDM Alignment** (scope at `C:\Users\greiner\.claude\plans\curious-wondering-tarjan.md`):
+
+- [ ] Complete CI reference-table migration (classId/lifecycleStatusId/operationalStatusId/environmentId/relationshipTypeId as NOT NULL FKs)
+- [ ] Retire Asset hardware/OS field duplication (move to CmdbCiServer + new CmdbSoftwareInstalled)
+- [ ] Retire Asset↔CI identity duplication (serial/manufacturer/model owned by Asset; CI reads via join)
+- [ ] Application↔CI criticality normalization (CI.criticality → CriticalityLevel enum, synced from Application)
+- [ ] Introduce CSDM Service tier above Application (Business / Application / Technical Service classes; SLA-on-Service only)
+- [ ] Enforce CSDM relationship verb catalog with class-pair constraints
+- [ ] Integrity & orphan cleanup (CI.assetId onDelete:SetNull, drop ApplicationAsset.isPrimary, nightly reconciliation)
+- [ ] Drop legacy CI enum columns (type, status, environment, relationshipType) after production canary
+
+**v1.0 tech debt deferred into v2.0 scope:**
+
+- [ ] Populate Nyquist validation test suite across phases 1–5 (currently 0/5 compliant — VALIDATION.md drafts + many `it.todo()` stubs in place)
+- [ ] AGNT-10 S3 + Azure Blob export plugins for .NET inventory agent (HTTP ships in v1.0)
+- [ ] `packages/` refactor to eliminate cross-app worker code duplication (SLA math, email templates, CSV generation)
+- [ ] `usage-snapshot.ts` placeholder fields (activeAgents, ticketCount, storageBytes) — integrate when CMDB/ticket/storage layers connect
 
 ### Out of Scope
 
@@ -98,4 +115,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-23 — Phase 05 (agent-mobile-and-integrations) complete — all v1 phases done*
+*Last updated: 2026-04-16 after v1.0 milestone — v1.0 MVP shipped (6 phases, 43 plans, 182 requirements). Next: v2.0 CSDM Alignment.*
