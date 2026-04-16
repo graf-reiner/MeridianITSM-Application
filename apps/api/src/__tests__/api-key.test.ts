@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, beforeAll, afterAll } from 'vitest';
 import { buildApp } from '../server.js';
 import type { FastifyInstance } from 'fastify';
 
@@ -14,9 +14,16 @@ describe('API Key Authentication', () => {
     await app.close();
   });
 
-  it('rejects request without API key header', async () => {
-    // TODO: Register a protected API key route and test it
-    // This test will be expanded when API key routes are added
-    expect(true).toBe(true); // Placeholder
-  });
+  // Real test deferred: requires a protected Fastify route registered behind apiKeyPreHandler,
+  // plus a mock prisma.apiKey.findFirst to exercise active / expired / inactive / missing / inactive-tenant paths.
+  // Non-trivial test infrastructure — tracked in .planning/STATE.md "Tracked Follow-ups".
+  // See apps/api/src/plugins/api-key.ts for the handler under test.
+  it.todo('rejects request without API key header — real test tracked in STATE.md Tracked Follow-ups');
+  it.todo('rejects request with malformed Authorization header (not ApiKey scheme)');
+  it.todo('rejects request with unknown API key');
+  it.todo('rejects request with inactive API key');
+  it.todo('rejects request with expired API key');
+  it.todo('rejects request when the owning tenant is not ACTIVE');
+  it.todo('sets request.tenantId and request.apiKey on successful auth');
+  it.todo('updates apiKey.lastUsedAt asynchronously without blocking the response');
 });

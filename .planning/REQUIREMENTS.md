@@ -88,7 +88,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **PRTL-02**: End users can submit service requests via simplified form
 - [x] **PRTL-03**: End users can view their ticket status and add comments
 - [x] **PRTL-04**: End users can browse published knowledge articles
-- [x] **PRTL-05**: End users can view their assigned assets *(deferred to Phase 4 — requires asset CRUD from ASST-01)*
+- [x] **PRTL-05**: End users can view their assigned assets
 - [x] **PRTL-06**: Middleware auto-redirects end_user role to /portal
 
 ### Asset Management
@@ -223,7 +223,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **REPT-02**: Ticket reports (CSV/JSON) with date range and filter parameters
 - [x] **REPT-03**: Change reports and analytics
 - [x] **REPT-04**: SLA compliance reports
-- [x] **REPT-05**: CMDB inventory and relationship reports *(deferred to Phase 4 — requires CMDB data from CMDB-01)*
+- [x] **REPT-05**: CMDB inventory and relationship reports
 - [x] **REPT-06**: Scheduled report generation with email delivery
 - [x] **REPT-07**: System health analytics
 
@@ -380,7 +380,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PRTL-02 | Phase 3 | Complete |
 | PRTL-03 | Phase 3 | Complete |
 | PRTL-04 | Phase 3 | Complete |
-| PRTL-05 | Phase 4 | Deferred |
+| PRTL-05 | Phase 4 | Complete |
 | PRTL-06 | Phase 3 | Complete |
 | SETT-01 | Phase 3 | Complete |
 | SETT-02 | Phase 3 | Complete |
@@ -402,7 +402,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REPT-02 | Phase 3 | Complete |
 | REPT-03 | Phase 3 | Complete |
 | REPT-04 | Phase 3 | Complete |
-| REPT-05 | Phase 4 | Deferred |
+| REPT-05 | Phase 4 | Complete |
 | REPT-06 | Phase 3 | Complete |
 | REPT-07 | Phase 3 | Complete |
 | ASST-01 | Phase 4 | Complete |
