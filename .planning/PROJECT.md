@@ -8,6 +8,27 @@ A multi-tenant SaaS ITSM (IT Service Management) platform targeting Managed Serv
 
 An MSP can manage multiple customer organizations' IT service desks from a single platform with complete tenant isolation, paying via Stripe subscription, with the full ITSM lifecycle (ticket creation through resolution with SLA enforcement) working end-to-end.
 
+## Current Milestone: v2.0 CSDM Alignment
+
+**Goal:** Migrate the Asset / CMDB / Application data model to full CSDM (Common Service Data Model) enterprise-grade compliance — eliminating field duplication and data drift across Asset, CI, Application, and Service layers — with every schema change exposed to staff and portal AI bots under RBAC.
+
+**Target features:**
+- Complete the in-flight CI reference-table migration (classId / lifecycleStatusId / operationalStatusId / environmentId / relationshipTypeId as NOT NULL FKs)
+- Retire Asset hardware/OS field duplication (move to CmdbCiServer + CmdbSoftwareInstalled)
+- Retire Asset↔CI identity duplication (serialNumber, manufacturer, model owned by Asset; CI reads via join)
+- Application↔CI criticality normalization (CI.criticality promoted to CriticalityLevel enum, synced from Application)
+- Introduce the CSDM Service tier above Application (Business Service / Application Service / Technical Service as CI classes) with Service-only SLA attachment
+- Enforce the CSDM relationship verb catalog (depends-on / runs-on / hosted-on / uses / consumes / member-of) with class-pair constraints
+- Integrity & orphan cleanup (CI.assetId onDelete:SetNull, drop ApplicationAsset.isPrimary, nightly orphan reconciliation)
+- Drop legacy CI enum columns in a final destructive sweep gated by production canary
+
+**Key context:**
+- Phase 0 (Field Ownership Contract) shipped 2026-04-16 at `docs/architecture/csdm-field-ownership.md` and linked from CLAUDE.md rule #7
+- Master plan at `C:\Users\greiner\.claude\plans\curious-wondering-tarjan.md` is the authoritative roadmap; this milestone formalizes it inside GSD
+- Every destructive schema change splits into 2 deploys (migrate+switch, then column-drop one release later)
+- Each phase independently shippable; final phase gated by production canary on one tenant for one week
+- Multi-tenancy and AI-bot-with-RBAC invariants honored every phase — `ai-schema-context.ts` + `portal-schema-context.ts` + `portal-ai-sql-executor.ts` row-level rules updated in each PR
+
 ## Requirements
 
 ### Validated

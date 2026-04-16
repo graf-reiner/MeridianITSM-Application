@@ -1,31 +1,33 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: Paperwork Cleanup
-status: v1.0 milestone complete
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-04-16T21:42:54.523Z"
+milestone: v2.0
+milestone_name: CSDM Alignment
+status: Defining requirements
+stopped_at: null
+last_updated: "2026-04-16T22:00:00.000Z"
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 43
-  completed_plans: 43
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-19)
+See: .planning/PROJECT.md (updated 2026-04-16)
 
 **Core value:** An MSP can manage multiple customer organizations' IT service desks from a single platform with complete tenant isolation, paying via Stripe subscription, with the full ITSM lifecycle working end-to-end.
-**Current focus:** Phase 05 — agent-mobile-and-integrations
+**Current focus:** Milestone v2.0 — CSDM Alignment (defining requirements)
 
 ## Current Position
 
-Phase: 05 (agent-mobile-and-integrations) — EXECUTING
-Plan: 8 of 9
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-16 — Milestone v2.0 (CSDM Alignment) started. v1.0 MVP archived and tagged. Phase 0 (Field Ownership Contract) prep work already shipped at docs/architecture/csdm-field-ownership.md.
 
 ## Performance Metrics
 
