@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Core ITSM** - Incident management, SLA, email-to-ticket, knowledge base, self-service portal, settings, notifications, and reporting (gap closure in progress) (completed 2026-03-21)
 - [x] **Phase 4: CMDB, Change Management, and Asset Portfolio** - ITIL expansion with asset tracking, CMDB with relationship mapping, change management with CAB workflows, and application portfolio (completed 2026-03-22)
 - [x] **Phase 5: Agent, Mobile, and Integrations** - .NET inventory agent with CMDB auto-discovery, React Native mobile app with push notifications, and webhook/API integration layer (completed 2026-03-23)
-- [ ] **Phase 6: v1.0 Paperwork Cleanup** - Close audit-identified paperwork debt before milestone close: write missing 01-07-SUMMARY, re-verify Phase 1, document AUTH_RATE_LIMIT=50 decision, fix api-key test placeholder, clear stale traceability notes *(gap closure for v1.0 — see .planning/v1.0-MILESTONE-AUDIT.md)*
+- [x] **Phase 6: v1.0 Paperwork Cleanup** - Close audit-identified paperwork debt before milestone close: write missing 01-07-SUMMARY, re-verify Phase 1, document AUTH_RATE_LIMIT=50 decision, fix api-key test placeholder, clear stale traceability notes *(gap closure for v1.0 — see .planning/v1.0-MILESTONE-AUDIT.md)* (completed 2026-04-16)
 
 ## Phase Details
 
@@ -146,7 +146,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 06-01-PLAN.md — Close v1.0 paperwork debt: write 01-07-SUMMARY, re-verify Phase 1, log AUTH_RATE_LIMIT=50/15min decision, swap api-key.test.ts placeholder for it.todo(), clear stale PRTL-05/REPT-05 deferral notes
+- [x] 06-01-PLAN.md — Close v1.0 paperwork debt: write 01-07-SUMMARY, re-verify Phase 1, log AUTH_RATE_LIMIT=50/15min decision, swap api-key.test.ts placeholder for it.todo(), clear stale PRTL-05/REPT-05 deferral notes
 
 ## Progress
 
@@ -160,4 +160,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 3. Core ITSM | 12/12 | Complete   | 2026-03-21 |
 | 4. CMDB, Change Management, and Asset Portfolio | 8/8 | Complete   | 2026-03-22 |
 | 5. Agent, Mobile, and Integrations | 9/9 | Complete   | 2026-03-23 |
-| 6. v1.0 Paperwork Cleanup | 0/0 | Not started | - |
+| 6. v1.0 Paperwork Cleanup | 1/1 | Complete   | 2026-04-16 |
