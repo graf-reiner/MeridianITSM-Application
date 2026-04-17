@@ -570,4 +570,11 @@ describe('CmdbReconciliation', () => {
     expect(txCIUpdate).not.toHaveBeenCalled();
     expect(txChangeRecordCreate).not.toHaveBeenCalled();
   });
+
+  // === Phase 7 (CREF-01, CREF-02) ===
+  // Scaffolds surfaced as pending; bodies land in Plan 04 once the worker
+  // imports resolveClassId/resolveOperationalStatusId from the new
+  // cmdb-reference-resolver.service and drops the legacy `type`/`status` writes.
+  it.todo('reconciliation worker resolves classId via resolveClassId from shared resolver service');
+  it.todo("stale-CI marker writes operationalStatusId='offline' (not legacy status='INACTIVE')");
 });

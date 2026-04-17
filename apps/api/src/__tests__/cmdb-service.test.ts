@@ -536,4 +536,16 @@ describe('CmdbService', () => {
       }),
     );
   });
+
+  // === Phase 7 (CREF-01, CREF-02, CREF-05) ===
+  // Scaffolds surfaced as pending; Plan 04 fills in the bodies once the
+  // service-layer classId guard + legacy-write strip are complete.
+  // Do NOT convert to `it(..., () => expect(true).toBe(true))` — see
+  // STATE.md Tracked Follow-up about api-key.test.ts green-lie placeholders.
+
+  it.todo('createCI rejects missing classId');
+
+  it.todo('createCI does not write legacy type field');
+
+  it.todo("deleteCI uses lifecycleStatusId='retired' instead of legacy status='DECOMMISSIONED'");
 });

@@ -205,4 +205,10 @@ describe('CmdbImportService', () => {
     // Total should add up
     expect(result.imported + result.skipped).toBe(rows.length);
   });
+
+  // === Phase 7 (CREF-01) ===
+  // Scaffold: import requires classKey to resolve to a non-null classId for
+  // the tenant. Bodies land in Plan 04 once cmdb-import.service.ts rejects
+  // rows whose classKey does not match a seeded CmdbCiClass.
+  it.todo('import requires classKey to resolve to non-null classId');
 });
