@@ -23,7 +23,7 @@ Full details: [`milestones/v1.0-ROADMAP.md`](milestones/v1.0-ROADMAP.md)
 
 ### 🚧 v2.0 CSDM Alignment (active)
 
-- [ ] **Phase 7: CI Reference-Table Migration** — Make `classId` / `lifecycleStatusId` / `operationalStatusId` / `environmentId` / `relationshipTypeId` NOT NULL FKs with per-tenant backfill; services and UI switch to FK writes only
+- [x] **Phase 7: CI Reference-Table Migration** — Make `classId` / `lifecycleStatusId` / `operationalStatusId` / `environmentId` / `relationshipTypeId` NOT NULL FKs with per-tenant backfill; services and UI switch to FK writes only (completed 2026-04-17)
 - [ ] **Phase 8: Retire Asset Hardware/OS Duplication** — Move hardware + OS + software inventory off `Asset` onto `CmdbCiServer` + new `CmdbSoftwareInstalled`; CMDB becomes the sole edit surface; agent ingestion rerouted to CI
 - [ ] **Phase 9: Retire Asset↔CI Identity Duplication** — Drop `CmdbConfigurationItem.serialNumber` / `assetTag` / `model` (read via Asset join); split `siteId` into `Asset.stockSiteId` vs `CI.siteId`; nullable `assetId` with nightly orphan report
 - [ ] **Phase 10: Application↔CI Criticality Normalization** — Promote `CmdbConfigurationItem.criticality` to `CriticalityLevel` enum; sync Application criticality → `primaryCi.criticality` in the same request
@@ -50,7 +50,7 @@ Full details: [`milestones/v1.0-ROADMAP.md`](milestones/v1.0-ROADMAP.md)
 - [x] 07-03-PLAN.md — Wave 2 per-tenant FK backfill + missing-tenant ref-data seeding
 - [x] 07-04-PLAN.md — Wave 3 strip legacy enum writes + Zod route validation + grep gate enforcement
 - [x] 07-05-PLAN.md — Wave 4 AI schema context update (CAI-01) + portal exclusion lock (CAI-02/03)
-- [ ] 07-06-PLAN.md — Wave 5 NOT NULL constraint migration + final verification gate
+- [x] 07-06-PLAN.md — Wave 5 NOT NULL constraint migration + final verification gate
 
 ### Phase 8: Retire Asset Hardware/OS Duplication
 **Goal**: Hardware, OS, and installed-software data lives on the CI (via `CmdbCiServer` + `CmdbSoftwareInstalled`) and nowhere on `Asset`, with the agent ingestion pipeline rerouted so CMDB is the single source of truth for technical profile.
@@ -144,7 +144,7 @@ Full details: [`milestones/v1.0-ROADMAP.md`](milestones/v1.0-ROADMAP.md)
 | 4. CMDB, Change Management, and Asset Portfolio | v1.0 | 8/8 | Complete | 2026-03-22 |
 | 5. Agent, Mobile, and Integrations | v1.0 | 9/9 | Complete | 2026-03-23 |
 | 6. v1.0 Paperwork Cleanup | v1.0 | 1/1 | Complete | 2026-04-16 |
-| 7. CI Reference-Table Migration | v2.0 | 5/6 | In Progress|  |
+| 7. CI Reference-Table Migration | v2.0 | 6/6 | Complete   | 2026-04-17 |
 | 8. Retire Asset Hardware/OS Duplication | v2.0 | 0/? | Not started | — |
 | 9. Retire Asset↔CI Identity Duplication | v2.0 | 0/? | Not started | — |
 | 10. Application↔CI Criticality Normalization | v2.0 | 0/? | Not started | — |
