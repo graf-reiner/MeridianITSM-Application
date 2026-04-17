@@ -82,12 +82,24 @@ Object.assign(mockPrismaObj, {
 
 vi.mock('@meridian/db', () => ({ prisma: mockPrismaObj }));
 
+// Phase 7: mock the shared resolver so deleteCI/createRelationship unit tests
+// do not need a live DB. Each resolver returns a deterministic id.
+vi.mock('../services/cmdb-reference-resolver.service', () => ({
+  resolveClassId: vi.fn().mockResolvedValue('class-uuid'),
+  resolveLifecycleStatusId: vi.fn().mockResolvedValue('lc-retired-uuid'),
+  resolveOperationalStatusId: vi.fn().mockResolvedValue('op-uuid'),
+  resolveEnvironmentId: vi.fn().mockResolvedValue('env-uuid'),
+  resolveRelationshipTypeId: vi.fn().mockResolvedValue('rel-uuid'),
+  clearResolverCaches: vi.fn(),
+}));
+
 // ---------------------------------------------------------------------------
 // Import service under test (after mocks are in place)
 // ---------------------------------------------------------------------------
 
 import {
   createCI,
+  deleteCI,
   createRelationship,
   getImpactAnalysis,
   updateCI,
@@ -134,27 +146,31 @@ describe('CmdbService', () => {
       tenantId: TENANT_ID,
       ciNumber: 42,
       name: 'Web Server 01',
-      type: 'SERVER',
-      status: 'ACTIVE',
+      classId: 'class-uuid-server',
     };
     txCICreate.mockResolvedValue(createdCI);
     txChangeRecordCreate.mockResolvedValue({ id: 'cr-1' });
 
-    const result = await createCI(TENANT_ID, { name: 'Web Server 01', type: 'SERVER' }, USER_ID);
+    // Phase 7: classId is now required; legacy `type` no longer accepted by service
+    const result = await createCI(
+      TENANT_ID,
+      { name: 'Web Server 01', classId: 'class-uuid-server' },
+      USER_ID,
+    );
 
     expect(result).toEqual(createdCI);
     // Advisory lock was acquired
     expect(txExecuteRaw).toHaveBeenCalledTimes(1);
     // Next ciNumber was queried
     expect(txQueryRaw).toHaveBeenCalledTimes(1);
-    // CI created with correct ciNumber
+    // CI created with correct ciNumber + classId (no legacy enum fields)
     expect(txCICreate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           tenantId: TENANT_ID,
           ciNumber: 42,
           name: 'Web Server 01',
-          type: 'SERVER',
+          classId: 'class-uuid-server',
         }),
       }),
     );
@@ -172,58 +188,9 @@ describe('CmdbService', () => {
     );
   });
 
-  it('CI type matches CmdbCiType enum values', async () => {
-    txExecuteRaw.mockResolvedValue(undefined);
-    txQueryRaw.mockResolvedValue([{ next: BigInt(1) }]);
-    txChangeRecordCreate.mockResolvedValue({ id: 'cr-1' });
-
-    // Valid CmdbCiType enum values the service supports
-    const validTypes = [
-      'SERVER', 'WORKSTATION', 'LAPTOP', 'NETWORK', 'PRINTER', 'MOBILE',
-      'VIRTUAL_MACHINE', 'CONTAINER', 'APPLICATION', 'DATABASE', 'SERVICE',
-      'CLOUD', 'STORAGE', 'OTHER',
-    ];
-
-    for (const ciType of validTypes) {
-      vi.clearAllMocks();
-      txExecuteRaw.mockResolvedValue(undefined);
-      txQueryRaw.mockResolvedValue([{ next: BigInt(1) }]);
-      txChangeRecordCreate.mockResolvedValue({ id: 'cr-1' });
-      prismaTransaction.mockImplementation(
-        (cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx),
-      );
-
-      const createdCI = { id: CI_ID_1, tenantId: TENANT_ID, ciNumber: 1, name: 'Test', type: ciType };
-      txCICreate.mockResolvedValue(createdCI);
-
-      await createCI(TENANT_ID, { name: 'Test', type: ciType }, USER_ID);
-
-      // The type is passed through to the create call as-is (cast to never)
-      expect(txCICreate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ type: ciType }),
-        }),
-      );
-    }
-
-    // When type is not provided, defaults to 'OTHER'
-    vi.clearAllMocks();
-    txExecuteRaw.mockResolvedValue(undefined);
-    txQueryRaw.mockResolvedValue([{ next: BigInt(1) }]);
-    txChangeRecordCreate.mockResolvedValue({ id: 'cr-1' });
-    prismaTransaction.mockImplementation(
-      (cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx),
-    );
-    txCICreate.mockResolvedValue({ id: CI_ID_1, type: 'OTHER' });
-
-    await createCI(TENANT_ID, { name: 'No Type' }, USER_ID);
-
-    expect(txCICreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ type: 'OTHER' }),
-      }),
-    );
-  });
+  // Phase 7: the legacy enum `type` field is no longer part of the service
+  // contract. This test has been replaced by the `createCI does not write
+  // legacy type field` case at the bottom of the describe block.
 
   it('creates relationship between two CIs', async () => {
     const sourceCi = { id: CI_ID_1, tenantId: TENANT_ID, name: 'App Server', isDeleted: false };
@@ -238,10 +205,12 @@ describe('CmdbService', () => {
       tenantId: TENANT_ID,
       sourceId: CI_ID_1,
       targetId: CI_ID_2,
-      relationshipType: 'DEPENDS_ON',
+      relationshipTypeId: 'rel-uuid',
     };
     prismaRelCreate.mockResolvedValue(createdRel);
 
+    // Phase 7: service now resolves legacy `relationshipType` string → FK id
+    // via resolveRelationshipTypeId (mocked above to return 'rel-uuid').
     const result = await createRelationship(TENANT_ID, {
       sourceId: CI_ID_1,
       targetId: CI_ID_2,
@@ -251,17 +220,19 @@ describe('CmdbService', () => {
     expect(result).toEqual(createdRel);
     // Both CIs were validated
     expect(prismaCIFindFirst).toHaveBeenCalledTimes(2);
-    // Relationship was created with correct data
+    // Phase 7: relationshipTypeId is written; legacy `relationshipType` field is NOT
     expect(prismaRelCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           tenantId: TENANT_ID,
           sourceId: CI_ID_1,
           targetId: CI_ID_2,
-          relationshipType: 'DEPENDS_ON',
+          relationshipTypeId: 'rel-uuid',
         }),
       }),
     );
+    const callData = (prismaRelCreate.mock.calls[0]![0] as { data: Record<string, unknown> }).data;
+    expect(callData).not.toHaveProperty('relationshipType');
   });
 
   it('prevents self-referencing relationship', async () => {
@@ -537,15 +508,60 @@ describe('CmdbService', () => {
     );
   });
 
-  // === Phase 7 (CREF-01, CREF-02, CREF-05) ===
-  // Scaffolds surfaced as pending; Plan 04 fills in the bodies once the
-  // service-layer classId guard + legacy-write strip are complete.
-  // Do NOT convert to `it(..., () => expect(true).toBe(true))` — see
-  // STATE.md Tracked Follow-up about api-key.test.ts green-lie placeholders.
+  // === Phase 7 (CREF-01, CREF-02, CREF-05) — promoted from Wave 0 scaffolds ===
 
-  it.todo('createCI rejects missing classId');
+  it('createCI rejects missing classId', async () => {
+    await expect(
+      createCI(TENANT_ID, { name: 'NoClass' }, USER_ID),
+    ).rejects.toThrow(/classId is required/);
+    // Service-layer guard runs BEFORE the prisma.$transaction call, so the
+    // transaction callback (and the advisory lock + $queryRaw + cmdbConfigurationItem.create)
+    // must NEVER fire when classId is absent.
+    expect(prismaTransaction).not.toHaveBeenCalled();
+    expect(txCICreate).not.toHaveBeenCalled();
+  });
 
-  it.todo('createCI does not write legacy type field');
+  it('createCI does not write legacy type field', async () => {
+    txExecuteRaw.mockResolvedValue(undefined);
+    txQueryRaw.mockResolvedValue([{ next: BigInt(1) }]);
+    txCICreate.mockResolvedValue({ id: CI_ID_1, ciNumber: 1, tenantId: TENANT_ID });
+    txChangeRecordCreate.mockResolvedValue({ id: 'cr-1' });
 
-  it.todo("deleteCI uses lifecycleStatusId='retired' instead of legacy status='DECOMMISSIONED'");
+    await createCI(
+      TENANT_ID,
+      {
+        name: 'X',
+        classId: 'class-uuid-aaa',
+        lifecycleStatusId: 'lc-uuid',
+        operationalStatusId: 'op-uuid',
+        environmentId: 'env-uuid',
+      },
+      USER_ID,
+    );
+
+    const callArgs = (txCICreate.mock.calls[0]![0] as { data: Record<string, unknown> }).data;
+    expect(callArgs).not.toHaveProperty('type');
+    expect(callArgs).not.toHaveProperty('status');
+    expect(callArgs).not.toHaveProperty('environment');
+    expect(callArgs.classId).toBe('class-uuid-aaa');
+    expect(callArgs.lifecycleStatusId).toBe('lc-uuid');
+    expect(callArgs.operationalStatusId).toBe('op-uuid');
+    expect(callArgs.environmentId).toBe('env-uuid');
+  });
+
+  it("deleteCI uses lifecycleStatusId='retired' instead of legacy status='DECOMMISSIONED'", async () => {
+    txCIFindFirst.mockResolvedValue({ id: CI_ID_1, tenantId: TENANT_ID });
+    txChangeRecordCreate.mockResolvedValue({ id: 'cr-del' });
+    txCIUpdate.mockResolvedValue({ id: CI_ID_1, isDeleted: true });
+
+    await deleteCI(TENANT_ID, CI_ID_1, USER_ID);
+
+    const updateArgs = (txCIUpdate.mock.calls[0]![0] as { data: Record<string, unknown> }).data;
+    expect(updateArgs.isDeleted).toBe(true);
+    // Phase 7: writes the FK id resolved via resolveLifecycleStatusId
+    // (mocked at the top of this file to return 'lc-retired-uuid').
+    expect(updateArgs.lifecycleStatusId).toBe('lc-retired-uuid');
+    // The legacy enum column is NEVER written.
+    expect(updateArgs).not.toHaveProperty('status');
+  });
 });

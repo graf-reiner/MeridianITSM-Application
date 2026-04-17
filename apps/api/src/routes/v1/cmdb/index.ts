@@ -78,9 +78,7 @@ export async function cmdbRoutes(fastify: FastifyInstance): Promise<void> {
           {
             name: (body.name as string).trim(),
             displayName: str('displayName'),
-            type: str('type'),
-            status: str('status'),
-            environment: str('environment'),
+            // Phase 7: legacy type/status/environment inputs removed — FK ids only
             classId: str('classId'),
             lifecycleStatusId: str('lifecycleStatusId'),
             operationalStatusId: str('operationalStatusId'),
@@ -209,9 +207,7 @@ export async function cmdbRoutes(fastify: FastifyInstance): Promise<void> {
           {
             name: str('name'),
             displayName: str('displayName'),
-            type: str('type'),
-            status: str('status'),
-            environment: str('environment'),
+            // Phase 7: legacy type/status/environment inputs removed — FK ids only
             classId: strOrNull('classId') ?? undefined,
             lifecycleStatusId: strOrNull('lifecycleStatusId') ?? undefined,
             operationalStatusId: strOrNull('operationalStatusId') ?? undefined,

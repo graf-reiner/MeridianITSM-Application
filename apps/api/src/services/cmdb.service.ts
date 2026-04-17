@@ -1,4 +1,8 @@
 import { prisma } from '@meridian/db';
+import {
+  resolveLifecycleStatusId,
+  resolveRelationshipTypeId,
+} from './cmdb-reference-resolver.service.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -6,12 +10,7 @@ export interface CreateCIData {
   name: string;
   displayName?: string;
 
-  // Legacy enum fields (still accepted during migration)
-  type?: string;
-  status?: string;
-  environment?: string;
-
-  // New reference table FKs
+  // New reference table FKs (Phase 7 — legacy type/status/environment removed)
   classId?: string;
   lifecycleStatusId?: string;
   operationalStatusId?: string;
@@ -69,10 +68,8 @@ export interface CreateCIData {
   serviceExt?: ServiceExtData;
 }
 
-export interface UpdateCIData extends Partial<Omit<CreateCIData, 'type' | 'status' | 'environment'>> {
-  type?: string;
-  status?: string;
-  environment?: string;
+export interface UpdateCIData extends Partial<CreateCIData> {
+  // Phase 7: legacy type/status/environment fields removed — use FK ids instead
   isDeleted?: boolean;
 }
 
@@ -221,6 +218,14 @@ export interface ServiceExtData {
  * Uses advisory lock to prevent duplicate ciNumbers under concurrent load.
  */
 export async function createCI(tenantId: string, data: CreateCIData, userId: string) {
+  // Phase 7 (CREF-01): classId is required at the service layer
+  // (defense-in-depth before DB NOT NULL lands in Plan 06).
+  if (!data.classId) {
+    throw new Error(
+      'classId is required. Call GET /api/v1/cmdb/classes to fetch the seeded class list.',
+    );
+  }
+
   return prisma.$transaction(async (tx) => {
     // Get next ciNumber atomically with advisory lock
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${tenantId} || '_ci_seq'))`;
@@ -238,10 +243,7 @@ export async function createCI(tenantId: string, data: CreateCIData, userId: str
         ciNumber,
         name: data.name,
         displayName: data.displayName,
-        // Legacy enum fields
-        type: (data.type ?? 'OTHER') as never,
-        status: (data.status ?? 'ACTIVE') as never,
-        environment: (data.environment ?? 'PRODUCTION') as never,
+        // Phase 7: legacy type/status/environment enum writes removed — FK-only
         // New reference table FKs
         classId: data.classId,
         lifecycleStatusId: data.lifecycleStatusId,
@@ -648,9 +650,7 @@ export async function updateCI(
     // All updatable fields
     trackAndSet('name', data.name);
     trackAndSet('displayName', data.displayName);
-    trackAndSet('type', data.type);
-    trackAndSet('status', data.status);
-    trackAndSet('environment', data.environment);
+    // Phase 7: legacy type/status/environment trackAndSet calls removed — FK-only
     trackAndSet('classId', data.classId);
     trackAndSet('lifecycleStatusId', data.lifecycleStatusId);
     trackAndSet('operationalStatusId', data.operationalStatusId);
@@ -798,12 +798,21 @@ export async function deleteCI(tenantId: string, ciId: string, userId: string) {
       },
     });
 
-    // Soft-delete using isDeleted flag and also set legacy status
+    // Phase 7: Soft-delete using isDeleted flag + lifecycleStatusId='retired'
+    // (replaces legacy status='DECOMMISSIONED' enum write).
+    const retiredLifecycleId =
+      (await resolveLifecycleStatusId(tenantId, 'retired')) ??
+      (() => {
+        throw new Error(
+          `Tenant ${tenantId} is missing seeded lifecycle status 'retired' — run packages/db/scripts/seed-existing-tenants-cmdb-ref.ts`,
+        );
+      })();
+
     return tx.cmdbConfigurationItem.update({
       where: { id: ciId },
       data: {
         isDeleted: true,
-        status: 'DECOMMISSIONED' as never,
+        lifecycleStatusId: retiredLifecycleId,
       },
     });
   });
@@ -829,13 +838,30 @@ export async function createRelationship(tenantId: string, data: CreateRelations
   if (!source) throw new Error('Source CI not found');
   if (!target) throw new Error('Target CI not found');
 
+  // Phase 7 (CREF-04): resolve relationshipType key → FK when caller passes
+  // only the legacy string form; throw when neither FK nor a resolvable key
+  // is provided (defense-in-depth before the DB NOT NULL in Plan 06).
+  let relationshipTypeId = data.relationshipTypeId;
+  if (!relationshipTypeId && data.relationshipType) {
+    relationshipTypeId =
+      (await resolveRelationshipTypeId(
+        tenantId,
+        String(data.relationshipType).toLowerCase(),
+      )) ?? undefined;
+  }
+  if (!relationshipTypeId) {
+    throw new Error(
+      'relationshipTypeId is required. Call GET /api/v1/cmdb/relationship-types to fetch the seeded list.',
+    );
+  }
+
   return prisma.cmdbRelationship.create({
     data: {
       tenantId,
       sourceId: data.sourceId,
       targetId: data.targetId,
-      relationshipType: data.relationshipType as never,
-      relationshipTypeId: data.relationshipTypeId,
+      // Phase 7: legacy relationshipType enum write removed — FK-only
+      relationshipTypeId,
       description: data.description,
       sourceSystem: data.sourceSystem,
       sourceRecordKey: data.sourceRecordKey,
