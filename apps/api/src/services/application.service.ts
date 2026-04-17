@@ -167,6 +167,25 @@ async function createPrimaryCiInternal(
     select: { id: true },
   });
 
+  // Phase 7 (CREF-02): every new CI must have lifecycleStatusId +
+  // operationalStatusId for the upcoming NOT NULL constraint (Plan 06).
+  // Uses tx-scoped lookups directly (already inside a transaction — the
+  // per-process resolver cache is not needed here because this runs once
+  // per primary-CI creation, not in a hot path).
+  const inServiceStatus = await tx.cmdbStatus.findFirst({
+    where: { tenantId, statusType: 'lifecycle', statusKey: 'in_service' },
+    select: { id: true },
+  });
+  const unknownOpStatus = await tx.cmdbStatus.findFirst({
+    where: { tenantId, statusType: 'operational', statusKey: 'unknown' },
+    select: { id: true },
+  });
+  if (!inServiceStatus || !unknownOpStatus) {
+    throw new Error(
+      `Tenant ${tenantId} is missing seeded statuses (in_service / unknown). Run packages/db/scripts/seed-existing-tenants-cmdb-ref.ts.`,
+    );
+  }
+
   // Allocate next ciNumber under tenant-scoped advisory lock (same
   // pattern as cmdb.service.ts createCI)
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${tenantId} || '_ci_seq'))`;
@@ -177,18 +196,16 @@ async function createPrimaryCiInternal(
   `;
   const ciNumber = Number(result[0].next);
 
-  // Create the CI
+  // Create the CI (Phase 7: FK-only — legacy type/status/environment writes removed)
   const ci = await tx.cmdbConfigurationItem.create({
     data: {
       tenantId,
       ciNumber,
       name: appName,
-      // Legacy enums (still required during CMDB migration)
-      type: 'SOFTWARE' as any,
-      status: 'ACTIVE' as any,
-      environment: 'PRODUCTION' as any,
-      // New reference table FKs
+      // Phase 7: legacy type/status/environment removed — use FK ids exclusively
       classId: ciClass.id,
+      lifecycleStatusId: inServiceStatus.id,
+      operationalStatusId: unknownOpStatus.id,
       environmentId: prodEnv?.id ?? null,
       sourceSystem: 'apm-bridge',
       firstDiscoveredAt: new Date(),

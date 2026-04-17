@@ -96,6 +96,10 @@ export async function importCIs(
 
   // ─── Import valid rows in a single transaction ─────────────────────────────
 
+  // Phase 7: track actual imports (Zod-valid rows may still be skipped if
+  // classKey does not resolve — those get per-row errors and don't count
+  // as imported).
+  let importedCount = 0;
   await prisma.$transaction(async (tx) => {
     // Build lookup maps for reference table keys
     const referencedSlugs = [
@@ -168,24 +172,39 @@ export async function importCIs(
     `;
     let nextCiNumber = Number(result[0].next);
 
-    for (const { data } of validRows) {
+    for (const { index, data } of validRows) {
       const categoryId = data.categorySlug ? categoryMap.get(data.categorySlug) : undefined;
       const classId = data.classKey ? classMap.get(data.classKey) : undefined;
       const lifecycleStatusId = data.lifecycleStatusKey ? statusMap.get(data.lifecycleStatusKey) : undefined;
       const environmentId = data.environmentKey ? envMap.get(data.environmentKey) : undefined;
       const manufacturerId = data.manufacturer ? vendorMap.get(data.manufacturer) : undefined;
 
+      // Phase 7 (CREF-01): classKey resolution is mandatory. If the row
+      // provided no classKey, or the classKey does not map to a seeded CI
+      // class for this tenant, push a per-row error and skip — Plan 06's
+      // NOT NULL constraint would otherwise reject the insert.
+      if (!classId) {
+        errors.push({
+          row: index,
+          errors: [
+            {
+              code: 'custom',
+              path: ['classKey'],
+              message: `classKey '${data.classKey ?? '(missing)'}' did not resolve to any seeded CI class for this tenant`,
+            },
+          ] as never,
+        });
+        continue;
+      }
+
       const ci = await tx.cmdbConfigurationItem.create({
         data: {
           tenantId,
           ciNumber: nextCiNumber++,
           name: data.name,
-          // Legacy enums
-          type: data.type as never,
-          status: data.status as never,
-          environment: data.environment as never,
+          // Phase 7: legacy type/status/environment enum writes removed — FK-only
           // New references
-          classId: classId ?? null,
+          classId,
           lifecycleStatusId: lifecycleStatusId ?? null,
           environmentId: environmentId ?? null,
           // Organization
@@ -221,11 +240,13 @@ export async function importCIs(
           userId,
         },
       });
+
+      importedCount++;
     }
   });
 
   return {
-    imported: validRows.length,
+    imported: importedCount,
     skipped: errors.length,
     errors,
   };

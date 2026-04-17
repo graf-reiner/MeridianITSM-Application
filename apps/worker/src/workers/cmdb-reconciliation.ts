@@ -41,12 +41,27 @@ function inferClassKeyFromSnapshot(
   return { classKey: 'generic', legacyType: 'OTHER' };
 }
 
+// ─── FK resolvers — Phase 7 ───────────────────────────────────────────────────
+//
+// Phase 7: duplicated from apps/api/src/services/cmdb-reference-resolver.service.ts
+// to avoid cross-app imports. Keep these in sync with the API copy when the
+// resolver contract changes (5 resolvers + clearResolverCaches).
+//
+// Cache correctness invariant: every cache key starts with `${tenantId}:` as
+// the FIRST segment so Tenant A's resolved id can never be returned for
+// Tenant B even if both tenants have the same classKey / statusKey / envKey.
+// Status caches additionally include `statusType` because the same statusKey
+// (e.g., 'unknown') exists for both lifecycle and operational types.
+//
+// The worker's cache and the API process's cache are intentionally
+// independent per-process caches. Each process's `clearResolverCaches()`
+// resets only that process's own Maps.
+
 /**
  * Resolve a classKey to a CmdbCiClass ID for a given tenant.
- * Caches lookups per tenant within a single reconciliation run.
  */
 const classIdCache = new Map<string, string>();
-async function resolveClassId(tenantId: string, classKey: string): Promise<string | null> {
+export async function resolveClassId(tenantId: string, classKey: string): Promise<string | null> {
   const cacheKey = `${tenantId}:${classKey}`;
   if (classIdCache.has(cacheKey)) return classIdCache.get(cacheKey)!;
 
@@ -60,10 +75,10 @@ async function resolveClassId(tenantId: string, classKey: string): Promise<strin
 }
 
 /**
- * Resolve lifecycle status 'in_service' for a tenant.
+ * Resolve a lifecycle status key (e.g., 'in_service', 'retired') for a tenant.
  */
 const statusIdCache = new Map<string, string>();
-async function resolveLifecycleStatusId(tenantId: string, statusKey: string): Promise<string | null> {
+export async function resolveLifecycleStatusId(tenantId: string, statusKey: string): Promise<string | null> {
   const cacheKey = `${tenantId}:lifecycle:${statusKey}`;
   if (statusIdCache.has(cacheKey)) return statusIdCache.get(cacheKey)!;
 
@@ -77,10 +92,32 @@ async function resolveLifecycleStatusId(tenantId: string, statusKey: string): Pr
 }
 
 /**
- * Resolve environment 'prod' for a tenant.
+ * Phase 7 NEW: resolve an operational status key (e.g., 'online', 'offline',
+ * 'unknown') for a tenant. Used by the stale-CI marker to write
+ * operationalStatusId='offline' in place of the legacy status='INACTIVE' enum.
+ */
+const operationalStatusIdCache = new Map<string, string>();
+export async function resolveOperationalStatusId(
+  tenantId: string,
+  statusKey: string,
+): Promise<string | null> {
+  const cacheKey = `${tenantId}:operational:${statusKey}`;
+  if (operationalStatusIdCache.has(cacheKey)) return operationalStatusIdCache.get(cacheKey)!;
+
+  const status = await prisma.cmdbStatus.findFirst({
+    where: { tenantId, statusType: 'operational', statusKey },
+    select: { id: true },
+  });
+
+  if (status) operationalStatusIdCache.set(cacheKey, status.id);
+  return status?.id ?? null;
+}
+
+/**
+ * Resolve an envKey (e.g., 'prod') for a tenant.
  */
 const envIdCache = new Map<string, string>();
-async function resolveEnvironmentId(tenantId: string, envKey: string): Promise<string | null> {
+export async function resolveEnvironmentId(tenantId: string, envKey: string): Promise<string | null> {
   const cacheKey = `${tenantId}:${envKey}`;
   if (envIdCache.has(cacheKey)) return envIdCache.get(cacheKey)!;
 
@@ -93,15 +130,49 @@ async function resolveEnvironmentId(tenantId: string, envKey: string): Promise<s
   return env?.id ?? null;
 }
 
+/**
+ * Phase 7 NEW: resolve a relationshipKey (e.g., 'depends_on', 'hosted_on')
+ * for a tenant. The worker does not currently write relationships, but this
+ * resolver is kept in sync with the API copy so future reconciliation paths
+ * (e.g., agent-discovered relationships) have FK resolution available.
+ */
+const relTypeIdCache = new Map<string, string>();
+export async function resolveRelationshipTypeId(
+  tenantId: string,
+  relationshipKey: string,
+): Promise<string | null> {
+  const cacheKey = `${tenantId}:${relationshipKey}`;
+  if (relTypeIdCache.has(cacheKey)) return relTypeIdCache.get(cacheKey)!;
+
+  const ref = await prisma.cmdbRelationshipTypeRef.findFirst({
+    where: { tenantId, relationshipKey },
+    select: { id: true },
+  });
+
+  if (ref) relTypeIdCache.set(cacheKey, ref.id);
+  return ref?.id ?? null;
+}
+
+/**
+ * Clear all per-process resolver caches (5 caches total). Called at the top
+ * of each scheduled worker run to pick up tenant-level vocabulary changes.
+ */
+export function clearResolverCaches(): void {
+  classIdCache.clear();
+  statusIdCache.clear();
+  operationalStatusIdCache.clear();
+  envIdCache.clear();
+  relTypeIdCache.clear();
+}
+
 export const cmdbReconciliationWorker = new Worker(
   QUEUE_NAMES.CMDB_RECONCILIATION,
   async (job) => {
     console.log(`[cmdb-reconciliation] Running global CI reconciliation sweep (job ${job.id})`);
 
-    // Clear caches for each run
-    classIdCache.clear();
-    statusIdCache.clear();
-    envIdCache.clear();
+    // Phase 7: clear all 5 resolver caches at the top of each run so
+    // tenant-level vocabulary changes between scheduled runs take effect.
+    clearResolverCaches();
 
     let created = 0;
     let updated = 0;
@@ -183,10 +254,7 @@ export const cmdbReconciliationWorker = new Worker(
                 tenantId,
                 ciNumber,
                 name: hostname,
-                // Legacy enum fields
-                type: legacyType as never,
-                status: 'ACTIVE' as never,
-                environment: 'PRODUCTION' as never,
+                // Phase 7: legacy type/status/environment enum writes removed — FK-only
                 // New reference table FKs
                 classId,
                 lifecycleStatusId,
@@ -400,6 +468,9 @@ export const cmdbReconciliationWorker = new Worker(
 
     const staleThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
+    // Phase 7: this filter still reads the legacy `status` enum column.
+    // Phase 14 rewrites to JOIN cmdb_statuses ON lifecycleStatusId /
+    // operationalStatusId once the legacy columns are dropped.
     const staleCIs = await prisma.cmdbConfigurationItem.findMany({
       where: {
         agentId: { not: null },
@@ -414,15 +485,29 @@ export const cmdbReconciliationWorker = new Worker(
 
     for (const ci of staleCIs) {
       try {
+        // Phase 7 (CREF-02): write operationalStatusId='offline' instead of
+        // the legacy status='INACTIVE' enum. If the tenant is missing the
+        // seeded 'offline' operational status row, skip (with a warning) so
+        // the worker never writes a null FK into the column.
+        const offlineStatusId = await resolveOperationalStatusId(ci.tenantId, 'offline');
+        if (!offlineStatusId) {
+          console.warn(
+            `[cmdb-reconciliation] Tenant ${ci.tenantId} missing 'offline' operational status — skipping stale marker for CI ${ci.id}`,
+          );
+          continue;
+        }
+
         await prisma.$transaction(async (tx) => {
           await tx.cmdbChangeRecord.create({
             data: {
               tenantId: ci.tenantId,
               ciId: ci.id,
               changeType: 'UPDATED',
-              fieldName: 'status',
-              oldValue: 'ACTIVE',
-              newValue: 'INACTIVE',
+              // Phase 7: audit now references the FK column by name + the
+              // operational-status key (not the old enum label).
+              fieldName: 'operationalStatusId',
+              oldValue: '(unknown)',
+              newValue: 'offline',
               changedBy: 'AGENT',
               agentId: ci.agentId,
             },
@@ -430,7 +515,8 @@ export const cmdbReconciliationWorker = new Worker(
 
           await tx.cmdbConfigurationItem.update({
             where: { id: ci.id },
-            data: { status: 'INACTIVE' as never },
+            // Phase 7: legacy status='INACTIVE' write removed — FK-only.
+            data: { operationalStatusId: offlineStatusId },
           });
         });
 

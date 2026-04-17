@@ -63,7 +63,8 @@ const TENANT_ID = 'tenant-001';
 const USER_ID = 'user-001';
 
 function validRow(overrides: Record<string, unknown> = {}) {
-  return { name: 'Web Server 01', type: 'SERVER', ...overrides };
+  // Phase 7: classKey is mandatory — it must resolve to a seeded CI class.
+  return { name: 'Web Server 01', type: 'SERVER', classKey: 'server', ...overrides };
 }
 
 // ---------------------------------------------------------------------------
@@ -83,7 +84,9 @@ beforeEach(() => {
 
   // Default: no reference table lookups needed
   txCmdbCategoryFindMany.mockResolvedValue([]);
-  txCmdbCiClassFindMany.mockResolvedValue([]);
+  // Phase 7: every validRow() uses classKey 'server' — resolve it by default
+  // so existing tests do not trip the new mandatory-classKey guard.
+  txCmdbCiClassFindMany.mockResolvedValue([{ id: 'class-server-uuid', classKey: 'server' }]);
   txCmdbStatusFindMany.mockResolvedValue([]);
   txCmdbEnvironmentFindMany.mockResolvedValue([]);
   txCmdbVendorFindMany.mockResolvedValue([]);
@@ -107,17 +110,22 @@ describe('CmdbImportService', () => {
     expect(txCICreate).toHaveBeenCalledTimes(2);
     expect(txChangeRecordCreate).toHaveBeenCalledTimes(2);
 
-    // First CI gets ciNumber sequence applied
+    // First CI gets ciNumber sequence applied. Phase 7: classId is the
+    // FK write; legacy `type` enum is no longer written.
     expect(txCICreate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           tenantId: TENANT_ID,
           name: 'Web Server 01',
-          type: 'SERVER',
+          classId: 'class-server-uuid',
           sourceSystem: 'csv-import',
         }),
       }),
     );
+    const firstCallData = (txCICreate.mock.calls[0]![0] as { data: Record<string, unknown> }).data;
+    expect(firstCallData).not.toHaveProperty('type');
+    expect(firstCallData).not.toHaveProperty('status');
+    expect(firstCallData).not.toHaveProperty('environment');
 
     // Change record uses changedBy=IMPORT
     expect(txChangeRecordCreate).toHaveBeenCalledWith(
@@ -206,9 +214,44 @@ describe('CmdbImportService', () => {
     expect(result.imported + result.skipped).toBe(rows.length);
   });
 
-  // === Phase 7 (CREF-01) ===
-  // Scaffold: import requires classKey to resolve to a non-null classId for
-  // the tenant. Bodies land in Plan 04 once cmdb-import.service.ts rejects
-  // rows whose classKey does not match a seeded CmdbCiClass.
-  it.todo('import requires classKey to resolve to non-null classId');
+  // === Phase 7 (CREF-01) — promoted from Wave 0 scaffold ===
+
+  it('import requires classKey to resolve to non-null classId', async () => {
+    // Mock classMap to return ONLY the 'server' class — the unknown key
+    // 'nonexistent_class' must NOT resolve.
+    txCmdbCiClassFindMany.mockResolvedValue([{ id: 'class-server-uuid', classKey: 'server' }]);
+
+    const rows = [
+      validRow({ name: 'Good Server' }),                          // classKey='server' → resolves
+      validRow({ name: 'Bad Class', classKey: 'nonexistent_class' }), // does NOT resolve
+    ];
+
+    const result = await importCIs(TENANT_ID, rows, USER_ID);
+
+    // Only the resolvable row imports
+    expect(result.imported).toBe(1);
+    // The bad-classKey row surfaces as a per-row error (skipped, not imported)
+    expect(result.skipped).toBe(1);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].errors[0].message).toMatch(/did not resolve/);
+    expect(result.errors[0].errors[0].path).toContain('classKey');
+    // Service only called create for the good row
+    expect(txCICreate).toHaveBeenCalledTimes(1);
+  });
+
+  it('import rejects rows whose classKey is missing entirely', async () => {
+    txCmdbCiClassFindMany.mockResolvedValue([{ id: 'class-server-uuid', classKey: 'server' }]);
+
+    // Row omits classKey (and the default in validRow is overridden to undefined)
+    const rows = [{ name: 'No Class Provided' }];
+
+    const result = await importCIs(TENANT_ID, rows, USER_ID);
+
+    // The row passes Zod (name only is required) but fails the classKey guard
+    expect(result.imported).toBe(0);
+    expect(result.skipped).toBe(1);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].errors[0].message).toMatch(/did not resolve/);
+    expect(txCICreate).not.toHaveBeenCalled();
+  });
 });
