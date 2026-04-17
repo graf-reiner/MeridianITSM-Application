@@ -14,6 +14,23 @@
  * billing, auth, and internal tables. Never add those here.
  */
 
+/**
+ * Phase 7 audit (CAI-02 lock-in, recorded 2026-04-16):
+ *
+ * Confirmed CMDB tables (cmdb_*) are intentionally EXCLUDED from the portal AI.
+ * CMDB is staff-only data. End users do not see CIs, classes, statuses, environments,
+ * relationships, or relationship types via the portal AI.
+ *
+ * To re-enable CMDB read access for the portal AI, run /gsd-discuss-phase first
+ * — this is a security-scope expansion that requires explicit user approval.
+ *
+ * The Vitest test at apps/api/src/__tests__/portal-context.test.ts asserts
+ * `PORTAL_ALLOWED_TABLES.filter(t => t.startsWith('cmdb_')).length === 0` to lock
+ * this in against silent regressions.
+ *
+ * The portal-ai-sql-executor.ts also carries a defense-in-depth `cmdb_*` hard-reject
+ * branch (CAI-03) so a future allowlist mutation cannot leak CMDB to the portal AI.
+ */
 /** Tables the portal AI is allowed to query */
 export const PORTAL_ALLOWED_TABLES: string[] = [
   'tickets',

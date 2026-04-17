@@ -74,6 +74,23 @@ function validatePortalSql(sql: string): { valid: boolean; error?: string } {
     }
   }
 
+  // Phase 7 (CAI-03) defense-in-depth: hard-reject any portal-AI query that
+  // references a cmdb_* table, EVEN IF PORTAL_ALLOWED_TABLES is ever mutated
+  // to include one. CMDB is staff-only data. This branch runs BEFORE the
+  // allowlist check below so a silent allowlist regression cannot leak CMDB
+  // to the portal AI.
+  //
+  // Match at word boundaries so `cmdb_` only triggers when it is the start
+  // of an identifier (from a FROM/JOIN/column qualifier/subquery reference),
+  // not inside a string literal (literals were stripped above into `withoutStrings`).
+  if (/\bcmdb_[a-z_]+/i.test(withoutStrings)) {
+    return {
+      valid: false,
+      error:
+        'CMDB tables are not accessible via the portal AI (Phase 7 CAI-03 enforcement). CMDB is staff-only data.',
+    };
+  }
+
   // Table allowlist: check that every table reference is in the allowed list
   // Extract table names from FROM and JOIN clauses
   const tableRefs = withoutStrings.match(/\b(?:FROM|JOIN)\s+(\w+)/gi) || [];
