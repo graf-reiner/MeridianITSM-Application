@@ -29,8 +29,9 @@ describe('AI schema context (CAI-01)', () => {
 
   it('documents lifecycle + operational status JOIN hints', () => {
     expect(ctx).toMatch(/JOIN cmdb_statuses/);
-    expect(ctx).toMatch(/statusType='lifecycle'/);
-    expect(ctx).toMatch(/statusType='operational'/);
+    // statusType may be double-quoted in SQL (e.g. `"statusType"='lifecycle'`)
+    expect(ctx).toMatch(/statusType"?\s*=\s*'lifecycle'/);
+    expect(ctx).toMatch(/statusType"?\s*=\s*'operational'/);
   });
 
   it('documents environment JOIN hint', () => {

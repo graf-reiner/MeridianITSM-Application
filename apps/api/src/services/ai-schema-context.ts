@@ -107,19 +107,61 @@ agents: id(uuid PK), "tenantId"(uuid FK→tenants), hostname(text), "lastHeartbe
 inventory_snapshots: id(uuid PK), "tenantId"(uuid FK→tenants), "agentId"(uuid FK→agents), hostname(text), fqdn(text), "deviceType"(text), "operatingSystem"(text), "osVersion"(text), "cpuModel"(text), "cpuCores"(int), "ramGb"(float), "serialNumber"(text), manufacturer(text), model(text), "diskEncrypted"(bool), "antivirusProduct"(text), "firewallEnabled"(bool), "isVirtual"(bool), "installedSoftware"(jsonb — array of {name, version, publisher}), services(jsonb), "networkInterfaces"(jsonb), disks(jsonb), "windowsUpdates"(jsonb), "collectedAt"(timestamptz)
 
 -- CMDB --
-cmdb_ci_classes: id(uuid PK), "tenantId"(uuid FK→tenants), name(text), label(text), icon(text), "parentId"(uuid FK→cmdb_ci_classes self-ref)
+-- Phase 7 FK contract: class / status / environment / relationship verb are REFERENCE TABLES, not enums.
+-- The staff AI must JOIN these tables to resolve human-readable names. All queries MUST include tenantId scoping.
 
-cmdb_statuses: id(uuid PK), "tenantId"(uuid FK→tenants), name(text), label(text), category(LIFECYCLE|OPERATIONAL), color(text)
+cmdb_ci_classes: id(uuid PK), "tenantId"(uuid FK→tenants), "classKey"(text), "className"(text), icon(text), description(text), "parentClassId"(uuid FK→cmdb_ci_classes self-ref), "isActive"(bool)
+  -- UNIQUE("tenantId", "classKey"). JOIN target for cmdb_configuration_items.classId.
+  -- Canonical seeded classKeys: server, virtual_machine, database, network_device, application,
+  --                             application_instance, saas_application, business_service,
+  --                             technical_service, load_balancer, storage, cloud_resource,
+  --                             dns_endpoint, certificate, generic.
 
-cmdb_environments: id(uuid PK), "tenantId"(uuid FK→tenants), name(text), label(text), color(text)
+cmdb_statuses: id(uuid PK), "tenantId"(uuid FK→tenants), "statusType"(text — 'lifecycle' | 'operational'), "statusKey"(text), "statusName"(text), "sortOrder"(int), "isActive"(bool)
+  -- UNIQUE("tenantId", "statusType", "statusKey"). JOIN target for cmdb_configuration_items.lifecycleStatusId and .operationalStatusId.
+  -- Canonical lifecycle statusKeys: planned, ordered, installed, in_service, under_change, retired.
+  -- Canonical operational statusKeys: online, offline, degraded, maintenance, unknown.
+
+cmdb_environments: id(uuid PK), "tenantId"(uuid FK→tenants), "envKey"(text), "envName"(text), "sortOrder"(int), "isActive"(bool)
+  -- UNIQUE("tenantId", "envKey"). JOIN target for cmdb_configuration_items.environmentId.
+  -- Canonical seeded envKeys: prod, test, dev, qa, dr, lab.
+
+cmdb_relationship_types: id(uuid PK), "tenantId"(uuid FK→tenants), "relationshipKey"(text), "relationshipName"(text), "forwardLabel"(text), "reverseLabel"(text), "isDirectional"(bool)
+  -- UNIQUE("tenantId", "relationshipKey"). JOIN target for cmdb_relationships.relationshipTypeId.
+  -- Canonical seeded relationshipKeys: depends_on, runs_on, hosted_on, connected_to, member_of,
+  --                                     replicated_to, backed_up_by, uses, supports, managed_by,
+  --                                     owned_by, contains, installed_on.
 
 cmdb_vendors: id(uuid PK), "tenantId"(uuid FK→tenants), name(text), website(text), "supportEmail"(text), "supportPhone"(text)
 
 cmdb_categories: id(uuid PK), "tenantId"(uuid FK→tenants), name(text), description(text), "parentId"(uuid FK→cmdb_categories self-ref)
 
-cmdb_configuration_items: id(uuid PK), "tenantId"(uuid FK→tenants), "ciNumber"(int), name(text), "displayName"(text), type(SERVER|WORKSTATION|NETWORK_DEVICE|SOFTWARE|SERVICE|DATABASE|VIRTUAL_MACHINE|CONTAINER|OTHER), status(ACTIVE|INACTIVE|DECOMMISSIONED|PLANNED), environment(PRODUCTION|STAGING|DEV|DR), hostname(text), fqdn(text), "ipAddress"(text), "serialNumber"(text), "assetTag"(text), criticality(LOW|MEDIUM|HIGH|CRITICAL), "businessOwnerId"(uuid FK→users), "technicalOwnerId"(uuid FK→users), "supportGroupId"(uuid FK→user_groups), "classId"(uuid FK→cmdb_ci_classes), "lifecycleStatusId"(uuid FK→cmdb_statuses), "operationalStatusId"(uuid FK→cmdb_statuses), "environmentId"(uuid FK→cmdb_environments), "categoryId"(uuid FK→cmdb_categories), "manufacturerId"(uuid FK→cmdb_vendors), "attributesJson"(jsonb), "lastVerifiedAt"(timestamptz), "createdAt"(timestamptz)
+cmdb_configuration_items: id(uuid PK), "tenantId"(uuid FK→tenants), "ciNumber"(int), name(text), "displayName"(text), description(text), "classId"(uuid FK→cmdb_ci_classes NOT NULL), "lifecycleStatusId"(uuid FK→cmdb_statuses NOT NULL), "operationalStatusId"(uuid FK→cmdb_statuses NOT NULL), "environmentId"(uuid FK→cmdb_environments NOT NULL), hostname(text), fqdn(text), "ipAddress"(text), "serialNumber"(text), "assetTag"(text), criticality(LOW|MEDIUM|HIGH|CRITICAL), "businessOwnerId"(uuid FK→users), "technicalOwnerId"(uuid FK→users), "supportGroupId"(uuid FK→user_groups), "categoryId"(uuid FK→cmdb_categories), "manufacturerId"(uuid FK→cmdb_vendors), "assetId"(uuid FK→assets), "attributesJson"(jsonb), "lastVerifiedAt"(timestamptz), "createdAt"(timestamptz)
+  -- Phase 7 FK contract: class / lifecycle / operational / environment are reference-table FKs (NOT enums).
+  -- To resolve the human-readable class name, JOIN cmdb_ci_classes ON cmdb_ci_classes.id = cmdb_configuration_items."classId".
+  -- To resolve lifecycle status: JOIN cmdb_statuses ON cmdb_statuses.id = cmdb_configuration_items."lifecycleStatusId" WHERE cmdb_statuses."statusType"='lifecycle'.
+  -- To resolve operational status: JOIN cmdb_statuses ON cmdb_statuses.id = cmdb_configuration_items."operationalStatusId" WHERE cmdb_statuses."statusType"='operational'.
+  -- To resolve environment: JOIN cmdb_environments ON cmdb_environments.id = cmdb_configuration_items."environmentId".
+  -- Canonical classKeys: server, virtual_machine, database, network_device, application,
+  --                      application_instance, saas_application, business_service,
+  --                      technical_service, load_balancer, storage, cloud_resource,
+  --                      dns_endpoint, certificate, generic.
+  -- EXAMPLE — "how many servers do we have?":
+  --   SELECT COUNT(*) FROM cmdb_configuration_items ci
+  --     JOIN cmdb_ci_classes c ON c.id = ci."classId"
+  --    WHERE c."classKey" = 'server' AND ci."tenantId" = $TENANT_ID AND ci."isDeleted" = false;
+  -- NOTE: The legacy columns "type"/"status"/"environment" (enum strings) still exist on the table
+  --       through Phase 14 for read-side backward compatibility, but NOTHING writes to them.
+  --       All filters and joins SHOULD use the FK columns above.
 
-cmdb_relationships: id(uuid PK), "tenantId"(uuid FK→tenants), "sourceId"(uuid FK→cmdb_configuration_items), "targetId"(uuid FK→cmdb_configuration_items), "relationshipType"(DEPENDS_ON|HOSTS|CONNECTS_TO|RUNS_ON|BACKS_UP|VIRTUALIZES|MEMBER_OF), description(text), "confidenceScore"(float)
+cmdb_relationships: id(uuid PK), "tenantId"(uuid FK→tenants), "sourceId"(uuid FK→cmdb_configuration_items), "targetId"(uuid FK→cmdb_configuration_items), "relationshipTypeId"(uuid FK→cmdb_relationship_types NOT NULL), description(text), "confidenceScore"(float)
+  -- Phase 7 FK contract: relationship verb is a reference-table FK (NOT an enum).
+  -- To resolve verb name, JOIN cmdb_relationship_types ON cmdb_relationship_types.id = cmdb_relationships."relationshipTypeId".
+  -- Canonical relationshipKeys: depends_on, runs_on, hosted_on, connected_to, member_of,
+  --                              replicated_to, backed_up_by, uses, supports, managed_by,
+  --                              owned_by, contains, installed_on.
+  -- NOTE: The legacy column "relationshipType" (enum string) still exists through Phase 14 for
+  --       read-side backward compatibility; writers MUST use relationshipTypeId.
 
 cmdb_change_records: id(uuid PK), "tenantId"(uuid FK→tenants), "ciId"(uuid FK→cmdb_configuration_items), "changedBy"(text), "changeType"(text), "fieldName"(text), "oldValue"(text), "newValue"(text), "changedAt"(timestamptz)
 
