@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import { requirePermission } from '../../../plugins/rbac.js';
 import {
   createCI,
@@ -19,6 +20,82 @@ import {
 } from '../../../services/cmdb.service.js';
 import { importCIs } from '../../../services/cmdb-import.service.js';
 import { prisma } from '@meridian/db';
+
+// ─── Phase 7 Zod schemas — FK-only, strict ────────────────────────────────────
+//
+// `.strict()` causes safeParse to fail on unknown keys. That turns legacy
+// `type` / `status` / `environment` / `relationshipType` request bodies into
+// a 400 response at the route boundary — before any service-layer call.
+
+const CreateCISchema = z
+  .object({
+    name: z.string().min(1, 'name is required'),
+    classId: z.string().uuid('classId must be a valid UUID'),
+
+    // Optional FKs (service layer defaults via resolver where applicable)
+    lifecycleStatusId: z.string().uuid().optional(),
+    operationalStatusId: z.string().uuid().optional(),
+    environmentId: z.string().uuid().optional(),
+
+    // Optional descriptive fields
+    displayName: z.string().optional(),
+    description: z.string().optional(),
+    hostname: z.string().optional(),
+    fqdn: z.string().optional(),
+    ipAddress: z.string().optional(),
+    serialNumber: z.string().optional(),
+    model: z.string().optional(),
+    manufacturerId: z.string().uuid().optional(),
+    assetTag: z.string().optional(),
+    assetId: z.string().uuid().optional(),
+    agentId: z.string().uuid().optional(),
+    siteId: z.string().uuid().optional(),
+    categoryId: z.string().uuid().optional(),
+    externalId: z.string().optional(),
+    version: z.string().optional(),
+    edition: z.string().optional(),
+    ownerId: z.string().uuid().optional(),
+    businessOwnerId: z.string().uuid().optional(),
+    technicalOwnerId: z.string().uuid().optional(),
+    supportGroupId: z.string().uuid().optional(),
+    criticality: z.string().optional(),
+    confidentialityClass: z.string().optional(),
+    integrityClass: z.string().optional(),
+    availabilityClass: z.string().optional(),
+    installDate: z.string().optional(),
+    sourceSystem: z.string().optional(),
+    sourceRecordKey: z.string().optional(),
+    sourceOfTruth: z.boolean().optional(),
+    reconciliationRank: z.number().optional(),
+    attributesJson: z.record(z.string(), z.unknown()).optional(),
+    serverExt: z.record(z.string(), z.unknown()).optional(),
+    applicationExt: z.record(z.string(), z.unknown()).optional(),
+    databaseExt: z.record(z.string(), z.unknown()).optional(),
+    networkDeviceExt: z.record(z.string(), z.unknown()).optional(),
+    cloudResourceExt: z.record(z.string(), z.unknown()).optional(),
+    endpointExt: z.record(z.string(), z.unknown()).optional(),
+    serviceExt: z.record(z.string(), z.unknown()).optional(),
+  })
+  .strict(); // rejects unknown keys — catches legacy type/status/environment
+
+const UpdateCISchema = CreateCISchema.partial()
+  .extend({ isDeleted: z.boolean().optional() })
+  .strict();
+
+const CreateRelationshipSchema = z
+  .object({
+    sourceId: z.string().uuid('sourceId must be a valid UUID'),
+    targetId: z.string().uuid('targetId must be a valid UUID'),
+    relationshipTypeId: z
+      .string()
+      .uuid('relationshipTypeId is required (use the FK, not the legacy enum key)'),
+    description: z.string().optional(),
+    sourceSystem: z.string().optional(),
+    sourceRecordKey: z.string().optional(),
+    confidenceScore: z.number().min(0).max(1).optional(),
+    isDiscovered: z.boolean().optional(),
+  })
+  .strict();
 
 /**
  * CMDB REST API routes.
@@ -61,69 +138,27 @@ export async function cmdbRoutes(fastify: FastifyInstance): Promise<void> {
       const tenantId = user.tenantId;
       const userId = user.userId;
 
-      const body = request.body as Record<string, unknown>;
-
-      if (!body.name || typeof body.name !== 'string' || (body.name as string).trim().length === 0) {
-        return reply.status(400).send({ error: 'name is required and must be a non-empty string' });
+      // Phase 7: Zod `.strict()` schema rejects unknown keys — any legacy
+      // `type` / `status` / `environment` in the request body produces 400 here.
+      const parseResult = CreateCISchema.safeParse(request.body);
+      if (!parseResult.success) {
+        return reply.status(400).send({
+          error: 'Invalid request body',
+          details: parseResult.error.issues,
+        });
       }
 
-      const str = (k: string) => (typeof body[k] === 'string' ? (body[k] as string) : undefined);
-      const num = (k: string) => (typeof body[k] === 'number' ? (body[k] as number) : undefined);
-      const bool = (k: string) => (typeof body[k] === 'boolean' ? (body[k] as boolean) : undefined);
-      const obj = (k: string) => (body[k] && typeof body[k] === 'object' ? (body[k] as Record<string, unknown>) : undefined);
-
       try {
-        const ci = await createCI(
-          tenantId,
-          {
-            name: (body.name as string).trim(),
-            displayName: str('displayName'),
-            // Phase 7: legacy type/status/environment inputs removed — FK ids only
-            classId: str('classId'),
-            lifecycleStatusId: str('lifecycleStatusId'),
-            operationalStatusId: str('operationalStatusId'),
-            environmentId: str('environmentId'),
-            categoryId: str('categoryId'),
-            assetId: str('assetId'),
-            agentId: str('agentId'),
-            siteId: str('siteId'),
-            hostname: str('hostname'),
-            fqdn: str('fqdn'),
-            ipAddress: str('ipAddress'),
-            serialNumber: str('serialNumber'),
-            assetTag: str('assetTag'),
-            externalId: str('externalId'),
-            manufacturerId: str('manufacturerId'),
-            model: str('model'),
-            version: str('version'),
-            edition: str('edition'),
-            ownerId: str('ownerId'),
-            businessOwnerId: str('businessOwnerId'),
-            technicalOwnerId: str('technicalOwnerId'),
-            supportGroupId: str('supportGroupId'),
-            criticality: str('criticality'),
-            confidentialityClass: str('confidentialityClass'),
-            integrityClass: str('integrityClass'),
-            availabilityClass: str('availabilityClass'),
-            installDate: str('installDate'),
-            sourceSystem: str('sourceSystem'),
-            sourceRecordKey: str('sourceRecordKey'),
-            sourceOfTruth: bool('sourceOfTruth'),
-            reconciliationRank: num('reconciliationRank'),
-            attributesJson: obj('attributesJson'),
-            serverExt: obj('serverExt') as never,
-            applicationExt: obj('applicationExt') as never,
-            databaseExt: obj('databaseExt') as never,
-            networkDeviceExt: obj('networkDeviceExt') as never,
-            cloudResourceExt: obj('cloudResourceExt') as never,
-            endpointExt: obj('endpointExt') as never,
-            serviceExt: obj('serviceExt') as never,
-          },
-          userId,
-        );
+        const ci = await createCI(tenantId, parseResult.data as never, userId);
         return reply.status(201).send(ci);
       } catch (err) {
         const error = err as Error;
+        if (error.message.includes('classId is required')) {
+          return reply.status(400).send({ error: error.message });
+        }
+        if (error.message.includes('Unique constraint')) {
+          return reply.status(409).send({ error: 'CI already exists' });
+        }
         return reply.status(500).send({ error: error.message });
       }
     },
@@ -191,66 +226,18 @@ export async function cmdbRoutes(fastify: FastifyInstance): Promise<void> {
       const userId = user.userId;
       const { id } = request.params as { id: string };
 
-      const body = request.body as Record<string, unknown>;
-
-      // Helper to extract typed values, preserving null for clearing
-      const strOrNull = (k: string) => body[k] === null ? null : (typeof body[k] === 'string' ? (body[k] as string) : undefined);
-      const str = (k: string) => (typeof body[k] === 'string' ? (body[k] as string) : undefined);
-      const num = (k: string) => (typeof body[k] === 'number' ? (body[k] as number) : undefined);
-      const bool = (k: string) => (typeof body[k] === 'boolean' ? (body[k] as boolean) : undefined);
-      const obj = (k: string) => (body[k] && typeof body[k] === 'object' ? (body[k] as Record<string, unknown>) : undefined);
+      // Phase 7: Zod `.strict()` schema rejects unknown keys — any legacy
+      // `type` / `status` / `environment` in the request body produces 400 here.
+      const parseResult = UpdateCISchema.safeParse(request.body);
+      if (!parseResult.success) {
+        return reply.status(400).send({
+          error: 'Invalid request body',
+          details: parseResult.error.issues,
+        });
+      }
 
       try {
-        const ci = await updateCI(
-          tenantId,
-          id,
-          {
-            name: str('name'),
-            displayName: str('displayName'),
-            // Phase 7: legacy type/status/environment inputs removed — FK ids only
-            classId: strOrNull('classId') ?? undefined,
-            lifecycleStatusId: strOrNull('lifecycleStatusId') ?? undefined,
-            operationalStatusId: strOrNull('operationalStatusId') ?? undefined,
-            environmentId: strOrNull('environmentId') ?? undefined,
-            categoryId: strOrNull('categoryId') ?? undefined,
-            assetId: strOrNull('assetId') ?? undefined,
-            agentId: strOrNull('agentId') ?? undefined,
-            siteId: strOrNull('siteId') ?? undefined,
-            hostname: str('hostname'),
-            fqdn: str('fqdn'),
-            ipAddress: str('ipAddress'),
-            serialNumber: str('serialNumber'),
-            assetTag: str('assetTag'),
-            externalId: str('externalId'),
-            manufacturerId: strOrNull('manufacturerId') ?? undefined,
-            model: str('model'),
-            version: str('version'),
-            edition: str('edition'),
-            ownerId: strOrNull('ownerId') ?? undefined,
-            businessOwnerId: strOrNull('businessOwnerId') ?? undefined,
-            technicalOwnerId: strOrNull('technicalOwnerId') ?? undefined,
-            supportGroupId: strOrNull('supportGroupId') ?? undefined,
-            criticality: str('criticality'),
-            confidentialityClass: str('confidentialityClass'),
-            integrityClass: str('integrityClass'),
-            availabilityClass: str('availabilityClass'),
-            installDate: str('installDate'),
-            sourceSystem: str('sourceSystem'),
-            sourceRecordKey: str('sourceRecordKey'),
-            sourceOfTruth: bool('sourceOfTruth'),
-            reconciliationRank: num('reconciliationRank'),
-            isDeleted: bool('isDeleted'),
-            attributesJson: body.attributesJson === null ? undefined : obj('attributesJson'),
-            serverExt: obj('serverExt') as never,
-            applicationExt: obj('applicationExt') as never,
-            databaseExt: obj('databaseExt') as never,
-            networkDeviceExt: obj('networkDeviceExt') as never,
-            cloudResourceExt: obj('cloudResourceExt') as never,
-            endpointExt: obj('endpointExt') as never,
-            serviceExt: obj('serviceExt') as never,
-          },
-          userId,
-        );
+        const ci = await updateCI(tenantId, id, parseResult.data as never, userId);
 
         if (!ci) {
           return reply.status(404).send({ error: 'CI not found' });
@@ -259,6 +246,9 @@ export async function cmdbRoutes(fastify: FastifyInstance): Promise<void> {
         return reply.status(200).send(ci);
       } catch (err) {
         const error = err as Error;
+        if (error.message.includes('Unique constraint')) {
+          return reply.status(409).send({ error: 'CI already exists' });
+        }
         return reply.status(500).send({ error: error.message });
       }
     },
@@ -293,33 +283,38 @@ export async function cmdbRoutes(fastify: FastifyInstance): Promise<void> {
       const user = request.user as { tenantId: string };
       const tenantId = user.tenantId;
 
-      const body = request.body as Record<string, unknown>;
-
-      if (!body.sourceId || typeof body.sourceId !== 'string') {
-        return reply.status(400).send({ error: 'sourceId is required' });
-      }
-      if (!body.targetId || typeof body.targetId !== 'string') {
-        return reply.status(400).send({ error: 'targetId is required' });
-      }
-      if (!body.relationshipType || typeof body.relationshipType !== 'string') {
-        return reply.status(400).send({ error: 'relationshipType is required' });
+      // Phase 7: Zod `.strict()` schema rejects unknown keys — any legacy
+      // `relationshipType` string key produces 400 here. Callers MUST send
+      // the `relationshipTypeId` FK instead.
+      const parseResult = CreateRelationshipSchema.safeParse(request.body);
+      if (!parseResult.success) {
+        return reply.status(400).send({
+          error: 'Invalid request body',
+          details: parseResult.error.issues,
+        });
       }
 
       try {
         const relationship = await createRelationship(tenantId, {
-          sourceId: body.sourceId,
-          targetId: body.targetId,
-          relationshipType: body.relationshipType,
-          relationshipTypeId: typeof body.relationshipTypeId === 'string' ? body.relationshipTypeId : undefined,
-          description: typeof body.description === 'string' ? body.description : undefined,
-          sourceSystem: typeof body.sourceSystem === 'string' ? body.sourceSystem : undefined,
-          sourceRecordKey: typeof body.sourceRecordKey === 'string' ? body.sourceRecordKey : undefined,
-          confidenceScore: typeof body.confidenceScore === 'number' ? body.confidenceScore : undefined,
-          isDiscovered: typeof body.isDiscovered === 'boolean' ? body.isDiscovered : undefined,
+          sourceId: parseResult.data.sourceId,
+          targetId: parseResult.data.targetId,
+          // Service still accepts the legacy string form for backward compat —
+          // but the route schema mandates the FK, so this field is effectively
+          // always undefined from this path.
+          relationshipType: '',
+          relationshipTypeId: parseResult.data.relationshipTypeId,
+          description: parseResult.data.description,
+          sourceSystem: parseResult.data.sourceSystem,
+          sourceRecordKey: parseResult.data.sourceRecordKey,
+          confidenceScore: parseResult.data.confidenceScore,
+          isDiscovered: parseResult.data.isDiscovered,
         });
         return reply.status(201).send(relationship);
       } catch (err) {
         const error = err as Error;
+        if (error.message.includes('relationshipTypeId is required')) {
+          return reply.status(400).send({ error: error.message });
+        }
         if (
           error.message.includes('itself') ||
           error.message.includes('not found') ||

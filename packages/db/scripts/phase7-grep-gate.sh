@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
 # Phase 7 grep gate: ensure no legacy enum writes remain in CMDB code paths.
 #
-# Wave 0 behavior: WARN-ONLY (exits 0). The full grep ruleset is in place and
-# reports any matches to stdout, but the script never fails until Plan 04 removes
-# the legacy writes. Plan 04 flips the gate to ENFORCE by exporting
-#   PHASE7_GATE_ENFORCE=1
-# in the CI wrapper OR by editing the default below.
+# Plan 04 (Wave 3) flipped the gate to ENFORCE mode (default `PHASE7_GATE_ENFORCE=1`).
+# The script now exits non-zero on any legacy enum write detected in the 4
+# watched files (cmdb.service, application.service, cmdb-import.service,
+# cmdb-reconciliation worker) plus the audit-only assets/index.ts.
 #
 # Patterns are pinned to specific enum tokens so a contributor cannot satisfy
 # the gate by renaming the variable alone. (T-7-01-02 mitigation.)
+#
+# Operators can opt-out with `PHASE7_GATE_ENFORCE=0 bash phase7-grep-gate.sh`
+# for an emergency rollback, but the default in master is ENFORCE.
 
 set -euo pipefail
 
-ENFORCE="${PHASE7_GATE_ENFORCE:-0}"
+ENFORCE="${PHASE7_GATE_ENFORCE:-1}"
 FAIL=0
 
 check() {
