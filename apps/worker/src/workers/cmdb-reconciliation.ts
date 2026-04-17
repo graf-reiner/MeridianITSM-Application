@@ -207,21 +207,26 @@ export const cmdbReconciliationWorker = new Worker(
         // Resolve reference table IDs. Phase 7: these columns are NOT NULL in
         // the DB, so a missing resolution is a hard error (seed data should
         // always exist after seedCmdbReferenceData runs at tenant creation).
+        // operationalStatusId defaults to 'online' here because reaching this
+        // code path means the agent is actively reporting an inventory snapshot.
         const classIdRaw = await resolveClassId(tenantId, classKey);
         const lifecycleStatusIdRaw = await resolveLifecycleStatusId(tenantId, 'in_service');
         const environmentIdRaw = await resolveEnvironmentId(tenantId, 'prod');
-        if (!classIdRaw || !lifecycleStatusIdRaw || !environmentIdRaw) {
+        const operationalStatusIdRaw = await resolveOperationalStatusId(tenantId, 'online');
+        if (!classIdRaw || !lifecycleStatusIdRaw || !environmentIdRaw || !operationalStatusIdRaw) {
           throw new Error(
             `Phase 7: missing reference data for tenant ${tenantId} ` +
               `(classKey=${classKey}: ${classIdRaw ?? 'NULL'}, ` +
               `lifecycle=in_service: ${lifecycleStatusIdRaw ?? 'NULL'}, ` +
-              `env=prod: ${environmentIdRaw ?? 'NULL'}). ` +
+              `env=prod: ${environmentIdRaw ?? 'NULL'}, ` +
+              `operational=online: ${operationalStatusIdRaw ?? 'NULL'}). ` +
               `Run pnpm tsx packages/db/scripts/seed-existing-tenants-cmdb-ref.ts`,
           );
         }
         const classId: string = classIdRaw;
         const lifecycleStatusId: string = lifecycleStatusIdRaw;
         const environmentId: string = environmentIdRaw;
+        const operationalStatusId: string = operationalStatusIdRaw;
 
         // Look up existing CI: first by agentId, then by hostname (handles re-enrollment)
         let existingCi = await prisma.cmdbConfigurationItem.findFirst({
@@ -272,6 +277,7 @@ export const cmdbReconciliationWorker = new Worker(
                 // New reference table FKs
                 classId,
                 lifecycleStatusId,
+                operationalStatusId,
                 environmentId,
                 // Promoted columns from enriched snapshot
                 hostname,
