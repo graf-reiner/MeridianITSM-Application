@@ -151,10 +151,18 @@ type RelDupe = {
 };
 
 async function detectRelationshipDuplicates(tenantId: string): Promise<RelDupe[]> {
-  const rels = await prisma.cmdbRelationship.findMany({
-    where: { tenantId, relationshipTypeId: null },
-    select: { sourceId: true, targetId: true, relationshipType: true },
-  });
+  // Raw SQL: Prisma client generated from the new schema considers
+  // `relationshipTypeId` non-nullable, so typed `findMany` with
+  // `relationshipTypeId: null` is rejected client-side. Backfill must read
+  // legacy null rows pre-migration; raw SQL bypasses the typed validation.
+  const rels = await prisma.$queryRaw<
+    Array<{ sourceId: string; targetId: string; relationshipType: string | null }>
+  >`
+    SELECT "sourceId", "targetId", "relationshipType"
+    FROM "cmdb_relationships"
+    WHERE "tenantId" = ${tenantId}
+      AND "relationshipTypeId" IS NULL
+  `;
 
   const seen = new Map<string, { mappedKey: string; legacyTypes: string[] }>();
   const dupes: RelDupe[] = [];
@@ -229,27 +237,30 @@ async function migrateTenant(tenantId: string, tenantName: string): Promise<Tena
   }
 
   // Step 4: Backfill CIs. Idempotent guard via OR: [{ classId: null }, ...].
-  const ciCandidates = await prisma.cmdbConfigurationItem.findMany({
-    where: {
-      tenantId,
-      OR: [
-        { classId: null },
-        { lifecycleStatusId: null },
-        { operationalStatusId: null },
-        { environmentId: null },
-      ],
-    },
-    select: {
-      id: true,
-      type: true,
-      status: true,
-      environment: true,
-      classId: true,
-      lifecycleStatusId: true,
-      operationalStatusId: true,
-      environmentId: true,
-    },
-  });
+  // Raw SQL: same chicken-and-egg as detectRelationshipDuplicates above —
+  // the regenerated Prisma client treats classId/lifecycleStatusId/etc. as
+  // non-null (per new schema) and rejects null filters and null reads.
+  const ciCandidates = await prisma.$queryRaw<
+    Array<{
+      id: string;
+      type: string | null;
+      status: string | null;
+      environment: string | null;
+      classId: string | null;
+      lifecycleStatusId: string | null;
+      operationalStatusId: string | null;
+      environmentId: string | null;
+    }>
+  >`
+    SELECT id, type, status, environment,
+           "classId", "lifecycleStatusId", "operationalStatusId", "environmentId"
+    FROM "cmdb_configuration_items"
+    WHERE "tenantId" = ${tenantId}
+      AND ("classId" IS NULL
+           OR "lifecycleStatusId" IS NULL
+           OR "operationalStatusId" IS NULL
+           OR "environmentId" IS NULL)
+  `;
 
   let ciUpdated = 0;
   for (const ci of ciCandidates) {
@@ -291,11 +302,16 @@ async function migrateTenant(tenantId: string, tenantName: string): Promise<Tena
   console.log(`  ok CIs backfilled: ${ciUpdated} (of ${ciCandidates.length} candidates)`);
   if (DRY_RUN) console.log(`     (dry-run: no writes)`);
 
-  // Step 5: Backfill relationships. Idempotent guard via relationshipTypeId: null.
-  const relCandidates = await prisma.cmdbRelationship.findMany({
-    where: { tenantId, relationshipTypeId: null },
-    select: { id: true, relationshipType: true },
-  });
+  // Step 5: Backfill relationships. Raw SQL for the same reason as above —
+  // typed Prisma rejects null filter on now-non-null relationshipTypeId.
+  const relCandidates = await prisma.$queryRaw<
+    Array<{ id: string; relationshipType: string | null }>
+  >`
+    SELECT id, "relationshipType"
+    FROM "cmdb_relationships"
+    WHERE "tenantId" = ${tenantId}
+      AND "relationshipTypeId" IS NULL
+  `;
 
   let relUpdated = 0;
   for (const rel of relCandidates) {
