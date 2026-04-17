@@ -49,7 +49,7 @@ Full details: [`milestones/v1.0-ROADMAP.md`](milestones/v1.0-ROADMAP.md)
 - [x] 07-02-PLAN.md — Wave 1 reusable seeder + reference resolver + tenant lifecycle hooks
 - [x] 07-03-PLAN.md — Wave 2 per-tenant FK backfill + missing-tenant ref-data seeding
 - [x] 07-04-PLAN.md — Wave 3 strip legacy enum writes + Zod route validation + grep gate enforcement
-- [ ] 07-05-PLAN.md — Wave 4 AI schema context update (CAI-01) + portal exclusion lock (CAI-02/03)
+- [x] 07-05-PLAN.md — Wave 4 AI schema context update (CAI-01) + portal exclusion lock (CAI-02/03)
 - [ ] 07-06-PLAN.md — Wave 5 NOT NULL constraint migration + final verification gate
 
 ### Phase 8: Retire Asset Hardware/OS Duplication
@@ -144,7 +144,7 @@ Full details: [`milestones/v1.0-ROADMAP.md`](milestones/v1.0-ROADMAP.md)
 | 4. CMDB, Change Management, and Asset Portfolio | v1.0 | 8/8 | Complete | 2026-03-22 |
 | 5. Agent, Mobile, and Integrations | v1.0 | 9/9 | Complete | 2026-03-23 |
 | 6. v1.0 Paperwork Cleanup | v1.0 | 1/1 | Complete | 2026-04-16 |
-| 7. CI Reference-Table Migration | v2.0 | 4/6 | In Progress|  |
+| 7. CI Reference-Table Migration | v2.0 | 5/6 | In Progress|  |
 | 8. Retire Asset Hardware/OS Duplication | v2.0 | 0/? | Not started | — |
 | 9. Retire Asset↔CI Identity Duplication | v2.0 | 0/? | Not started | — |
 | 10. Application↔CI Criticality Normalization | v2.0 | 0/? | Not started | — |
