@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '@meridian/db';
+import { seedCmdbReferenceData } from '@meridian/db/seeds/cmdb-reference';
 import { hashSync } from '@node-rs/bcrypt';
 import { AUTH_RATE_LIMIT } from '../../plugins/rate-limit.js';
 
@@ -182,6 +183,12 @@ export async function signupRoute(app: FastifyInstance): Promise<void> {
             create: { ...category, tenantId: tenant.id },
           });
         }
+
+        // 5b. Seed CMDB reference data (CI classes, statuses, environments, relationship types)
+        // Phase 7 (CREF-01..04 + tenant-lifecycle): every new tenant must ship with a complete
+        // reference vocabulary so the first POST /api/v1/cmdb/cis call has a classId to use.
+        // Multi-tenancy: seeder writes all rows scoped to tenant.id via the passed tx.
+        await seedCmdbReferenceData(tx, tenant.id);
 
         // 6. Create initial admin user
         const user = await tx.user.create({
