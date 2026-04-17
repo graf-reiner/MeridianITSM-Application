@@ -144,7 +144,7 @@ Full details: [`milestones/v1.0-ROADMAP.md`](milestones/v1.0-ROADMAP.md)
 | 4. CMDB, Change Management, and Asset Portfolio | v1.0 | 8/8 | Complete | 2026-03-22 |
 | 5. Agent, Mobile, and Integrations | v1.0 | 9/9 | Complete | 2026-03-23 |
 | 6. v1.0 Paperwork Cleanup | v1.0 | 1/1 | Complete | 2026-04-16 |
-| 7. CI Reference-Table Migration | v2.0 | 6/6 | Complete   | 2026-04-17 |
+| 7. CI Reference-Table Migration | v2.0 | 6/6 | Complete    | 2026-04-17 |
 | 8. Retire Asset Hardware/OS Duplication | v2.0 | 0/? | Not started | — |
 | 9. Retire Asset↔CI Identity Duplication | v2.0 | 0/? | Not started | — |
 | 10. Application↔CI Criticality Normalization | v2.0 | 0/? | Not started | — |
