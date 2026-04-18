@@ -450,3 +450,104 @@ export async function getSystemHealth(tenantId: string) {
     dbStats: { users, tickets, articles },
   };
 }
+
+// ─── Software Inventory Report (Phase 8 / CASR-03) ────────────────────────────
+
+export interface SoftwareInventoryReportFilters {
+  softwareName?: string;
+  vendor?: string;
+  publisher?: string;
+  ciClassKey?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface SoftwareInventoryRow {
+  ciId: string;
+  ciName: string;
+  ciNumber: number;
+  classKey: string;
+  name: string;
+  version: string;
+  vendor: string | null;
+  publisher: string | null;
+  lastSeenAt: Date;
+  // NB: licenseKey INTENTIONALLY OMITTED (Phase 8 threat T-8-05-02).
+  //     Surfaced only by GET /api/v1/cmdb/cis/:id/software with cmdb.view.
+}
+
+/**
+ * Phase 8 (CASR-03 / CRIT-5): software-by-CI listing for license reporting.
+ *
+ * Tenant-scoped via tenantId — the `where: { tenantId }` predicate is the
+ * FIRST entry in the filter. This is the primary anti-leak guard (threat
+ * T-8-05-04). Callers MUST supply tenantId from the authenticated session;
+ * NEVER from request body / query string.
+ *
+ * `licenseKey` is intentionally OMITTED from the returned rows (explicit
+ * `select` clause). The per-CI /api/v1/cmdb/cis/:id/software endpoint
+ * surfaces it with cmdb.view permission.
+ */
+export async function getSoftwareInventoryReport(
+  tenantId: string,
+  filters: SoftwareInventoryReportFilters = {},
+): Promise<{ data: SoftwareInventoryRow[]; count: number }> {
+  const page = filters.page ?? 1;
+  const pageSize = Math.min(filters.pageSize ?? 50, 200);
+  const skip = (page - 1) * pageSize;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const where: any = {
+    tenantId,
+    ...(filters.softwareName && {
+      name: { contains: filters.softwareName, mode: 'insensitive' as const },
+    }),
+    ...(filters.vendor && { vendor: filters.vendor }),
+    ...(filters.publisher && { publisher: filters.publisher }),
+    ...(filters.ciClassKey && {
+      ci: { ciClass: { classKey: filters.ciClassKey } },
+    }),
+  };
+
+  const [rows, count] = await Promise.all([
+    prisma.cmdbSoftwareInstalled.findMany({
+      where,
+      select: {
+        // Explicit column allowlist — omits licenseKey.
+        ciId: true,
+        name: true,
+        version: true,
+        vendor: true,
+        publisher: true,
+        lastSeenAt: true,
+        ci: {
+          select: {
+            id: true,
+            name: true,
+            ciNumber: true,
+            ciClass: { select: { classKey: true } },
+          },
+        },
+      },
+      orderBy: [{ ci: { name: 'asc' } }, { name: 'asc' }],
+      skip,
+      take: pageSize,
+    }),
+    prisma.cmdbSoftwareInstalled.count({ where }),
+  ]);
+
+  return {
+    data: rows.map((r) => ({
+      ciId: r.ciId,
+      ciName: r.ci.name,
+      ciNumber: r.ci.ciNumber,
+      classKey: r.ci.ciClass.classKey,
+      name: r.name,
+      version: r.version,
+      vendor: r.vendor,
+      publisher: r.publisher,
+      lastSeenAt: r.lastSeenAt,
+    })),
+    count,
+  };
+}

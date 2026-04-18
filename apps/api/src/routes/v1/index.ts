@@ -13,6 +13,8 @@ import { knowledgeRoutes } from './knowledge/index.js';
 import { notificationRoutes } from './notifications/index.js';
 import { pushRoutes } from './push/index.js';
 import { reportRoutes } from './reports/index.js';
+import { softwareInventoryReportRoutes } from './reports/software-installed.js';
+import { ciSoftwareRoutes } from './cmdb/cis/[id]/software.js';
 import { settingsRoutes } from './settings/index.js';
 import { slaRoutes } from './sla/index.js';
 import { ticketRoutes } from './tickets/index.js';
@@ -53,6 +55,12 @@ export async function v1Routes(app: FastifyInstance): Promise<void> {
 
   // Reports — ticket/SLA/change CSV+JSON export, system health, scheduled reports
   await app.register(reportRoutes);
+
+  // Phase 8 (CASR-03 / CRIT-5): license reporting endpoints.
+  //   - GET /api/v1/reports/software-installed (reports.read; licenseKey OMITTED)
+  //   - GET /api/v1/cmdb/cis/:id/software (cmdb.view; licenseKey INCLUDED)
+  await app.register(softwareInventoryReportRoutes);
+  await app.register(ciSoftwareRoutes);
 
   // Email account management — SMTP/IMAP configuration, connection testing, email-to-ticket
   await app.register(emailAccountRoutes);
