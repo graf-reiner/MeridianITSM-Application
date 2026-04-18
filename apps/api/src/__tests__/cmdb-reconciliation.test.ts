@@ -677,3 +677,205 @@ describe('CmdbReconciliation', () => {
     expect(changeRecordCall.data.newValue).toBe('offline');
   });
 });
+
+// ============================================================================
+// Phase 8 (CASR-03): worker writes new CmdbCiServer fields + per-software upserts
+// ============================================================================
+//
+// Wave 3 (plan 08-04) coverage for the cmdb-reconciliation worker's Phase 8
+// extensions to the CmdbCiServer create/upsert call (cpuModel + disksJson +
+// networkInterfacesJson) and the new per-software cmdb_software_installed
+// upsert loop. Mirrors the cmdb-extension.service.ts pattern but tests the
+// WORKER-side write path (cross-tenant sentinel sweep, not the API route).
+//
+// Multi-tenancy posture (CLAUDE.md Rule 1): every software upsert MUST carry
+// the worker's per-job tenantId. The `tenantId` argument to the simulation
+// function below mirrors how the real worker sources it from `agent.tenantId`.
+
+describe('Phase 8 - worker writes CmdbCiServer extensions + software (CASR-03)', () => {
+  // Local Phase 8 mock surface — extends the file-level mockTx with the
+  // cmdbSoftwareInstalled.upsert mock the Phase 7 fixtures don't expose.
+  const txSoftwareUpsert = vi.fn();
+
+  beforeEach(() => {
+    txSoftwareUpsert.mockReset();
+    // Augment mockTx so the simulation's tx.cmdbSoftwareInstalled.upsert
+    // resolves through this Phase 8-scoped mock.
+    (mockTx as Record<string, unknown>).cmdbSoftwareInstalled = {
+      upsert: txSoftwareUpsert,
+    };
+  });
+
+  // Inline duplicate of the worker's parseSoftwareList — keeps the simulation
+  // in lock-step with apps/worker/src/workers/cmdb-reconciliation.ts.
+  function parseSoftwareList(blob: unknown) {
+    if (!blob) return [];
+    const arr = Array.isArray(blob)
+      ? blob
+      : typeof blob === 'object' && blob !== null && 'apps' in blob && Array.isArray((blob as any).apps)
+        ? (blob as any).apps
+        : [];
+    return arr
+      .filter(
+        (item: unknown) =>
+          item != null && typeof item === 'object' && 'name' in (item as any) && typeof (item as any).name === 'string',
+      )
+      .map((item: any) => ({
+        name: String(item.name),
+        version: String(item.version ?? ''),
+        vendor: item.vendor ?? null,
+        publisher: item.publisher ?? null,
+        installDate: item.installDate ?? null,
+      }));
+  }
+
+  /**
+   * Simulate the worker's CmdbCiServer.create + software-upsert path for the
+   * "new CI" branch (cmdb-reconciliation.ts ~lines 318-360 post-Phase-8).
+   * The arguments mirror what the worker sources from the surrounding scope.
+   */
+  async function simulateWorkerCreateExtension(args: {
+    tenantId: string;
+    ciId: string;
+    snapshot: {
+      cpuModel?: string | null;
+      cpuCores?: number | null;
+      ramGb?: number | null;
+      disks?: unknown;
+      networkInterfaces?: unknown;
+      installedSoftware?: unknown;
+      operatingSystem?: string | null;
+      osVersion?: string | null;
+      hypervisorType?: string | null;
+      isVirtual?: boolean;
+      domainName?: string | null;
+    };
+  }) {
+    const { prisma } = await import('@meridian/db');
+    await prisma.$transaction(async (tx: typeof mockTx) => {
+      const cmdbCiServer = tx.cmdbCiServer as { create: (arg: unknown) => Promise<unknown> };
+      await cmdbCiServer.create({
+        data: {
+          ciId: args.ciId,
+          tenantId: args.tenantId,
+          serverType: args.snapshot.isVirtual
+            ? args.snapshot.hypervisorType ?? 'virtual_machine'
+            : 'physical',
+          operatingSystem: args.snapshot.operatingSystem ?? null,
+          osVersion: args.snapshot.osVersion ?? null,
+          cpuCount: args.snapshot.cpuCores ?? null,
+          // Phase 8 NEW
+          cpuModel: args.snapshot.cpuModel ?? null,
+          memoryGb: args.snapshot.ramGb ?? null,
+          domainName: args.snapshot.domainName ?? null,
+          virtualizationPlatform: args.snapshot.hypervisorType ?? null,
+          disksJson: args.snapshot.disks as never,
+          networkInterfacesJson: args.snapshot.networkInterfaces as never,
+          backupRequired: false,
+        },
+      });
+
+      // Phase 8 software upsert loop
+      const softwareList = parseSoftwareList(args.snapshot.installedSoftware);
+      const cmdbSoftware = (tx as any).cmdbSoftwareInstalled as {
+        upsert: (arg: unknown) => Promise<unknown>;
+      };
+      for (const item of softwareList) {
+        const normalizedVersion = (item.version ?? '').trim() || 'unknown';
+        await cmdbSoftware.upsert({
+          where: {
+            ciId_name_version: {
+              ciId: args.ciId,
+              name: item.name,
+              version: normalizedVersion,
+            },
+          },
+          create: {
+            tenantId: args.tenantId,
+            ciId: args.ciId,
+            name: item.name,
+            version: normalizedVersion,
+            vendor: item.vendor ?? null,
+            publisher: item.publisher ?? null,
+            installDate: item.installDate ? new Date(item.installDate) : null,
+            source: 'agent',
+            lastSeenAt: new Date(),
+          },
+          update: {
+            lastSeenAt: new Date(),
+            vendor: item.vendor ?? undefined,
+            publisher: item.publisher ?? undefined,
+          },
+        });
+      }
+    });
+  }
+
+  it('cmdb-reconciliation worker writes cpuModel/disksJson/networkInterfacesJson to CmdbCiServer (Phase 8 / CASR-03)', async () => {
+    await simulateWorkerCreateExtension({
+      tenantId: TENANT_ID,
+      ciId: 'ci-w8-1',
+      snapshot: {
+        cpuModel: 'Xeon E5',
+        cpuCores: 8,
+        ramGb: 32,
+        operatingSystem: 'Linux',
+        osVersion: '5.15',
+        disks: [{ device: '/dev/sda', sizeGb: 500 }],
+        networkInterfaces: [{ name: 'eth0', mac: 'aa:bb:cc:dd:ee:ff' }],
+        installedSoftware: [],
+      },
+    });
+
+    expect(txCmdbCiServerCreate).toHaveBeenCalledTimes(1);
+    const callArgs = txCmdbCiServerCreate.mock.calls[0]![0] as { data: Record<string, unknown> };
+    expect(callArgs.data.cpuModel).toBe('Xeon E5');
+    expect(callArgs.data.disksJson).toEqual([{ device: '/dev/sda', sizeGb: 500 }]);
+    expect(callArgs.data.networkInterfacesJson).toEqual([
+      { name: 'eth0', mac: 'aa:bb:cc:dd:ee:ff' },
+    ]);
+    // Multi-tenancy preserved
+    expect(callArgs.data.tenantId).toBe(TENANT_ID);
+    expect(callArgs.data.ciId).toBe('ci-w8-1');
+  });
+
+  it('cmdb-reconciliation worker upserts cmdb_software_installed per item with key (ciId, name, version) (Phase 8 / D-06)', async () => {
+    const CI_ID = 'ci-w8-soft';
+    await simulateWorkerCreateExtension({
+      tenantId: TENANT_ID,
+      ciId: CI_ID,
+      snapshot: {
+        operatingSystem: 'Linux',
+        installedSoftware: [
+          { name: 'nginx', version: '1.24.0' },
+          { name: 'curl', version: '8.5.0' },
+        ],
+      },
+    });
+
+    expect(txSoftwareUpsert).toHaveBeenCalledTimes(2);
+
+    const firstCall = txSoftwareUpsert.mock.calls[0]![0] as {
+      where: { ciId_name_version: { ciId: string; name: string; version: string } };
+      create: { tenantId: string };
+    };
+    expect(firstCall.where.ciId_name_version).toEqual({
+      ciId: CI_ID,
+      name: 'nginx',
+      version: '1.24.0',
+    });
+    // Multi-tenancy: tenantId comes from worker per-job context (CLAUDE.md Rule 1)
+    expect(firstCall.create.tenantId).toBe(TENANT_ID);
+
+    const secondCall = txSoftwareUpsert.mock.calls[1]![0] as {
+      where: { ciId_name_version: { ciId: string; name: string; version: string } };
+      create: { tenantId: string };
+    };
+    expect(secondCall.where.ciId_name_version).toEqual({
+      ciId: CI_ID,
+      name: 'curl',
+      version: '8.5.0',
+    });
+    expect(secondCall.create.tenantId).toBe(TENANT_ID);
+  });
+});

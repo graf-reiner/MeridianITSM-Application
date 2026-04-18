@@ -3,6 +3,10 @@ import { createHash, randomBytes } from 'node:crypto';
 import { prisma } from '@meridian/db';
 import { Queue } from 'bullmq';
 import agentUpdateRoutes from './updates.js';
+import {
+  upsertServerExtensionByAsset,
+  type AgentInventorySnapshot,
+} from '../../../services/cmdb-extension.service.js';
 
 // Queue names mirrored locally to avoid cross-app imports from apps/worker — follows mapStripeStatus precedent
 const CMDB_RECONCILIATION_QUEUE = 'cmdb-reconciliation';
@@ -419,6 +423,66 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
       },
     });
 
+    // Phase 8 (D-07 + CASR-06): synchronously translate the snapshot to CMDB
+    // writes. Asset is NEVER touched by this path. Orphan Asset (no linked CI)
+    // is auto-created per D-08 inside upsertServerExtensionByAsset.
+    //
+    // Multi-tenancy posture (CLAUDE.md Rule 1): `agent.tenantId` is the locked
+    // tenant context (resolved by AgentKey above); `prisma.asset.findFirst`
+    // filters by (tenantId, hostname); upsertServerExtensionByAsset itself
+    // enforces cross-tenant rejection (T-8-02-01 mitigation, Wave 1 Test 4).
+    let extensionResult: { ciId: string; created: boolean } | null = null;
+    try {
+      // Asset.hostname is the canonical link for Wave 3. NOTE: this is the
+      // LAST surviving Asset.hostname reference in apps/api code. Wave 5
+      // plan 06 drops the column and replaces this lookup with a different
+      // correlation key (likely Agent.assetId once that FK exists).
+      const asset = await prisma.asset.findFirst({
+        where: {
+          tenantId: agent.tenantId,
+          hostname: ((body.hostname as string) ?? agent.hostname) as string,
+        },
+        select: { id: true },
+      });
+
+      const installedSoftwareRaw = body.software ?? null;
+      const snap: AgentInventorySnapshot = {
+        hostname: ((body.hostname as string) ?? agent.hostname) ?? null,
+        fqdn: (body.fqdn as string) ?? null,
+        operatingSystem: osString,
+        osVersion: osVersion,
+        // map agent's first-CPU.cores -> CmdbCiServer.cpuCount
+        cpuCount: typeof firstCpu.cores === 'number' ? (firstCpu.cores as number) : null,
+        cpuModel: (firstCpu.name as string) ?? null,
+        ramGb: totalMemBytes > 0 ? Math.round((totalMemBytes / 1073741824) * 100) / 100 : null,
+        storageGb: null,
+        disks: hw.disks ?? null,
+        networkInterfaces: body.network ?? null,
+        domainName: ((body.domainWorkgroup as string) ?? (directory.adDomainName as string)) ?? null,
+        hypervisorType: (virt.hypervisorType as string) ?? null,
+        isVirtual: typeof virt.isVirtual === 'boolean' ? (virt.isVirtual as boolean) : null,
+        installedSoftware: installedSoftwareRaw as never,
+      };
+
+      extensionResult = await prisma.$transaction(async (tx) =>
+        upsertServerExtensionByAsset(
+          tx,
+          agent.tenantId,
+          asset?.id ?? null,
+          snap,
+          { source: 'agent' },
+        ),
+      );
+    } catch (err) {
+      // Surface but do NOT fail the snapshot ingest — async worker is the
+      // backstop (same non-blocking pattern as the BullMQ enqueue try/catch
+      // immediately below).
+      request.log.error(
+        { err, snapshotId: snapshot.id },
+        'Phase 8: upsertServerExtensionByAsset failed',
+      );
+    }
+
     // Auto-trigger CMDB reconciliation for this agent
     try {
       await cmdbReconciliationQueue.add('agent-inventory', {
@@ -430,7 +494,11 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
       // Non-critical — reconciliation will still run on schedule
     }
 
-    return reply.code(201).send({ snapshotId: snapshot.id });
+    return reply.code(201).send({
+      snapshotId: snapshot.id,
+      ciId: extensionResult?.ciId ?? null,
+      created: extensionResult?.created ?? false,
+    });
   });
 
   // ─── POST /api/v1/agents/cmdb-sync ────────────────────────────────────────────

@@ -10,6 +10,62 @@ import { QUEUE_NAMES } from '../queues/definitions.js';
 // creates/updates CIs with promoted columns and extension tables, logs per-field changes,
 // and marks stale CIs as deleted after 24h of no contact.
 
+// ─── Phase 8 helpers (CASR-03 / D-05 / D-06) ─────────────────────────────────
+//
+// Duplicated inline from apps/api/src/services/cmdb-extension.service.ts per
+// the project's no-cross-app-import convention (same precedent as
+// inferClassKeyFromSnapshot above, mapStripeStatus, etc.). Keep in sync with
+// the cmdb-extension.service.ts copy when the parser shape changes.
+//
+// Pitfall 8 + 10: defensive parser for the various JSON shapes seen in
+// Asset.softwareInventory blobs and InventorySnapshot.installedSoftware
+// payloads. Supported shapes:
+//   - Array<{ name, version, ... }>
+//   - { apps: Array<{ name, version, ... }> }
+// Anything else returns [] (worker silently skips — no audit row).
+function parseSoftwareList(
+  blob: unknown,
+): Array<{
+  name: string;
+  version: string;
+  vendor?: string | null;
+  publisher?: string | null;
+  installDate?: string | null;
+}> {
+  if (!blob) return [];
+  const arr = Array.isArray(blob)
+    ? blob
+    : typeof blob === 'object' &&
+        blob !== null &&
+        'apps' in blob &&
+        Array.isArray((blob as { apps: unknown[] }).apps)
+      ? (blob as { apps: unknown[] }).apps
+      : [];
+  return arr
+    .filter(
+      (
+        item,
+      ): item is {
+        name: string;
+        version: string;
+        vendor?: string;
+        publisher?: string;
+        installDate?: string;
+      } =>
+        item != null &&
+        typeof item === 'object' &&
+        'name' in item &&
+        typeof (item as { name: unknown }).name === 'string',
+    )
+    .map((item) => ({
+      name: String(item.name),
+      version: String(item.version ?? ''),
+      vendor: item.vendor ?? null,
+      publisher: item.publisher ?? null,
+      installDate: item.installDate ?? null,
+    }));
+}
+
 /**
  * Infer a CI class key from agent platform/hostname/OS heuristics.
  * Returns a classKey that maps to CmdbCiClass seed data.
@@ -323,13 +379,55 @@ export const cmdbReconciliationWorker = new Worker(
                   operatingSystem,
                   osVersion,
                   cpuCount: snapshot.cpuCores,
+                  // Phase 8 (CASR-03): new CmdbCiServer columns
+                  cpuModel: snapshot.cpuModel ?? null,
                   memoryGb: snapshot.ramGb,
                   storageGb: totalStorageGb,
                   domainName: snapshot.domainName ?? null,
                   virtualizationPlatform: snapshot.hypervisorType ?? null,
+                  // Phase 8 (CASR-03): verbatim move targets from Asset.disks /
+                  // Asset.networkInterfaces. Worker writes these alongside the
+                  // existing extension fields so reconciled CIs carry full
+                  // hardware detail per the field-ownership contract.
+                  disksJson: snapshot.disks as never,
+                  networkInterfacesJson: snapshot.networkInterfaces as never,
                   backupRequired: false,
                 },
               });
+
+              // Phase 8 (CASR-03 / D-05 / D-06): write cmdb_software_installed
+              // rows for each software item in the snapshot. Multi-tenancy
+              // (CLAUDE.md Rule 1): every row carries the worker's per-job
+              // tenantId — never derived from the row payload.
+              const softwareList = parseSoftwareList(snapshot.installedSoftware);
+              for (const item of softwareList) {
+                const normalizedVersion = (item.version ?? '').trim() || 'unknown';
+                await tx.cmdbSoftwareInstalled.upsert({
+                  where: {
+                    ciId_name_version: {
+                      ciId: ci.id,
+                      name: item.name,
+                      version: normalizedVersion,
+                    },
+                  },
+                  create: {
+                    tenantId,
+                    ciId: ci.id,
+                    name: item.name,
+                    version: normalizedVersion,
+                    vendor: item.vendor ?? null,
+                    publisher: item.publisher ?? null,
+                    installDate: item.installDate ? new Date(item.installDate) : null,
+                    source: 'agent',
+                    lastSeenAt: new Date(),
+                  },
+                  update: {
+                    lastSeenAt: new Date(),
+                    vendor: item.vendor ?? undefined,
+                    publisher: item.publisher ?? undefined,
+                  },
+                });
+              }
             }
 
             await tx.cmdbChangeRecord.create({
@@ -443,23 +541,68 @@ export const cmdbReconciliationWorker = new Worker(
                     operatingSystem,
                     osVersion,
                     cpuCount: snapshot.cpuCores,
+                    // Phase 8 (CASR-03): new CmdbCiServer columns
+                    cpuModel: snapshot.cpuModel ?? null,
                     memoryGb: snapshot.ramGb,
                     storageGb: totalStorageGb,
                     domainName: snapshot.domainName ?? null,
                     virtualizationPlatform: snapshot.hypervisorType ?? null,
+                    // Phase 8 (CASR-03): verbatim move targets
+                    disksJson: snapshot.disks as never,
+                    networkInterfacesJson: snapshot.networkInterfaces as never,
                     backupRequired: false,
                   },
                   update: {
                     ...(operatingSystem ? { operatingSystem } : {}),
                     ...(osVersion ? { osVersion } : {}),
                     ...(snapshot.cpuCores ? { cpuCount: snapshot.cpuCores } : {}),
+                    // Phase 8 (CASR-03): write the three new fields on update too
+                    ...(snapshot.cpuModel ? { cpuModel: snapshot.cpuModel } : {}),
                     ...(snapshot.ramGb ? { memoryGb: snapshot.ramGb } : {}),
                     ...(totalStorageGb ? { storageGb: totalStorageGb } : {}),
                     ...(snapshot.domainName ? { domainName: snapshot.domainName } : {}),
                     ...(snapshot.hypervisorType ? { virtualizationPlatform: snapshot.hypervisorType } : {}),
                     ...(isVm ? { serverType: snapshot.hypervisorType ?? 'virtual_machine' } : {}),
+                    ...(snapshot.disks ? { disksJson: snapshot.disks as never } : {}),
+                    ...(snapshot.networkInterfaces
+                      ? { networkInterfacesJson: snapshot.networkInterfaces as never }
+                      : {}),
                   },
                 });
+
+                // Phase 8 (CASR-03 / D-05 / D-06): write cmdb_software_installed
+                // rows for each software item — same pattern as the create path
+                // above. Multi-tenancy: tenantId comes from the worker's per-job
+                // context, never from row payload.
+                const softwareList = parseSoftwareList(snapshot.installedSoftware);
+                for (const item of softwareList) {
+                  const normalizedVersion = (item.version ?? '').trim() || 'unknown';
+                  await tx.cmdbSoftwareInstalled.upsert({
+                    where: {
+                      ciId_name_version: {
+                        ciId: existingCi.id,
+                        name: item.name,
+                        version: normalizedVersion,
+                      },
+                    },
+                    create: {
+                      tenantId,
+                      ciId: existingCi.id,
+                      name: item.name,
+                      version: normalizedVersion,
+                      vendor: item.vendor ?? null,
+                      publisher: item.publisher ?? null,
+                      installDate: item.installDate ? new Date(item.installDate) : null,
+                      source: 'agent',
+                      lastSeenAt: new Date(),
+                    },
+                    update: {
+                      lastSeenAt: new Date(),
+                      vendor: item.vendor ?? undefined,
+                      publisher: item.publisher ?? undefined,
+                    },
+                  });
+                }
               }
             });
 
