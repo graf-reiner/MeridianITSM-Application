@@ -504,8 +504,14 @@ export async function getSoftwareInventoryReport(
     }),
     ...(filters.vendor && { vendor: filters.vendor }),
     ...(filters.publisher && { publisher: filters.publisher }),
+    // WR-02: defense-in-depth — scope nested ci + ciClass joins by tenantId
+    // even though the outer where.tenantId already constrains
+    // cmdb_software_installed and the @@unique([tenantId, classKey]) constraint
+    // prevents same-classKey collisions today. Mirrors the cmdb.service.ts
+    // posture: never rely on a single tenant-scoping layer for cross-table
+    // joins (CLAUDE.md Rule 1).
     ...(filters.ciClassKey && {
-      ci: { ciClass: { classKey: filters.ciClassKey } },
+      ci: { tenantId, ciClass: { tenantId, classKey: filters.ciClassKey } },
     }),
   };
 
