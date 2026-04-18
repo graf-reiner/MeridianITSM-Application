@@ -29,3 +29,18 @@ describe('Portal AI schema context (CAI-02 lock-in)', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Phase 8 — Portal context exclusions (CAI-02)
+// ---------------------------------------------------------------------------
+//
+// Wave 0 scaffold: the Phase 8-specific exclusions (cmdb_software_installed,
+// cmdb_migration_audit) MUST never appear in PORTAL_ALLOWED_TABLES. The
+// exclusion comment in portal-schema-context.ts is added in Wave 4 (plan
+// 08-05). These tests convert from `it.todo` to real `it(...)` assertions
+// in Wave 4 once the comment lands.
+describe('Phase 8 - portal context exclusions (CAI-02)', () => {
+  it.todo('PORTAL_ALLOWED_TABLES still excludes cmdb_software_installed');
+  it.todo('PORTAL_ALLOWED_TABLES still excludes cmdb_migration_audit');
+  it.todo('portal-schema-context Phase 8 exclusion comment present');
+});

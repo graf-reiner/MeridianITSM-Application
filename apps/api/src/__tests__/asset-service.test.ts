@@ -307,3 +307,16 @@ describe('AssetService', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// Phase 8 — Asset hardware fields removed (CASR-01)
+// ---------------------------------------------------------------------------
+//
+// Wave 0 scaffold: it.todo stubs for the Wave 3 (plan 08-04) strip of the 10
+// dropped Asset hardware fields. Existing `it(...)` blocks above remain in
+// place in Wave 0 — Wave 3 is the task that removes dropped-field tests
+// once the service interfaces drop the fields from their typed shape.
+describe('Phase 8 - Asset hardware fields removed (CASR-01)', () => {
+  it.todo('createAsset rejects hostname field');
+  it.todo('createAsset does not write any of the 10 dropped hardware fields');
+});

@@ -94,3 +94,19 @@ describe('AI schema context (CAI-01)', () => {
     expect(ctx).toMatch(/tenantId/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Phase 8 — AI schema context (CAI-01)
+// ---------------------------------------------------------------------------
+//
+// Wave 0 scaffold: assertions that the schema context correctly reflects the
+// Phase 8 Asset hardware/OS duplication retirement. Implementation lands in
+// Wave 4 (plan 08-05) which strips 10 `assets` columns, adds the
+// `cmdb_software_installed` block (with JOIN-hint docs), extends the
+// `cmdb_ci_servers` block with (cpuModel, disksJson, networkInterfacesJson),
+// and adds `cmdb_migration_audit` to EXCLUDED_TABLES.
+describe('Phase 8 - AI schema context (CAI-01)', () => {
+  it.todo('ai-schema-context: assets has no hostname/operatingSystem; cmdb_software_installed exists');
+  it.todo('ai-schema-context: cmdb_ci_servers includes cpuModel/disksJson/networkInterfacesJson');
+  it.todo('ai-schema-context excludes cmdb_migration_audit');
+});

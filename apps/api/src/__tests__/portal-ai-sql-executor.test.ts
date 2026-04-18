@@ -80,3 +80,17 @@ describe('Portal AI SQL executor (CAI-03)', () => {
     expect(result.error).toMatch(/CMDB tables are not accessible|CAI-03/i);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Phase 8 — Portal AI SQL executor cmdb_ regex coverage (CAI-03)
+// ---------------------------------------------------------------------------
+//
+// Wave 0 scaffold: defense-in-depth for cmdb_software_installed and
+// cmdb_migration_audit. The existing Phase 7 regex `cmdb_*` hard-reject
+// already covers these two tables (the pattern fires on any table name
+// starting with `cmdb_`). Wave 4 (plan 08-05) converts these to real
+// assertions; Wave 0 keeps them as pending discovery.
+describe('Phase 8 - portal AI SQL executor cmdb_ regex coverage (CAI-03)', () => {
+  it.todo('executePortalQuery rejects cmdb_software_installed');
+  it.todo('executePortalQuery rejects cmdb_migration_audit');
+});
