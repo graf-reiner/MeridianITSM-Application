@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getSchemaContext } from '../services/ai-schema-context';
+import { getSchemaContext, EXCLUDED_TABLES } from '../services/ai-schema-context';
 
 /**
  * Phase 7 — CAI-01 lock-in.
@@ -106,7 +106,35 @@ describe('AI schema context (CAI-01)', () => {
 // `cmdb_ci_servers` block with (cpuModel, disksJson, networkInterfacesJson),
 // and adds `cmdb_migration_audit` to EXCLUDED_TABLES.
 describe('Phase 8 - AI schema context (CAI-01)', () => {
-  it.todo('ai-schema-context: assets has no hostname/operatingSystem; cmdb_software_installed exists');
-  it.todo('ai-schema-context: cmdb_ci_servers includes cpuModel/disksJson/networkInterfacesJson');
-  it.todo('ai-schema-context excludes cmdb_migration_audit');
+  const ctx = getSchemaContext();
+
+  it('ai-schema-context: assets has no hostname/operatingSystem; cmdb_software_installed exists', () => {
+    // Extract just the `assets:` block (starts at "assets:", ends before the next
+    // top-level table header or comment line). The cmdb_software_installed block
+    // with its JOIN-hint comments lives separately.
+    const assetsBlockMatch = ctx.match(/\nassets:\s[\s\S]*?(?=\n\w+\s*\([A-Z]|\n--|\n\n[a-z_]+:|\nsites:)/);
+    expect(assetsBlockMatch).toBeTruthy();
+    const assetsBlock = assetsBlockMatch![0];
+    // Phase 8 removal: 10 hardware/OS columns MUST NOT appear in the assets row spec
+    expect(assetsBlock).not.toMatch(/\bhostname\(/);
+    expect(assetsBlock).not.toMatch(/"operatingSystem"\(/);
+    expect(assetsBlock).not.toMatch(/"osVersion"\(/);
+    expect(assetsBlock).not.toMatch(/"cpuModel"\(/);
+    expect(assetsBlock).not.toMatch(/"cpuCores"\(/);
+    expect(assetsBlock).not.toMatch(/"ramGb"\(/);
+    // cmdb_software_installed block exists somewhere in context
+    expect(ctx).toMatch(/cmdb_software_installed/);
+    // JOIN guidance (NOTE comment or a JOIN example) to teach the AI how to reach it
+    expect(ctx).toMatch(/JOIN cmdb_software_installed/);
+  });
+
+  it('ai-schema-context: cmdb_ci_servers includes cpuModel/disksJson/networkInterfacesJson', () => {
+    expect(ctx).toMatch(/cmdb_ci_servers[\s\S]*cpuModel/);
+    expect(ctx).toMatch(/cmdb_ci_servers[\s\S]*disksJson/);
+    expect(ctx).toMatch(/cmdb_ci_servers[\s\S]*networkInterfacesJson/);
+  });
+
+  it('ai-schema-context excludes cmdb_migration_audit', () => {
+    expect(EXCLUDED_TABLES).toContain('cmdb_migration_audit');
+  });
 });

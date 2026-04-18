@@ -32,6 +32,7 @@ export const EXCLUDED_TABLES = [
   'recovery_codes',
   'chat_conversations',
   'chat_messages',
+  'cmdb_migration_audit', // Phase 8: forensic per-field audit log for destructive schema migrations (CAI-01). Not user-queryable.
 ];
 
 /**
@@ -92,7 +93,14 @@ ticket_knowledge_articles: id(uuid PK), "tenantId"(uuid FK→tenants), "ticketId
 -- ASSETS --
 asset_types: id(uuid PK), "tenantId"(uuid FK→tenants), name(text), description(text), icon(text), color(text), "parentId"(uuid FK→asset_types self-ref), "createdAt"(timestamptz)
 
-assets: id(uuid PK), "tenantId"(uuid FK→tenants), "assetTag"(text), "serialNumber"(text), manufacturer(text), model(text), status(IN_STOCK|DEPLOYED|IN_REPAIR|RETIRED|DISPOSED), hostname(text), "operatingSystem"(text), "osVersion"(text), "cpuModel"(text), "cpuCores"(int), "ramGb"(float), "purchaseDate"(date), "purchaseCost"(decimal), "warrantyExpiry"(date), "assignedToId"(uuid FK→users), "siteId"(uuid FK→sites), "assetTypeId"(uuid FK→asset_types), notes(text), "customFields"(jsonb), "createdAt"(timestamptz)
+assets: id(uuid PK), "tenantId"(uuid FK→tenants), "assetTag"(text), "serialNumber"(text), manufacturer(text), model(text), status(IN_STOCK|DEPLOYED|IN_REPAIR|RETIRED|DISPOSED), "purchaseDate"(date), "purchaseCost"(decimal), "warrantyExpiry"(date), "assignedToId"(uuid FK→users), "siteId"(uuid FK→sites), "assetTypeId"(uuid FK→asset_types), notes(text), "customFields"(jsonb), "createdAt"(timestamptz)
+  -- NOTE: As of Phase 8 (CASR-01), hardware/OS/software details are owned by the linked CI side.
+  --       To resolve hostname/operatingSystem/cpuCount/memoryGb for an Asset:
+  --         JOIN cmdb_configuration_items ci ON ci."assetId" = assets.id
+  --         JOIN cmdb_ci_servers srv ON srv."ciId" = ci.id
+  --       For installed software on an Asset:
+  --         JOIN cmdb_configuration_items ci ON ci."assetId" = assets.id
+  --         JOIN cmdb_software_installed s ON s."ciId" = ci.id
 
 sites: id(uuid PK), "tenantId"(uuid FK→tenants), name(text), address(text), city(text), state(text), country(text), "postalCode"(text)
 
@@ -168,7 +176,21 @@ cmdb_change_records: id(uuid PK), "tenantId"(uuid FK→tenants), "ciId"(uuid FK�
 cmdb_ticket_links: id(uuid PK), "tenantId"(uuid FK→tenants), "ciId"(uuid FK→cmdb_configuration_items), "ticketId"(uuid FK→tickets), "linkType"(AFFECTED|CAUSED_BY|RELATED)
 
 -- CMDB EXTENSION TABLES (one-to-one with cmdb_configuration_items via ciId) --
-cmdb_ci_servers: "ciId"(uuid PK FK→cmdb_configuration_items), "osFamily"(text), "osVersion"(text), "cpuCores"(int), "ramGb"(float), "storageGb"(float), "isVirtual"(bool), "hypervisor"(text)
+cmdb_ci_servers: "ciId"(uuid PK FK→cmdb_configuration_items), "osFamily"(text), "osVersion"(text), "cpuCores"(int), "cpuModel"(text), "ramGb"(float), "storageGb"(float), "disksJson"(jsonb), "networkInterfacesJson"(jsonb), "isVirtual"(bool), "hypervisor"(text)
+  -- Phase 8 (CASR-02) NEW: cpuModel, disksJson, networkInterfacesJson.
+  --   These columns moved from assets.* to cmdb_ci_servers in Phase 8.
+  --   Join back to Asset via cmdb_configuration_items."assetId".
+
+cmdb_software_installed: id(uuid PK), "tenantId"(uuid FK→tenants), "ciId"(uuid FK→cmdb_configuration_items), name(text), version(text), vendor(text), publisher(text), "installDate"(timestamptz), source(text — 'agent'|'manual'|'import'), "lastSeenAt"(timestamptz), "createdAt"(timestamptz), "updatedAt"(timestamptz)
+  -- Phase 8 (CASR-03) NEW TABLE: one-to-many from a CI to each installed software item.
+  -- UNIQUE("ciId", name, version). licenseKey column EXISTS on the table but is intentionally
+  --   OMITTED from this AI context (sensitive). Reports surface licenseKey ONLY via the
+  --   CI-scoped /api/v1/cmdb/cis/:id/software endpoint, gated by the cmdb.view permission.
+  -- EXAMPLE — "which CIs have Microsoft Office installed?":
+  --   SELECT ci."ciNumber", ci.name, s.name AS software_name, s.version
+  --     FROM cmdb_software_installed s
+  --     JOIN cmdb_configuration_items ci ON ci.id = s."ciId"
+  --    WHERE s."tenantId" = $TENANT_ID AND s.name ILIKE '%Microsoft Office%';
 cmdb_ci_applications: "ciId"(uuid PK FK→cmdb_configuration_items), "appType"(text), version(text), vendor(text), "licenseType"(text), "licenseCount"(int)
 cmdb_ci_databases: "ciId"(uuid PK FK→cmdb_configuration_items), engine(text), version(text), "sizeGb"(float), port(int), "clusterName"(text)
 cmdb_ci_network_devices: "ciId"(uuid PK FK→cmdb_configuration_items), "deviceRole"(text), firmware(text), "portCount"(int), "managementIp"(text), "snmpCommunity"(text)

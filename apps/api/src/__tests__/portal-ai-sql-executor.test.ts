@@ -91,6 +91,28 @@ describe('Portal AI SQL executor (CAI-03)', () => {
 // starting with `cmdb_`). Wave 4 (plan 08-05) converts these to real
 // assertions; Wave 0 keeps them as pending discovery.
 describe('Phase 8 - portal AI SQL executor cmdb_ regex coverage (CAI-03)', () => {
-  it.todo('executePortalQuery rejects cmdb_software_installed');
-  it.todo('executePortalQuery rejects cmdb_migration_audit');
+  const TENANT_ID = '11111111-1111-4111-8111-111111111111';
+  const USER_ID = '22222222-2222-4222-8222-222222222222';
+
+  it('executePortalQuery rejects cmdb_software_installed', async () => {
+    const result = await executePortalQuery(
+      TENANT_ID,
+      USER_ID,
+      `SELECT * FROM cmdb_software_installed WHERE "tenantId" = '${TENANT_ID}'`,
+    );
+    expect(result.error).toBeDefined();
+    expect(result.error).toMatch(/CMDB tables are not accessible|CAI-03|forbidden|cmdb_/i);
+    expect(result.rows).toEqual([]);
+  });
+
+  it('executePortalQuery rejects cmdb_migration_audit', async () => {
+    const result = await executePortalQuery(
+      TENANT_ID,
+      USER_ID,
+      `SELECT * FROM cmdb_migration_audit WHERE "tenantId" = '${TENANT_ID}'`,
+    );
+    expect(result.error).toBeDefined();
+    expect(result.error).toMatch(/CMDB tables are not accessible|CAI-03|forbidden|cmdb_/i);
+    expect(result.rows).toEqual([]);
+  });
 });

@@ -31,6 +31,24 @@
  * The portal-ai-sql-executor.ts also carries a defense-in-depth `cmdb_*` hard-reject
  * branch (CAI-03) so a future allowlist mutation cannot leak CMDB to the portal AI.
  */
+
+/**
+ * PHASE 8 audit (CAI-02 lock-in, recorded 2026-04-18):
+ *
+ * Phase 8 introduces two new CMDB tables — `cmdb_software_installed` and
+ * `cmdb_migration_audit`. Both are likewise EXCLUDED from the portal AI.
+ *
+ *   - `cmdb_software_installed`: holds per-CI installed software rows with a
+ *     `licenseKey` column. End users have no business seeing installed software
+ *     across the CMDB, and `licenseKey` is sensitive data.
+ *   - `cmdb_migration_audit`: forensic per-field audit log for destructive
+ *     Phase 8 schema migrations. Internal operator-only data.
+ *
+ * The `/\bcmdb_/i` hard-reject regex in portal-ai-sql-executor.ts already covers
+ * BOTH tables by pattern (they start with `cmdb_`). This Phase 8 comment and the
+ * Vitest assertions in portal-context.test.ts lock in the invariant against silent
+ * regressions — PORTAL_ALLOWED_TABLES must never contain either table.
+ */
 /** Tables the portal AI is allowed to query */
 export const PORTAL_ALLOWED_TABLES: string[] = [
   'tickets',

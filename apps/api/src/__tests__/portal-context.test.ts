@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { PORTAL_ALLOWED_TABLES } from '../services/portal-schema-context';
 
 /**
@@ -40,7 +42,18 @@ describe('Portal AI schema context (CAI-02 lock-in)', () => {
 // 08-05). These tests convert from `it.todo` to real `it(...)` assertions
 // in Wave 4 once the comment lands.
 describe('Phase 8 - portal context exclusions (CAI-02)', () => {
-  it.todo('PORTAL_ALLOWED_TABLES still excludes cmdb_software_installed');
-  it.todo('PORTAL_ALLOWED_TABLES still excludes cmdb_migration_audit');
-  it.todo('portal-schema-context Phase 8 exclusion comment present');
+  it('PORTAL_ALLOWED_TABLES still excludes cmdb_software_installed', () => {
+    expect(PORTAL_ALLOWED_TABLES).not.toContain('cmdb_software_installed');
+  });
+
+  it('PORTAL_ALLOWED_TABLES still excludes cmdb_migration_audit', () => {
+    expect(PORTAL_ALLOWED_TABLES).not.toContain('cmdb_migration_audit');
+  });
+
+  it('portal-schema-context Phase 8 exclusion comment present', async () => {
+    // Resolve via import.meta.url so the test works regardless of vitest's cwd
+    const filePath = resolve(__dirname, '../services/portal-schema-context.ts');
+    const fileContent = await readFile(filePath, 'utf8');
+    expect(fileContent).toMatch(/PHASE 8 audit/);
+  });
 });
