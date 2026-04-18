@@ -34,6 +34,9 @@ export async function assetRoutes(fastify: FastifyInstance): Promise<void> {
       const tenantId = user.tenantId;
       const actorId = user.userId;
 
+      // Phase 8 (CASR-01): the 10 hardware/OS fields are no longer accepted
+      // here. Inventory POST (POST /api/v1/agents/inventory) is the only path
+      // that writes those fields, and it routes them to CmdbCiServer.
       const body = request.body as {
         serialNumber?: unknown;
         manufacturer?: unknown;
@@ -45,15 +48,6 @@ export async function assetRoutes(fastify: FastifyInstance): Promise<void> {
         assignedToId?: unknown;
         siteId?: unknown;
         assetTypeId?: unknown;
-        hostname?: unknown;
-        operatingSystem?: unknown;
-        osVersion?: unknown;
-        cpuModel?: unknown;
-        cpuCores?: unknown;
-        ramGb?: unknown;
-        disks?: unknown;
-        networkInterfaces?: unknown;
-        softwareInventory?: unknown;
         customFields?: unknown;
       };
 
@@ -77,15 +71,6 @@ export async function assetRoutes(fastify: FastifyInstance): Promise<void> {
             assignedToId: body.assignedToId as string | undefined,
             siteId: body.siteId as string | undefined,
             assetTypeId: body.assetTypeId as string | undefined,
-            hostname: body.hostname as string | undefined,
-            operatingSystem: body.operatingSystem as string | undefined,
-            osVersion: body.osVersion as string | undefined,
-            cpuModel: body.cpuModel as string | undefined,
-            cpuCores: body.cpuCores as number | undefined,
-            ramGb: body.ramGb as number | undefined,
-            disks: body.disks,
-            networkInterfaces: body.networkInterfaces,
-            softwareInventory: body.softwareInventory,
             customFields: body.customFields,
           },
           actorId,
@@ -174,6 +159,10 @@ export async function assetRoutes(fastify: FastifyInstance): Promise<void> {
       const actorId = user.userId;
       const { id } = request.params as { id: string };
 
+      // Phase 8 (CASR-01): the 10 hardware/OS fields are no longer accepted
+      // here — see POST handler note. Even if a client sends them, the service
+      // layer no longer declares them on UpdateAssetData and Prisma silently
+      // drops unknown keys.
       const body = request.body as {
         serialNumber?: unknown;
         manufacturer?: unknown;
@@ -185,15 +174,6 @@ export async function assetRoutes(fastify: FastifyInstance): Promise<void> {
         assignedToId?: unknown;
         siteId?: unknown;
         assetTypeId?: unknown;
-        hostname?: unknown;
-        operatingSystem?: unknown;
-        osVersion?: unknown;
-        cpuModel?: unknown;
-        cpuCores?: unknown;
-        ramGb?: unknown;
-        disks?: unknown;
-        networkInterfaces?: unknown;
-        softwareInventory?: unknown;
         customFields?: unknown;
       };
 

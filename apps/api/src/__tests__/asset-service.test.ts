@@ -312,11 +312,59 @@ describe('AssetService', () => {
 // Phase 8 — Asset hardware fields removed (CASR-01)
 // ---------------------------------------------------------------------------
 //
-// Wave 0 scaffold: it.todo stubs for the Wave 3 (plan 08-04) strip of the 10
-// dropped Asset hardware fields. Existing `it(...)` blocks above remain in
-// place in Wave 0 — Wave 3 is the task that removes dropped-field tests
-// once the service interfaces drop the fields from their typed shape.
+// Wave 3 (plan 08-04) PROMOTED — these previously were it.todo scaffolds.
+// They prove the asset.service.ts CreateAssetData interface no longer carries
+// the 10 hardware/OS fields and createAsset's prisma.asset.create call no
+// longer writes them. Tenant scoping (CLAUDE.md Rule 1) preserved by the
+// existing tests above.
 describe('Phase 8 - Asset hardware fields removed (CASR-01)', () => {
-  it.todo('createAsset rejects hostname field');
-  it.todo('createAsset does not write any of the 10 dropped hardware fields');
+  it('createAsset rejects hostname field', () => {
+    // Compile-time check via @ts-expect-error.
+    // If `hostname?` were still on CreateAssetData, this line would compile
+    // silently and the test would FAIL (because @ts-expect-error requires an
+    // actual error to consume).
+    // @ts-expect-error - hostname removed from CreateAssetData in Phase 8 (CASR-01)
+    const _bad: import('../services/asset.service.js').CreateAssetData = { hostname: 'x' };
+    expect(_bad).toBeDefined();
+  });
+
+  it('createAsset does not write any of the 10 dropped hardware fields', async () => {
+    txExecuteRaw.mockResolvedValue(undefined);
+    txQueryRaw.mockResolvedValue([{ next: BigInt(1) }]);
+    txAssetCreate.mockResolvedValue({
+      id: ASSET_ID,
+      tenantId: TENANT_ID,
+      assetTag: 'AST-00001',
+      status: 'IN_STOCK',
+      site: null,
+    });
+
+    await createAsset(
+      mockPrismaObj as any,
+      TENANT_ID,
+      { manufacturer: 'Dell' },
+      ACTOR_ID,
+    );
+
+    // Inspect prisma.asset.create call args
+    expect(txAssetCreate).toHaveBeenCalledTimes(1);
+    const callArgs = txAssetCreate.mock.calls[0][0] as { data: Record<string, unknown> };
+    const dropped = [
+      'hostname',
+      'operatingSystem',
+      'osVersion',
+      'cpuModel',
+      'cpuCores',
+      'ramGb',
+      'disks',
+      'networkInterfaces',
+      'softwareInventory',
+      'lastInventoryAt',
+    ];
+    for (const field of dropped) {
+      expect(callArgs.data).not.toHaveProperty(field);
+    }
+    // Belt-and-suspenders: tenantId IS present (multi-tenancy preserved)
+    expect(callArgs.data).toHaveProperty('tenantId', TENANT_ID);
+  });
 });

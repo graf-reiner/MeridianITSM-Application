@@ -34,15 +34,10 @@ export interface CreateAssetData {
   assignedToId?: string;
   siteId?: string;
   assetTypeId?: string;
-  hostname?: string;
-  operatingSystem?: string;
-  osVersion?: string;
-  cpuModel?: string;
-  cpuCores?: number;
-  ramGb?: number;
-  disks?: unknown;
-  networkInterfaces?: unknown;
-  softwareInventory?: unknown;
+  // Phase 8 (CASR-01): hardware/OS fields removed.
+  // hostname / operatingSystem / osVersion / cpuModel / cpuCores / ramGb /
+  // disks / networkInterfaces / softwareInventory / lastInventoryAt now live
+  // on CmdbCiServer + CmdbSoftwareInstalled (see cmdb-extension.service.ts).
   customFields?: unknown;
 }
 
@@ -57,15 +52,7 @@ export interface UpdateAssetData {
   assignedToId?: string | null;
   siteId?: string | null;
   assetTypeId?: string | null;
-  hostname?: string | null;
-  operatingSystem?: string | null;
-  osVersion?: string | null;
-  cpuModel?: string | null;
-  cpuCores?: number | null;
-  ramGb?: number | null;
-  disks?: unknown;
-  networkInterfaces?: unknown;
-  softwareInventory?: unknown;
+  // Phase 8 (CASR-01): hardware/OS fields removed — see CreateAssetData note.
   customFields?: unknown;
 }
 
@@ -119,15 +106,9 @@ export async function createAsset(
         assignedToId: data.assignedToId,
         siteId: data.siteId,
         assetTypeId: data.assetTypeId,
-        hostname: data.hostname,
-        operatingSystem: data.operatingSystem,
-        osVersion: data.osVersion,
-        cpuModel: data.cpuModel,
-        cpuCores: data.cpuCores,
-        ramGb: data.ramGb,
-        disks: data.disks as any,
-        networkInterfaces: data.networkInterfaces as any,
-        softwareInventory: data.softwareInventory as any,
+        // Phase 8 (CASR-01): the 10 hardware/OS fields are no longer written
+        // here. Inventory snapshots route to CmdbCiServer via
+        // upsertServerExtensionByAsset (apps/api/src/services/cmdb-extension.service.ts).
         customFields: data.customFields as any,
       },
       include: {
@@ -192,12 +173,15 @@ export async function listAssets(
   }
 
   if (filters.search) {
+    // Phase 8 (CASR-01): Asset.hostname is gone. Hostname search now joins
+    // through cmdbConfigItems (CmdbConfigurationItem.hostname) — that's the
+    // canonical hostname per the field-ownership contract.
     where.OR = [
       { assetTag: { contains: filters.search, mode: 'insensitive' } },
       { serialNumber: { contains: filters.search, mode: 'insensitive' } },
-      { hostname: { contains: filters.search, mode: 'insensitive' } },
       { manufacturer: { contains: filters.search, mode: 'insensitive' } },
       { model: { contains: filters.search, mode: 'insensitive' } },
+      { cmdbConfigItems: { some: { hostname: { contains: filters.search, mode: 'insensitive' } } } },
     ];
   }
 
@@ -259,15 +243,8 @@ export async function updateAsset(
   if (data.assignedToId !== undefined) updateData.assignedToId = data.assignedToId;
   if (data.siteId !== undefined) updateData.siteId = data.siteId;
   if (data.assetTypeId !== undefined) updateData.assetTypeId = data.assetTypeId;
-  if (data.hostname !== undefined) updateData.hostname = data.hostname;
-  if (data.operatingSystem !== undefined) updateData.operatingSystem = data.operatingSystem;
-  if (data.osVersion !== undefined) updateData.osVersion = data.osVersion;
-  if (data.cpuModel !== undefined) updateData.cpuModel = data.cpuModel;
-  if (data.cpuCores !== undefined) updateData.cpuCores = data.cpuCores;
-  if (data.ramGb !== undefined) updateData.ramGb = data.ramGb;
-  if (data.disks !== undefined) updateData.disks = data.disks as any;
-  if (data.networkInterfaces !== undefined) updateData.networkInterfaces = data.networkInterfaces as any;
-  if (data.softwareInventory !== undefined) updateData.softwareInventory = data.softwareInventory as any;
+  // Phase 8 (CASR-01): the 10 hardware/OS field assignments were removed —
+  // those fields no longer live on the Asset model. See createAsset header.
   if (data.customFields !== undefined) updateData.customFields = data.customFields as any;
 
   const updated = await prisma.asset.update({
