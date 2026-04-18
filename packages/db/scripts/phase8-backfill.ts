@@ -337,6 +337,12 @@ export async function migrateTenant(
                 environmentId: envRow[0].id,
                 ciNumber,
                 name: asset.hostname || `unnamed-asset-${asset.id.slice(0, 8)}`,
+                // WR-03: persist asset.hostname onto the new CI so post-Wave-5
+                // queries (e.g. AI Text-to-SQL `SELECT ci.hostname FROM
+                // cmdb_configuration_items`) and CI-list/search views surface
+                // backfilled orphan CIs. Without this, ci.hostname stays NULL
+                // even when the source Asset carried a hostname.
+                hostname: asset.hostname ?? null,
                 assetId: asset.id,
               },
               select: { id: true },
