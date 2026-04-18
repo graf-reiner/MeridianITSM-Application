@@ -68,7 +68,7 @@ Full details: [`milestones/v1.0-ROADMAP.md`](milestones/v1.0-ROADMAP.md)
 - [x] 08-03-PLAN.md — Wave 2 per-tenant Asset → CmdbCiServer + CmdbSoftwareInstalled backfill with D-01 CI-wins conflict logging
 - [x] 08-04-PLAN.md — Wave 3 strip Asset write paths + reroute inventory POST + ENFORCE-mode grep gate
 - [x] 08-05-PLAN.md — Wave 4 AI context updates (CAI-01/02/03) + license reporting endpoints
-- [ ] 08-06-PLAN.md — Wave 5 destructive Asset column drop + Asset detail Technical Profile tab + final verification gate
+- [x] 08-06-PLAN.md — Wave 5 destructive Asset column drop + Asset detail Technical Profile tab + final verification gate
 
 ### Phase 9: Retire Asset↔CI Identity Duplication
 **Goal**: Asset owns identity (serial / manufacturer / model / asset tag / stockroom site) and the CI reads those values via join; hardware-class CIs may exist without an Asset, with orphan reconciliation surfacing them for cleanup.
