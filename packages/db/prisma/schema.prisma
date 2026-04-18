@@ -474,6 +474,10 @@ model Tenant {
   holidays                 Holiday[]
   notificationTemplates    NotificationTemplate[]
 
+  // Phase 8: installed software + migration audit
+  cmdbSoftwareInstalled CmdbSoftwareInstalled[]
+  cmdbMigrationAudit    CmdbMigrationAudit[]
+
   @@map("tenants")
 }
 
@@ -2284,6 +2288,9 @@ model CmdbConfigurationItem {
   endpointExt      CmdbCiEndpoint?
   serviceExt       CmdbService?
 
+  // Phase 8: installed software (1:many; CASCADE on CI delete)
+  softwareInstalled CmdbSoftwareInstalled[]
+
   // ITSM links
   cmdbChangeLinks   CmdbChangeLink[]
   cmdbIncidentLinks CmdbIncidentLink[]
@@ -2430,8 +2437,11 @@ model CmdbCiServer {
   operatingSystem        String?
   osVersion              String?
   cpuCount               Int?
+  cpuModel               String?  // Phase 8 (CASR-02)
   memoryGb               Float?
   storageGb              Float?
+  disksJson              Json?    // Phase 8 (verbatim move from Asset.disks)
+  networkInterfacesJson  Json?    // Phase 8 (verbatim move from Asset.networkInterfaces)
   domainName             String?
   virtualizationPlatform String?
   hypervisorHostCiId     String?  @db.Uuid
@@ -2447,6 +2457,60 @@ model CmdbCiServer {
 
   @@index([tenantId])
   @@map("cmdb_ci_servers")
+}
+
+// Model 50b: CmdbSoftwareInstalled (Phase 8, CASR-03)
+// Installed-software inventory per CI. D-05 source tracking, D-06 unique key.
+// Multi-tenancy: tenantId denormalized so every query filters by tenantId
+// without joining. Cross-tenant isolation verified by phase8-verify.ts Check 4.
+model CmdbSoftwareInstalled {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @db.Uuid
+  ciId        String    @db.Uuid
+  name        String
+  version     String
+  vendor      String?
+  publisher   String?
+  installDate DateTime?
+  source      String // 'agent' | 'manual' | 'import' (D-05)
+  licenseKey  String?
+  lastSeenAt  DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant Tenant                @relation(fields: [tenantId], references: [id])
+  ci     CmdbConfigurationItem @relation(fields: [ciId], references: [id], onDelete: Cascade)
+
+  @@unique([ciId, name, version]) // D-06
+  @@index([tenantId])
+  @@index([tenantId, name]) // license reporting "all CIs with software X"
+  @@index([ciId]) // "all software on CI Y"
+  @@index([tenantId, lastSeenAt]) // stale cleanup (D-06)
+  @@map("cmdb_software_installed")
+}
+
+// Model 50c: CmdbMigrationAudit (Phase 8)
+// Forensic per-field audit log for destructive schema migrations. EXCLUDED
+// from AI context (CAI-01) — tenant operators can query via direct SQL only.
+model CmdbMigrationAudit {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  tableName String
+  recordId  String
+  fieldName String
+  oldValue  String?
+  newValue  String?
+  status    String // 'overwritten_by_ci' | 'unparseable_software_blob' | etc.
+  phase     String // 'phase8' | 'phase9' | ...
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, phase])
+  @@index([tenantId, tableName, recordId])
+  @@index([tenantId, createdAt]) // retention queries (Pitfall 4)
+  @@map("cmdb_migration_audit")
 }
 
 // Model 51: CmdbCiApplication
