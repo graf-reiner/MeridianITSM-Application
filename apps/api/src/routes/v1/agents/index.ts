@@ -473,7 +473,17 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
           agent.tenantId,
           assetIdForExt,
           snap,
-          { source: 'agent' },
+          {
+            source: 'agent',
+            // CR-01: pass agentId so the service can dedup against an existing
+            // CI by (tenantId, agentId) BEFORE falling through to the D-08
+            // orphan-create branch. Without this, every inventory POST created
+            // a new CI in the 15-minute window between reconciler runs.
+            agentId: agent.id,
+            // WR-01: agentKey becomes sourceRecordKey on the CI for parity
+            // with cmdb-reconciliation worker's create payload.
+            agentKey: agent.agentKey ?? null,
+          },
         ),
       );
     } catch (err) {

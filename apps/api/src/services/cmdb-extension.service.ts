@@ -75,7 +75,11 @@ export async function upsertServerExtensionByAsset(
   tenantId: string,
   assetId: string | null,
   snapshot: AgentInventorySnapshot,
-  opts?: { source?: 'agent' | 'manual' | 'import' },
+  opts?: {
+    source?: 'agent' | 'manual' | 'import';
+    agentId?: string | null;
+    agentKey?: string | null;
+  },
 ): Promise<UpsertServerExtensionResult> {
   const source = opts?.source ?? 'agent';
 
@@ -94,6 +98,15 @@ export async function upsertServerExtensionByAsset(
   }
 
   // Step 2: find or create CI
+  //
+  // CR-01 fix: dedup hierarchy mirrors apps/worker/src/workers/cmdb-reconciliation.ts
+  // (lines 287-305). Without these lookups, every agent inventory POST fell
+  // through to the D-08 orphan-create branch and produced a brand-new CI on
+  // every request (because Wave 5 forces assetId=null at the call site).
+  //
+  // Multi-tenancy posture (CLAUDE.md Rule 1 — MANDATORY): every dedup query
+  // includes `tenantId` in the `where` clause so a second tenant's CI with
+  // the same agentId / hostname can never be returned here.
   let ci: { id: string } | null = null;
   let createdNew = false;
 
@@ -105,8 +118,38 @@ export async function upsertServerExtensionByAsset(
     });
   }
 
+  // CR-01: dedup by agentId (mirrors worker's primary lookup, line 288)
+  if (!ci && opts?.agentId) {
+    ci = await tx.cmdbConfigurationItem.findFirst({
+      where: { tenantId, agentId: opts.agentId, isDeleted: false },
+      select: { id: true },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  // CR-01: dedup by hostname fallback (mirrors worker lines 292-305).
+  // Handles re-enrollment where the agent's id changed but the host stayed.
+  if (!ci && snapshot.hostname) {
+    ci = await tx.cmdbConfigurationItem.findFirst({
+      where: { tenantId, hostname: snapshot.hostname, isDeleted: false },
+      select: { id: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    // Re-link to the current agent so future lookups hit the agentId fast path.
+    if (ci && opts?.agentId) {
+      await tx.cmdbConfigurationItem.update({
+        where: { id: ci.id },
+        data: {
+          agentId: opts.agentId,
+          ...(opts.agentKey ? { sourceRecordKey: opts.agentKey } : {}),
+          lastSeenAt: new Date(),
+        },
+      });
+    }
+  }
+
   if (!ci) {
-    // D-08 orphan path — auto-create CI
+    // D-08 orphan path — auto-create CI. Only reached when nothing matched above.
     const { classKey } = inferClassKeyFromSnapshot(
       /* platform */ null,
       snapshot.hostname,
@@ -137,6 +180,7 @@ export async function upsertServerExtensionByAsset(
        WHERE "tenantId" = ${tenantId}::uuid`;
     const ciNumber = Number(next[0]?.next ?? 1);
 
+    const now = new Date();
     const created = await tx.cmdbConfigurationItem.create({
       data: {
         tenantId,
@@ -147,6 +191,15 @@ export async function upsertServerExtensionByAsset(
         ciNumber,
         name: snapshot.hostname || `unnamed-${ciNumber}`,
         assetId: resolvedAsset?.id ?? null,
+        // WR-01 fix: persist governance fields so cmdb-reconciliation worker
+        // (which filters by agentId at line 288) finds this CI on subsequent
+        // runs instead of creating yet another duplicate.
+        agentId: opts?.agentId ?? null,
+        hostname: snapshot.hostname ?? null,
+        sourceSystem: source,
+        sourceRecordKey: opts?.agentKey ?? null,
+        firstDiscoveredAt: now,
+        lastSeenAt: now,
       },
       select: { id: true },
     });
