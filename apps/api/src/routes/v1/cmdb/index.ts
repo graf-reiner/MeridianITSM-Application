@@ -82,6 +82,17 @@ const UpdateCISchema = CreateCISchema.partial()
   .extend({ isDeleted: z.boolean().optional() })
   .strict();
 
+// Phase 8 (CASR-05 dependency for Wave 5 plan 06 Asset detail "Link a CI" flow).
+// PATCH /cmdb/cis/:id body schema — narrow, targeted at the Asset-link flow.
+// .strict() blocks any attempt to tamper with tenantId or other CI fields
+// via this route (Threat T-8-05-10). Full CI field updates continue to go
+// through PUT /cmdb/cis/:id (UpdateCISchema above).
+const PatchCISchema = z
+  .object({
+    assetId: z.string().uuid().nullable().optional(),
+  })
+  .strict();
+
 const CreateRelationshipSchema = z
   .object({
     sourceId: z.string().uuid('sourceId must be a valid UUID'),
@@ -251,6 +262,79 @@ export async function cmdbRoutes(fastify: FastifyInstance): Promise<void> {
         }
         return reply.status(500).send({ error: error.message });
       }
+    },
+  );
+
+  // ─── PATCH /api/v1/cmdb/cis/:id — Narrow update (Phase 8 Asset-link) ───────
+  //
+  // CASR-05 dependency for Wave 5 plan 06 Asset detail page "Link a CI" flow.
+  //
+  // Security posture (threats T-8-05-09 + T-8-05-10):
+  //   - cmdb.edit permission required.
+  //   - Body schema Zod .strict() — unknown keys (e.g. `tenantId`, `assetTag`)
+  //     produce 400 Invalid body. Full-field CI updates continue via PUT.
+  //   - Dual tenant-ownership guard:
+  //       1. CI findFirst with { id, tenantId: user.tenantId } — cross-tenant
+  //          CI returns null → 404 "CI not found".
+  //       2. When body.assetId is a non-null string, Asset findFirst with
+  //          { id: body.assetId, tenantId: user.tenantId } — cross-tenant
+  //          Asset returns null → 404 "Asset not found in this tenant".
+  //     Both checks use findFirst with tenantId (NOT findUnique by id).
+  //   - Unlink path: body.assetId === null skips the Asset lookup and sets
+  //     the CI's assetId to null.
+
+  fastify.patch(
+    '/api/v1/cmdb/cis/:id',
+    { preHandler: [requirePermission('cmdb.edit')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string; userId: string };
+      const tenantId = user.tenantId;
+      const { id: ciId } = request.params as { id: string };
+
+      const parsed = PatchCISchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: 'Invalid body',
+          details: parsed.error.issues,
+        });
+      }
+      const body = parsed.data;
+
+      // Step 1: CI tenant ownership check.
+      const ci = await prisma.cmdbConfigurationItem.findFirst({
+        where: { id: ciId, tenantId },
+        select: { id: true },
+      });
+      if (!ci) {
+        return reply.status(404).send({ error: 'CI not found' });
+      }
+
+      // Step 2: If assetId is a non-null string, Asset tenant ownership check.
+      if (typeof body.assetId === 'string') {
+        const asset = await prisma.asset.findFirst({
+          where: { id: body.assetId, tenantId },
+          select: { id: true },
+        });
+        if (!asset) {
+          return reply
+            .status(404)
+            .send({ error: 'Asset not found in this tenant' });
+        }
+      }
+
+      // Step 3: Build update payload. assetId === null is a valid unlink.
+      const updateData: Record<string, unknown> = {};
+      if ('assetId' in body) {
+        updateData.assetId = body.assetId ?? null;
+      }
+
+      const updated = await prisma.cmdbConfigurationItem.update({
+        where: { id: ciId },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data: updateData as any,
+        select: { id: true, assetId: true },
+      });
+      return reply.status(200).send({ data: updated });
     },
   );
 
