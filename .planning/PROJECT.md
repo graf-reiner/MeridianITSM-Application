@@ -63,7 +63,7 @@ An MSP can manage multiple customer organizations' IT service desks from a singl
 **v2.0 CSDM Alignment** (scope at `C:\Users\greiner\.claude\plans\curious-wondering-tarjan.md`):
 
 - [ ] Complete CI reference-table migration (classId/lifecycleStatusId/operationalStatusId/environmentId/relationshipTypeId as NOT NULL FKs)
-- [ ] Retire Asset hardware/OS field duplication (move to CmdbCiServer + new CmdbSoftwareInstalled)
+- [x] Retire Asset hardware/OS field duplication (move to CmdbCiServer + new CmdbSoftwareInstalled) *(Validated in Phase 08: retire-asset-hardware-os-duplication — 10 Asset hardware columns dropped; CmdbSoftwareInstalled + CmdbMigrationAudit tables + 3 new CmdbCiServer columns; inventory POST routes through upsertServerExtensionByAsset; Asset detail page tabbed with Technical Profile panel)*
 - [ ] Retire Asset↔CI identity duplication (serial/manufacturer/model owned by Asset; CI reads via join)
 - [ ] Application↔CI criticality normalization (CI.criticality → CriticalityLevel enum, synced from Application)
 - [ ] Introduce CSDM Service tier above Application (Business / Application / Technical Service classes; SLA-on-Service only)
@@ -136,4 +136,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-16 after v1.0 milestone — v1.0 MVP shipped (6 phases, 43 plans, 182 requirements). Next: v2.0 CSDM Alignment.*
+*Last updated: 2026-04-18 after Phase 08 — Asset hardware/OS duplication retired; CMDB is sole SOT for technical profile. 2/8 v2.0 CSDM phases complete.*
