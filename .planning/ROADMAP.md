@@ -63,8 +63,8 @@ Full details: [`milestones/v1.0-ROADMAP.md`](milestones/v1.0-ROADMAP.md)
   4. Inventory-agent ingestion writes updates through `upsertServerExtensionByAsset` to the CI (not `Asset`); a test agent heartbeat produces CMDB changes and leaves `Asset` rows untouched
   5. License reporting query can list software-by-CI via `CmdbSoftwareInstalled` joins; `ai-schema-context.ts` + `portal-schema-context.ts` + `portal-ai-sql-executor.ts` row-level rules reflect the new tables (end-user AI filters via `ciId → asset.assignedToId`)
 **Plans**: 6 plans
-- [ ] 08-01-PLAN.md — Wave 0 verification harness (3 db scripts + 6 vitest scaffolds + 3 Playwright skips + CIPicker skeleton)
-- [ ] 08-02-PLAN.md — Wave 1 additive schema migration (CmdbSoftwareInstalled + CmdbMigrationAudit + 3 CmdbCiServer cols) + upsertServerExtensionByAsset service
+- [x] 08-01-PLAN.md — Wave 0 verification harness (3 db scripts + 6 vitest scaffolds + 3 Playwright skips + CIPicker skeleton)
+- [x] 08-02-PLAN.md — Wave 1 additive schema migration (CmdbSoftwareInstalled + CmdbMigrationAudit + 3 CmdbCiServer cols) + upsertServerExtensionByAsset service
 - [ ] 08-03-PLAN.md — Wave 2 per-tenant Asset → CmdbCiServer + CmdbSoftwareInstalled backfill with D-01 CI-wins conflict logging
 - [ ] 08-04-PLAN.md — Wave 3 strip Asset write paths + reroute inventory POST + ENFORCE-mode grep gate
 - [ ] 08-05-PLAN.md — Wave 4 AI context updates (CAI-01/02/03) + license reporting endpoints
