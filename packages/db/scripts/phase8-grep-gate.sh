@@ -43,11 +43,19 @@ check "(hostname|operatingSystem|osVersion|cpuModel|cpuCores|ramGb|disks|network
 check "prisma\.asset\.(create|update|upsert)[\s\S]*hostname" \
       apps/worker/src/workers/cmdb-reconciliation.ts
 
-# Web app — Asset detail TypeScript interface (Pitfall 6)
-# Wave 3 EXEMPT — Wave 5 plan 06 owns the apps/web Asset detail page interface fix.
-#                 Re-enable this check after plan 06 ships.
-# check "  (hostname|operatingSystem|osVersion|cpuModel|cpuCores|ramGb|disks|networkInterfaces):" \
-#       'apps/web/src/app/dashboard/assets/[id]/page.tsx'
+# Web app — Asset detail page reads of dropped Asset fields (Pitfall 6)
+# Phase 8 Wave 5 (plan 06) stripped the dropped fields from the AssetDetail
+# interface AND any `asset.X` property access for the 10 dropped columns.
+# This check is now ACTIVE and ENFORCE-mode; any contributor who re-adds a
+# direct read of one of the 10 dropped Asset columns (via `asset.hostname`,
+# `asset.ramGb`, etc.) breaks the build. CI-side reads (`ci.hostname`,
+# `ext.cpuModel`, `ext.memoryGb`) remain legal — the CI owns those fields now.
+#
+# Pattern intentionally uses `asset\.(field)` — a rename of the `asset`
+# variable to something else will surface the change in review; the literal
+# prefix 'asset.' is the Pitfall 6 signal.
+check "asset\.(hostname|operatingSystem|osVersion|cpuModel|cpuCores|ramGb|disks|networkInterfaces|softwareInventory|lastInventoryAt)" \
+      'apps/web/src/app/dashboard/assets/[id]/page.tsx'
 
 if [ "$FAIL" -ne 0 ]; then
   echo ""

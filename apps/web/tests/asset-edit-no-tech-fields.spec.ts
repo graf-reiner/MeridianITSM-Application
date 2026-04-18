@@ -1,31 +1,31 @@
 import { test, expect } from '@playwright/test';
+import { loginAsAdmin } from './helpers';
 
 /**
- * Phase 8 — CASR-01 / CASR-05 E2E scaffold (negative assertion).
+ * Phase 8 — CASR-01 E2E negative assertion: the Asset edit form must NOT
+ * expose hostname / operatingSystem / cpuModel / cpuCores / ramGb inputs.
+ * Those fields are owned by CmdbCiServer (CI-side) post-Phase 8.
  *
- * Wave 0 ships as `test.skip(...)` so `playwright test --list --grep
- * "asset-edit-no-tech-fields"` discovers exactly one test. Wave 5 (plan
- * 08-06) removes the `.skip` and implements the body.
- *
- * Wave 5 implementation plan (per PATTERNS.md section 28):
- *   1. Login as MSP admin via apps/web/tests/helpers.ts → loginAsMspAdmin(page).
- *   2. Navigate to /dashboard/assets and open any Asset.
- *   3. Click `Edit` (button role).
- *   4. NEGATIVE assertions: the following input labels MUST return count 0:
- *        - /hostname/i
- *        - /Operating System/i
- *        - /CPU Model/i
- *        - /CPU Cores/i
- *        - /RAM/i
- *      These fields are owned by CmdbCiServer post-Phase 8. The Asset edit
- *      form must not contain them at all (not disabled, not hidden — absent).
- *
- * Depends on Wave 3 (plan 08-04) having already stripped the fields from
- * apps/web/src/app/dashboard/assets/[id]/page.tsx.
+ * Task 2 removed these inputs from apps/web/src/app/dashboard/assets/[id]/
+ * page.tsx EditAssetForm. This spec locks the behavior.
  */
-test.skip('Asset edit form has no hostname/OS/CPU/RAM inputs after Phase 8 (CASR-01)', async ({
+test('Asset edit form has no hostname/OS/CPU/RAM inputs after Phase 8 (CASR-01)', async ({
   page,
 }) => {
-  // Wave 5 body — see Wave 5 implementation plan above.
-  expect(page).toBeTruthy();
+  await loginAsAdmin(page, '/dashboard/assets');
+  await page.waitForLoadState('networkidle');
+
+  // Open the first asset.
+  await page.locator('table tbody tr').first().click({ timeout: 10_000 });
+  await page.waitForURL(/\/dashboard\/assets\/[^/]+$/, { timeout: 10_000 });
+
+  // Click Edit — the form appears inline on the detail page.
+  await page.getByRole('button', { name: /edit/i }).first().click();
+
+  // Negative assertions — the following inputs MUST NOT exist.
+  await expect(page.locator('input[name="hostname"]')).toHaveCount(0);
+  await expect(page.locator('input[name="operatingSystem"]')).toHaveCount(0);
+  await expect(page.locator('input[name="cpuModel"]')).toHaveCount(0);
+  await expect(page.locator('input[name="cpuCores"]')).toHaveCount(0);
+  await expect(page.locator('input[name="ramGb"]')).toHaveCount(0);
 });
