@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Icon from '@mdi/react';
 import Link from 'next/link';
 import {
@@ -11,12 +11,16 @@ import {
   mdiCheck,
   mdiClose,
   mdiServerNetwork,
-  mdiPlus,
   mdiDelete,
   mdiMagnify,
+  mdiInformationOutline,
+  mdiHistory,
+  mdiLink,
+  mdiLinkOff,
 } from '@mdi/js';
 import RichTextField from '@/components/RichTextField';
 import Breadcrumb from '@/components/Breadcrumb';
+import { CIPicker } from '@/components/cmdb/CIPicker';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -26,16 +30,17 @@ interface AssetTypeOption {
   color: string | null;
 }
 
+// Phase 8 Wave 5 (CASR-01 / Pitfall 6): the Asset row no longer carries
+// hostname / operatingSystem / cpuModel / ramGb. Hardware / OS / software
+// details live on the linked CI's CmdbCiServer extension and the
+// CmdbSoftwareInstalled normalized table. The Technical Profile tab below
+// renders them from the CI side.
 interface AssetDetail {
   id: string;
   assetTag: string;
   manufacturer: string | null;
   model: string | null;
   serialNumber: string | null;
-  hostname: string | null;
-  operatingSystem: string | null;
-  cpuModel: string | null;
-  ramGb: number | null;
   status: string;
   purchaseDate: string | null;
   purchaseCost: number | null;
@@ -57,9 +62,44 @@ interface AssetDetail {
   updatedAt: string;
 }
 
+// Phase 8 Wave 5: Technical Profile data lives on the linked CI. The shape
+// returned by /api/v1/cmdb/cis/:id may include a serverExt object with the
+// Wave 1 hardware columns (cpuCount, cpuModel, memoryGb, etc.).
+interface CmdbCiServerExt {
+  hostname: string | null;
+  operatingSystem: string | null;
+  osVersion: string | null;
+  cpuModel: string | null;
+  cpuCount: number | null;
+  memoryGb: number | null;
+  domainName: string | null;
+}
+interface CmdbCiDetail {
+  id: string;
+  ciNumber: number;
+  name: string;
+  hostname: string | null;
+  serverExt?: CmdbCiServerExt | null;
+}
+
+interface CmdbSoftwareItem {
+  name: string;
+  version: string;
+  vendor: string | null;
+  publisher: string | null;
+  lastSeenAt: string;
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const ASSET_STATUSES = ['IN_STOCK', 'DEPLOYED', 'IN_REPAIR', 'RETIRED', 'DISPOSED'] as const;
+
+type Tab = 'overview' | 'activity' | 'technical-profile';
+const TAB_DEFS: { key: Tab; label: string; icon: string }[] = [
+  { key: 'overview', label: 'Overview', icon: mdiInformationOutline },
+  { key: 'activity', label: 'Activity', icon: mdiHistory },
+  { key: 'technical-profile', label: 'Technical Profile', icon: mdiServerNetwork },
+];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -265,6 +305,11 @@ interface CiResult {
   criticality: string;
 }
 
+// Phase 8 Wave 5 (CASR-01): the EditAssetForm no longer accepts hostname /
+// operatingSystem / cpuModel / ramGb. Those fields are owned by the linked
+// CI's CmdbCiServer extension. Operators update hardware/OS/software in the
+// CMDB UI; the Asset edit form focuses on financial/ownership/identifier
+// fields only.
 function EditAssetForm({ asset, onCancel, onSaved }: {
   asset: AssetDetail;
   onCancel: () => void;
@@ -274,10 +319,6 @@ function EditAssetForm({ asset, onCancel, onSaved }: {
     manufacturer: asset.manufacturer ?? '',
     model: asset.model ?? '',
     serialNumber: asset.serialNumber ?? '',
-    hostname: asset.hostname ?? '',
-    operatingSystem: asset.operatingSystem ?? '',
-    cpuModel: asset.cpuModel ?? '',
-    ramGb: asset.ramGb ?? '',
     status: asset.status,
     notes: asset.notes ?? '',
   });
@@ -354,7 +395,7 @@ function EditAssetForm({ asset, onCancel, onSaved }: {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ ...form, ramGb: form.ramGb ? Number(form.ramGb) : null, assetTypeId: assetTypeId || null }),
+        body: JSON.stringify({ ...form, assetTypeId: assetTypeId || null }),
       });
       if (!res.ok) {
         const err = await res.json() as { error?: string };
@@ -373,6 +414,7 @@ function EditAssetForm({ asset, onCancel, onSaved }: {
       <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 4 }}>{label}</label>
       <input
         type={type}
+        name={key as string}
         value={String(form[key])}
         onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
         style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }}
@@ -394,13 +436,10 @@ function EditAssetForm({ asset, onCancel, onSaved }: {
         {field('Manufacturer', 'manufacturer')}
         {field('Model', 'model')}
         {field('Serial Number', 'serialNumber')}
-        {field('Hostname', 'hostname')}
-        {field('Operating System', 'operatingSystem')}
-        {field('CPU Model', 'cpuModel')}
-        {field('RAM (GB)', 'ramGb', 'number')}
         <div style={{ marginBottom: 12 }}>
           <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 4 }}>Status</label>
           <select
+            name="status"
             value={form.status}
             onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
             style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 14, backgroundColor: 'var(--bg-primary)' }}
@@ -419,6 +458,10 @@ function EditAssetForm({ asset, onCancel, onSaved }: {
           compact
         />
       </div>
+
+      {/* Phase 8: hardware/OS fields are intentionally ABSENT. See Technical
+          Profile tab on the detail page for read-only CI-owned values. */}
+
       {/* CI Linking Section */}
       <div style={{ marginBottom: 16, padding: 16, borderRadius: 8, border: '1px solid var(--border-primary)', backgroundColor: 'var(--bg-primary)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
@@ -501,6 +544,87 @@ function EditAssetForm({ asset, onCancel, onSaved }: {
   );
 }
 
+// ─── Technical Profile Panel (D-03) ───────────────────────────────────────────
+
+function TechnicalProfilePanel({ ciId, active }: { ciId: string; active: boolean }) {
+  // Multi-tenancy: /api/v1/cmdb/cis/:id server-side filters by the session
+  // tenantId (T-8-05-05 mitigation owned by plan 05). No client-side tenant
+  // parameter passed.
+  const { data: ci, isLoading: ciLoading } = useQuery<CmdbCiDetail>({
+    queryKey: ['cmdb-ci', ciId],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/cmdb/cis/${ciId}`, { credentials: 'include' });
+      if (!res.ok) throw new Error(`Failed to load CI: ${res.status}`);
+      return res.json() as Promise<CmdbCiDetail>;
+    },
+    enabled: active,
+  });
+
+  const { data: softwareRes, isLoading: softwareLoading } = useQuery<{ data: CmdbSoftwareItem[] }>({
+    queryKey: ['cmdb-ci-software', ciId],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/cmdb/cis/${ciId}/software`, { credentials: 'include' });
+      if (!res.ok) throw new Error(`Failed to load software: ${res.status}`);
+      return res.json() as Promise<{ data: CmdbSoftwareItem[] }>;
+    },
+    enabled: active,
+  });
+
+  if (ciLoading || !ci) return <p style={{ color: 'var(--text-muted)' }}>Loading technical profile…</p>;
+  const ext = ci.serverExt ?? null;
+  const software = softwareRes?.data ?? [];
+
+  return (
+    <div data-testid="technical-profile-panel">
+      <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20, marginBottom: 16 }}>
+        <h3 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600 }}>Hardware &amp; Operating System</h3>
+        {[
+          ['Hostname', ci.hostname ?? ext?.hostname ?? null],
+          ['Operating System', ext?.operatingSystem ?? null],
+          ['OS Version', ext?.osVersion ?? null],
+          ['CPU', ext ? `${ext.cpuCount ?? '?'} × ${ext.cpuModel ?? 'Unknown'}` : null],
+          ['Memory', ext?.memoryGb != null ? `${ext.memoryGb} GB` : null],
+          ['Domain', ext?.domainName ?? null],
+        ].map(([label, value]) => (
+          <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14 }}>
+            <span style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: 8 }}>{label}</span>
+            <span style={{ color: 'var(--text-primary)', textAlign: 'right', wordBreak: 'break-word' }}>{(value as string | null) ?? '—'}</span>
+          </div>
+        ))}
+        <p style={{ margin: '12px 0 0', fontSize: 12, color: 'var(--text-placeholder)' }}>
+          Source: CMDB —{' '}
+          <Link href={`/dashboard/cmdb/${ci.id}`} style={{ color: 'var(--accent-primary)' }}>
+            CI-{ci.ciNumber}: {ci.name}
+          </Link>
+        </p>
+      </div>
+
+      <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
+        <h3 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600 }}>Installed Software</h3>
+        {softwareLoading ? (
+          <p style={{ color: 'var(--text-muted)' }}>Loading…</p>
+        ) : software.length === 0 ? (
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-placeholder)' }}>No software recorded on this CI.</p>
+        ) : (
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {software.map((s, idx) => (
+              <li key={`${s.name}:${s.version}:${idx}`} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 13 }}>
+                <span style={{ color: 'var(--text-primary)' }}>
+                  {s.name}{s.version ? ` ${s.version}` : ''}
+                  {s.vendor && <span style={{ color: 'var(--text-muted)' }}> — {s.vendor}</span>}
+                </span>
+                <span style={{ color: 'var(--text-placeholder)', fontSize: 12 }}>
+                  Last seen {formatDate(s.lastSeenAt)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Asset Detail Page ────────────────────────────────────────────────────────
 
 export default function AssetDetailPage() {
@@ -508,6 +632,8 @@ export default function AssetDetailPage() {
   const queryClient = useQueryClient();
   const id = params.id as string;
   const [editing, setEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [linkPickerOpen, setLinkPickerOpen] = useState(false);
 
   const { data: asset, isLoading, error } = useQuery<AssetDetail>({
     queryKey: ['asset', id],
@@ -535,6 +661,7 @@ export default function AssetDetailPage() {
 
   const statusStyle = getStatusStyle(asset.status);
   const warrantyInfo = getWarrantyStyle(asset.warrantyExpiry);
+  const linkedCi = asset.cmdbConfigItems?.[0];
 
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
@@ -584,144 +711,270 @@ export default function AssetDetailPage() {
         />
       )}
 
-      {/* ── Two-Column Layout ─────────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16, marginTop: editing ? 16 : 0 }}>
-
-        {/* Asset Details Card */}
-        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
-          <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Hardware Details</h2>
-          {asset.assetType && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14 }}>
-              <span style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: 8 }}>Type</span>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 8px', borderRadius: 10, fontSize: 12, fontWeight: 500, backgroundColor: asset.assetType.color ? `${asset.assetType.color}22` : 'var(--bg-tertiary)', color: asset.assetType.color ?? 'var(--text-secondary)', border: `1px solid ${asset.assetType.color ?? 'var(--border-secondary)'}44` }}>
-                {asset.assetType.name}
-              </span>
-            </div>
-          )}
-          {[
-            ['Manufacturer', asset.manufacturer],
-            ['Model', asset.model],
-            ['Serial Number', asset.serialNumber],
-            ['Hostname', asset.hostname],
-            ['Operating System', asset.operatingSystem],
-            ['CPU', asset.cpuModel],
-            ['RAM', asset.ramGb ? `${asset.ramGb} GB` : null],
-          ].map(([label, value]) => (
-            <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14 }}>
-              <span style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: 8 }}>{label}</span>
-              <span style={{ color: 'var(--text-primary)', textAlign: 'right', wordBreak: 'break-word' }}>{(value as string | null) ?? '—'}</span>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Assignment Card */}
-          <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
-            <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Assignment</h2>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14 }}>
-              <span style={{ color: 'var(--text-muted)' }}>Assigned To</span>
-              <span style={{ color: 'var(--text-primary)' }}>
-                {asset.assignedTo ? `${asset.assignedTo.firstName} ${asset.assignedTo.lastName}` : '—'}
-              </span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 14 }}>
-              <span style={{ color: 'var(--text-muted)' }}>Site</span>
-              <span style={{ color: 'var(--text-primary)' }}>{asset.site?.name ?? '—'}</span>
-            </div>
-          </div>
-
-          {/* Purchase Card */}
-          <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
-            <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Purchase & Warranty</h2>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14 }}>
-              <span style={{ color: 'var(--text-muted)' }}>Purchase Date</span>
-              <span style={{ color: 'var(--text-primary)' }}>{formatDate(asset.purchaseDate)}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14 }}>
-              <span style={{ color: 'var(--text-muted)' }}>Purchase Cost</span>
-              <span style={{ color: 'var(--text-primary)' }}>{formatCurrency(asset.purchaseCost)}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 14 }}>
-              <span style={{ color: 'var(--text-muted)' }}>Warranty</span>
-              <span style={{ color: warrantyInfo.color, fontWeight: 500 }}>{warrantyInfo.label}</span>
-            </div>
-          </div>
-
-          {/* Linked CIs Card */}
-          <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-              <Icon path={mdiServerNetwork} size={0.8} color="var(--accent-primary)" />
-              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Linked Configuration Items</h2>
-            </div>
-            {asset.cmdbConfigItems && asset.cmdbConfigItems.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {asset.cmdbConfigItems.map((ci) => (
-                  <Link
-                    key={ci.id}
-                    href={`/dashboard/cmdb/${ci.id}`}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '8px 12px',
-                      borderRadius: 8,
-                      border: '1px solid var(--border-primary)',
-                      textDecoration: 'none',
-                      color: 'inherit',
-                      fontSize: 13,
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
-                        CI-{ci.ciNumber}: {ci.name}
-                      </div>
-                      {ci.hostname && (
-                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{ci.hostname}</div>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <span style={{
-                        padding: '2px 8px',
-                        borderRadius: 10,
-                        fontSize: 11,
-                        fontWeight: 500,
-                        backgroundColor: 'var(--bg-tertiary)',
-                        color: 'var(--text-secondary)',
-                      }}>
-                        {ci.type?.replace(/_/g, ' ')}
-                      </span>
-                      {ci.criticality && (
-                        <span style={{
-                          padding: '2px 8px',
-                          borderRadius: 10,
-                          fontSize: 11,
-                          fontWeight: 500,
-                          backgroundColor: ci.criticality === 'CRITICAL' ? 'var(--badge-red-bg)' : ci.criticality === 'HIGH' ? 'var(--badge-orange-bg)' : 'var(--bg-tertiary)',
-                          color: ci.criticality === 'CRITICAL' ? '#991b1b' : ci.criticality === 'HIGH' ? '#9a3412' : 'var(--text-secondary)',
-                        }}>
-                          {ci.criticality}
-                        </span>
-                      )}
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <p style={{ margin: 0, fontSize: 13, color: 'var(--text-placeholder)' }}>
-                No linked configuration items. Use the Edit button to link CIs to this asset.
-              </p>
-            )}
-          </div>
-        </div>
+      {/* ── Tab Nav (Phase 8 D-03) ────────────────────────────────────────────── */}
+      <div
+        style={{
+          display: 'flex',
+          borderBottom: '1px solid var(--border-primary)',
+          marginBottom: 20,
+          gap: 0,
+          overflowX: 'auto',
+          marginTop: editing ? 16 : 0,
+        }}
+      >
+        {TAB_DEFS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            data-testid={`tab-${tab.key}`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '10px 16px',
+              background: 'none',
+              border: 'none',
+              borderBottom: `2px solid ${activeTab === tab.key ? 'var(--accent-primary)' : 'transparent'}`,
+              color: activeTab === tab.key ? 'var(--accent-primary)' : 'var(--text-muted)',
+              fontWeight: activeTab === tab.key ? 600 : 400,
+              fontSize: 14,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              marginBottom: -1,
+            }}
+          >
+            <Icon path={tab.icon} size={0.8} color="currentColor" />
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {/* ── Notes ─────────────────────────────────────────────────────────────── */}
-      {asset.notes && (
-        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20, marginTop: 16 }}>
-          <h2 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Notes</h2>
-          <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>{asset.notes}</p>
+      {/* ── Overview Tab ──────────────────────────────────────────────────────── */}
+      {activeTab === 'overview' && (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+
+            {/* Asset Details Card */}
+            <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
+              <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Identifiers</h2>
+              {asset.assetType && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14 }}>
+                  <span style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: 8 }}>Type</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 8px', borderRadius: 10, fontSize: 12, fontWeight: 500, backgroundColor: asset.assetType.color ? `${asset.assetType.color}22` : 'var(--bg-tertiary)', color: asset.assetType.color ?? 'var(--text-secondary)', border: `1px solid ${asset.assetType.color ?? 'var(--border-secondary)'}44` }}>
+                    {asset.assetType.name}
+                  </span>
+                </div>
+              )}
+              {[
+                ['Manufacturer', asset.manufacturer],
+                ['Model', asset.model],
+                ['Serial Number', asset.serialNumber],
+              ].map(([label, value]) => (
+                <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14 }}>
+                  <span style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: 8 }}>{label}</span>
+                  <span style={{ color: 'var(--text-primary)', textAlign: 'right', wordBreak: 'break-word' }}>{(value as string | null) ?? '—'}</span>
+                </div>
+              ))}
+              <p style={{ margin: '12px 0 0', fontSize: 12, color: 'var(--text-placeholder)' }}>
+                Hardware, OS, and software details live on the linked CI — see the{' '}
+                <strong>Technical Profile</strong> tab above.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Assignment Card */}
+              <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
+                <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Assignment</h2>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14 }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Assigned To</span>
+                  <span style={{ color: 'var(--text-primary)' }}>
+                    {asset.assignedTo ? `${asset.assignedTo.firstName} ${asset.assignedTo.lastName}` : '—'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 14 }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Site</span>
+                  <span style={{ color: 'var(--text-primary)' }}>{asset.site?.name ?? '—'}</span>
+                </div>
+              </div>
+
+              {/* Purchase Card */}
+              <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
+                <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Purchase & Warranty</h2>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14 }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Purchase Date</span>
+                  <span style={{ color: 'var(--text-primary)' }}>{formatDate(asset.purchaseDate)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bg-tertiary)', fontSize: 14 }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Purchase Cost</span>
+                  <span style={{ color: 'var(--text-primary)' }}>{formatCurrency(asset.purchaseCost)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 14 }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Warranty</span>
+                  <span style={{ color: warrantyInfo.color, fontWeight: 500 }}>{warrantyInfo.label}</span>
+                </div>
+              </div>
+
+              {/* Linked CIs Card */}
+              <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                  <Icon path={mdiServerNetwork} size={0.8} color="var(--accent-primary)" />
+                  <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Linked Configuration Items</h2>
+                </div>
+                {asset.cmdbConfigItems && asset.cmdbConfigItems.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {asset.cmdbConfigItems.map((ci) => (
+                      <Link
+                        key={ci.id}
+                        href={`/dashboard/cmdb/${ci.id}`}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '8px 12px',
+                          borderRadius: 8,
+                          border: '1px solid var(--border-primary)',
+                          textDecoration: 'none',
+                          color: 'inherit',
+                          fontSize: 13,
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
+                            CI-{ci.ciNumber}: {ci.name}
+                          </div>
+                          {ci.hostname && (
+                            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{ci.hostname}</div>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <span style={{
+                            padding: '2px 8px',
+                            borderRadius: 10,
+                            fontSize: 11,
+                            fontWeight: 500,
+                            backgroundColor: 'var(--bg-tertiary)',
+                            color: 'var(--text-secondary)',
+                          }}>
+                            {ci.type?.replace(/_/g, ' ')}
+                          </span>
+                          {ci.criticality && (
+                            <span style={{
+                              padding: '2px 8px',
+                              borderRadius: 10,
+                              fontSize: 11,
+                              fontWeight: 500,
+                              backgroundColor: ci.criticality === 'CRITICAL' ? 'var(--badge-red-bg)' : ci.criticality === 'HIGH' ? 'var(--badge-orange-bg)' : 'var(--bg-tertiary)',
+                              color: ci.criticality === 'CRITICAL' ? '#991b1b' : ci.criticality === 'HIGH' ? '#9a3412' : 'var(--text-secondary)',
+                            }}>
+                              {ci.criticality}
+                            </span>
+                          )}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--text-placeholder)' }}>
+                    No linked configuration items. Use the Edit button to link CIs to this asset.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Notes ─────────────────────────────────────────────────────────────── */}
+          {asset.notes && (
+            <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20, marginTop: 16 }}>
+              <h2 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Notes</h2>
+              <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>{asset.notes}</p>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── Activity Tab ──────────────────────────────────────────────────────── */}
+      {activeTab === 'activity' && (
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
+          <h2 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Activity</h2>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-placeholder)' }}>
+            Asset activity feed — coming in a later phase. For change-management records touching this
+            Asset, see Changes linked to any of this Asset&rsquo;s Configuration Items.
+          </p>
         </div>
       )}
+
+      {/* ── Technical Profile Tab (D-03 + D-04) ──────────────────────────────── */}
+      {activeTab === 'technical-profile' && (
+        !linkedCi ? (
+          <div
+            data-testid="technical-profile-empty"
+            style={{
+              textAlign: 'center',
+              padding: 40,
+              backgroundColor: 'var(--bg-primary)',
+              border: '1px solid var(--border-primary)',
+              borderRadius: 10,
+            }}
+          >
+            <Icon path={mdiLinkOff} size={2} color="var(--text-muted)" />
+            <h3 style={{ margin: '16px 0 8px', fontSize: 16, fontWeight: 600 }}>
+              No linked Configuration Item
+            </h3>
+            <p style={{ maxWidth: 480, margin: '0 auto 16px', fontSize: 14, color: 'var(--text-secondary)' }}>
+              This Asset isn&rsquo;t linked to a Configuration Item. Hardware, OS, and software
+              details live on CIs in CMDB. <strong>Link a CI</strong> to see the technical
+              profile here, or <strong>Create a new CI</strong> if none exists.
+            </p>
+            <button
+              type="button"
+              onClick={() => setLinkPickerOpen(true)}
+              data-testid="link-ci-button"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 16px',
+                backgroundColor: 'var(--accent-primary)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 6,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              <Icon path={mdiLink} size={0.8} color="currentColor" /> Link a CI
+            </button>
+          </div>
+        ) : (
+          <TechnicalProfilePanel ciId={linkedCi.id} active={activeTab === 'technical-profile'} />
+        )
+      )}
+
+      {/* ── CIPicker modal (D-04) ─────────────────────────────────────────────── */}
+      <CIPicker
+        open={linkPickerOpen}
+        onClose={() => setLinkPickerOpen(false)}
+        onSelect={async (ciId) => {
+          // PATCH /api/v1/cmdb/cis/:id with { assetId } — route added in plan 05
+          // Task 3. Server-side dual-tenant guard (plan 05 T-8-05-09): asset
+          // and CI must both belong to the session tenant.
+          try {
+            const res = await fetch(`/api/v1/cmdb/cis/${ciId}`, {
+              method: 'PATCH',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ assetId: asset.id }),
+            });
+            if (res.ok) {
+              // Refetch asset detail so the orphan empty state disappears.
+              void queryClient.invalidateQueries({ queryKey: ['asset', id] });
+            }
+          } catch {
+            /* surfaced via UI refresh failure; user can retry */
+          }
+        }}
+      />
     </div>
   );
 }
