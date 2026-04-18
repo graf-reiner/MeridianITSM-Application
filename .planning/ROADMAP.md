@@ -62,7 +62,13 @@ Full details: [`milestones/v1.0-ROADMAP.md`](milestones/v1.0-ROADMAP.md)
   3. Asset detail page renders a read-only "Technical Profile" panel that joins through the linked CI — edits are blocked on the Asset side and only CMDB forms accept writes
   4. Inventory-agent ingestion writes updates through `upsertServerExtensionByAsset` to the CI (not `Asset`); a test agent heartbeat produces CMDB changes and leaves `Asset` rows untouched
   5. License reporting query can list software-by-CI via `CmdbSoftwareInstalled` joins; `ai-schema-context.ts` + `portal-schema-context.ts` + `portal-ai-sql-executor.ts` row-level rules reflect the new tables (end-user AI filters via `ciId → asset.assignedToId`)
-**Plans**: TBD
+**Plans**: 6 plans
+- [ ] 08-01-PLAN.md — Wave 0 verification harness (3 db scripts + 6 vitest scaffolds + 3 Playwright skips + CIPicker skeleton)
+- [ ] 08-02-PLAN.md — Wave 1 additive schema migration (CmdbSoftwareInstalled + CmdbMigrationAudit + 3 CmdbCiServer cols) + upsertServerExtensionByAsset service
+- [ ] 08-03-PLAN.md — Wave 2 per-tenant Asset → CmdbCiServer + CmdbSoftwareInstalled backfill with D-01 CI-wins conflict logging
+- [ ] 08-04-PLAN.md — Wave 3 strip Asset write paths + reroute inventory POST + ENFORCE-mode grep gate
+- [ ] 08-05-PLAN.md — Wave 4 AI context updates (CAI-01/02/03) + license reporting endpoints
+- [ ] 08-06-PLAN.md — Wave 5 destructive Asset column drop + Asset detail Technical Profile tab + final verification gate
 
 ### Phase 9: Retire Asset↔CI Identity Duplication
 **Goal**: Asset owns identity (serial / manufacturer / model / asset tag / stockroom site) and the CI reads those values via join; hardware-class CIs may exist without an Asset, with orphan reconciliation surfacing them for cleanup.
@@ -145,7 +151,7 @@ Full details: [`milestones/v1.0-ROADMAP.md`](milestones/v1.0-ROADMAP.md)
 | 5. Agent, Mobile, and Integrations | v1.0 | 9/9 | Complete | 2026-03-23 |
 | 6. v1.0 Paperwork Cleanup | v1.0 | 1/1 | Complete | 2026-04-16 |
 | 7. CI Reference-Table Migration | v2.0 | 6/6 | Complete    | 2026-04-17 |
-| 8. Retire Asset Hardware/OS Duplication | v2.0 | 0/? | Not started | — |
+| 8. Retire Asset Hardware/OS Duplication | v2.0 | 0/6 | Not started | — |
 | 9. Retire Asset↔CI Identity Duplication | v2.0 | 0/? | Not started | — |
 | 10. Application↔CI Criticality Normalization | v2.0 | 0/? | Not started | — |
 | 11. CSDM Service Tier | v2.0 | 0/? | Not started | — |
