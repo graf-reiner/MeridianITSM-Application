@@ -155,13 +155,15 @@ vi.mock('../services/cmdb-reference-resolver.service.js', () => ({
 // ---------------------------------------------------------------------------
 
 describe('POST /api/v1/agents/inventory (Phase 8 / CASR-06 reroute)', () => {
-  it('POST /agents/inventory writes to CmdbCiServer not Asset', async () => {
-    // Arrange: an Asset is linked to this hostname; the orphan-create branch
-    // is NOT exercised. The CI lookup returns an existing CI so the
-    // upsertServerExtensionByAsset goes straight to the server-extension
-    // upsert path.
-    hoisted.txAssetFindFirst.mockResolvedValue({ id: 'asset-1' });
-    hoisted.prismaAssetFindFirst.mockResolvedValue({ id: 'asset-1' });
+  it('POST /agents/inventory writes to CmdbCiServer not Asset (assetId always null in Wave 5)', async () => {
+    // Phase 8 Wave 5: Asset.hostname is dropped so the Wave 3 Asset.findFirst
+    // correlation is removed. assetId is ALWAYS passed as null into
+    // upsertServerExtensionByAsset, which lets its D-08 branch resolve. If a
+    // CmdbConfigurationItem already exists for the given hostname, the service
+    // reuses it; otherwise it walks the orphan-create path.
+    //
+    // For this test: simulate the reuse branch — an existing CI's lookup
+    // returns a match, so the server-extension upsert runs against that CI.
     hoisted.txCIFindFirst.mockResolvedValue({ id: 'ci-1' });
 
     const res = await app.inject({
@@ -206,24 +208,16 @@ describe('POST /api/v1/agents/inventory (Phase 8 / CASR-06 reroute)', () => {
     expect(hoisted.mockPrisma.asset).not.toHaveProperty('upsert');
     expect(hoisted.mockPrisma.asset).not.toHaveProperty('create');
 
-    // Multi-tenancy: the asset lookup uses (tenantId, hostname) — never
-    // findUnique({ id }).
-    expect(hoisted.prismaAssetFindFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          tenantId: hoisted.tenantId,
-          hostname: 'srv-01',
-        }),
-      }),
-    );
+    // Phase 8 Wave 5: prisma.asset.findFirst is NO LONGER called by the route
+    // (Asset.hostname column no longer exists). The orphan-friendly null
+    // assetId is passed directly into upsertServerExtensionByAsset.
+    expect(hoisted.prismaAssetFindFirst).not.toHaveBeenCalled();
   });
 
-  it('POST /agents/inventory auto-creates CI for orphan Asset', async () => {
-    // Arrange: no Asset (orphan) and no linked CI either — the cmdb-extension
-    // service should walk the D-08 orphan-create path. With assetId=null the
-    // service does NOT call tx.asset.findFirst (per the implementation). It
-    // calls tx.cmdbConfigurationItem.create after resolving classId.
-    hoisted.prismaAssetFindFirst.mockResolvedValue(null);
+  it('POST /agents/inventory auto-creates CI for orphan (no matching CI)', async () => {
+    // Phase 8 Wave 5: with assetId=null always, a missing CI triggers the D-08
+    // orphan-create path. The new CI carries agent.tenantId and assetId=null.
+    hoisted.txCIFindFirst.mockResolvedValue(null);
     hoisted.txCICreate.mockResolvedValue({ id: 'ci-new' });
 
     const res = await app.inject({
@@ -250,5 +244,8 @@ describe('POST /api/v1/agents/inventory (Phase 8 / CASR-06 reroute)', () => {
     // Multi-tenancy: the new CI carries the trusted agent.tenantId
     expect(createCall.data.tenantId).toBe(hoisted.tenantId);
     expect(createCall.data.assetId).toBeNull();
+
+    // Phase 8 Wave 5: no Asset lookup at all
+    expect(hoisted.prismaAssetFindFirst).not.toHaveBeenCalled();
   });
 });

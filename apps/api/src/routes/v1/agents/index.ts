@@ -428,22 +428,25 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
     // is auto-created per D-08 inside upsertServerExtensionByAsset.
     //
     // Multi-tenancy posture (CLAUDE.md Rule 1): `agent.tenantId` is the locked
-    // tenant context (resolved by AgentKey above); `prisma.asset.findFirst`
-    // filters by (tenantId, hostname); upsertServerExtensionByAsset itself
-    // enforces cross-tenant rejection (T-8-02-01 mitigation, Wave 1 Test 4).
+    // tenant context (resolved by AgentKey above); upsertServerExtensionByAsset
+    // itself enforces cross-tenant rejection (T-8-02-01 mitigation, Wave 1 Test 4).
     let extensionResult: { ciId: string; created: boolean } | null = null;
     try {
-      // Asset.hostname is the canonical link for Wave 3. NOTE: this is the
-      // LAST surviving Asset.hostname reference in apps/api code. Wave 5
-      // plan 06 drops the column and replaces this lookup with a different
-      // correlation key (likely Agent.assetId once that FK exists).
-      const asset = await prisma.asset.findFirst({
-        where: {
-          tenantId: agent.tenantId,
-          hostname: ((body.hostname as string) ?? agent.hostname) as string,
-        },
-        select: { id: true },
-      });
+      // Phase 8 Wave 5 (CASR-01): Asset.hostname is dropped. The Wave 3
+      // `prisma.asset.findFirst({ where: { tenantId, hostname } })` correlation
+      // no longer compiles (Asset.hostname does not exist on the schema) and
+      // would error at runtime against the dropped column.
+      //
+      // Until the Agent model gains a direct Asset FK (`Agent.assetId`) in
+      // a later phase (planned for Phase 9 / CAID), we pass `null` for the
+      // assetId — upsertServerExtensionByAsset's D-08 orphan-create path takes
+      // over and provisions a CmdbConfigurationItem scoped to `agent.tenantId`.
+      //
+      // TODO (Phase 9 / CAID): replace with a stronger correlation key once
+      // Agent has a direct `assetId` FK OR a unique `(serialNumber, manufacturer)`
+      // canonical pair surfaces in the snapshot payload. See
+      // .planning/phases/08-retire-asset-hardware-os-duplication/08-06-SUMMARY.md.
+      const assetIdForExt: string | null = null;
 
       const installedSoftwareRaw = body.software ?? null;
       const snap: AgentInventorySnapshot = {
@@ -468,7 +471,7 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
         upsertServerExtensionByAsset(
           tx,
           agent.tenantId,
-          asset?.id ?? null,
+          assetIdForExt,
           snap,
           { source: 'agent' },
         ),

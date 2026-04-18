@@ -1709,16 +1709,13 @@ model Asset {
   warrantyExpiry    DateTime?
   assignedToId      String?     @db.Uuid
   siteId            String?     @db.Uuid
-  hostname          String?
-  operatingSystem   String?
-  osVersion         String?
-  cpuModel          String?
-  cpuCores          Int?
-  ramGb             Float?
-  disks             Json?
-  networkInterfaces Json?
-  softwareInventory Json?
-  lastInventoryAt   DateTime?
+  // Phase 8 Wave 5 (CASR-01): hardware/OS/software fields moved to
+  //   CmdbCiServer (hostname, operatingSystem, osVersion, cpuModel, cpuCount,
+  //     memoryGb, disksJson, networkInterfacesJson)
+  //   CmdbSoftwareInstalled (softwareInventory — normalized per-row)
+  //   CmdbCiServer.lastSeenAt / agent heartbeat (lastInventoryAt)
+  // To resolve for an Asset, JOIN cmdb_configuration_items ci ON ci.assetId = assets.id
+  // then JOIN cmdb_ci_servers or cmdb_software_installed as needed.
   customFields      Json?
   notes             String?
   assetTypeId       String?     @db.Uuid
