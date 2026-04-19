@@ -1,14 +1,18 @@
 ---
-status: partial
+status: testing
 phase: 08-retire-asset-hardware-os-duplication
 source: [08-VERIFICATION.md]
 started: 2026-04-18T00:00:00Z
-updated: 2026-04-18T00:00:00Z
+updated: 2026-04-18T21:20:00Z
 ---
 
 ## Current Test
 
-[awaiting human testing]
+number: 1
+name: CR-01 duplicate CI regression test
+expected: |
+  Live POST to /api/v1/agents/inventory with valid agentKey + same hostname across two calls must produce exactly ONE CmdbConfigurationItem row (not one per request). Fix deployed: agentId + hostname dedup added to upsertServerExtensionByAsset before D-08 orphan-create branch (commit 63e6ac5). Unit regression test passes (3/3 in inventory-ingestion.test.ts).
+awaiting: user response
 
 ## Tests
 
