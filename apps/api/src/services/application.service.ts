@@ -270,7 +270,6 @@ export async function getApp(tenantId: string, appId: string) {
             select: {
               id: true,
               assetTag: true,
-              hostname: true,
               model: true,
               status: true,
             },

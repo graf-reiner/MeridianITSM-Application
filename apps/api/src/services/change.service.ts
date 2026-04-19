@@ -285,7 +285,7 @@ export async function getChange(tenantId: string, changeId: string) {
       changeAssets: {
         include: {
           asset: {
-            select: { id: true, assetTag: true, hostname: true, model: true, status: true },
+            select: { id: true, assetTag: true, model: true, status: true },
           },
         },
       },
