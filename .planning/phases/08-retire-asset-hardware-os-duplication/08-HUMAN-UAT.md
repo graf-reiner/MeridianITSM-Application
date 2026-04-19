@@ -50,3 +50,11 @@ skipped: 0
 blocked: 0
 
 ## Gaps
+
+- truth: "GET /api/v1/cmdb/cis/:id returns 200 on dev after Phase 8 column drop"
+  status: resolved
+  reason: "User reported https://app-dev.meridianitsm.com/dashboard/cmdb/c97f603c-7632-429c-8bb3-ef97f8ff57f0 returned 'Failed to load CI: 500' post-deploy. Root cause: apps/api/src/services/cmdb.service.ts:462 still selected asset.hostname (dropped in Phase 8 Wave 5). Also found in change.service.ts:288 and application.service.ts:273 — all 3 were missed by grep gate (pattern targets top-level refs not nested Prisma selects) and by the verifier (checked must_haves, not regressions in unrelated routes). Fixed in c55ff3f, deployed, user confirmed page loads."
+  severity: blocker
+  test: regression-discovered-during-uat
+  artifacts: [c55ff3f]
+  missing: []
