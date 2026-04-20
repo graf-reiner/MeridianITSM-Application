@@ -6,6 +6,7 @@ import Icon from '@mdi/react';
 import { mdiDesktopClassic, mdiAlertCircle, mdiContentSave, mdiArrowLeft, mdiServerNetwork, mdiMagnify, mdiClose } from '@mdi/js';
 import Link from 'next/link';
 import Breadcrumb from '@/components/Breadcrumb';
+import AutocompleteInput from '@/components/AutocompleteInput';
 
 const STATUSES = ['IN_STOCK', 'DEPLOYED', 'IN_REPAIR', 'RETIRED', 'DISPOSED'] as const;
 
@@ -452,14 +453,25 @@ export default function NewAssetPage() {
                 inputStyle={inputStyle}
               />
             )}
-            <div>
-              <label style={labelStyle}>Manufacturer</label>
-              <input type="text" value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} style={inputStyle} placeholder="e.g. Dell, HP, Lenovo" />
-            </div>
-            <div>
-              <label style={labelStyle}>Model</label>
-              <input type="text" value={model} onChange={(e) => setModel(e.target.value)} style={inputStyle} placeholder="e.g. PowerEdge R740" />
-            </div>
+            <AutocompleteInput
+              field="manufacturer"
+              value={manufacturer}
+              onChange={setManufacturer}
+              label="Manufacturer"
+              placeholder="e.g. Dell, HP, Lenovo"
+              labelStyle={labelStyle}
+              inputStyle={inputStyle}
+            />
+            <AutocompleteInput
+              field="model"
+              value={model}
+              onChange={setModel}
+              parentValue={manufacturer}
+              label="Model"
+              placeholder="e.g. PowerEdge R740"
+              labelStyle={labelStyle}
+              inputStyle={inputStyle}
+            />
             <div>
               <label style={labelStyle}>Serial Number</label>
               <input type="text" value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} style={inputStyle} placeholder="Manufacturer serial" />
@@ -483,18 +495,34 @@ export default function NewAssetPage() {
             <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>Specs</h2>
           </div>
           <div style={{ padding: 18, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
-            <div>
-              <label style={labelStyle}>Operating System</label>
-              <input type="text" value={operatingSystem} onChange={(e) => setOperatingSystem(e.target.value)} style={inputStyle} placeholder="e.g. Ubuntu, Windows Server" />
-            </div>
-            <div>
-              <label style={labelStyle}>OS Version</label>
-              <input type="text" value={osVersion} onChange={(e) => setOsVersion(e.target.value)} style={inputStyle} placeholder="e.g. 22.04 LTS" />
-            </div>
-            <div>
-              <label style={labelStyle}>CPU Model</label>
-              <input type="text" value={cpuModel} onChange={(e) => setCpuModel(e.target.value)} style={inputStyle} placeholder="e.g. Xeon Gold 6248" />
-            </div>
+            <AutocompleteInput
+              field="os"
+              value={operatingSystem}
+              onChange={setOperatingSystem}
+              label="Operating System"
+              placeholder="e.g. Ubuntu, Windows Server"
+              labelStyle={labelStyle}
+              inputStyle={inputStyle}
+            />
+            <AutocompleteInput
+              field="osVersion"
+              value={osVersion}
+              onChange={setOsVersion}
+              parentValue={operatingSystem}
+              label="OS Version"
+              placeholder="e.g. 22.04 LTS"
+              labelStyle={labelStyle}
+              inputStyle={inputStyle}
+            />
+            <AutocompleteInput
+              field="cpuModel"
+              value={cpuModel}
+              onChange={setCpuModel}
+              label="CPU Model"
+              placeholder="e.g. Xeon Gold 6248"
+              labelStyle={labelStyle}
+              inputStyle={inputStyle}
+            />
             <div>
               <label style={labelStyle}>CPU Cores</label>
               <input type="number" min="1" value={cpuCores} onChange={(e) => setCpuCores(e.target.value)} style={inputStyle} />

@@ -21,6 +21,7 @@ import {
 import RichTextField from '@/components/RichTextField';
 import Breadcrumb from '@/components/Breadcrumb';
 import { CIPicker } from '@/components/cmdb/CIPicker';
+import AutocompleteInput from '@/components/AutocompleteInput';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -433,8 +434,27 @@ function EditAssetForm({ asset, onCancel, onSaved }: {
             onChange={setAssetTypeId}
           />
         )}
-        {field('Manufacturer', 'manufacturer')}
-        {field('Model', 'model')}
+        <div style={{ marginBottom: 12 }}>
+          <AutocompleteInput
+            field="manufacturer"
+            value={form.manufacturer}
+            onChange={(v) => setForm((f) => ({ ...f, manufacturer: v }))}
+            label="Manufacturer"
+            labelStyle={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 4 }}
+            inputStyle={{ width: '100%', padding: '7px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }}
+          />
+        </div>
+        <div style={{ marginBottom: 12 }}>
+          <AutocompleteInput
+            field="model"
+            value={form.model}
+            onChange={(v) => setForm((f) => ({ ...f, model: v }))}
+            parentValue={form.manufacturer}
+            label="Model"
+            labelStyle={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 4 }}
+            inputStyle={{ width: '100%', padding: '7px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }}
+          />
+        </div>
         {field('Serial Number', 'serialNumber')}
         <div style={{ marginBottom: 12 }}>
           <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 4 }}>Status</label>
