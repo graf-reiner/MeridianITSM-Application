@@ -40,7 +40,7 @@ interface AutocompleteInputProps {
 Behavior:
 - Free-text input — user can always type any value; suggestions only assist.
 - On focus or keystroke, fetch `/api/v1/assets/suggest?field=<f>&q=<v>&parent=<p>` debounced 200ms.
-- Skip fetch when `q` is empty and input has not yet been focused.
+- On first focus with empty `q`, fetch is issued (returns top 10 most-common values so users see something immediately). Component does not auto-fetch before first focus.
 - Dropdown positioned with `getBoundingClientRect` + `position: fixed`, matching the `SearchableTypeSelect` pattern already used on this form for Asset Type. Max-height 240px, scrollable.
 - Matching portion of each suggestion is rendered bold.
 - Keyboard: Up/Down navigates, Enter selects, Esc closes, Tab closes and keeps typed value.
@@ -91,6 +91,7 @@ Top 10 results. `source` is `"db"` (with usage `count`) or `"seed"`.
 **Contextual filter:**
 - `field=model&parent=Dell` → only models where the row's manufacturer (Asset.manufacturer or CmdbVendor.name) equals `Dell` (case-insensitive).
 - `field=osVersion&parent=Ubuntu` → only versions where `operatingSystem` equals `Ubuntu`.
+- `parent` on any other `field` value is silently ignored (handler does not error).
 
 ### Seed List
 
