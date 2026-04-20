@@ -8,6 +8,10 @@ import {
   updateAsset,
   deleteAsset,
 } from '../../../services/asset.service.js';
+import {
+  getAssetSuggestions,
+  type SuggestField,
+} from '../../../services/asset-suggest.service.js';
 
 /**
  * Asset management REST API routes.
@@ -280,6 +284,46 @@ export async function assetRoutes(fastify: FastifyInstance): Promise<void> {
       });
 
       return reply.status(200).send({ unlinked: true });
+    },
+  );
+
+  // ─── GET /api/v1/assets/suggest — Autocomplete suggestions ─────────────────
+
+  const SUGGEST_FIELDS: readonly SuggestField[] = [
+    'manufacturer',
+    'model',
+    'os',
+    'osVersion',
+    'cpuModel',
+  ];
+
+  fastify.get(
+    '/api/v1/assets/suggest',
+    {
+      preHandler: [requirePermission('assets.read')],
+    },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string };
+      const tenantId = user.tenantId;
+      const query = request.query as { field?: string; q?: string; parent?: string };
+
+      if (!query.field || !SUGGEST_FIELDS.includes(query.field as SuggestField)) {
+        return reply.status(400).send({
+          error: `field is required and must be one of: ${SUGGEST_FIELDS.join(', ')}`,
+        });
+      }
+
+      try {
+        const suggestions = await getAssetSuggestions(prisma, tenantId, {
+          field: query.field as SuggestField,
+          q: query.q ?? '',
+          parent: query.parent,
+        });
+        return reply.send({ suggestions });
+      } catch (err) {
+        fastify.log.error(err, 'Failed to compute asset suggestions');
+        return reply.status(500).send({ error: 'Failed to compute suggestions' });
+      }
     },
   );
 }
