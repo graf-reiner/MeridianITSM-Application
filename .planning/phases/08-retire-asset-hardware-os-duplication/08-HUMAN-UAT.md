@@ -3,26 +3,28 @@ status: testing
 phase: 08-retire-asset-hardware-os-duplication
 source: [08-VERIFICATION.md]
 started: 2026-04-18T00:00:00Z
-updated: 2026-04-18T21:20:00Z
+updated: 2026-04-19T00:10:00Z
 ---
 
 ## Current Test
 
-number: 1
-name: CR-01 duplicate CI regression test
+number: 3
+name: Wave 2 backfill run-log capture
 expected: |
-  Live POST to /api/v1/agents/inventory with valid agentKey + same hostname across two calls must produce exactly ONE CmdbConfigurationItem row (not one per request). Fix deployed: agentId + hostname dedup added to upsertServerExtensionByAsset before D-08 orphan-create branch (commit 63e6ac5). Unit regression test passes (3/3 in inventory-ingestion.test.ts).
+  phase8-backfill.ts executed against live dev DB during deploy (2026-04-18). Run-log captured: 2 tenants iterated (Default MSP: 5 assets, 5 ext upserts, 0 auto-created, 0 software rows, 1 conflict; Playwright Test Co: 0 assets). cmdb_migration_audit has 1 row. DB state after destructive migration: 8 cmdb_ci_servers, 10 Asset hardware columns gone.
 awaiting: user response
 
 ## Tests
 
 ### 1. CR-01 duplicate CI regression test
 expected: Live POST to /api/v1/agents/inventory with valid agentKey + same hostname across two calls must produce exactly ONE CmdbConfigurationItem row (not one per request). Requires live DB inspection after two inventory POSTs from the same agent. Fix documented in 08-REVIEW.md CR-01: add agentId + hostname dedup to upsertServerExtensionByAsset before D-08 orphan-create branch.
-result: [pending]
+result: pass
+notes: "Unit regression test passes 3/3 (inventory-ingestion.test.ts Test 3: 'does NOT create duplicate CI when agentId+hostname match existing'). Fix deployed in commit 63e6ac5. Live two-POST smoke deferred — will be exercised naturally by next real agent heartbeat. User accepted unit-test + deploy evidence."
 
 ### 2. WR-01 governance fields on orphan-created CIs
 expected: CIs created via upsertServerExtensionByAsset orphan path (cmdb-extension.service.ts:140-152) must carry agentId, sourceSystem, sourceRecordKey, firstDiscoveredAt, lastSeenAt so cmdb-reconciliation worker can dedup on re-ingestion.
-result: [pending]
+result: pass
+notes: "Source code verified at cmdb-extension.service.ts:184-203 — all 6 governance fields (tenantId, agentId, hostname, sourceSystem, sourceRecordKey, firstDiscoveredAt, lastSeenAt) populated on orphan-create. Unit tests assert all 6. Deployed in commit 63e6ac5."
 
 ### 3. Wave 2 backfill run-log capture
 expected: pnpm tsx packages/db/scripts/phase8-backfill.ts produces a run-log with per-tenant counts (assets processed, CI extensions written, software rows written, conflicts logged). Capture stdout + cmdb_migration_audit rows for forensic record. Plan 08-03 deferred live counts to operator.
@@ -43,9 +45,9 @@ result: [pending]
 ## Summary
 
 total: 6
-passed: 0
+passed: 2
 issues: 0
-pending: 6
+pending: 4
 skipped: 0
 blocked: 0
 
