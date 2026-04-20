@@ -87,7 +87,6 @@ async function sendTelegramMessage(
   const payload: Record<string, unknown> = {
     chat_id: chatId,
     text,
-    parse_mode: 'Markdown',
   };
 
   if (buttons && buttons.length > 0) {
@@ -98,9 +97,14 @@ async function sendTelegramMessage(
     };
   }
 
-  await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+  const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    console.error(`[telegram] sendMessage failed: ${res.status} ${body}`);
+  }
 }

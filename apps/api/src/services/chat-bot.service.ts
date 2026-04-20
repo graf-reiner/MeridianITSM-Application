@@ -87,7 +87,7 @@ export async function handleBotCommand(
     case 'start':
       return {
         text: [
-          '📋 *MeridianITSM Bot Commands*',
+          '📋 MeridianITSM Bot Commands',
           '',
           '/ticket_new <title> — Create a quick ticket',
           '/ticket_status <number> — Check ticket status',
@@ -176,7 +176,7 @@ async function handleTicketStatus(tenantId: string, args: string): Promise<BotCo
 
   return {
     text: [
-      `📋 *TKT-${String(ticket.ticketNumber).padStart(5, '0')}*`,
+      `📋 TKT-${String(ticket.ticketNumber).padStart(5, '0')}`,
       `📝 ${ticket.title}`,
       `📊 Status: ${ticket.status.replace(/_/g, ' ')}`,
       `🔥 Priority: ${ticket.priority}`,
@@ -209,7 +209,7 @@ async function handleFormStart(
     }
 
     const list = forms.map((f) => `• /ticket_form ${f.slug} — ${f.name}`).join('\n');
-    return { text: `📋 *Available Forms:*\n\n${list}` };
+    return { text: `📋 Available Forms:\n\n${list}` };
   }
 
   // Load form
@@ -468,7 +468,7 @@ async function submitFormFromChat(
 
     const ticketNum = `TKT-${String(ticket.ticketNumber).padStart(5, '0')}`;
     return {
-      text: `✅ *Form submitted successfully!*\n\n📋 Ticket: *${ticketNum}*\n📝 ${title}\n\nYou'll receive updates when the ticket is processed.`,
+      text: `✅ Form submitted successfully!\n\n📋 Ticket: ${ticketNum}\n📝 ${title}\n\nYou'll receive updates when the ticket is processed.`,
     };
   } catch (err) {
     return { text: `❌ Failed to submit form: ${err instanceof Error ? err.message : 'Unknown error'}` };
