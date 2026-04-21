@@ -879,9 +879,29 @@ export default function AgentsSettingsPage() {
           padding: 24,
         }}
       >
-        <h2 style={{ margin: '0 0 20px', fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>
-          Agent Updates
-        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>
+            Agent Updates
+          </h2>
+          <Link
+            href="/dashboard/settings/agent-updates"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 14px',
+              border: '1px solid var(--border-secondary)',
+              borderRadius: 7,
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'var(--accent-primary)',
+              textDecoration: 'none',
+              backgroundColor: 'var(--bg-primary)',
+            }}
+          >
+            Deployment History
+          </Link>
+        </div>
 
         {/* Update Policy */}
         <div style={{ marginBottom: 24 }}>

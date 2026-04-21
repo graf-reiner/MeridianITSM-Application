@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import Link from 'next/link';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiDesktopClassic, mdiMemory, mdiHarddisk, mdiLan, mdiPackageVariantClosed, mdiChartLine } from '@mdi/js';
+import { mdiArrowLeft, mdiDesktopClassic, mdiMemory, mdiHarddisk, mdiLan, mdiPackageVariantClosed, mdiChartLine, mdiCloudUpload, mdiFormatListBulleted } from '@mdi/js';
 
 interface Snapshot {
   id: string;
@@ -378,6 +378,311 @@ export default function AgentDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Deploy Update */}
+      <DeployUpdateCard agent={agent} />
+
+      {/* Recent Events */}
+      <RecentEventsCard agentId={agentId} />
+    </div>
+  );
+}
+
+interface AgentUpdateRow {
+  id: string;
+  version: string;
+  platform: 'WINDOWS' | 'LINUX' | 'MACOS';
+  fileSize: number;
+  createdAt: string;
+}
+
+function DeployUpdateCard({ agent }: { agent: AgentDetail }) {
+  const [version, setVersion] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const { data: versionsData } = useQuery<AgentUpdateRow[]>({
+    queryKey: ['agent-updates', agent.platform],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/agents/updates?platform=${agent.platform}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load versions');
+      return res.json() as Promise<AgentUpdateRow[]>;
+    },
+    enabled: !!agent.platform,
+  });
+  const versions = versionsData ?? [];
+
+  const cardStyle = {
+    backgroundColor: 'var(--bg-primary)',
+    border: '1px solid var(--border-primary)',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
+  };
+
+  const handleDeploy = async () => {
+    setError(null);
+    setSuccess(null);
+    if (!version) {
+      setError('Select a version.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/v1/agents/updates/deploy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ agentIds: [agent.id], version, platform: agent.platform }),
+      });
+      if (!res.ok) {
+        const d = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(d.error ?? `HTTP ${res.status}`);
+      }
+      const d = (await res.json()) as { deployed?: number; deploymentId?: string | null };
+      setSuccess(`Deployed v${version} — tracking deployment ${d.deploymentId ?? ''}`);
+      setVersion('');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Deploy failed');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div style={cardStyle}>
+      <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Icon path={mdiCloudUpload} size={0.85} color="#4f46e5" /> Deploy Update
+      </h3>
+      <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--text-muted)' }}>
+        Push a specific agent version to this endpoint. The agent installs on its next heartbeat (within 5 minutes).
+      </p>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+        <div>
+          <label htmlFor="deployVersion" style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>
+            Version
+          </label>
+          <select
+            id="deployVersion"
+            value={version}
+            onChange={(e) => setVersion(e.target.value)}
+            disabled={versions.length === 0}
+            style={{
+              padding: '8px 10px',
+              border: '1px solid var(--border-secondary)',
+              borderRadius: 7,
+              fontSize: 14,
+              minWidth: 200,
+              backgroundColor: 'var(--bg-primary)',
+              color: 'var(--text-primary)',
+            }}
+          >
+            <option value="">{versions.length === 0 ? 'No versions available' : 'Select version…'}</option>
+            {versions.map((v) => (
+              <option key={v.id} value={v.version}>
+                v{v.version}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button
+          onClick={() => void handleDeploy()}
+          disabled={submitting || !version}
+          style={{
+            padding: '8px 18px',
+            backgroundColor: submitting || !version ? '#a5b4fc' : '#4f46e5',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 7,
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: submitting || !version ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {submitting ? 'Deploying...' : 'Deploy'}
+        </button>
+      </div>
+      {error && (
+        <div style={{ marginTop: 10, padding: '6px 12px', backgroundColor: 'var(--badge-red-bg-subtle)', border: '1px solid #fecaca', borderRadius: 7, color: '#dc2626', fontSize: 13 }}>
+          {error}
+        </div>
+      )}
+      {success && (
+        <div style={{ marginTop: 10, padding: '6px 12px', backgroundColor: 'var(--badge-green-bg-subtle)', border: '1px solid #86efac', borderRadius: 7, color: '#166534', fontSize: 13 }}>
+          {success}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface AgentEvent {
+  id: string;
+  level: 'INFO' | 'WARN' | 'ERROR';
+  category: string | null;
+  message: string;
+  context: unknown;
+  eventAt: string;
+  createdAt: string;
+}
+
+interface EventsResponse {
+  data: AgentEvent[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+function RecentEventsCard({ agentId }: { agentId: string }) {
+  const [page, setPage] = useState(1);
+  const [level, setLevel] = useState<'' | 'INFO' | 'WARN' | 'ERROR'>('');
+  const pageSize = 25;
+
+  const { data, isLoading } = useQuery<EventsResponse>({
+    queryKey: ['agent-events', agentId, page, level],
+    queryFn: async () => {
+      const qs = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+      if (level) qs.set('level', level);
+      const res = await fetch(`/api/v1/settings/agents/${agentId}/events?${qs.toString()}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load events');
+      return res.json() as Promise<EventsResponse>;
+    },
+    refetchInterval: 15000,
+  });
+
+  const rows = data?.data ?? [];
+  const total = data?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+
+  const cardStyle = {
+    backgroundColor: 'var(--bg-primary)',
+    border: '1px solid var(--border-primary)',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
+  };
+
+  const levelColors: Record<string, { bg: string; color: string }> = {
+    INFO:  { bg: 'var(--badge-indigo-bg)', color: '#4338ca' },
+    WARN:  { bg: 'var(--badge-yellow-bg)', color: '#92400e' },
+    ERROR: { bg: 'var(--badge-red-bg)',    color: '#991b1b' },
+  };
+
+  return (
+    <div style={cardStyle}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Icon path={mdiFormatListBulleted} size={0.85} color="#4f46e5" /> Recent Events
+        </h3>
+        <select
+          value={level}
+          onChange={(e) => {
+            setLevel(e.target.value as typeof level);
+            setPage(1);
+          }}
+          style={{
+            padding: '6px 10px',
+            border: '1px solid var(--border-secondary)',
+            borderRadius: 7,
+            fontSize: 13,
+            backgroundColor: 'var(--bg-primary)',
+            color: 'var(--text-primary)',
+          }}
+        >
+          <option value="">All levels</option>
+          <option value="INFO">Info</option>
+          <option value="WARN">Warn</option>
+          <option value="ERROR">Error</option>
+        </select>
+      </div>
+
+      {isLoading ? (
+        <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>Loading...</div>
+      ) : rows.length === 0 ? (
+        <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-placeholder)' }}>
+          No events recorded for this agent yet. Events sync from the agent on each heartbeat.
+        </div>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+                <th style={{ padding: '6px 10px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Time</th>
+                <th style={{ padding: '6px 10px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Level</th>
+                <th style={{ padding: '6px 10px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Category</th>
+                <th style={{ padding: '6px 10px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Message</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((e) => {
+                const c = levelColors[e.level] ?? { bg: 'var(--bg-tertiary)', color: '#6b7280' };
+                return (
+                  <tr key={e.id} style={{ borderTop: '1px solid var(--bg-tertiary)' }}>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                      {new Date(e.eventAt).toLocaleString()}
+                    </td>
+                    <td style={{ padding: '8px 10px' }}>
+                      <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, backgroundColor: c.bg, color: c.color }}>
+                        {e.level}
+                      </span>
+                    </td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>{e.category ?? '—'}</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-primary)' }}>
+                      {e.message}
+                      {e.context ? (
+                        <div style={{ fontSize: 11, color: 'var(--text-placeholder)', fontFamily: 'monospace', marginTop: 2 }}>
+                          {JSON.stringify(e.context)}
+                        </div>
+                      ) : null}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {total > pageSize && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, alignItems: 'center' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+            Page {page} of {pageCount} · {total} events
+          </span>
+          <span style={{ display: 'flex', gap: 6 }}>
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              style={{
+                padding: '4px 10px',
+                backgroundColor: 'var(--bg-primary)',
+                border: '1px solid var(--border-secondary)',
+                borderRadius: 6,
+                fontSize: 12,
+                cursor: page === 1 ? 'not-allowed' : 'pointer',
+                opacity: page === 1 ? 0.5 : 1,
+              }}
+            >
+              Prev
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+              disabled={page >= pageCount}
+              style={{
+                padding: '4px 10px',
+                backgroundColor: 'var(--bg-primary)',
+                border: '1px solid var(--border-secondary)',
+                borderRadius: 6,
+                fontSize: 12,
+                cursor: page >= pageCount ? 'not-allowed' : 'pointer',
+                opacity: page >= pageCount ? 0.5 : 1,
+              }}
+            >
+              Next
+            </button>
+          </span>
+        </div>
+      )}
     </div>
   );
 }

@@ -365,114 +365,117 @@ model Tenant {
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
 
-  agentUpdatePolicy       String    @default("manual")
-  agentUpdateWindowStart  String?
-  agentUpdateWindowEnd    String?
-  agentUpdateWindowDay    String?
+  agentUpdatePolicy      String  @default("manual")
+  agentUpdateWindowStart String?
+  agentUpdateWindowEnd   String?
+  agentUpdateWindowDay   String?
 
   // Relations
-  users                    User[]
-  customerOrganizations    CustomerOrganization[]
-  userGroups               UserGroup[]
-  roles                    Role[]
-  userRoles                UserRole[]
-  sessions                 Session[]
-  apiKeys                  ApiKey[]
-  tickets                  Ticket[]
-  ticketComments           TicketComment[]
-  ticketAttachments        TicketAttachment[]
-  ticketActivities         TicketActivity[]
-  queues                   Queue[]
-  slas                     SLA[]
-  categories               Category[]
-  emailAccounts            EmailAccount[]
-  changes                  Change[]
-  changeApprovals          ChangeApproval[]
-  changeActivities         ChangeActivity[]
-  cabMeetings              CABMeeting[]
-  cabMeetingAttendees      CABMeetingAttendee[]
-  cabMeetingChanges        CABMeetingChange[]
-  knowledgeArticles        KnowledgeArticle[]
-  assets                   Asset[]
-  assetTypes               AssetType[]
-  sites                    Site[]
-  businessUnits            BusinessUnit[]
-  applications             Application[]
-  applicationActivities    ApplicationActivity[]
-  applicationDependencies  ApplicationDependency[]
-  applicationDocuments     ApplicationDocument[]
-  applicationAssets        ApplicationAsset[]
-  agents                   Agent[]
-  agentEnrollmentTokens    AgentEnrollmentToken[]
-  inventorySnapshots       InventorySnapshot[]
-  metricSamples            MetricSample[]
-  cmdbCiClasses            CmdbCiClass[]
-  cmdbStatuses             CmdbStatus[]
-  cmdbEnvironments         CmdbEnvironment[]
-  cmdbRelationshipTypeRefs CmdbRelationshipTypeRef[]
-  cmdbVendors              CmdbVendor[]
-  cmdbCategories           CmdbCategory[]
-  cmdbConfigItems          CmdbConfigurationItem[]
-  cmdbRelationships        CmdbRelationship[]
-  cmdbChangeRecords        CmdbChangeRecord[]
-  cmdbTicketLinks          CmdbTicketLink[]
-  cmdbChangeLinks          CmdbChangeLink[]
-  cmdbIncidentLinks        CmdbIncidentLink[]
-  cmdbProblemLinks         CmdbProblemLink[]
-  incidentProblemLinks     IncidentProblemLink[]
-  chatBotSessions          ChatBotSession[]
-  cmdbAttestations         CmdbAttestation[]
-  cmdbDuplicateCandidates  CmdbDuplicateCandidate[]
-  changeApplications       ChangeApplication[]
-  changeAssets             ChangeAsset[]
-  contractAssets           ContractAsset[]
-  ticketKnowledgeArticles  TicketKnowledgeArticle[]
-  vendors                  Vendor[]
-  contracts                Contract[]
-  auditLogs                AuditLog[]
-  notifications            Notification[]
-  deviceTokens             DeviceToken[]
-  emailTemplates           EmailTemplate[]
-  alertConfigurations      AlertConfiguration[]
-  notificationRules        NotificationRule[]
-  notificationRuleLogs     NotificationRuleLog[]
-  scheduledReports         ScheduledReport[]
-  webhooks                 Webhook[]
-  webhookDeliveries        WebhookDelivery[]
-  passwordResetTokens      PasswordResetToken[]
-  userGroupMembers         UserGroupMember[]
-  subscription             TenantSubscription?
-  usageSnapshots           TenantUsageSnapshot[]
-  ownerNotes               OwnerNote[]
-  tags                     Tag[]
-  ssoConnections           SsoConnection[]
-  tenantAuthSettings       TenantAuthSettings?
-  mfaTrustedDevices        MfaTrustedDevice[]
-  emailActivityLogs        EmailActivityLog[]
-  chatConversations        ChatConversation[]
-  documentContents         DocumentContent[]
-  cannedResponses          CannedResponse[]
-  ticketWatchers           TicketWatcher[]
-  savedTicketViews         SavedTicketView[]
-  ticketLinks              TicketLink[]
-  surveyTemplates          SurveyTemplate[]
-  surveyResponses          SurveyResponse[]
-  escalationPolicies       EscalationPolicy[]
-  ticketApprovalRules      TicketApprovalRule[]
-  ticketApprovals          TicketApproval[]
-  recurringTickets         RecurringTicket[]
-  ticketTemplates          TicketTemplate[]
-  ticketViewAssignments    TicketViewAssignment[]
-  workflows                Workflow[]
-  workflowExecutions       WorkflowExecution[]
-  workflowAuditLogs        WorkflowAuditLog[]
-  fieldDefinitions         FieldDefinition[]
-  customForms              CustomForm[]
-  customFormSubmissions    CustomFormSubmission[]
-  changeTemplates          ChangeTemplate[]
-  cmdbBaselines            CmdbBaseline[]
-  holidays                 Holiday[]
-  notificationTemplates    NotificationTemplate[]
+  users                        User[]
+  customerOrganizations        CustomerOrganization[]
+  userGroups                   UserGroup[]
+  roles                        Role[]
+  userRoles                    UserRole[]
+  sessions                     Session[]
+  apiKeys                      ApiKey[]
+  tickets                      Ticket[]
+  ticketComments               TicketComment[]
+  ticketAttachments            TicketAttachment[]
+  ticketActivities             TicketActivity[]
+  queues                       Queue[]
+  slas                         SLA[]
+  categories                   Category[]
+  emailAccounts                EmailAccount[]
+  changes                      Change[]
+  changeApprovals              ChangeApproval[]
+  changeActivities             ChangeActivity[]
+  cabMeetings                  CABMeeting[]
+  cabMeetingAttendees          CABMeetingAttendee[]
+  cabMeetingChanges            CABMeetingChange[]
+  knowledgeArticles            KnowledgeArticle[]
+  assets                       Asset[]
+  assetTypes                   AssetType[]
+  sites                        Site[]
+  businessUnits                BusinessUnit[]
+  applications                 Application[]
+  applicationActivities        ApplicationActivity[]
+  applicationDependencies      ApplicationDependency[]
+  applicationDocuments         ApplicationDocument[]
+  applicationAssets            ApplicationAsset[]
+  agents                       Agent[]
+  agentEnrollmentTokens        AgentEnrollmentToken[]
+  agentUpdateDeployments       AgentUpdateDeployment[]
+  agentUpdateDeploymentTargets AgentUpdateDeploymentTarget[]
+  agentEventLogs               AgentEventLog[]
+  inventorySnapshots           InventorySnapshot[]
+  metricSamples                MetricSample[]
+  cmdbCiClasses                CmdbCiClass[]
+  cmdbStatuses                 CmdbStatus[]
+  cmdbEnvironments             CmdbEnvironment[]
+  cmdbRelationshipTypeRefs     CmdbRelationshipTypeRef[]
+  cmdbVendors                  CmdbVendor[]
+  cmdbCategories               CmdbCategory[]
+  cmdbConfigItems              CmdbConfigurationItem[]
+  cmdbRelationships            CmdbRelationship[]
+  cmdbChangeRecords            CmdbChangeRecord[]
+  cmdbTicketLinks              CmdbTicketLink[]
+  cmdbChangeLinks              CmdbChangeLink[]
+  cmdbIncidentLinks            CmdbIncidentLink[]
+  cmdbProblemLinks             CmdbProblemLink[]
+  incidentProblemLinks         IncidentProblemLink[]
+  chatBotSessions              ChatBotSession[]
+  cmdbAttestations             CmdbAttestation[]
+  cmdbDuplicateCandidates      CmdbDuplicateCandidate[]
+  changeApplications           ChangeApplication[]
+  changeAssets                 ChangeAsset[]
+  contractAssets               ContractAsset[]
+  ticketKnowledgeArticles      TicketKnowledgeArticle[]
+  vendors                      Vendor[]
+  contracts                    Contract[]
+  auditLogs                    AuditLog[]
+  notifications                Notification[]
+  deviceTokens                 DeviceToken[]
+  emailTemplates               EmailTemplate[]
+  alertConfigurations          AlertConfiguration[]
+  notificationRules            NotificationRule[]
+  notificationRuleLogs         NotificationRuleLog[]
+  scheduledReports             ScheduledReport[]
+  webhooks                     Webhook[]
+  webhookDeliveries            WebhookDelivery[]
+  passwordResetTokens          PasswordResetToken[]
+  userGroupMembers             UserGroupMember[]
+  subscription                 TenantSubscription?
+  usageSnapshots               TenantUsageSnapshot[]
+  ownerNotes                   OwnerNote[]
+  tags                         Tag[]
+  ssoConnections               SsoConnection[]
+  tenantAuthSettings           TenantAuthSettings?
+  mfaTrustedDevices            MfaTrustedDevice[]
+  emailActivityLogs            EmailActivityLog[]
+  chatConversations            ChatConversation[]
+  documentContents             DocumentContent[]
+  cannedResponses              CannedResponse[]
+  ticketWatchers               TicketWatcher[]
+  savedTicketViews             SavedTicketView[]
+  ticketLinks                  TicketLink[]
+  surveyTemplates              SurveyTemplate[]
+  surveyResponses              SurveyResponse[]
+  escalationPolicies           EscalationPolicy[]
+  ticketApprovalRules          TicketApprovalRule[]
+  ticketApprovals              TicketApproval[]
+  recurringTickets             RecurringTicket[]
+  ticketTemplates              TicketTemplate[]
+  ticketViewAssignments        TicketViewAssignment[]
+  workflows                    Workflow[]
+  workflowExecutions           WorkflowExecution[]
+  workflowAuditLogs            WorkflowAuditLog[]
+  fieldDefinitions             FieldDefinition[]
+  customForms                  CustomForm[]
+  customFormSubmissions        CustomFormSubmission[]
+  changeTemplates              ChangeTemplate[]
+  cmdbBaselines                CmdbBaseline[]
+  holidays                     Holiday[]
+  notificationTemplates        NotificationTemplate[]
 
   // Phase 8: installed software + migration audit
   cmdbSoftwareInstalled CmdbSoftwareInstalled[]
@@ -528,45 +531,46 @@ model User {
   createdAt               DateTime   @default(now())
   updatedAt               DateTime   @updatedAt
 
-  tenant                  Tenant                  @relation(fields: [tenantId], references: [id])
-  site                    Site?                   @relation(fields: [siteId], references: [id])
-  userRoles               UserRole[]
-  sessions                Session[]
-  assignedTickets         Ticket[]                @relation("AssignedTo")
-  requestedTickets        Ticket[]                @relation("RequestedBy")
-  ticketComments          TicketComment[]
-  ticketAttachments       TicketAttachment[]
-  cabMeetingAttendees     CABMeetingAttendee[]
-  changeApprovals         ChangeApproval[]
-  notifications           Notification[]
-  deviceTokens            DeviceToken[]
-  auditLogs               AuditLog[]
-  ticketActivities        TicketActivity[]        @relation("TicketActivityActor")
-  passwordResetTokens     PasswordResetToken[]
-  userGroupMembers        UserGroupMember[]
-  apiKeys                 ApiKey[]
-  federatedIdentities     FederatedIdentity[]
-  mfaDevices              MfaDevice[]
-  mfaChallenges           MfaChallenge[]
-  recoveryCodes           RecoveryCode[]
-  mfaTrustedDevices       MfaTrustedDevice[]
-  cmdbCisAsBusinessOwner  CmdbConfigurationItem[] @relation("CmdbCiBusinessOwner")
-  cmdbCisAsTechnicalOwner CmdbConfigurationItem[] @relation("CmdbCiTechnicalOwner")
-  chatConversations       ChatConversation[]
-  cannedResponses         CannedResponse[]        @relation("CannedResponseCreatedBy")
-  ticketWatches           TicketWatcher[]
-  savedTicketViews        SavedTicketView[]
-  ticketLinksCreated      TicketLink[]            @relation("TicketLinkCreatedBy")
-  surveyResponses         SurveyResponse[]
-  ticketApprovalsGiven    TicketApproval[]         @relation("TicketApprovalApprover")
-  recurringTicketsCreated RecurringTicket[]        @relation("RecurringTicketCreatedBy")
-  ticketTemplatesCreated  TicketTemplate[]         @relation("TicketTemplateCreatedBy")
-  ticketViewAssignments   TicketViewAssignment[]   @relation("TicketViewAssignmentUser")
-  fieldDefinitionsCreated FieldDefinition[]        @relation("FieldDefinitionCreatedBy")
-  customFormsCreated      CustomForm[]             @relation("CustomFormCreatedBy")
-  customFormSubmissions   CustomFormSubmission[]   @relation("CustomFormSubmittedBy")
-  majorIncidentCoordinations Ticket[]              @relation("MajorIncidentCoordinator")
-  notificationTemplatesCreated NotificationTemplate[] @relation("NotificationTemplateCreatedBy")
+  tenant                       Tenant                  @relation(fields: [tenantId], references: [id])
+  site                         Site?                   @relation(fields: [siteId], references: [id])
+  userRoles                    UserRole[]
+  sessions                     Session[]
+  assignedTickets              Ticket[]                @relation("AssignedTo")
+  requestedTickets             Ticket[]                @relation("RequestedBy")
+  ticketComments               TicketComment[]
+  ticketAttachments            TicketAttachment[]
+  cabMeetingAttendees          CABMeetingAttendee[]
+  changeApprovals              ChangeApproval[]
+  notifications                Notification[]
+  deviceTokens                 DeviceToken[]
+  auditLogs                    AuditLog[]
+  ticketActivities             TicketActivity[]        @relation("TicketActivityActor")
+  passwordResetTokens          PasswordResetToken[]
+  userGroupMembers             UserGroupMember[]
+  apiKeys                      ApiKey[]
+  federatedIdentities          FederatedIdentity[]
+  mfaDevices                   MfaDevice[]
+  mfaChallenges                MfaChallenge[]
+  recoveryCodes                RecoveryCode[]
+  mfaTrustedDevices            MfaTrustedDevice[]
+  cmdbCisAsBusinessOwner       CmdbConfigurationItem[] @relation("CmdbCiBusinessOwner")
+  cmdbCisAsTechnicalOwner      CmdbConfigurationItem[] @relation("CmdbCiTechnicalOwner")
+  chatConversations            ChatConversation[]
+  cannedResponses              CannedResponse[]        @relation("CannedResponseCreatedBy")
+  ticketWatches                TicketWatcher[]
+  savedTicketViews             SavedTicketView[]
+  ticketLinksCreated           TicketLink[]            @relation("TicketLinkCreatedBy")
+  surveyResponses              SurveyResponse[]
+  ticketApprovalsGiven         TicketApproval[]        @relation("TicketApprovalApprover")
+  recurringTicketsCreated      RecurringTicket[]       @relation("RecurringTicketCreatedBy")
+  ticketTemplatesCreated       TicketTemplate[]        @relation("TicketTemplateCreatedBy")
+  ticketViewAssignments        TicketViewAssignment[]  @relation("TicketViewAssignmentUser")
+  fieldDefinitionsCreated      FieldDefinition[]       @relation("FieldDefinitionCreatedBy")
+  customFormsCreated           CustomForm[]            @relation("CustomFormCreatedBy")
+  customFormSubmissions        CustomFormSubmission[]  @relation("CustomFormSubmittedBy")
+  majorIncidentCoordinations   Ticket[]                @relation("MajorIncidentCoordinator")
+  notificationTemplatesCreated NotificationTemplate[]  @relation("NotificationTemplateCreatedBy")
+  triggeredAgentDeployments    AgentUpdateDeployment[] @relation("UserTriggeredAgentDeployments")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -587,14 +591,14 @@ model UserGroup {
 
   isCmdbSupportGroup Boolean @default(false)
 
-  tenant           Tenant                  @relation(fields: [tenantId], references: [id])
-  userGroupMembers UserGroupMember[]
-  categories       Category[]
-  queues           Queue[]
-  ticketsAssigned  Ticket[]                @relation("TicketAssignedGroup")
-  cmdbCisBySupport CmdbConfigurationItem[] @relation("CmdbCiSupportGroup")
-  cannedResponses        CannedResponse[]
-  ticketViewAssignments  TicketViewAssignment[]
+  tenant                Tenant                  @relation(fields: [tenantId], references: [id])
+  userGroupMembers      UserGroupMember[]
+  categories            Category[]
+  queues                Queue[]
+  ticketsAssigned       Ticket[]                @relation("TicketAssignedGroup")
+  cmdbCisBySupport      CmdbConfigurationItem[] @relation("CmdbCiSupportGroup")
+  cannedResponses       CannedResponse[]
+  ticketViewAssignments TicketViewAssignment[]
 
   @@index([tenantId])
   @@map("user_groups")
@@ -704,69 +708,69 @@ model ApiKey {
 
 // Model 10: Ticket
 model Ticket {
-  id              String         @id @default(uuid()) @db.Uuid
-  tenantId        String         @db.Uuid
-  ticketNumber    Int
-  type            TicketType     @default(INCIDENT)
-  title           String
-  description     String?
-  priority        TicketPriority @default(MEDIUM)
-  impact          String?
-  urgency         String?
-  status          TicketStatus   @default(NEW)
-  assignedToId    String?        @db.Uuid
-  assignedGroupId String?        @db.Uuid
-  requestedById   String?        @db.Uuid
-  queueId         String?        @db.Uuid
-  slaId           String?        @db.Uuid
-  categoryId      String?        @db.Uuid
-  slaBreachAt     DateTime?
-  slaResponseAt   DateTime?
-  firstResponseAt DateTime?
-  resolvedAt      DateTime?
-  closedAt        DateTime?
-  resolution      String?
-  tags            String[]
-  customFields    Json?
-  parentId            String?        @db.Uuid // Parent ticket for sub-task hierarchy
-  mergedIntoId        String?        @db.Uuid // If merged, points to the target ticket
-  rootCause           String?        // Problem management: root cause analysis (type=PROBLEM)
-  workaround          String?        // Problem management: known workaround (type=PROBLEM)
-  knowledgeArticleId  String?        @db.Uuid // Problem management: link to known error KB article
-  isMajorIncident         Boolean        @default(false)
-  majorIncidentCoordinatorId String?     @db.Uuid
-  source              String         @default("PORTAL")
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  id                         String         @id @default(uuid()) @db.Uuid
+  tenantId                   String         @db.Uuid
+  ticketNumber               Int
+  type                       TicketType     @default(INCIDENT)
+  title                      String
+  description                String?
+  priority                   TicketPriority @default(MEDIUM)
+  impact                     String?
+  urgency                    String?
+  status                     TicketStatus   @default(NEW)
+  assignedToId               String?        @db.Uuid
+  assignedGroupId            String?        @db.Uuid
+  requestedById              String?        @db.Uuid
+  queueId                    String?        @db.Uuid
+  slaId                      String?        @db.Uuid
+  categoryId                 String?        @db.Uuid
+  slaBreachAt                DateTime?
+  slaResponseAt              DateTime?
+  firstResponseAt            DateTime?
+  resolvedAt                 DateTime?
+  closedAt                   DateTime?
+  resolution                 String?
+  tags                       String[]
+  customFields               Json?
+  parentId                   String?        @db.Uuid // Parent ticket for sub-task hierarchy
+  mergedIntoId               String?        @db.Uuid // If merged, points to the target ticket
+  rootCause                  String? // Problem management: root cause analysis (type=PROBLEM)
+  workaround                 String? // Problem management: known workaround (type=PROBLEM)
+  knowledgeArticleId         String?        @db.Uuid // Problem management: link to known error KB article
+  isMajorIncident            Boolean        @default(false)
+  majorIncidentCoordinatorId String?        @db.Uuid
+  source                     String         @default("PORTAL")
+  createdAt                  DateTime       @default(now())
+  updatedAt                  DateTime       @updatedAt
 
-  tenant            Tenant                   @relation(fields: [tenantId], references: [id])
-  assignedTo        User?                    @relation("AssignedTo", fields: [assignedToId], references: [id])
-  assignedGroup     UserGroup?               @relation("TicketAssignedGroup", fields: [assignedGroupId], references: [id])
-  requestedBy       User?                    @relation("RequestedBy", fields: [requestedById], references: [id])
-  queue             Queue?                   @relation(fields: [queueId], references: [id])
-  sla               SLA?                     @relation(fields: [slaId], references: [id])
-  category          Category?                @relation(fields: [categoryId], references: [id])
-  parent            Ticket?                  @relation("TicketParentChild", fields: [parentId], references: [id])
-  children          Ticket[]                 @relation("TicketParentChild")
-  mergedInto        Ticket?                  @relation("TicketMerge", fields: [mergedIntoId], references: [id])
-  mergedFrom        Ticket[]                 @relation("TicketMerge")
-  knowledgeArticle  KnowledgeArticle?        @relation("ProblemKnownError", fields: [knowledgeArticleId], references: [id])
-  majorIncidentCoordinator User?            @relation("MajorIncidentCoordinator", fields: [majorIncidentCoordinatorId], references: [id])
-  comments          TicketComment[]
-  attachments       TicketAttachment[]
-  activities        TicketActivity[]
-  knowledgeArticles TicketKnowledgeArticle[]
-  cmdbTicketLinks   CmdbTicketLink[]
-  cmdbIncidentLinks CmdbIncidentLink[]
-  cmdbProblemLinks  CmdbProblemLink[]
-  watchers          TicketWatcher[]
-  linksFrom         TicketLink[]             @relation("TicketLinkFrom")
-  linksTo           TicketLink[]             @relation("TicketLinkTo")
-  surveyResponse    SurveyResponse?
-  approvals         TicketApproval[]
-  customFormSubmissions CustomFormSubmission[]
-  incidentProblems  IncidentProblemLink[]     @relation("IncidentProblems") // When this ticket is an incident linked to problems
-  problemIncidents  IncidentProblemLink[]     @relation("ProblemIncidents") // When this ticket is a problem with linked incidents
+  tenant                   Tenant                   @relation(fields: [tenantId], references: [id])
+  assignedTo               User?                    @relation("AssignedTo", fields: [assignedToId], references: [id])
+  assignedGroup            UserGroup?               @relation("TicketAssignedGroup", fields: [assignedGroupId], references: [id])
+  requestedBy              User?                    @relation("RequestedBy", fields: [requestedById], references: [id])
+  queue                    Queue?                   @relation(fields: [queueId], references: [id])
+  sla                      SLA?                     @relation(fields: [slaId], references: [id])
+  category                 Category?                @relation(fields: [categoryId], references: [id])
+  parent                   Ticket?                  @relation("TicketParentChild", fields: [parentId], references: [id])
+  children                 Ticket[]                 @relation("TicketParentChild")
+  mergedInto               Ticket?                  @relation("TicketMerge", fields: [mergedIntoId], references: [id])
+  mergedFrom               Ticket[]                 @relation("TicketMerge")
+  knowledgeArticle         KnowledgeArticle?        @relation("ProblemKnownError", fields: [knowledgeArticleId], references: [id])
+  majorIncidentCoordinator User?                    @relation("MajorIncidentCoordinator", fields: [majorIncidentCoordinatorId], references: [id])
+  comments                 TicketComment[]
+  attachments              TicketAttachment[]
+  activities               TicketActivity[]
+  knowledgeArticles        TicketKnowledgeArticle[]
+  cmdbTicketLinks          CmdbTicketLink[]
+  cmdbIncidentLinks        CmdbIncidentLink[]
+  cmdbProblemLinks         CmdbProblemLink[]
+  watchers                 TicketWatcher[]
+  linksFrom                TicketLink[]             @relation("TicketLinkFrom")
+  linksTo                  TicketLink[]             @relation("TicketLinkTo")
+  surveyResponse           SurveyResponse?
+  approvals                TicketApproval[]
+  customFormSubmissions    CustomFormSubmission[]
+  incidentProblems         IncidentProblemLink[]    @relation("IncidentProblems") // When this ticket is an incident linked to problems
+  problemIncidents         IncidentProblemLink[]    @relation("ProblemIncidents") // When this ticket is a problem with linked incidents
 
   @@unique([tenantId, ticketNumber])
   @@index([tenantId])
@@ -870,7 +874,7 @@ model TicketLink {
   tenantId     String   @db.Uuid
   fromTicketId String   @db.Uuid
   toTicketId   String   @db.Uuid
-  linkType     String   // BLOCKS, BLOCKED_BY, DUPLICATES, DUPLICATED_BY, RELATED_TO
+  linkType     String // BLOCKS, BLOCKED_BY, DUPLICATES, DUPLICATED_BY, RELATED_TO
   createdById  String   @db.Uuid
   createdAt    DateTime @default(now())
 
@@ -913,7 +917,7 @@ model Queue {
   defaultAssigneeId String?  @db.Uuid
   userGroupId       String?  @db.Uuid
   assignmentRules   Json?
-  autoCloseDays     Int?     // Override tenant default for auto-close (RESOLVED → CLOSED)
+  autoCloseDays     Int? // Override tenant default for auto-close (RESOLVED → CLOSED)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -922,7 +926,7 @@ model Queue {
   tickets           Ticket[]
   notificationRules NotificationRule[]
   recurringTickets  RecurringTicket[]
-  workflows         Workflow[]        @relation("WorkflowQueue")
+  workflows         Workflow[]         @relation("WorkflowQueue")
 
   @@index([tenantId])
   @@map("queues")
@@ -946,15 +950,15 @@ model SLA {
   businessHoursEnd    String?
   businessDays        Int[]
   timezone            String   @default("UTC")
-  autoEscalate          Boolean  @default(false)
-  escalateToQueueId     String?  @db.Uuid
-  escalationPolicyId    String?  @db.Uuid
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  autoEscalate        Boolean  @default(false)
+  escalateToQueueId   String?  @db.Uuid
+  escalationPolicyId  String?  @db.Uuid
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
-  tenant           Tenant             @relation(fields: [tenantId], references: [id])
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
   tickets          Ticket[]
-  escalationPolicy EscalationPolicy?  @relation("SlaEscalationPolicy", fields: [escalationPolicyId], references: [id])
+  escalationPolicy EscalationPolicy? @relation("SlaEscalationPolicy", fields: [escalationPolicyId], references: [id])
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -989,14 +993,14 @@ model Category {
   color         String?
   parentId      String?  @db.Uuid
   userGroupId   String?  @db.Uuid
-  autoCloseDays Int?     // Override tenant default for auto-close (RESOLVED → CLOSED)
+  autoCloseDays Int? // Override tenant default for auto-close (RESOLVED → CLOSED)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  tenant    Tenant     @relation(fields: [tenantId], references: [id])
-  parent    Category?  @relation("CategoryParent", fields: [parentId], references: [id])
-  children  Category[] @relation("CategoryParent")
-  userGroup        UserGroup? @relation(fields: [userGroupId], references: [id])
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  parent           Category?         @relation("CategoryParent", fields: [parentId], references: [id])
+  children         Category[]        @relation("CategoryParent")
+  userGroup        UserGroup?        @relation(fields: [userGroupId], references: [id])
   tickets          Ticket[]
   recurringTickets RecurringTicket[]
 
@@ -1098,38 +1102,38 @@ model EmailPollJob {
 // ─── Ticket Templates (Form-Builder) ──────────────────────────────────────────
 
 model TicketTemplate {
-  id          String   @id @default(uuid()) @db.Uuid
-  tenantId    String   @db.Uuid
-  name        String
-  description String?
-  icon        String?  // MDI icon path for template picker
-  color       String?  // Accent color for template picker
-  ticketType  TicketType @default(SERVICE_REQUEST)
-  isActive    Boolean  @default(true)
-  isDefault   Boolean  @default(false)
+  id                  String          @id @default(uuid()) @db.Uuid
+  tenantId            String          @db.Uuid
+  name                String
+  description         String?
+  icon                String? // MDI icon path for template picker
+  color               String? // Accent color for template picker
+  ticketType          TicketType      @default(SERVICE_REQUEST)
+  isActive            Boolean         @default(true)
+  isDefault           Boolean         @default(false)
   // Default values for ticket fields
-  defaultPriority    TicketPriority?
-  defaultCategoryId  String?  @db.Uuid
-  defaultQueueId     String?  @db.Uuid
-  defaultAssigneeId  String?  @db.Uuid
-  defaultGroupId     String?  @db.Uuid
-  defaultSlaId       String?  @db.Uuid
-  defaultTags        String[]
+  defaultPriority     TicketPriority?
+  defaultCategoryId   String?         @db.Uuid
+  defaultQueueId      String?         @db.Uuid
+  defaultAssigneeId   String?         @db.Uuid
+  defaultGroupId      String?         @db.Uuid
+  defaultSlaId        String?         @db.Uuid
+  defaultTags         String[]
   // Form field definitions
-  fields     Json     // Array of TicketTemplateField objects (see below)
+  fields              Json // Array of TicketTemplateField objects (see below)
   // Layout
-  sections   Json?    // Array of { name, description?, fieldIds[] } for grouping
+  sections            Json? // Array of { name, description?, fieldIds[] } for grouping
   // Title/description templates
-  titleTemplate       String?  // Pre-filled title with {{variables}}
-  descriptionTemplate String?  @db.Text // Pre-filled description with rich text
+  titleTemplate       String? // Pre-filled title with {{variables}}
+  descriptionTemplate String?         @db.Text // Pre-filled description with rich text
   // Tracking
-  createdById String   @db.Uuid
-  position    Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdById         String          @db.Uuid
+  position            Int             @default(0)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
 
-  tenant    Tenant    @relation(fields: [tenantId], references: [id])
-  createdBy User      @relation("TicketTemplateCreatedBy", fields: [createdById], references: [id])
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
+  createdBy User   @relation("TicketTemplateCreatedBy", fields: [createdById], references: [id])
 
   @@index([tenantId])
   @@index([tenantId, isActive])
@@ -1156,34 +1160,34 @@ model TicketTemplate {
 // ─── Recurring Tickets ────────────────────────────────────────────────────────
 
 model RecurringTicket {
-  id             String   @id @default(uuid()) @db.Uuid
-  tenantId       String   @db.Uuid
-  name           String
-  isActive       Boolean  @default(true)
-  schedule       String   // Cron expression (e.g., "0 9 * * 1" = every Monday at 9am)
-  timezone       String   @default("UTC")
+  id              String         @id @default(uuid()) @db.Uuid
+  tenantId        String         @db.Uuid
+  name            String
+  isActive        Boolean        @default(true)
+  schedule        String // Cron expression (e.g., "0 9 * * 1" = every Monday at 9am)
+  timezone        String         @default("UTC")
   // Ticket template fields
-  title          String
-  description    String?  @db.Text
-  type           TicketType     @default(INCIDENT)
-  priority       TicketPriority @default(MEDIUM)
-  categoryId     String?  @db.Uuid
-  queueId        String?  @db.Uuid
-  assignedToId   String?  @db.Uuid
-  assignedGroupId String? @db.Uuid
-  tags           String[]
-  customFields   Json?
+  title           String
+  description     String?        @db.Text
+  type            TicketType     @default(INCIDENT)
+  priority        TicketPriority @default(MEDIUM)
+  categoryId      String?        @db.Uuid
+  queueId         String?        @db.Uuid
+  assignedToId    String?        @db.Uuid
+  assignedGroupId String?        @db.Uuid
+  tags            String[]
+  customFields    Json?
   // Tracking
-  lastRunAt      DateTime?
-  nextRunAt      DateTime?
-  createdById    String   @db.Uuid
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  lastRunAt       DateTime?
+  nextRunAt       DateTime?
+  createdById     String         @db.Uuid
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
-  tenant      Tenant    @relation(fields: [tenantId], references: [id])
-  createdBy   User      @relation("RecurringTicketCreatedBy", fields: [createdById], references: [id])
-  category    Category? @relation(fields: [categoryId], references: [id])
-  queue       Queue?    @relation(fields: [queueId], references: [id])
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  createdBy User      @relation("RecurringTicketCreatedBy", fields: [createdById], references: [id])
+  category  Category? @relation(fields: [categoryId], references: [id])
+  queue     Queue?    @relation(fields: [queueId], references: [id])
 
   @@index([tenantId])
   @@index([isActive, nextRunAt])
@@ -1197,7 +1201,7 @@ model EscalationPolicy {
   tenantId  String   @db.Uuid
   name      String
   isActive  Boolean  @default(true)
-  levels    Json     // Array of { level, afterMinutes, action: "notify"|"reassign"|"escalate_queue", targetUserId?, targetQueueId?, notifyRoles? }
+  levels    Json // Array of { level, afterMinutes, action: "notify"|"reassign"|"escalate_queue", targetUserId?, targetQueueId?, notifyRoles? }
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1212,15 +1216,15 @@ model EscalationPolicy {
 
 // Rules that determine when ticket approvals are required
 model TicketApprovalRule {
-  id          String   @id @default(uuid()) @db.Uuid
-  tenantId    String   @db.Uuid
-  name        String
-  isActive    Boolean  @default(true)
-  conditions  Json     // { ticketType?, categoryId?, priority?, customField?, operator, value }
-  approvers   Json     // Array of stages: [{ stage, type: "user"|"role"|"manager", targetId?, approveMode: "any"|"all" }]
-  priority    Int      @default(0) // Lower = higher priority, first match wins
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @db.Uuid
+  name       String
+  isActive   Boolean  @default(true)
+  conditions Json // { ticketType?, categoryId?, priority?, customField?, operator, value }
+  approvers  Json // Array of stages: [{ stage, type: "user"|"role"|"manager", targetId?, approveMode: "any"|"all" }]
+  priority   Int      @default(0) // Lower = higher priority, first match wins
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
 
@@ -1230,16 +1234,16 @@ model TicketApprovalRule {
 
 // Individual approval record per ticket
 model TicketApproval {
-  id          String    @id @default(uuid()) @db.Uuid
-  tenantId    String    @db.Uuid
-  ticketId    String    @db.Uuid
-  ruleId      String    @db.Uuid
-  stage       Int       @default(1)
-  approverId  String    @db.Uuid
-  status      String    @default("PENDING") // PENDING | APPROVED | REJECTED
-  comment     String?
-  decidedAt   DateTime?
-  createdAt   DateTime  @default(now())
+  id         String    @id @default(uuid()) @db.Uuid
+  tenantId   String    @db.Uuid
+  ticketId   String    @db.Uuid
+  ruleId     String    @db.Uuid
+  stage      Int       @default(1)
+  approverId String    @db.Uuid
+  status     String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  comment    String?
+  decidedAt  DateTime?
+  createdAt  DateTime  @default(now())
 
   tenant   Tenant @relation(fields: [tenantId], references: [id])
   ticket   Ticket @relation(fields: [ticketId], references: [id])
@@ -1258,7 +1262,7 @@ model SurveyTemplate {
   tenantId    String   @db.Uuid
   name        String
   description String?
-  questions   Json     // Array of { id, type: "rating"|"yes_no"|"text", label, required, options? }
+  questions   Json // Array of { id, type: "rating"|"yes_no"|"text", label, required, options? }
   isDefault   Boolean  @default(false) // One default per tenant
   isActive    Boolean  @default(true)
   trigger     String   @default("RESOLVED") // RESOLVED | CLOSED
@@ -1278,10 +1282,10 @@ model SurveyResponse {
   tenantId   String   @db.Uuid
   templateId String   @db.Uuid
   ticketId   String   @db.Uuid
-  userId     String   @db.Uuid  // The requester who filled it out
-  answers    Json     // Array of { questionId, value }
-  rating     Int?     // Extracted overall rating (1-5) for quick aggregation
-  comment    String?  // Extracted free-text comment for quick access
+  userId     String   @db.Uuid // The requester who filled it out
+  answers    Json // Array of { questionId, value }
+  rating     Int? // Extracted overall rating (1-5) for quick aggregation
+  comment    String? // Extracted free-text comment for quick access
   createdAt  DateTime @default(now())
 
   tenant   Tenant         @relation(fields: [tenantId], references: [id])
@@ -1299,16 +1303,16 @@ model SurveyResponse {
 model SavedTicketView {
   id            String   @id @default(uuid()) @db.Uuid
   tenantId      String   @db.Uuid
-  userId        String   @db.Uuid        // Creator/owner
+  userId        String   @db.Uuid // Creator/owner
   name          String
   description   String?
-  filters       Json     // All ticket field filters: status, priority, type, assignedToId, queueId, categoryId, etc.
+  filters       Json // All ticket field filters: status, priority, type, assignedToId, queueId, categoryId, etc.
   sortBy        String?  @default("createdAt")
   sortDir       String?  @default("desc")
-  displayConfig Json?    // { textColor, bgColor, badgeColors, columns[] }
-  isGlobal      Boolean  @default(false)  // Visible to all agents in tenant
-  isDefault     Boolean  @default(false)  // User's default view (at-most-one per user)
-  position      Int      @default(0)      // Display order
+  displayConfig Json? // { textColor, bgColor, badgeColors, columns[] }
+  isGlobal      Boolean  @default(false) // Visible to all agents in tenant
+  isDefault     Boolean  @default(false) // User's default view (at-most-one per user)
+  position      Int      @default(0) // Display order
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -1325,8 +1329,8 @@ model TicketViewAssignment {
   id          String   @id @default(uuid()) @db.Uuid
   tenantId    String   @db.Uuid
   viewId      String   @db.Uuid
-  userId      String?  @db.Uuid   // Assign to specific user (exactly one of userId/userGroupId)
-  userGroupId String?  @db.Uuid   // Assign to a group
+  userId      String?  @db.Uuid // Assign to specific user (exactly one of userId/userGroupId)
+  userGroupId String?  @db.Uuid // Assign to a group
   createdAt   DateTime @default(now())
 
   tenant    Tenant          @relation(fields: [tenantId], references: [id])
@@ -1343,17 +1347,17 @@ model TicketViewAssignment {
 
 // Canned Responses / Quick Replies for ticket comments
 model CannedResponse {
-  id         String   @id @default(uuid()) @db.Uuid
-  tenantId   String   @db.Uuid
-  title      String
-  content    String   @db.Text
-  shortcut   String?  // Quick-type shortcut (e.g., "/greeting")
-  category   String?  // Grouping label (e.g., "Closings", "Troubleshooting")
-  visibility String   @default("PERSONAL") // PERSONAL | TEAM | GLOBAL
-  createdById String  @db.Uuid
-  groupId    String?  @db.Uuid // For TEAM visibility — which group can see it
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  title       String
+  content     String   @db.Text
+  shortcut    String? // Quick-type shortcut (e.g., "/greeting")
+  category    String? // Grouping label (e.g., "Closings", "Troubleshooting")
+  visibility  String   @default("PERSONAL") // PERSONAL | TEAM | GLOBAL
+  createdById String   @db.Uuid
+  groupId     String?  @db.Uuid // For TEAM visibility — which group can see it
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   tenant    Tenant     @relation(fields: [tenantId], references: [id])
   createdBy User       @relation("CannedResponseCreatedBy", fields: [createdById], references: [id])
@@ -1675,20 +1679,20 @@ model BusinessUnit {
 // ─── Asset Types ─────────────────────────────────────────────────────────────
 
 model AssetType {
-  id          String      @id @default(uuid()) @db.Uuid
-  tenantId    String      @db.Uuid
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
   name        String
   description String?
   icon        String?
   color       String?
-  parentId    String?     @db.Uuid
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  parentId    String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  tenant      Tenant      @relation(fields: [tenantId], references: [id])
-  parent      AssetType?  @relation("AssetTypeHierarchy", fields: [parentId], references: [id])
-  children    AssetType[] @relation("AssetTypeHierarchy")
-  assets      Asset[]
+  tenant   Tenant      @relation(fields: [tenantId], references: [id])
+  parent   AssetType?  @relation("AssetTypeHierarchy", fields: [parentId], references: [id])
+  children AssetType[] @relation("AssetTypeHierarchy")
+  assets   Asset[]
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -1697,18 +1701,18 @@ model AssetType {
 
 // Model 30: Asset
 model Asset {
-  id                String      @id @default(uuid()) @db.Uuid
-  tenantId          String      @db.Uuid
-  assetTag          String?
-  serialNumber      String?
-  manufacturer      String?
-  model             String?
-  status            AssetStatus @default(IN_STOCK)
-  purchaseDate      DateTime?
-  purchaseCost      Float?
-  warrantyExpiry    DateTime?
-  assignedToId      String?     @db.Uuid
-  siteId            String?     @db.Uuid
+  id             String      @id @default(uuid()) @db.Uuid
+  tenantId       String      @db.Uuid
+  assetTag       String?
+  serialNumber   String?
+  manufacturer   String?
+  model          String?
+  status         AssetStatus @default(IN_STOCK)
+  purchaseDate   DateTime?
+  purchaseCost   Float?
+  warrantyExpiry DateTime?
+  assignedToId   String?     @db.Uuid
+  siteId         String?     @db.Uuid
   // Phase 8 Wave 5 (CASR-01): hardware/OS/software fields moved to
   //   CmdbCiServer (hostname, operatingSystem, osVersion, cpuModel, cpuCount,
   //     memoryGb, disksJson, networkInterfacesJson)
@@ -1716,11 +1720,11 @@ model Asset {
   //   CmdbCiServer.lastSeenAt / agent heartbeat (lastInventoryAt)
   // To resolve for an Asset, JOIN cmdb_configuration_items ci ON ci.assetId = assets.id
   // then JOIN cmdb_ci_servers or cmdb_software_installed as needed.
-  customFields      Json?
-  notes             String?
-  assetTypeId       String?     @db.Uuid
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+  customFields   Json?
+  notes          String?
+  assetTypeId    String?     @db.Uuid
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   tenant            Tenant                  @relation(fields: [tenantId], references: [id])
   site              Site?                   @relation(fields: [siteId], references: [id])
@@ -1761,18 +1765,18 @@ model Application {
   // APM ↔ CMDB bridge — primary CI is the canonical CmdbConfigurationItem
   // for this Application (class = application_instance). Auto-created on
   // Application save; nullable for backfill + ON DELETE SET NULL safety.
-  primaryCiId        String?           @db.Uuid
+  primaryCiId String? @db.Uuid
 
   // APM-only portfolio fields (don't belong in CMDB — they describe the
   // application contract, not the deployed infrastructure)
-  supportNotes       String?           // narrative runbook content
-  specialNotes       String?           // operational quirks ("Win10+ only")
-  osRequirements     String?           // declared platform requirements
-  vendorContact      String?           // vendor support phone/email
-  licenseInfo        String?           // plain text; full ApplicationLicense model is a future milestone
+  supportNotes   String? // narrative runbook content
+  specialNotes   String? // operational quirks ("Win10+ only")
+  osRequirements String? // declared platform requirements
+  vendorContact  String? // vendor support phone/email
+  licenseInfo    String? // plain text; full ApplicationLicense model is a future milestone
 
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   tenant             Tenant                  @relation(fields: [tenantId], references: [id])
   primaryCi          CmdbConfigurationItem?  @relation("ApplicationPrimaryCi", fields: [primaryCiId], references: [id], onDelete: SetNull)
@@ -1891,15 +1895,17 @@ model Agent {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  tenant             Tenant                  @relation(fields: [tenantId], references: [id])
+  tenant             Tenant                        @relation(fields: [tenantId], references: [id])
   inventorySnapshots InventorySnapshot[]
   metricSamples      MetricSample[]
   cmdbConfigItems    CmdbConfigurationItem[]
   cmdbChangeRecords  CmdbChangeRecord[]
+  deploymentTargets  AgentUpdateDeploymentTarget[]
+  eventLogs          AgentEventLog[]
 
-  forceUpdateUrl    String?
-  updateInProgress  Boolean   @default(false)
-  updateStartedAt   DateTime?
+  forceUpdateUrl   String?
+  updateInProgress Boolean   @default(false)
+  updateStartedAt  DateTime?
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -1918,8 +1924,80 @@ model AgentUpdate {
   uploadedBy   String?       @db.Uuid
   createdAt    DateTime      @default(now())
 
+  deployments AgentUpdateDeployment[]
+
   @@unique([version, platform])
   @@map("agent_updates")
+}
+
+// Model 37.5: AgentUpdateDeployment — one row per deploy action
+model AgentUpdateDeployment {
+  id            String        @id @default(uuid()) @db.Uuid
+  tenantId      String        @db.Uuid
+  agentUpdateId String        @db.Uuid
+  triggeredById String?       @db.Uuid
+  targetKind    String // "ALL" | "SINGLE" | "SELECTION"
+  platform      AgentPlatform
+  targetCount   Int           @default(0)
+  successCount  Int           @default(0)
+  errorCount    Int           @default(0)
+  pendingCount  Int           @default(0)
+  createdAt     DateTime      @default(now())
+
+  tenant      Tenant                        @relation(fields: [tenantId], references: [id])
+  agentUpdate AgentUpdate                   @relation(fields: [agentUpdateId], references: [id])
+  triggeredBy User?                         @relation("UserTriggeredAgentDeployments", fields: [triggeredById], references: [id])
+  targets     AgentUpdateDeploymentTarget[]
+
+  @@index([tenantId])
+  @@index([tenantId, createdAt])
+  @@map("agent_update_deployments")
+}
+
+// Model 37.6: per-agent deployment result
+model AgentUpdateDeploymentTarget {
+  id           String    @id @default(uuid()) @db.Uuid
+  tenantId     String    @db.Uuid
+  deploymentId String    @db.Uuid
+  agentId      String    @db.Uuid
+  fromVersion  String?
+  toVersion    String
+  status       String    @default("PENDING") // PENDING | DOWNLOADING | INSTALLING | SUCCESS | ERROR
+  errorMessage String?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  tenant     Tenant                @relation(fields: [tenantId], references: [id])
+  deployment AgentUpdateDeployment @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
+  agent      Agent                 @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, deploymentId])
+  @@index([tenantId, agentId])
+  @@map("agent_update_deployment_targets")
+}
+
+// Model 37.7: agent-emitted event log
+model AgentEventLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  agentId   String   @db.Uuid
+  level     String // INFO | WARN | ERROR
+  category  String?
+  message   String
+  context   Json?
+  eventAt   DateTime
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  agent  Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, agentId, createdAt])
+  @@index([tenantId, level])
+  @@map("agent_event_logs")
 }
 
 // Model 37: AgentEnrollmentToken
@@ -2141,14 +2219,14 @@ model CmdbVendor {
   name                String
   vendorType          String?
   // Contact URLs / channels
-  websiteUrl          String?  // marketing / main site (distinct from support portal)
-  supportUrl          String?  // support portal URL
-  contactEmail        String?  // generic support inbox
-  contactPhone        String?  // generic support hotline
+  websiteUrl          String? // marketing / main site (distinct from support portal)
+  supportUrl          String? // support portal URL
+  contactEmail        String? // generic support inbox
+  contactPhone        String? // generic support hotline
   // Account relationship — used when opening tickets or renewing contracts
-  accountNumber       String?  // our customer/account number with the vendor
-  accountManagerName  String?  // named sales/account contact
-  accountManagerEmail String?  // named sales/account email
+  accountNumber       String? // our customer/account number with the vendor
+  accountManagerName  String? // named sales/account contact
+  accountManagerEmail String? // named sales/account email
   // Free-form operational notes
   notes               String?
   isActive            Boolean  @default(true)
@@ -2257,18 +2335,18 @@ model CmdbConfigurationItem {
   updatedAt      DateTime  @updatedAt
 
   // Relations
-  tenant            Tenant           @relation(fields: [tenantId], references: [id])
-  category          CmdbCategory?    @relation(fields: [categoryId], references: [id])
-  asset             Asset?           @relation(fields: [assetId], references: [id])
-  agent             Agent?           @relation(fields: [agentId], references: [id])
-  ciClass           CmdbCiClass      @relation(fields: [classId], references: [id])
-  lifecycleStatus   CmdbStatus       @relation("CmdbCiLifecycleStatus", fields: [lifecycleStatusId], references: [id])
-  operationalStatus CmdbStatus       @relation("CmdbCiOperationalStatus", fields: [operationalStatusId], references: [id])
-  cmdbEnvironment   CmdbEnvironment  @relation(fields: [environmentId], references: [id])
-  manufacturer      CmdbVendor?      @relation(fields: [manufacturerId], references: [id])
-  supportGroup      UserGroup?       @relation("CmdbCiSupportGroup", fields: [supportGroupId], references: [id])
-  businessOwner     User?            @relation("CmdbCiBusinessOwner", fields: [businessOwnerId], references: [id])
-  technicalOwner    User?            @relation("CmdbCiTechnicalOwner", fields: [technicalOwnerId], references: [id])
+  tenant            Tenant          @relation(fields: [tenantId], references: [id])
+  category          CmdbCategory?   @relation(fields: [categoryId], references: [id])
+  asset             Asset?          @relation(fields: [assetId], references: [id])
+  agent             Agent?          @relation(fields: [agentId], references: [id])
+  ciClass           CmdbCiClass     @relation(fields: [classId], references: [id])
+  lifecycleStatus   CmdbStatus      @relation("CmdbCiLifecycleStatus", fields: [lifecycleStatusId], references: [id])
+  operationalStatus CmdbStatus      @relation("CmdbCiOperationalStatus", fields: [operationalStatusId], references: [id])
+  cmdbEnvironment   CmdbEnvironment @relation(fields: [environmentId], references: [id])
+  manufacturer      CmdbVendor?     @relation(fields: [manufacturerId], references: [id])
+  supportGroup      UserGroup?      @relation("CmdbCiSupportGroup", fields: [supportGroupId], references: [id])
+  businessOwner     User?           @relation("CmdbCiBusinessOwner", fields: [businessOwnerId], references: [id])
+  technicalOwner    User?           @relation("CmdbCiTechnicalOwner", fields: [technicalOwnerId], references: [id])
 
   sourceRels    CmdbRelationship[] @relation("CmdbRelSource")
   targetRels    CmdbRelationship[] @relation("CmdbRelTarget")
@@ -2349,10 +2427,10 @@ model CmdbRelationship {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  tenant              Tenant                   @relation(fields: [tenantId], references: [id])
-  source              CmdbConfigurationItem    @relation("CmdbRelSource", fields: [sourceId], references: [id])
-  target              CmdbConfigurationItem    @relation("CmdbRelTarget", fields: [targetId], references: [id])
-  relationshipTypeRef CmdbRelationshipTypeRef  @relation(fields: [relationshipTypeId], references: [id])
+  tenant              Tenant                  @relation(fields: [tenantId], references: [id])
+  source              CmdbConfigurationItem   @relation("CmdbRelSource", fields: [sourceId], references: [id])
+  target              CmdbConfigurationItem   @relation("CmdbRelTarget", fields: [targetId], references: [id])
+  relationshipTypeRef CmdbRelationshipTypeRef @relation(fields: [relationshipTypeId], references: [id])
 
   @@unique([sourceId, targetId, relationshipTypeId])
   @@index([tenantId])
@@ -2434,11 +2512,11 @@ model CmdbCiServer {
   operatingSystem        String?
   osVersion              String?
   cpuCount               Int?
-  cpuModel               String?  // Phase 8 (CASR-02)
+  cpuModel               String? // Phase 8 (CASR-02)
   memoryGb               Float?
   storageGb              Float?
-  disksJson              Json?    // Phase 8 (verbatim move from Asset.disks)
-  networkInterfacesJson  Json?    // Phase 8 (verbatim move from Asset.networkInterfaces)
+  disksJson              Json? // Phase 8 (verbatim move from Asset.disks)
+  networkInterfacesJson  Json? // Phase 8 (verbatim move from Asset.networkInterfaces)
   domainName             String?
   virtualizationPlatform String?
   hypervisorHostCiId     String?  @db.Uuid
@@ -3443,7 +3521,7 @@ model ChatConversation {
 model ChatMessage {
   id             String   @id @default(uuid()) @db.Uuid
   conversationId String   @db.Uuid
-  role           String   // 'user' | 'assistant' | 'tool'
+  role           String // 'user' | 'assistant' | 'tool'
   content        String?  @db.Text
   toolCalls      Json?
   toolCallId     String?
@@ -3460,7 +3538,7 @@ model ChatMessage {
 model ChatBotSession {
   id              String   @id @default(uuid()) @db.Uuid
   tenantId        String   @db.Uuid
-  platform        String   // 'discord' | 'telegram'
+  platform        String // 'discord' | 'telegram'
   platformUserId  String
   channelId       String?
   formId          String?  @db.Uuid
@@ -3481,7 +3559,7 @@ model ChatBotSession {
 model DocumentContent {
   id            String   @id @default(uuid()) @db.Uuid
   tenantId      String   @db.Uuid
-  sourceType    String   // 'ticket_attachment'
+  sourceType    String // 'ticket_attachment'
   sourceId      String   @db.Uuid
   filename      String
   extractedText String   @db.Text
@@ -3501,7 +3579,7 @@ model Workflow {
   name             String
   description      String?
   status           String   @default("DRAFT") // DRAFT | PUBLISHED | DISABLED
-  trigger          String   // Same trigger strings as NotificationRule
+  trigger          String // Same trigger strings as NotificationRule
   scopedQueueId    String?  @db.Uuid
   currentVersionId String?  @db.Uuid
   createdById      String?  @db.Uuid
@@ -3527,7 +3605,7 @@ model WorkflowVersion {
   createdById String?  @db.Uuid
   createdAt   DateTime @default(now())
 
-  workflow   Workflow             @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  workflow   Workflow            @relation(fields: [workflowId], references: [id], onDelete: Cascade)
   executions WorkflowExecution[]
 
   @@unique([workflowId, version])
@@ -3561,7 +3639,7 @@ model WorkflowExecution {
 model WorkflowExecutionStep {
   id          String    @id @default(uuid()) @db.Uuid
   executionId String    @db.Uuid
-  nodeId      String    // React Flow node ID within graph
+  nodeId      String // React Flow node ID within graph
   nodeType    String
   status      String    @default("PENDING") // PENDING | RUNNING | COMPLETED | FAILED | SKIPPED
   inputData   Json?
@@ -3580,13 +3658,13 @@ model WorkflowAuditLog {
   id         String   @id @default(uuid()) @db.Uuid
   tenantId   String   @db.Uuid
   workflowId String   @db.Uuid
-  action     String   // CREATED | UPDATED | PUBLISHED | DISABLED | DELETED | VERSION_CREATED
+  action     String // CREATED | UPDATED | PUBLISHED | DISABLED | DELETED | VERSION_CREATED
   actorId    String?  @db.Uuid
   metadata   Json?
   createdAt  DateTime @default(now())
 
   tenant   Tenant   @relation(fields: [tenantId], references: [id])
-  workflow Workflow  @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, createdAt])
   @@index([workflowId])
@@ -3611,16 +3689,16 @@ enum CustomFormStatus {
 model FieldDefinition {
   id               String                @id @default(uuid()) @db.Uuid
   tenantId         String                @db.Uuid
-  key              String                // Tenant-unique slug (e.g., "employee_name")
+  key              String // Tenant-unique slug (e.g., "employee_name")
   label            String
-  fieldType        String                // text, textarea, richtext, number, select, multiselect, radio, checkbox, date, datetime, email, phone, url, file, user_picker, group_picker, hidden
+  fieldType        String // text, textarea, richtext, number, select, multiselect, radio, checkbox, date, datetime, email, phone, url, file, user_picker, group_picker, hidden
   description      String?
   placeholder      String?
   helpText         String?
   isRequired       Boolean               @default(false)
   isReadOnly       Boolean               @default(false)
-  validationConfig Json?                 // { minLength, maxLength, min, max, pattern }
-  optionsJson      Json?                 // [{ label, value }] for select/multiselect/radio
+  validationConfig Json? // { minLength, maxLength, min, max, pattern }
+  optionsJson      Json? // [{ label, value }] for select/multiselect/radio
   status           FieldDefinitionStatus @default(ACTIVE)
   version          Int                   @default(1)
   createdById      String                @db.Uuid
@@ -3640,13 +3718,13 @@ model CustomForm {
   id                  String           @id @default(uuid()) @db.Uuid
   tenantId            String           @db.Uuid
   name                String
-  slug                String           // Tenant-unique URL-friendly identifier
+  slug                String // Tenant-unique URL-friendly identifier
   description         String?
-  icon                String?          // MDI icon path
-  color               String?          // Accent color hex
+  icon                String? // MDI icon path
+  color               String? // Accent color hex
   status              CustomFormStatus @default(DRAFT)
   currentVersion      Int              @default(1)
-  layoutJson          Json             // { sections: [{ id, title, position, fields: [{ id, fieldDefinitionId, position, overrides }] }] }
+  layoutJson          Json // { sections: [{ id, title, position, fields: [{ id, fieldDefinitionId, position, overrides }] }] }
   mappingJson         Json             @default("{}") // { title?: fieldInstanceId, description?: fieldInstanceId, priority?: fieldInstanceId, ... }
   conditionsJson      Json             @default("[]") // [{ id, targetFieldId, parentFieldId, operator, value, action }]
   ticketType          TicketType       @default(SERVICE_REQUEST)
@@ -3657,7 +3735,7 @@ model CustomForm {
   defaultGroupId      String?          @db.Uuid
   defaultSlaId        String?          @db.Uuid
   defaultTags         String[]
-  titleTemplate       String?          // "{{field_key}} request for {{another_field}}"
+  titleTemplate       String? // "{{field_key}} request for {{another_field}}"
   descriptionTemplate String?          @db.Text
   showInPortal        Boolean          @default(true)
   requireAuth         Boolean          @default(true)
@@ -3667,8 +3745,8 @@ model CustomForm {
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
 
-  tenant      Tenant               @relation(fields: [tenantId], references: [id])
-  createdBy   User                 @relation("CustomFormCreatedBy", fields: [createdById], references: [id])
+  tenant      Tenant                 @relation(fields: [tenantId], references: [id])
+  createdBy   User                   @relation("CustomFormCreatedBy", fields: [createdById], references: [id])
   submissions CustomFormSubmission[]
 
   @@unique([tenantId, slug])
@@ -3681,11 +3759,11 @@ model CustomFormSubmission {
   id             String   @id @default(uuid()) @db.Uuid
   tenantId       String   @db.Uuid
   formId         String   @db.Uuid
-  formVersion    Int      // Snapshot of which version was used
+  formVersion    Int // Snapshot of which version was used
   ticketId       String?  @db.Uuid
   submittedById  String   @db.Uuid
-  valuesJson     Json     // Raw submitted field values
-  layoutSnapshot Json?    // Copy of layoutJson at submission time
+  valuesJson     Json // Raw submitted field values
+  layoutSnapshot Json? // Copy of layoutJson at submission time
   status         String   @default("COMPLETED") // COMPLETED | FAILED
   errorMessage   String?
   createdAt      DateTime @default(now())

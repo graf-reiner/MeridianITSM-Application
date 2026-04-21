@@ -358,4 +358,173 @@ export async function agentSettingsRoutes(fastify: FastifyInstance): Promise<voi
       return reply.send(snapshot);
     },
   );
+
+  // ─── GET /api/v1/settings/agent-updates/deployments ───────────────────────────
+  // Paginated deployment history for the tenant.
+  fastify.get(
+    '/api/v1/settings/agent-updates/deployments',
+    { preHandler: [requirePermission('settings:read')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string };
+      const tenantId = user.tenantId;
+      const q = request.query as { page?: string; pageSize?: string };
+      const page = Math.max(1, Number.parseInt(q.page ?? '1', 10) || 1);
+      const pageSize = Math.min(100, Math.max(1, Number.parseInt(q.pageSize ?? '25', 10) || 25));
+      const skip = (page - 1) * pageSize;
+
+      const [total, rows] = await Promise.all([
+        prisma.agentUpdateDeployment.count({ where: { tenantId } }),
+        prisma.agentUpdateDeployment.findMany({
+          where: { tenantId },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: pageSize,
+          include: {
+            agentUpdate: { select: { version: true } },
+            triggeredBy: { select: { email: true, firstName: true, lastName: true } },
+          },
+        }),
+      ]);
+
+      return reply.send({
+        data: rows.map((r) => ({
+          id: r.id,
+          createdAt: r.createdAt,
+          platform: r.platform,
+          targetKind: r.targetKind,
+          version: r.agentUpdate.version,
+          targetCount: r.targetCount,
+          successCount: r.successCount,
+          errorCount: r.errorCount,
+          pendingCount: r.pendingCount,
+          triggeredBy: r.triggeredBy
+            ? {
+                email: r.triggeredBy.email,
+                name: [r.triggeredBy.firstName, r.triggeredBy.lastName].filter(Boolean).join(' '),
+              }
+            : null,
+        })),
+        total,
+        page,
+        pageSize,
+      });
+    },
+  );
+
+  // ─── GET /api/v1/settings/agent-updates/deployments/:id ───────────────────────
+  fastify.get(
+    '/api/v1/settings/agent-updates/deployments/:id',
+    { preHandler: [requirePermission('settings:read')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string };
+      const tenantId = user.tenantId;
+      const { id } = request.params as { id: string };
+
+      const deployment = await prisma.agentUpdateDeployment.findFirst({
+        where: { id, tenantId },
+        include: {
+          agentUpdate: { select: { version: true, platform: true, fileSize: true } },
+          triggeredBy: { select: { email: true, firstName: true, lastName: true } },
+          targets: {
+            orderBy: { createdAt: 'asc' },
+            include: {
+              agent: {
+                select: {
+                  id: true,
+                  hostname: true,
+                  platform: true,
+                  agentVersion: true,
+                  status: true,
+                  lastHeartbeatAt: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!deployment) {
+        return reply.status(404).send({ error: 'Deployment not found' });
+      }
+
+      return reply.send({
+        id: deployment.id,
+        createdAt: deployment.createdAt,
+        platform: deployment.platform,
+        targetKind: deployment.targetKind,
+        version: deployment.agentUpdate.version,
+        fileSize: deployment.agentUpdate.fileSize,
+        targetCount: deployment.targetCount,
+        successCount: deployment.successCount,
+        errorCount: deployment.errorCount,
+        pendingCount: deployment.pendingCount,
+        triggeredBy: deployment.triggeredBy
+          ? {
+              email: deployment.triggeredBy.email,
+              name: [deployment.triggeredBy.firstName, deployment.triggeredBy.lastName].filter(Boolean).join(' '),
+            }
+          : null,
+        targets: deployment.targets.map((t) => ({
+          id: t.id,
+          agentId: t.agentId,
+          hostname: t.agent.hostname,
+          platform: t.agent.platform,
+          agentCurrentVersion: t.agent.agentVersion,
+          agentStatus: t.agent.status,
+          agentLastHeartbeatAt: t.agent.lastHeartbeatAt,
+          fromVersion: t.fromVersion,
+          toVersion: t.toVersion,
+          status: t.status,
+          errorMessage: t.errorMessage,
+          startedAt: t.startedAt,
+          completedAt: t.completedAt,
+        })),
+      });
+    },
+  );
+
+  // ─── GET /api/v1/settings/agents/:id/events ───────────────────────────────────
+  // Paginated event log for a single agent.
+  fastify.get(
+    '/api/v1/settings/agents/:id/events',
+    { preHandler: [requirePermission('settings:read')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string };
+      const tenantId = user.tenantId;
+      const { id } = request.params as { id: string };
+      const q = request.query as { page?: string; pageSize?: string; level?: string };
+
+      const agent = await prisma.agent.findFirst({
+        where: { id, tenantId },
+        select: { id: true },
+      });
+      if (!agent) {
+        return reply.status(404).send({ error: 'Agent not found' });
+      }
+
+      const page = Math.max(1, Number.parseInt(q.page ?? '1', 10) || 1);
+      const pageSize = Math.min(100, Math.max(1, Number.parseInt(q.pageSize ?? '25', 10) || 25));
+      const skip = (page - 1) * pageSize;
+
+      const where: Record<string, unknown> = { tenantId, agentId: id };
+      if (q.level) {
+        const normalized = q.level.toUpperCase();
+        if (['INFO', 'WARN', 'ERROR'].includes(normalized)) {
+          where.level = normalized;
+        }
+      }
+
+      const [total, rows] = await Promise.all([
+        prisma.agentEventLog.count({ where }),
+        prisma.agentEventLog.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: pageSize,
+        }),
+      ]);
+
+      return reply.send({ data: rows, total, page, pageSize });
+    },
+  );
 }

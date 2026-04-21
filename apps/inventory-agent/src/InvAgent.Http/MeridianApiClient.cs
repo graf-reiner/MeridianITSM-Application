@@ -89,6 +89,17 @@ public class MeridianApiClient
     }
 
     /// <summary>
+    /// Pushes a batch of agent events to the server. Throws on HTTP error so
+    /// the caller can re-queue the batch for a retry on the next heartbeat.
+    /// </summary>
+    public async Task SendEventsAsync(IReadOnlyList<AgentEvent> events, CancellationToken ct = default)
+    {
+        if (events.Count == 0) return;
+        var response = await _http.PostAsJsonAsync("api/v1/agents/events", new { events }, JsonOptions, ct);
+        response.EnsureSuccessStatusCode();
+    }
+
+    /// <summary>
     /// Sends a HEAD request to the server to test connectivity.
     /// Returns latency in milliseconds on success, or -1 on failure.
     /// </summary>

@@ -13,12 +13,14 @@ public class UpdateInstaller
     private readonly MeridianApiClient _api;
     private readonly AgentConfig _config;
     private readonly ILogger<UpdateInstaller> _logger;
+    private readonly EventReporter _events;
 
-    public UpdateInstaller(MeridianApiClient api, AgentConfig config, ILogger<UpdateInstaller> logger)
+    public UpdateInstaller(MeridianApiClient api, AgentConfig config, ILogger<UpdateInstaller> logger, EventReporter events)
     {
         _api = api;
         _config = config;
         _logger = logger;
+        _events = events;
     }
 
     public async Task<bool> InstallUpdateAsync(UpdateInfo update, CancellationToken ct)
@@ -28,11 +30,31 @@ public class UpdateInstaller
 
         var fileName = update.UpdateUrl.Contains(".msi") ? "MeridianAgent.msi" : "MeridianAgentSetup.exe";
         var downloadPath = Path.Combine(tempDir, fileName);
+        var fromVersion = UpdateChecker.GetCurrentVersion();
+
+        _events.ReportInfo("update", $"Update detected: {fromVersion} -> {update.LatestVersion}", new()
+        {
+            ["kind"] = "update-detected",
+            ["fromVersion"] = fromVersion,
+            ["toVersion"] = update.LatestVersion,
+        });
 
         try
         {
             _logger.LogInformation("Downloading update {Version} from {Url}...", update.LatestVersion, update.UpdateUrl);
+            _events.ReportInfo("update", $"Downloading v{update.LatestVersion}", new()
+            {
+                ["kind"] = "update-downloading",
+                ["toVersion"] = update.LatestVersion,
+                ["url"] = update.UpdateUrl,
+            });
             await _api.DownloadFileAsync(update.UpdateUrl, downloadPath, ct);
+            _events.ReportInfo("update", "Installer downloaded", new()
+            {
+                ["kind"] = "update-downloaded",
+                ["toVersion"] = update.LatestVersion,
+                ["sizeBytes"] = new FileInfo(downloadPath).Length,
+            });
 
             if (!string.IsNullOrEmpty(update.Checksum))
             {
@@ -46,15 +68,22 @@ public class UpdateInstaller
                 {
                     _logger.LogError("Checksum mismatch! Expected {Expected}, got {Actual}. Aborting update.",
                         expectedChecksum, actualChecksum);
+                    _events.ReportError("update", "Checksum mismatch — aborting update", new()
+                    {
+                        ["kind"] = "update-error",
+                        ["expected"] = expectedChecksum,
+                        ["actual"] = actualChecksum,
+                    });
                     try { File.Delete(downloadPath); } catch { }
                     return false;
                 }
                 _logger.LogInformation("Checksum verified.");
+                _events.ReportInfo("update", "Checksum verified", new() { ["kind"] = "update-checksum-ok" });
             }
 
             var checkpoint = new
             {
-                previousVersion = UpdateChecker.GetCurrentVersion(),
+                previousVersion = fromVersion,
                 updateVersion = update.LatestVersion,
                 timestamp = DateTime.UtcNow.ToString("O"),
                 installerPath = downloadPath,
@@ -64,6 +93,16 @@ public class UpdateInstaller
                 JsonSerializer.Serialize(checkpoint, new JsonSerializerOptions { WriteIndented = true }), ct);
 
             _logger.LogInformation("Launching installer: {Path}", downloadPath);
+            _events.ReportInfo("update", $"Launching installer for v{update.LatestVersion}", new()
+            {
+                ["kind"] = "update-installing",
+                ["toVersion"] = update.LatestVersion,
+                ["installerPath"] = downloadPath,
+            });
+
+            // Flush events BEFORE launching the installer — the installer will
+            // stop this service and our in-memory queue otherwise disappears.
+            try { await _events.FlushAsync(ct); } catch { /* non-fatal */ }
 
             if (fileName.EndsWith(".msi"))
             {
@@ -98,6 +137,12 @@ public class UpdateInstaller
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to install update {Version}.", update.LatestVersion);
+            _events.ReportError("update", $"Update failed: {ex.Message}", new()
+            {
+                ["kind"] = "update-error",
+                ["toVersion"] = update.LatestVersion,
+                ["exceptionType"] = ex.GetType().FullName,
+            });
             return false;
         }
     }

@@ -26,6 +26,7 @@ public class AgentWorker : BackgroundService
     private readonly ILogger<AgentWorker> _logger;
     private readonly UpdateChecker _updateChecker;
     private readonly UpdateInstaller _updateInstaller;
+    private readonly EventReporter _eventReporter;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -39,7 +40,8 @@ public class AgentWorker : BackgroundService
         IOptions<AgentConfig> config,
         ILogger<AgentWorker> logger,
         UpdateChecker updateChecker,
-        UpdateInstaller updateInstaller)
+        UpdateInstaller updateInstaller,
+        EventReporter eventReporter)
     {
         _collector = collector;
         _api = api;
@@ -48,6 +50,7 @@ public class AgentWorker : BackgroundService
         _logger = logger;
         _updateChecker = updateChecker;
         _updateInstaller = updateInstaller;
+        _eventReporter = eventReporter;
     }
 
     protected override async Task ExecuteAsync(CancellationToken ct)
@@ -153,8 +156,14 @@ public class AgentWorker : BackgroundService
             var response = await _api.SendHeartbeatAsync(payload, ct);
             _logger.LogDebug("Heartbeat sent successfully.");
 
-            // Check for updates after successful heartbeat
-            var updateInfo = await _updateChecker.CheckForUpdateAsync(ct);
+            // Flush any buffered events alongside the heartbeat.
+            try { await _eventReporter.FlushAsync(ct); }
+            catch (Exception flushEx) { _logger.LogWarning(flushEx, "Event flush failed — will retry next heartbeat."); }
+
+            // Consume the update included in the heartbeat response directly.
+            // (The separate /update-check endpoint was removed; the server now
+            // advertises any pending update in the heartbeat response itself.)
+            var updateInfo = response?.Update;
             if (updateInfo != null)
             {
                 _logger.LogInformation("Applying update to {Version}...", updateInfo.LatestVersion);

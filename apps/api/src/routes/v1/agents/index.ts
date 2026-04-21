@@ -238,6 +238,7 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
       lastHeartbeatAt: new Date(),
       status: 'ACTIVE',
     };
+    const versionChanged = body.agentVersion && body.agentVersion !== agent.agentVersion;
     if (body.agentVersion) {
       updateData.agentVersion = body.agentVersion;
       if (agent.updateInProgress) {
@@ -253,6 +254,38 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
       where: { id: agent.id },
       data: updateData,
     });
+
+    // If the agent just reported a new version, close out any pending
+    // deployment target waiting for it.
+    if (versionChanged && body.agentVersion) {
+      const pendingTarget = await prisma.agentUpdateDeploymentTarget.findFirst({
+        where: {
+          tenantId: agent.tenantId,
+          agentId: agent.id,
+          status: { in: ['PENDING', 'DOWNLOADING', 'INSTALLING'] },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (pendingTarget && pendingTarget.toVersion === body.agentVersion) {
+        await prisma.$transaction([
+          prisma.agentUpdateDeploymentTarget.update({
+            where: { id: pendingTarget.id },
+            data: {
+              status: 'SUCCESS',
+              completedAt: new Date(),
+              errorMessage: null,
+            },
+          }),
+          prisma.agentUpdateDeployment.update({
+            where: { id: pendingTarget.deploymentId },
+            data: {
+              successCount: { increment: 1 },
+              pendingCount: { decrement: 1 },
+            },
+          }),
+        ]);
+      }
+    }
 
     if (body.metrics && typeof body.metrics === 'object') {
       const metricEntries = Object.entries(body.metrics);
@@ -533,5 +566,112 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
     });
 
     return reply.code(202).send({ status: 'queued' });
+  });
+
+  // ─── POST /api/v1/agents/events ───────────────────────────────────────────────
+  // AgentKey auth — ingests batched events emitted by the agent.
+  // Side-effects: map update-lifecycle events to AgentUpdateDeploymentTarget
+  // status transitions so the admin UI reflects download / install / error.
+
+  app.post('/api/v1/agents/events', async (request, reply) => {
+    const agent = await resolveAgent(request, reply);
+    if (!agent) return;
+
+    const body = request.body as {
+      events?: Array<{
+        level?: string;
+        category?: string;
+        message?: string;
+        context?: Record<string, unknown> | null;
+        eventAt?: string;
+      }>;
+    };
+
+    const raw = Array.isArray(body.events) ? body.events.slice(0, 200) : [];
+    if (raw.length === 0) return reply.code(200).send({ accepted: 0 });
+
+    const VALID_LEVELS = new Set(['INFO', 'WARN', 'ERROR']);
+    const normalized = raw
+      .map((e) => {
+        const level = (e.level ?? 'INFO').toUpperCase();
+        if (!VALID_LEVELS.has(level)) return null;
+        const msg = typeof e.message === 'string' ? e.message.slice(0, 4000) : '';
+        if (!msg) return null;
+        const eventAt = e.eventAt ? new Date(e.eventAt) : new Date();
+        return {
+          tenantId: agent.tenantId,
+          agentId: agent.id,
+          level,
+          category: e.category ?? null,
+          message: msg,
+          context: (e.context ?? null) as never,
+          eventAt: Number.isNaN(eventAt.getTime()) ? new Date() : eventAt,
+        };
+      })
+      .filter((e): e is NonNullable<typeof e> => e !== null);
+
+    if (normalized.length > 0) {
+      await prisma.agentEventLog.createMany({ data: normalized });
+    }
+
+    // Derive deployment-target state transitions from the batch.
+    let desiredStatus: 'DOWNLOADING' | 'INSTALLING' | 'ERROR' | null = null;
+    let errorMessage: string | null = null;
+    for (const e of normalized) {
+      const ctx = (e.context ?? {}) as Record<string, unknown>;
+      const kind = typeof ctx.kind === 'string' ? ctx.kind : null;
+      if (kind === 'update-error' || (e.category === 'update' && e.level === 'ERROR')) {
+        desiredStatus = 'ERROR';
+        errorMessage = e.message;
+      } else if (kind === 'update-installing' && desiredStatus !== 'ERROR') {
+        desiredStatus = 'INSTALLING';
+      } else if (
+        kind === 'update-downloading' &&
+        desiredStatus !== 'ERROR' &&
+        desiredStatus !== 'INSTALLING'
+      ) {
+        desiredStatus = 'DOWNLOADING';
+      }
+    }
+
+    if (desiredStatus) {
+      const openTarget = await prisma.agentUpdateDeploymentTarget.findFirst({
+        where: {
+          tenantId: agent.tenantId,
+          agentId: agent.id,
+          status: { in: ['PENDING', 'DOWNLOADING', 'INSTALLING'] },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (openTarget) {
+        if (desiredStatus === 'ERROR') {
+          await prisma.$transaction([
+            prisma.agentUpdateDeploymentTarget.update({
+              where: { id: openTarget.id },
+              data: {
+                status: 'ERROR',
+                errorMessage: errorMessage?.slice(0, 2000) ?? 'Agent reported update error',
+                completedAt: new Date(),
+              },
+            }),
+            prisma.agentUpdateDeployment.update({
+              where: { id: openTarget.deploymentId },
+              data: { errorCount: { increment: 1 }, pendingCount: { decrement: 1 } },
+            }),
+          ]);
+        } else if (openTarget.status !== desiredStatus) {
+          await prisma.agentUpdateDeploymentTarget.update({
+            where: { id: openTarget.id },
+            data: {
+              status: desiredStatus,
+              startedAt: openTarget.startedAt ?? new Date(),
+            },
+          });
+        }
+      }
+    }
+
+    return reply.code(202).send({ accepted: normalized.length });
   });
 }

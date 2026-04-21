@@ -142,6 +142,7 @@ rootCommand.SetHandler(async (context) =>
     // Register auto-update services
     builder.Services.AddSingleton<InvAgent.Worker.UpdateChecker>();
     builder.Services.AddSingleton<InvAgent.Worker.UpdateInstaller>();
+    builder.Services.AddSingleton<InvAgent.Worker.EventReporter>();
 
     // Register daemon lifecycle support
     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

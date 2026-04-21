@@ -194,14 +194,62 @@ export default async function agentUpdateRoutes(app: FastifyInstance): Promise<v
       whereClause.id = { in: agentIds };
     }
 
-    const result = await prisma.agent.updateMany({
+    // Resolve tenant from the first agent matching the where clause. Admin JWT
+    // gives us admin.userId but not tenantId, so we grab it from the targets.
+    // (resolveAdminSession already rejects non-admins.)
+    const targetAgents = await prisma.agent.findMany({
       where: whereClause as any,
-      data: {
-        forceUpdateUrl,
-      },
+      select: { id: true, tenantId: true, agentVersion: true },
     });
 
-    return reply.code(200).send({ deployed: result.count });
+    if (targetAgents.length === 0) {
+      return reply.code(200).send({ deployed: 0, deploymentId: null });
+    }
+
+    const tenantId = targetAgents[0].tenantId;
+    const targetKind: 'ALL' | 'SINGLE' | 'SELECTION' =
+      agentIds === 'all' || !agentIds
+        ? 'ALL'
+        : Array.isArray(agentIds) && agentIds.length === 1
+          ? 'SINGLE'
+          : 'SELECTION';
+    const now = new Date();
+
+    const { deployment, updatedCount } = await prisma.$transaction(async (tx) => {
+      const updateResult = await tx.agent.updateMany({
+        where: { id: { in: targetAgents.map((a) => a.id) } },
+        data: { forceUpdateUrl, updateStartedAt: now, updateInProgress: true },
+      });
+
+      const deploymentRow = await tx.agentUpdateDeployment.create({
+        data: {
+          tenantId,
+          agentUpdateId: agentUpdate.id,
+          triggeredById: admin.userId,
+          targetKind,
+          platform: normalizedPlatform as 'WINDOWS' | 'LINUX' | 'MACOS',
+          targetCount: targetAgents.length,
+          pendingCount: targetAgents.length,
+          successCount: 0,
+          errorCount: 0,
+        },
+      });
+
+      await tx.agentUpdateDeploymentTarget.createMany({
+        data: targetAgents.map((a) => ({
+          tenantId,
+          deploymentId: deploymentRow.id,
+          agentId: a.id,
+          fromVersion: a.agentVersion ?? null,
+          toVersion: agentUpdate.version,
+          status: 'PENDING',
+        })),
+      });
+
+      return { deployment: deploymentRow, updatedCount: updateResult.count };
+    });
+
+    return reply.code(200).send({ deployed: updatedCount, deploymentId: deployment.id });
   });
 
   // ─── GET /api/v1/agents/updates ─────────────────────────────────────────────
