@@ -21,8 +21,10 @@ interface Change {
 }
 
 interface ChangeListResponse {
-  changes: Change[];
+  data: Change[];
   total: number;
+  page: number;
+  pageSize: number;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -82,7 +84,7 @@ export default function ChangesPage() {
     },
   });
 
-  const changes = data?.changes ?? [];
+  const changes = data?.data ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
