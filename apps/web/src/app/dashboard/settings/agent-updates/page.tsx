@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiArrowLeft, mdiCloudUpload, mdiChevronRight } from '@mdi/js';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface DeploymentRow {
   id: string;
@@ -16,7 +16,17 @@ interface DeploymentRow {
   successCount: number;
   errorCount: number;
   pendingCount: number;
+  awaitingApproval?: boolean;
+  change?: { id: string; changeNumber: number; status: string; type: string } | null;
   triggeredBy: { email: string; name: string } | null;
+}
+
+interface AgentPolicy {
+  agentUpdatePolicy: 'manual' | 'auto' | 'scheduled';
+  agentUpdateWindowStart: string | null;
+  agentUpdateWindowEnd: string | null;
+  agentUpdateWindowDay: string | null;
+  agentDeployRequiresChange: boolean;
 }
 
 interface DeploymentListResponse {
@@ -49,6 +59,7 @@ function StatusPill({ label, count, bg, color }: { label: string; count: number;
 export default function AgentUpdatesHistoryPage() {
   const [page, setPage] = useState(1);
   const pageSize = 25;
+  const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery<DeploymentListResponse>({
     queryKey: ['agent-deployments', page, pageSize],
@@ -61,6 +72,29 @@ export default function AgentUpdatesHistoryPage() {
       return res.json() as Promise<DeploymentListResponse>;
     },
     refetchInterval: 10000,
+  });
+
+  const { data: policy } = useQuery<AgentPolicy>({
+    queryKey: ['agent-policy'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/settings/agents/policy', { credentials: 'include' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json() as Promise<AgentPolicy>;
+    },
+  });
+
+  const togglePolicy = useMutation({
+    mutationFn: async (next: boolean) => {
+      const res = await fetch('/api/v1/settings/agents/policy', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agentDeployRequiresChange: next }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json() as Promise<AgentPolicy>;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['agent-policy'] }),
   });
 
   const rows = data?.data ?? [];
@@ -90,6 +124,43 @@ export default function AgentUpdatesHistoryPage() {
           backgroundColor: 'var(--bg-primary)',
           border: '1px solid var(--border-primary)',
           borderRadius: 10,
+          padding: 16,
+          marginBottom: 16,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 16,
+        }}
+      >
+        <div>
+          <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 14 }}>
+            Require change approval for agent deployments
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
+            When enabled, every agent-update deploy creates a NORMAL change ticket and waits for approval before agents
+            receive the update. When disabled, deploys proceed immediately and a STANDARD (audit-trail) change is
+            recorded after the fact.
+          </div>
+        </div>
+        <label style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={policy?.agentDeployRequiresChange ?? false}
+            disabled={!policy || togglePolicy.isPending}
+            onChange={(e) => togglePolicy.mutate(e.target.checked)}
+            style={{ marginRight: 8, transform: 'scale(1.2)' }}
+          />
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
+            {policy?.agentDeployRequiresChange ? 'Enabled' : 'Disabled'}
+          </span>
+        </label>
+      </div>
+
+      <div
+        style={{
+          backgroundColor: 'var(--bg-primary)',
+          border: '1px solid var(--border-primary)',
+          borderRadius: 10,
           overflow: 'hidden',
         }}
       >
@@ -111,6 +182,7 @@ export default function AgentUpdatesHistoryPage() {
                 <th style={{ padding: '8px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Scope</th>
                 <th style={{ padding: '8px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Targets</th>
                 <th style={{ padding: '8px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Status</th>
+                <th style={{ padding: '8px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Change</th>
                 <th style={{ padding: '8px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Triggered By</th>
                 <th style={{ padding: '8px 14px', textAlign: 'right', fontWeight: 600, color: 'var(--text-secondary)' }}></th>
               </tr>
@@ -129,16 +201,36 @@ export default function AgentUpdatesHistoryPage() {
                   <td style={{ padding: '10px 14px', color: 'var(--text-muted)' }}>{r.targetCount}</td>
                   <td style={{ padding: '10px 14px' }}>
                     <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
-                      {r.successCount > 0 && (
+                      {r.awaitingApproval && (
+                        <StatusPill label="awaiting approval" count={0} bg="var(--badge-yellow-bg)" color="#92400e" />
+                      )}
+                      {!r.awaitingApproval && r.successCount > 0 && (
                         <StatusPill label="ok" count={r.successCount} bg="var(--badge-green-bg)" color="#065f46" />
                       )}
-                      {r.pendingCount > 0 && (
+                      {!r.awaitingApproval && r.pendingCount > 0 && (
                         <StatusPill label="pending" count={r.pendingCount} bg="var(--badge-yellow-bg)" color="#92400e" />
                       )}
                       {r.errorCount > 0 && (
                         <StatusPill label="error" count={r.errorCount} bg="var(--badge-red-bg)" color="#991b1b" />
                       )}
                     </span>
+                  </td>
+                  <td style={{ padding: '10px 14px', fontSize: 13 }}>
+                    {r.change ? (
+                      <Link
+                        href={`/dashboard/changes/${r.change.id}`}
+                        style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontFamily: 'monospace' }}
+                      >
+                        CHG-{r.change.changeNumber}
+                      </Link>
+                    ) : (
+                      <span style={{ color: 'var(--text-muted)' }}>—</span>
+                    )}
+                    {r.change && (
+                      <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2 }}>
+                        {r.change.type} · {r.change.status}
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 13 }}>
                     {r.triggeredBy?.email ?? '—'}

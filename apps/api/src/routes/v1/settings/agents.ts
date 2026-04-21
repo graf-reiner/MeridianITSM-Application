@@ -359,6 +359,75 @@ export async function agentSettingsRoutes(fastify: FastifyInstance): Promise<voi
     },
   );
 
+  // ─── GET /api/v1/settings/agents/policy ───────────────────────────────────────
+  // Tenant-level agent-deploy policy flags.
+  fastify.get(
+    '/api/v1/settings/agents/policy',
+    { preHandler: [requirePermission('settings:read')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string };
+      const tenant = await prisma.tenant.findUnique({
+        where: { id: user.tenantId },
+        select: {
+          agentUpdatePolicy: true,
+          agentUpdateWindowStart: true,
+          agentUpdateWindowEnd: true,
+          agentUpdateWindowDay: true,
+          agentDeployRequiresChange: true,
+        },
+      });
+      if (!tenant) return reply.code(404).send({ error: 'Tenant not found' });
+      return reply.send(tenant);
+    },
+  );
+
+  // ─── PATCH /api/v1/settings/agents/policy ─────────────────────────────────────
+  fastify.patch(
+    '/api/v1/settings/agents/policy',
+    { preHandler: [requirePermission('settings:update')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string };
+      const body = request.body as {
+        agentUpdatePolicy?: 'manual' | 'auto' | 'scheduled';
+        agentUpdateWindowStart?: string | null;
+        agentUpdateWindowEnd?: string | null;
+        agentUpdateWindowDay?: string | null;
+        agentDeployRequiresChange?: boolean;
+      };
+
+      const data: Record<string, unknown> = {};
+      if (body.agentUpdatePolicy !== undefined) {
+        if (!['manual', 'auto', 'scheduled'].includes(body.agentUpdatePolicy)) {
+          return reply.code(400).send({ error: 'Invalid agentUpdatePolicy' });
+        }
+        data.agentUpdatePolicy = body.agentUpdatePolicy;
+      }
+      if (body.agentUpdateWindowStart !== undefined) data.agentUpdateWindowStart = body.agentUpdateWindowStart;
+      if (body.agentUpdateWindowEnd !== undefined) data.agentUpdateWindowEnd = body.agentUpdateWindowEnd;
+      if (body.agentUpdateWindowDay !== undefined) data.agentUpdateWindowDay = body.agentUpdateWindowDay;
+      if (body.agentDeployRequiresChange !== undefined) {
+        data.agentDeployRequiresChange = !!body.agentDeployRequiresChange;
+      }
+
+      if (Object.keys(data).length === 0) {
+        return reply.code(400).send({ error: 'No fields to update' });
+      }
+
+      const updated = await prisma.tenant.update({
+        where: { id: user.tenantId },
+        data,
+        select: {
+          agentUpdatePolicy: true,
+          agentUpdateWindowStart: true,
+          agentUpdateWindowEnd: true,
+          agentUpdateWindowDay: true,
+          agentDeployRequiresChange: true,
+        },
+      });
+      return reply.send(updated);
+    },
+  );
+
   // ─── GET /api/v1/settings/agent-updates/deployments ───────────────────────────
   // Paginated deployment history for the tenant.
   fastify.get(
@@ -382,6 +451,7 @@ export async function agentSettingsRoutes(fastify: FastifyInstance): Promise<voi
           include: {
             agentUpdate: { select: { version: true } },
             triggeredBy: { select: { email: true, firstName: true, lastName: true } },
+            change: { select: { id: true, changeNumber: true, status: true, type: true } },
           },
         }),
       ]);
@@ -397,6 +467,15 @@ export async function agentSettingsRoutes(fastify: FastifyInstance): Promise<voi
           successCount: r.successCount,
           errorCount: r.errorCount,
           pendingCount: r.pendingCount,
+          awaitingApproval: r.awaitingApproval,
+          change: r.change
+            ? {
+                id: r.change.id,
+                changeNumber: r.change.changeNumber,
+                status: r.change.status,
+                type: r.change.type,
+              }
+            : null,
           triggeredBy: r.triggeredBy
             ? {
                 email: r.triggeredBy.email,
@@ -425,6 +504,7 @@ export async function agentSettingsRoutes(fastify: FastifyInstance): Promise<voi
         include: {
           agentUpdate: { select: { version: true, platform: true, fileSize: true } },
           triggeredBy: { select: { email: true, firstName: true, lastName: true } },
+          change: { select: { id: true, changeNumber: true, status: true, type: true, title: true } },
           targets: {
             orderBy: { createdAt: 'asc' },
             include: {
@@ -458,6 +538,16 @@ export async function agentSettingsRoutes(fastify: FastifyInstance): Promise<voi
         successCount: deployment.successCount,
         errorCount: deployment.errorCount,
         pendingCount: deployment.pendingCount,
+        awaitingApproval: deployment.awaitingApproval,
+        change: deployment.change
+          ? {
+              id: deployment.change.id,
+              changeNumber: deployment.change.changeNumber,
+              status: deployment.change.status,
+              type: deployment.change.type,
+              title: deployment.change.title,
+            }
+          : null,
         triggeredBy: deployment.triggeredBy
           ? {
               email: deployment.triggeredBy.email,

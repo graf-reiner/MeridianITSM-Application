@@ -365,10 +365,11 @@ model Tenant {
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
 
-  agentUpdatePolicy      String  @default("manual")
-  agentUpdateWindowStart String?
-  agentUpdateWindowEnd   String?
-  agentUpdateWindowDay   String?
+  agentUpdatePolicy         String  @default("manual")
+  agentUpdateWindowStart    String?
+  agentUpdateWindowEnd      String?
+  agentUpdateWindowDay      String?
+  agentDeployRequiresChange Boolean @default(false)
 
   // Relations
   users                        User[]
@@ -1415,13 +1416,14 @@ model Change {
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
 
-  tenant             Tenant              @relation(fields: [tenantId], references: [id])
-  approvals          ChangeApproval[]
-  activities         ChangeActivity[]
-  changeApplications ChangeApplication[]
-  changeAssets       ChangeAsset[]
-  cabMeetingChanges  CABMeetingChange[]
-  cmdbChangeLinks    CmdbChangeLink[]
+  tenant                Tenant                 @relation(fields: [tenantId], references: [id])
+  approvals             ChangeApproval[]
+  activities            ChangeActivity[]
+  changeApplications    ChangeApplication[]
+  changeAssets          ChangeAsset[]
+  cabMeetingChanges     CABMeetingChange[]
+  cmdbChangeLinks       CmdbChangeLink[]
+  agentUpdateDeployment AgentUpdateDeployment?
 
   @@unique([tenantId, changeNumber])
   @@index([tenantId])
@@ -1944,11 +1946,14 @@ model AgentUpdateDeployment {
   successCount  Int           @default(0)
   errorCount    Int           @default(0)
   pendingCount  Int           @default(0)
+  changeId      String?       @unique @db.Uuid
+  awaitingApproval Boolean    @default(false)
   createdAt     DateTime      @default(now())
 
   tenant      Tenant                        @relation(fields: [tenantId], references: [id])
   agentUpdate AgentUpdate                   @relation(fields: [agentUpdateId], references: [id])
   triggeredBy User?                         @relation("UserTriggeredAgentDeployments", fields: [triggeredById], references: [id])
+  change      Change?                       @relation(fields: [changeId], references: [id])
   targets     AgentUpdateDeploymentTarget[]
 
   @@index([tenantId])

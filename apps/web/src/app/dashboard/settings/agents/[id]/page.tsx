@@ -401,6 +401,7 @@ function DeployUpdateCard({ agent }: { agent: AgentDetail }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [approverIds, setApproverIds] = useState<string[]>([]);
 
   const { data: versionsData } = useQuery<AgentUpdateRow[]>({
     queryKey: ['agent-updates', agent.platform],
@@ -412,6 +413,27 @@ function DeployUpdateCard({ agent }: { agent: AgentDetail }) {
     enabled: !!agent.platform,
   });
   const versions = versionsData ?? [];
+
+  const { data: policy } = useQuery<{ agentDeployRequiresChange: boolean }>({
+    queryKey: ['agent-policy'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/settings/agents/policy', { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load policy');
+      return res.json() as Promise<{ agentDeployRequiresChange: boolean }>;
+    },
+  });
+  const requiresApproval = policy?.agentDeployRequiresChange ?? false;
+
+  const { data: usersData } = useQuery<{ data?: { id: string; email: string; firstName: string | null; lastName: string | null }[] }>({
+    queryKey: ['users-for-approval'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/settings/users?isActive=true&pageSize=200', { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load users');
+      return res.json();
+    },
+    enabled: requiresApproval,
+  });
+  const users = usersData?.data ?? [];
 
   const cardStyle = {
     backgroundColor: 'var(--bg-primary)',
@@ -428,21 +450,43 @@ function DeployUpdateCard({ agent }: { agent: AgentDetail }) {
       setError('Select a version.');
       return;
     }
+    if (requiresApproval && approverIds.length === 0) {
+      setError('Pick at least one approver — this tenant requires change approval before deploy.');
+      return;
+    }
     setSubmitting(true);
     try {
+      const body: Record<string, unknown> = {
+        agentIds: [agent.id],
+        version,
+        platform: agent.platform,
+      };
+      if (requiresApproval) body.approverIds = approverIds;
       const res = await fetch('/api/v1/agents/updates/deploy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ agentIds: [agent.id], version, platform: agent.platform }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const d = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(d.error ?? `HTTP ${res.status}`);
       }
-      const d = (await res.json()) as { deployed?: number; deploymentId?: string | null };
-      setSuccess(`Deployed v${version} — tracking deployment ${d.deploymentId ?? ''}`);
+      const d = (await res.json()) as {
+        deployed?: number;
+        deploymentId?: string | null;
+        changeId?: string | null;
+        status?: string;
+      };
+      if (d.status === 'PENDING_APPROVAL') {
+        setSuccess(
+          `Change created, awaiting approval. Deployment will run on approval. Change ID: ${d.changeId ?? ''}`,
+        );
+      } else {
+        setSuccess(`Deployed v${version} — tracking deployment ${d.deploymentId ?? ''}`);
+      }
       setVersion('');
+      setApproverIds([]);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Deploy failed');
     } finally {
@@ -458,6 +502,41 @@ function DeployUpdateCard({ agent }: { agent: AgentDetail }) {
       <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--text-muted)' }}>
         Push a specific agent version to this endpoint. The agent installs on its next heartbeat (within 5 minutes).
       </p>
+      {requiresApproval && (
+        <div style={{ marginBottom: 12, padding: 12, backgroundColor: 'var(--bg-tertiary)', borderRadius: 8, border: '1px solid var(--border-secondary)' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>
+            Approvers required
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
+            This tenant requires change approval before agent deploys. Pick one or more approvers.
+          </div>
+          <div style={{ maxHeight: 140, overflowY: 'auto', border: '1px solid var(--border-secondary)', borderRadius: 6, backgroundColor: 'var(--bg-primary)' }}>
+            {users.length === 0 ? (
+              <div style={{ padding: 8, fontSize: 13, color: 'var(--text-muted)' }}>No users available.</div>
+            ) : (
+              users.map((u) => {
+                const name = [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email;
+                const checked = approverIds.includes(u.id);
+                return (
+                  <label key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', fontSize: 13, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) =>
+                        setApproverIds((prev) =>
+                          e.target.checked ? [...prev, u.id] : prev.filter((id) => id !== u.id),
+                        )
+                      }
+                    />
+                    <span>{name}</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 12, marginLeft: 'auto' }}>{u.email}</span>
+                  </label>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
         <div>
           <label htmlFor="deployVersion" style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}>

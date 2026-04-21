@@ -400,6 +400,7 @@ export default function AgentsSettingsPage() {
   const [deploying, setDeploying] = useState(false);
   const [deployResult, setDeployResult] = useState<string | null>(null);
   const [deployError, setDeployError] = useState<string | null>(null);
+  const [deployApproverIds, setDeployApproverIds] = useState<string[]>([]);
   const [agentPage, setAgentPage] = useState(1);
   const [tokenPage, setTokenPage] = useState(1);
   const AGENT_PAGE_SIZE = 10;
@@ -443,6 +444,27 @@ export default function AgentsSettingsPage() {
     enabled: !!deployPlatform,
   });
   const platformUpdates = platformUpdatesData ?? [];
+
+  const { data: agentPolicyData } = useQuery<{ agentDeployRequiresChange: boolean }>({
+    queryKey: ['agent-policy'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/settings/agents/policy', { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load policy');
+      return res.json();
+    },
+  });
+  const requiresApproval = agentPolicyData?.agentDeployRequiresChange ?? false;
+
+  const { data: approverUsersData } = useQuery<{ data?: { id: string; email: string; firstName: string | null; lastName: string | null }[] }>({
+    queryKey: ['users-for-approval'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/settings/users?isActive=true&pageSize=200', { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load users');
+      return res.json();
+    },
+    enabled: requiresApproval,
+  });
+  const approverUsers = approverUsersData?.data ?? [];
 
   const handleRevokeToken = useCallback(
     async (id: string) => {
@@ -1328,6 +1350,42 @@ export default function AgentsSettingsPage() {
             )}
           </div>
 
+          {requiresApproval && (
+            <div style={{ marginBottom: 12, padding: 12, backgroundColor: 'var(--bg-tertiary)', borderRadius: 8, border: '1px solid var(--border-secondary)' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>
+                Approvers required
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
+                Tenant policy requires change approval. Pick one or more approvers — the deploy runs once all of them approve.
+              </div>
+              <div style={{ maxHeight: 140, overflowY: 'auto', border: '1px solid var(--border-secondary)', borderRadius: 6, backgroundColor: 'var(--bg-primary)' }}>
+                {approverUsers.length === 0 ? (
+                  <div style={{ padding: 8, fontSize: 13, color: 'var(--text-muted)' }}>No users available.</div>
+                ) : (
+                  approverUsers.map((u) => {
+                    const name = [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email;
+                    const checked = deployApproverIds.includes(u.id);
+                    return (
+                      <label key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', fontSize: 13, cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) =>
+                            setDeployApproverIds((prev) =>
+                              e.target.checked ? [...prev, u.id] : prev.filter((id) => id !== u.id),
+                            )
+                          }
+                        />
+                        <span>{name}</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: 12, marginLeft: 'auto' }}>{u.email}</span>
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
+
           {!deployConfirm ? (
             <button
               onClick={() => {
@@ -1336,6 +1394,10 @@ export default function AgentsSettingsPage() {
                 if (!deployPlatform) { setDeployError('Select an OS platform.'); return; }
                 if (!deployVersion) { setDeployError('Select a version.'); return; }
                 if (deployTarget === 'single' && !deployAgentId) { setDeployError('Select an agent.'); return; }
+                if (requiresApproval && deployApproverIds.length === 0) {
+                  setDeployError('Pick at least one approver — tenant policy requires change approval for deploys.');
+                  return;
+                }
                 setDeployConfirm(true);
               }}
               style={{
@@ -1365,11 +1427,12 @@ export default function AgentsSettingsPage() {
                   setDeployResult(null);
                   setDeployError(null);
                   try {
-                    const body = {
+                    const body: Record<string, unknown> = {
                       agentIds: deployTarget === 'all' ? 'all' : [deployAgentId],
                       version: deployVersion,
                       platform: deployPlatform,
                     };
+                    if (requiresApproval) body.approverIds = deployApproverIds;
                     const res = await fetch('/api/v1/agents/updates/deploy', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
@@ -1380,8 +1443,19 @@ export default function AgentsSettingsPage() {
                       const data = (await res.json()) as { error?: string };
                       throw new Error(data.error ?? 'Deploy failed');
                     }
-                    const data = (await res.json()) as { deployed?: number };
-                    setDeployResult(`Update deployed — ${data.deployed ?? 0} agent(s) targeted.`);
+                    const data = (await res.json()) as {
+                      deployed?: number;
+                      changeId?: string | null;
+                      status?: string;
+                    };
+                    if (data.status === 'PENDING_APPROVAL') {
+                      setDeployResult(
+                        `Change created, awaiting approval before deploy runs. Change ID: ${data.changeId ?? ''}`,
+                      );
+                    } else {
+                      setDeployResult(`Update deployed — ${data.deployed ?? 0} agent(s) targeted.`);
+                    }
+                    setDeployApproverIds([]);
                   } catch (err) {
                     setDeployResult(err instanceof Error ? err.message : 'Deploy failed');
                   } finally {

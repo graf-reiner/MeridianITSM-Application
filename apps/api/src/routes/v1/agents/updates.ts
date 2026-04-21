@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { prisma } from '@meridian/db';
 import { getFileObject } from '../../../services/storage.service.js';
+import { createChange, transitionStatus } from '../../../services/change.service.js';
 
 /**
  * Resolve agent from Authorization: AgentKey <key> header.
@@ -143,7 +144,9 @@ export default async function agentUpdateRoutes(app: FastifyInstance): Promise<v
   });
 
   // ─── POST /api/v1/agents/updates/deploy ─────────────────────────────────────
-  // Admin auth. Sets forceUpdateUrl on specified agents.
+  // Admin auth. Sets forceUpdateUrl on specified agents OR, when the tenant has
+  // agentDeployRequiresChange enabled, creates a NORMAL Change that gates the
+  // deploy behind approval.
   app.post('/api/v1/agents/updates/deploy', async (request, reply) => {
     const admin = await resolveAdminSession(request, reply);
     if (!admin) return;
@@ -152,9 +155,10 @@ export default async function agentUpdateRoutes(app: FastifyInstance): Promise<v
       agentIds?: string[] | 'all';
       version?: string;
       platform?: string;
+      approverIds?: string[];
     };
 
-    const { agentIds, version, platform } = body;
+    const { agentIds, version, platform, approverIds } = body;
 
     if (!version || !platform) {
       return reply.code(400).send({ error: 'version and platform are required' });
@@ -217,6 +221,94 @@ export default async function agentUpdateRoutes(app: FastifyInstance): Promise<v
           : 'SELECTION';
     const now = new Date();
 
+    // Read tenant policy — does this deployment need change approval first?
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { agentDeployRequiresChange: true },
+    });
+    const requiresApproval = tenant?.agentDeployRequiresChange ?? false;
+
+    if (requiresApproval) {
+      if (!approverIds || approverIds.length === 0) {
+        return reply.code(400).send({
+          error: 'approverIds is required: this tenant requires change approval for agent deployments',
+        });
+      }
+
+      // Validate all approvers belong to the same tenant to prevent cross-tenant leakage
+      const validApprovers = await prisma.user.findMany({
+        where: { id: { in: approverIds }, tenantId },
+        select: { id: true },
+      });
+      if (validApprovers.length !== approverIds.length) {
+        return reply.code(400).send({ error: 'One or more approverIds are invalid for this tenant' });
+      }
+
+      // Create the NORMAL change with approvers attached. Deployment is recorded
+      // but NO forceUpdateUrl is set on the agents — that waits for APPROVED.
+      const change = await createChange(
+        tenantId,
+        {
+          title: `Agent update: v${agentUpdate.version} → ${targetAgents.length} ${normalizedPlatform} endpoint(s)`,
+          type: 'NORMAL',
+          riskLevel: targetAgents.length > 10 ? 'MEDIUM' : 'LOW',
+          description: `Pending agent update deployment. Triggered by admin ${admin.userId}.`,
+          implementationPlan: `Push forceUpdateUrl to ${targetAgents.length} agent(s) on approval. Agent installs on next heartbeat (≤5 min).`,
+          backoutPlan: 'No automatic rollback. Re-deploy previous version package from Agent Updates page.',
+          approvers: approverIds,
+        },
+        admin.userId,
+      );
+
+      const deployment = await prisma.$transaction(async (tx) => {
+        const deploymentRow = await tx.agentUpdateDeployment.create({
+          data: {
+            tenantId,
+            agentUpdateId: agentUpdate.id,
+            triggeredById: admin.userId,
+            targetKind,
+            platform: normalizedPlatform as 'WINDOWS' | 'LINUX' | 'MACOS',
+            targetCount: targetAgents.length,
+            pendingCount: targetAgents.length,
+            successCount: 0,
+            errorCount: 0,
+            changeId: change.id,
+            awaitingApproval: true,
+          },
+        });
+
+        await tx.agentUpdateDeploymentTarget.createMany({
+          data: targetAgents.map((a) => ({
+            tenantId,
+            deploymentId: deploymentRow.id,
+            agentId: a.id,
+            fromVersion: a.agentVersion ?? null,
+            toVersion: agentUpdate.version,
+            status: 'PENDING',
+          })),
+        });
+
+        return deploymentRow;
+      });
+
+      // Advance the change to APPROVAL_PENDING so approvers are notified.
+      // NEW → ASSESSMENT → APPROVAL_PENDING (two steps per ALLOWED_TRANSITIONS).
+      try {
+        await transitionStatus(tenantId, change.id, 'ASSESSMENT', admin.userId);
+        await transitionStatus(tenantId, change.id, 'APPROVAL_PENDING', admin.userId);
+      } catch (err) {
+        console.error('[agent-updates/deploy] failed to advance change to APPROVAL_PENDING:', err);
+      }
+
+      return reply.code(202).send({
+        deployed: 0,
+        deploymentId: deployment.id,
+        changeId: change.id,
+        status: 'PENDING_APPROVAL',
+      });
+    }
+
+    // ── Toggle OFF: deploy immediately, then attach a STANDARD change for audit.
     const { deployment, updatedCount } = await prisma.$transaction(async (tx) => {
       const updateResult = await tx.agent.updateMany({
         where: { id: { in: targetAgents.map((a) => a.id) } },
@@ -251,7 +343,36 @@ export default async function agentUpdateRoutes(app: FastifyInstance): Promise<v
       return { deployment: deploymentRow, updatedCount: updateResult.count };
     });
 
-    return reply.code(200).send({ deployed: updatedCount, deploymentId: deployment.id });
+    // Best-effort STANDARD change for audit trail. Deploy already happened —
+    // if this fails, we still return success.
+    let auditChangeId: string | null = null;
+    try {
+      const change = await createChange(
+        tenantId,
+        {
+          title: `Agent update: v${agentUpdate.version} → ${targetAgents.length} ${normalizedPlatform} endpoint(s)`,
+          type: 'STANDARD',
+          riskLevel: targetAgents.length > 10 ? 'MEDIUM' : 'LOW',
+          description: `Deployment ID: ${deployment.id}. Triggered by admin ${admin.userId}.`,
+          implementationPlan: `Push forceUpdateUrl to ${targetAgents.length} agent(s). Agent installs on next heartbeat (≤5 min).`,
+          backoutPlan: 'No automatic rollback. Re-deploy previous version package from Agent Updates page.',
+        },
+        admin.userId,
+      );
+      auditChangeId = change.id;
+      await prisma.agentUpdateDeployment.update({
+        where: { id: deployment.id },
+        data: { changeId: change.id },
+      });
+    } catch (err) {
+      console.error('[agent-updates/deploy] audit-trail change creation failed:', err);
+    }
+
+    return reply.code(200).send({
+      deployed: updatedCount,
+      deploymentId: deployment.id,
+      changeId: auditChangeId,
+    });
   });
 
   // ─── GET /api/v1/agents/updates ─────────────────────────────────────────────

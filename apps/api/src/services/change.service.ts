@@ -586,7 +586,66 @@ export async function transitionStatus(
     })();
   }
 
+  // If this Change is linked to an agent-deploy, propagate the transition.
+  if (newStatus === 'APPROVED' || newStatus === 'REJECTED' || newStatus === 'CANCELLED') {
+    try {
+      await applyAgentDeployChangeTransition(tenantId, changeId, newStatus);
+    } catch (err) {
+      console.error('[change.service] agent-deploy change hook failed:', err);
+    }
+  }
+
   return updatedChange;
+}
+
+/**
+ * When a Change that gates an agent deployment transitions, propagate it to the
+ * deployment. APPROVED → push forceUpdateUrl to all PENDING targets so agents
+ * pick up the update on next heartbeat. REJECTED/CANCELLED → mark targets
+ * CANCELLED; the agents were never told to update in the first place.
+ */
+async function applyAgentDeployChangeTransition(
+  tenantId: string,
+  changeId: string,
+  newStatus: 'APPROVED' | 'REJECTED' | 'CANCELLED',
+) {
+  const deployment = await prisma.agentUpdateDeployment.findFirst({
+    where: { tenantId, changeId },
+    include: { targets: true },
+  });
+  if (!deployment || !deployment.awaitingApproval) return;
+
+  if (newStatus === 'APPROVED') {
+    const forceUpdateUrl = `api/v1/agents/updates/${deployment.platform.toLowerCase()}`;
+    const pendingTargets = deployment.targets.filter((t) => t.status === 'PENDING');
+    const agentIds = pendingTargets.map((t) => t.agentId);
+    const now = new Date();
+
+    await prisma.$transaction(async (tx) => {
+      if (agentIds.length > 0) {
+        await tx.agent.updateMany({
+          where: { tenantId, id: { in: agentIds } },
+          data: { forceUpdateUrl, updateStartedAt: now, updateInProgress: true },
+        });
+      }
+      await tx.agentUpdateDeployment.update({
+        where: { id: deployment.id },
+        data: { awaitingApproval: false },
+      });
+    });
+  } else {
+    // REJECTED or CANCELLED
+    await prisma.$transaction(async (tx) => {
+      await tx.agentUpdateDeploymentTarget.updateMany({
+        where: { tenantId, deploymentId: deployment.id, status: 'PENDING' },
+        data: { status: 'CANCELLED' },
+      });
+      await tx.agentUpdateDeployment.update({
+        where: { id: deployment.id },
+        data: { awaitingApproval: false },
+      });
+    });
+  }
 }
 
 /**
