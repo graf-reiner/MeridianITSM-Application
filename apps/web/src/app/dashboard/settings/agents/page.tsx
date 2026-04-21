@@ -1123,6 +1123,53 @@ export default function AgentsSettingsPage() {
           </select>
         </div>
 
+        {/* Require Change Approval toggle */}
+        <div
+          style={{
+            marginBottom: 24,
+            padding: 14,
+            border: '1px solid var(--border-secondary)',
+            borderRadius: 8,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+            maxWidth: 720,
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13 }}>
+              Require change approval for agent deployments
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+              When ON, every deploy creates a NORMAL change and waits for approval before agents receive the update. When OFF, deploys run immediately and a STANDARD change is logged for audit.
+            </div>
+          </div>
+          <label style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={requiresApproval}
+              onChange={async (e) => {
+                try {
+                  await fetch('/api/v1/settings/agents/policy', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ agentDeployRequiresChange: e.target.checked }),
+                  });
+                  void qc.invalidateQueries({ queryKey: ['agent-policy'] });
+                } catch {
+                  // best-effort; UI re-fetches next render
+                }
+              }}
+              style={{ marginRight: 8, transform: 'scale(1.2)' }}
+            />
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+              {requiresApproval ? 'Enabled' : 'Disabled'}
+            </span>
+          </label>
+        </div>
+
         {/* Available Downloads (read-only — uploading is owner-admin only) */}
         <div style={{ marginBottom: 24 }}>
           {/* Available Downloads */}

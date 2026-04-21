@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiArrowLeft, mdiCloudUpload, mdiChevronRight } from '@mdi/js';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 
 interface DeploymentRow {
   id: string;
@@ -19,14 +19,6 @@ interface DeploymentRow {
   awaitingApproval?: boolean;
   change?: { id: string; changeNumber: number; status: string; type: string } | null;
   triggeredBy: { email: string; name: string } | null;
-}
-
-interface AgentPolicy {
-  agentUpdatePolicy: 'manual' | 'auto' | 'scheduled';
-  agentUpdateWindowStart: string | null;
-  agentUpdateWindowEnd: string | null;
-  agentUpdateWindowDay: string | null;
-  agentDeployRequiresChange: boolean;
 }
 
 interface DeploymentListResponse {
@@ -59,7 +51,6 @@ function StatusPill({ label, count, bg, color }: { label: string; count: number;
 export default function AgentUpdatesHistoryPage() {
   const [page, setPage] = useState(1);
   const pageSize = 25;
-  const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery<DeploymentListResponse>({
     queryKey: ['agent-deployments', page, pageSize],
@@ -72,29 +63,6 @@ export default function AgentUpdatesHistoryPage() {
       return res.json() as Promise<DeploymentListResponse>;
     },
     refetchInterval: 10000,
-  });
-
-  const { data: policy } = useQuery<AgentPolicy>({
-    queryKey: ['agent-policy'],
-    queryFn: async () => {
-      const res = await fetch('/api/v1/settings/agents/policy', { credentials: 'include' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.json() as Promise<AgentPolicy>;
-    },
-  });
-
-  const togglePolicy = useMutation({
-    mutationFn: async (next: boolean) => {
-      const res = await fetch('/api/v1/settings/agents/policy', {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentDeployRequiresChange: next }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.json() as Promise<AgentPolicy>;
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['agent-policy'] }),
   });
 
   const rows = data?.data ?? [];
@@ -118,43 +86,6 @@ export default function AgentUpdatesHistoryPage() {
       <p style={{ margin: '0 0 24px', color: 'var(--text-muted)', fontSize: 14 }}>
         History of every agent update push. Rows refresh every 10 seconds so in-progress deploys update automatically.
       </p>
-
-      <div
-        style={{
-          backgroundColor: 'var(--bg-primary)',
-          border: '1px solid var(--border-primary)',
-          borderRadius: 10,
-          padding: 16,
-          marginBottom: 16,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 16,
-        }}
-      >
-        <div>
-          <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 14 }}>
-            Require change approval for agent deployments
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-            When enabled, every agent-update deploy creates a NORMAL change ticket and waits for approval before agents
-            receive the update. When disabled, deploys proceed immediately and a STANDARD (audit-trail) change is
-            recorded after the fact.
-          </div>
-        </div>
-        <label style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
-          <input
-            type="checkbox"
-            checked={policy?.agentDeployRequiresChange ?? false}
-            disabled={!policy || togglePolicy.isPending}
-            onChange={(e) => togglePolicy.mutate(e.target.checked)}
-            style={{ marginRight: 8, transform: 'scale(1.2)' }}
-          />
-          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
-            {policy?.agentDeployRequiresChange ? 'Enabled' : 'Disabled'}
-          </span>
-        </label>
-      </div>
 
       <div
         style={{
