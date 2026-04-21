@@ -397,6 +397,38 @@ export async function updateChange(
     throw err;
   }
 
+  // ITIL: what can be edited depends on lifecycle state. Approvers vote on a
+  // specific proposal; silently editing plan/backout after approval would
+  // invalidate the audit trail.
+  //   NEW, ASSESSMENT        → full edit (draft)
+  //   APPROVAL_PENDING, APPROVED, SCHEDULED → locked; must be recalled first
+  //   IMPLEMENTING, REVIEW   → only actualStart/actualEnd/assignedToId
+  //   COMPLETED, REJECTED, CANCELLED → fully locked
+  const status = existing.status as string;
+  const isDraft = status === 'NEW' || status === 'ASSESSMENT';
+  const isImplementing = status === 'IMPLEMENTING' || status === 'REVIEW';
+  const isLocked = !isDraft && !isImplementing;
+  if (isLocked) {
+    const err = new Error(
+      `Change is ${status} and cannot be edited directly. Recall it to ASSESSMENT to make changes.`,
+    ) as Error & { statusCode: number };
+    err.statusCode = 409;
+    throw err;
+  }
+  if (isImplementing) {
+    const allowedInImplementing = new Set(['assignedToId', 'actualStart', 'actualEnd']);
+    for (const key of Object.keys(data) as (keyof UpdateChangeData)[]) {
+      if (data[key] === undefined) continue;
+      if (!allowedInImplementing.has(key)) {
+        const err = new Error(
+          `Field '${key}' cannot be edited after approval. Only implementation timing and assignee are editable in ${status}.`,
+        ) as Error & { statusCode: number };
+        err.statusCode = 409;
+        throw err;
+      }
+    }
+  }
+
   const updates: Record<string, unknown> = {};
   const changedFields: Array<{ fieldName: string; oldValue: string; newValue: string }> = [];
 
@@ -596,6 +628,97 @@ export async function transitionStatus(
   }
 
   return updatedChange;
+}
+
+/**
+ * ITIL recall: pull a change back to ASSESSMENT so the requester can correct
+ * it. Allowed from APPROVAL_PENDING / APPROVED / SCHEDULED. Clears all approval
+ * decisions so a corrected change can't inherit a stale "approved" vote.
+ *
+ * Reason is required and captured in the activity trail for audit.
+ */
+export async function recallChange(
+  tenantId: string,
+  changeId: string,
+  userId: string,
+  reason: string,
+) {
+  if (!reason || reason.trim().length < 3) {
+    const err = new Error('Recall requires a reason (3+ characters)') as Error & { statusCode: number };
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const existing = await prisma.change.findFirst({
+    where: { id: changeId, tenantId },
+    select: { id: true, status: true, changeNumber: true, title: true, requestedById: true, assignedToId: true },
+  });
+  if (!existing) {
+    const err = new Error('Change not found') as Error & { statusCode: number };
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const recallable = new Set(['APPROVAL_PENDING', 'APPROVED', 'SCHEDULED']);
+  if (!recallable.has(existing.status as string)) {
+    const err = new Error(
+      `Change is ${existing.status} and cannot be recalled. Recall is only valid from APPROVAL_PENDING, APPROVED, or SCHEDULED.`,
+    ) as Error & { statusCode: number };
+    err.statusCode = 409;
+    throw err;
+  }
+
+  const updated = await prisma.$transaction(async (tx) => {
+    // Wipe approval decisions — a recalled change must be fully re-voted on
+    await tx.changeApproval.deleteMany({ where: { tenantId, changeId } });
+
+    const change = await tx.change.update({
+      where: { id: changeId },
+      data: { status: 'ASSESSMENT' as any },
+    });
+
+    await tx.changeActivity.create({
+      data: {
+        tenantId,
+        changeId,
+        actorId: userId,
+        activityType: 'RECALLED',
+        fieldName: 'status',
+        oldValue: existing.status as string,
+        newValue: 'ASSESSMENT',
+        metadata: { reason: reason.trim() },
+      },
+    });
+
+    return change;
+  });
+
+  // Notify requester + assignee (if different from the recaller) so they know
+  // the change was pulled back and needs attention.
+  const notifyIds = new Set<string>();
+  if (existing.requestedById && existing.requestedById !== userId) notifyIds.add(existing.requestedById);
+  if (existing.assignedToId && existing.assignedToId !== userId) notifyIds.add(existing.assignedToId);
+  if (notifyIds.size > 0) {
+    void (async () => {
+      try {
+        for (const nid of notifyIds) {
+          await notifyUser({
+            tenantId,
+            userId: nid,
+            type: 'CHANGE_UPDATED',
+            title: `Change CHG-${updated.changeNumber} recalled to ASSESSMENT`,
+            body: `Reason: ${reason.trim()}`,
+            resourceId: updated.id,
+            resource: 'change',
+          });
+        }
+      } catch (err) {
+        console.error('[change.service] recall notification failed:', err);
+      }
+    })();
+  }
+
+  return updated;
 }
 
 /**

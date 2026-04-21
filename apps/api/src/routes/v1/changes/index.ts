@@ -5,6 +5,7 @@ import {
   getChange,
   listChanges,
   updateChange,
+  recallChange,
   transitionStatus,
   addApprover,
   recordApproval,
@@ -195,6 +196,34 @@ export async function changeRoutes(fastify: FastifyInstance): Promise<void> {
         if (error.statusCode === 404) {
           return reply.status(404).send({ error: 'Change not found' });
         }
+        if (error.statusCode === 409) {
+          return reply.status(409).send({ error: error.message });
+        }
+        throw err;
+      }
+    },
+  );
+
+  // ─── POST /api/v1/changes/:id/recall — ITIL recall to ASSESSMENT ─────────────
+  // Pulls APPROVAL_PENDING/APPROVED/SCHEDULED changes back to ASSESSMENT and
+  // wipes approvals so corrections can be made. Reason is required for audit.
+  fastify.post(
+    '/api/v1/changes/:id/recall',
+    { preHandler: [requirePermission('changes.update')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string; userId: string };
+      const { tenantId, userId } = user;
+      const { id } = request.params as { id: string };
+      const body = request.body as { reason?: string };
+
+      try {
+        const change = await recallChange(tenantId, id, userId, body.reason ?? '');
+        return reply.status(200).send(change);
+      } catch (err) {
+        const error = err as Error & { statusCode?: number };
+        if (error.statusCode === 400) return reply.status(400).send({ error: error.message });
+        if (error.statusCode === 404) return reply.status(404).send({ error: error.message });
+        if (error.statusCode === 409) return reply.status(409).send({ error: error.message });
         throw err;
       }
     },

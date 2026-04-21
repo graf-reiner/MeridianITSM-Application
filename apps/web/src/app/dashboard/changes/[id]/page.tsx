@@ -60,6 +60,8 @@ interface ChangeDetail {
   testingPlan: string | null;
   scheduledStart: string | null;
   scheduledEnd: string | null;
+  actualStart: string | null;
+  actualEnd: string | null;
   requestedBy: { id: string; firstName: string; lastName: string } | null;
   approvals: Approver[];
   activities: Activity[];
@@ -71,18 +73,25 @@ interface ChangeDetail {
 
 // ─── Status Transitions ───────────────────────────────────────────────────────
 
+// Mirrors ALLOWED_TRANSITIONS in apps/api/src/services/change.service.ts.
+// APPROVAL_PENDING → APPROVED is not exposed here because approvers vote via
+// the ApprovalPanel; admins should not bypass the vote.
 const TRANSITIONS: Record<string, string[]> = {
-  DRAFT:            ['SUBMITTED', 'CANCELLED'],
-  SUBMITTED:        ['PENDING_APPROVAL', 'CANCELLED'],
-  PENDING_APPROVAL: ['CANCELLED'],
+  NEW:              ['ASSESSMENT', 'CANCELLED'],
+  ASSESSMENT:       ['APPROVAL_PENDING', 'CANCELLED'],
+  APPROVAL_PENDING: ['CANCELLED'],
   APPROVED:         ['SCHEDULED', 'CANCELLED'],
-  SCHEDULED:        ['IN_PROGRESS', 'CANCELLED'],
-  IN_PROGRESS:      ['COMPLETED', 'FAILED'],
+  SCHEDULED:        ['IMPLEMENTING', 'CANCELLED'],
+  IMPLEMENTING:     ['REVIEW'],
+  REVIEW:           ['COMPLETED', 'IMPLEMENTING'],
   REJECTED:         [],
   COMPLETED:        [],
-  FAILED:           [],
   CANCELLED:        [],
 };
+
+const EDITABLE_IN_DRAFT = new Set(['NEW', 'ASSESSMENT']);
+const RECALLABLE = new Set(['APPROVAL_PENDING', 'APPROVED', 'SCHEDULED']);
+const IN_IMPLEMENTATION = new Set(['IMPLEMENTING', 'REVIEW']);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -318,11 +327,40 @@ function ApprovalPanel({
 
 // ─── Change Detail Page ───────────────────────────────────────────────────────
 
+interface EditForm {
+  title: string;
+  description: string;
+  implementationPlan: string;
+  backoutPlan: string;
+  testingPlan: string;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  scheduledStart: string;
+  scheduledEnd: string;
+}
+
+function toLocalInput(dt: string | null): string {
+  if (!dt) return '';
+  const d = new Date(dt);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function ChangeDetailPage() {
   const params = useParams();
   const queryClient = useQueryClient();
   const id = params.id as string;
   const [transitioning, setTransitioning] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState<EditForm | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [recallOpen, setRecallOpen] = useState(false);
+  const [recallReason, setRecallReason] = useState('');
+  const [recalling, setRecalling] = useState(false);
+  const [recallError, setRecallError] = useState<string | null>(null);
+  const [actualStart, setActualStart] = useState('');
+  const [actualEnd, setActualEnd] = useState('');
+  const [savingActuals, setSavingActuals] = useState(false);
 
   // In a real app, you'd get this from the auth session. Using a placeholder.
   const currentUserId: string | null = null;
@@ -358,6 +396,106 @@ export default function ChangeDetailPage() {
     void queryClient.invalidateQueries({ queryKey: ['change', id] });
   };
 
+  const handleEditStart = () => {
+    if (!change) return;
+    setEditForm({
+      title: change.title ?? '',
+      description: change.description ?? '',
+      implementationPlan: change.implementationPlan ?? '',
+      backoutPlan: change.backoutPlan ?? '',
+      testingPlan: change.testingPlan ?? '',
+      riskLevel: (change.riskLevel as EditForm['riskLevel']) ?? 'MEDIUM',
+      scheduledStart: toLocalInput(change.scheduledStart),
+      scheduledEnd: toLocalInput(change.scheduledEnd),
+    });
+    setSaveError(null);
+    setIsEditing(true);
+  };
+
+  const handleEditCancel = () => {
+    setIsEditing(false);
+    setEditForm(null);
+    setSaveError(null);
+  };
+
+  const handleSave = async () => {
+    if (!editForm) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const body: Record<string, unknown> = {
+        title: editForm.title,
+        description: editForm.description,
+        implementationPlan: editForm.implementationPlan,
+        backoutPlan: editForm.backoutPlan,
+        testingPlan: editForm.testingPlan,
+        riskLevel: editForm.riskLevel,
+        scheduledStart: editForm.scheduledStart ? new Date(editForm.scheduledStart).toISOString() : null,
+        scheduledEnd: editForm.scheduledEnd ? new Date(editForm.scheduledEnd).toISOString() : null,
+      };
+      const res = await fetch(`/api/v1/changes/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error ?? `Save failed (${res.status})`);
+      }
+      await queryClient.invalidateQueries({ queryKey: ['change', id] });
+      setIsEditing(false);
+      setEditForm(null);
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRecall = async () => {
+    setRecalling(true);
+    setRecallError(null);
+    try {
+      const res = await fetch(`/api/v1/changes/${id}/recall`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ reason: recallReason }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error ?? `Recall failed (${res.status})`);
+      }
+      await queryClient.invalidateQueries({ queryKey: ['change', id] });
+      setRecallOpen(false);
+      setRecallReason('');
+    } catch (e) {
+      setRecallError(e instanceof Error ? e.message : 'Recall failed');
+    } finally {
+      setRecalling(false);
+    }
+  };
+
+  const handleSaveActuals = async () => {
+    setSavingActuals(true);
+    try {
+      const body = {
+        actualStart: actualStart ? new Date(actualStart).toISOString() : null,
+        actualEnd: actualEnd ? new Date(actualEnd).toISOString() : null,
+      };
+      const res = await fetch(`/api/v1/changes/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+      if (res.ok) await queryClient.invalidateQueries({ queryKey: ['change', id] });
+    } finally {
+      setSavingActuals(false);
+    }
+  };
+
   if (isLoading) {
     return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading change...</div>;
   }
@@ -371,6 +509,9 @@ export default function ChangeDetailPage() {
   const riskStyle = getRiskStyle(change.riskLevel);
   const isEmergency = change.type === 'EMERGENCY';
   const allowedTransitions = TRANSITIONS[change.status] ?? [];
+  const canEdit = EDITABLE_IN_DRAFT.has(change.status);
+  const canRecall = RECALLABLE.has(change.status);
+  const inImplementation = IN_IMPLEMENTATION.has(change.status);
 
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
@@ -408,9 +549,45 @@ export default function ChangeDetailPage() {
             </div>
           </div>
 
-          {/* Status transition buttons */}
-          {allowedTransitions.length > 0 && (
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {/* Action buttons: Edit (draft), Recall (post-submit), transitions */}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {canEdit && !isEditing && (
+              <button
+                onClick={handleEditStart}
+                style={{
+                  padding: '7px 14px',
+                  backgroundColor: 'var(--bg-primary)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-secondary)',
+                  borderRadius: 6,
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                Edit
+              </button>
+            )}
+            {canRecall && (
+              <button
+                onClick={() => setRecallOpen(true)}
+                title="Pull this change back to ASSESSMENT so it can be corrected. Approvals will be cleared."
+                style={{
+                  padding: '7px 14px',
+                  backgroundColor: 'var(--bg-primary)',
+                  color: '#b45309',
+                  border: '1px solid #f59e0b',
+                  borderRadius: 6,
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                Recall to Assessment
+              </button>
+            )}
+            {allowedTransitions.length > 0 && (
+              <>
               {allowedTransitions.map((nextStatus) => {
                 const isDanger = nextStatus === 'CANCELLED' || nextStatus === 'FAILED';
                 return (
@@ -434,10 +611,65 @@ export default function ChangeDetailPage() {
                   </button>
                 );
               })}
-            </div>
-          )}
+              </>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* ── Recall Modal ──────────────────────────────────────────────────────── */}
+      {recallOpen && (
+        <div style={{
+          position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20,
+        }}>
+          <div style={{ backgroundColor: 'var(--bg-primary)', borderRadius: 10, padding: 24, maxWidth: 520, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 700, color: 'var(--text-primary)' }}>
+              Recall change to Assessment
+            </h3>
+            <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              This pulls CHG-{change.changeNumber} back to <strong>ASSESSMENT</strong>. Existing approval decisions are
+              cleared so the corrected change must be re-approved. A reason is required and logged in the audit trail.
+            </p>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>
+              Reason for recall
+            </label>
+            <textarea
+              value={recallReason}
+              onChange={(e) => setRecallReason(e.target.value)}
+              rows={4}
+              placeholder="e.g. Backout plan missing SQL rollback step; need to revise before approval."
+              style={{
+                width: '100%', padding: '8px 10px',
+                border: '1px solid var(--border-secondary)', borderRadius: 7,
+                fontSize: 14, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)',
+                fontFamily: 'inherit', resize: 'vertical', outline: 'none', boxSizing: 'border-box',
+              }}
+            />
+            {recallError && (
+              <div style={{ marginTop: 10, padding: '6px 10px', fontSize: 13, color: '#991b1b', backgroundColor: 'var(--badge-red-bg)', borderRadius: 6 }}>
+                {recallError}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+              <button
+                onClick={() => { setRecallOpen(false); setRecallReason(''); setRecallError(null); }}
+                disabled={recalling}
+                style={{ padding: '7px 14px', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 13, fontWeight: 500, cursor: recalling ? 'not-allowed' : 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => void handleRecall()}
+                disabled={recalling || recallReason.trim().length < 3}
+                style={{ padding: '7px 14px', backgroundColor: '#f59e0b', color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: (recalling || recallReason.trim().length < 3) ? 'not-allowed' : 'pointer', opacity: (recalling || recallReason.trim().length < 3) ? 0.6 : 1 }}
+              >
+                {recalling ? 'Recalling…' : 'Recall Change'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Inline Approval Panel (CONTEXT.md: shown at top) ──────────────────── */}
       {change.approvals.length > 0 && (
@@ -452,8 +684,113 @@ export default function ChangeDetailPage() {
       {/* ── Main Content ──────────────────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
 
-        {/* Left: Description + Plans */}
+        {/* Left: Description + Plans (or Edit Form when editing) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {isEditing && editForm ? (
+            <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>Edit Change</h2>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>Title</label>
+                <input
+                  type="text"
+                  value={editForm.title}
+                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                  style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 14, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>Description</label>
+                <textarea
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  rows={4}
+                  style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 14, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>Implementation Plan</label>
+                <textarea
+                  value={editForm.implementationPlan}
+                  onChange={(e) => setEditForm({ ...editForm, implementationPlan: e.target.value })}
+                  rows={5}
+                  style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 14, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>Backout Plan</label>
+                <textarea
+                  value={editForm.backoutPlan}
+                  onChange={(e) => setEditForm({ ...editForm, backoutPlan: e.target.value })}
+                  rows={4}
+                  style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 14, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>Testing Plan</label>
+                <textarea
+                  value={editForm.testingPlan}
+                  onChange={(e) => setEditForm({ ...editForm, testingPlan: e.target.value })}
+                  rows={3}
+                  style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 14, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>Risk Level</label>
+                  <select
+                    value={editForm.riskLevel}
+                    onChange={(e) => setEditForm({ ...editForm, riskLevel: e.target.value as EditForm['riskLevel'] })}
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 14, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+                  >
+                    <option value="LOW">LOW</option>
+                    <option value="MEDIUM">MEDIUM</option>
+                    <option value="HIGH">HIGH</option>
+                    <option value="CRITICAL">CRITICAL</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>Scheduled Start</label>
+                  <input
+                    type="datetime-local"
+                    value={editForm.scheduledStart}
+                    onChange={(e) => setEditForm({ ...editForm, scheduledStart: e.target.value })}
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 14, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>Scheduled End</label>
+                  <input
+                    type="datetime-local"
+                    value={editForm.scheduledEnd}
+                    onChange={(e) => setEditForm({ ...editForm, scheduledEnd: e.target.value })}
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 14, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+              {saveError && (
+                <div style={{ padding: '8px 12px', fontSize: 13, color: '#991b1b', backgroundColor: 'var(--badge-red-bg)', borderRadius: 6 }}>
+                  {saveError}
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button
+                  onClick={handleEditCancel}
+                  disabled={saving}
+                  style={{ padding: '8px 16px', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 13, fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => void handleSave()}
+                  disabled={saving}
+                  style={{ padding: '8px 16px', backgroundColor: 'var(--accent-primary)', color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}
+                >
+                  {saving ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
           <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
             <h2 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600 }}>Description</h2>
             <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{change.description}</p>
@@ -491,6 +828,8 @@ export default function ChangeDetailPage() {
               </div>
             </details>
           )}
+            </>
+          )}
         </div>
 
         {/* Right: Info + Schedule + Links */}
@@ -524,6 +863,41 @@ export default function ChangeDetailPage() {
                   <span style={{ color: 'var(--text-muted)' }}>End</span>
                   <span style={{ color: 'var(--text-primary)' }}>{formatDateTime(change.scheduledEnd)}</span>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Implementation Actuals — only editable during IMPLEMENTING/REVIEW.
+              Plan/backout fields are locked after approval per ITIL. */}
+          {inImplementation && (
+            <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20 }}>
+              <h2 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600 }}>Implementation Actuals</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>Actual Start</label>
+                  <input
+                    type="datetime-local"
+                    value={actualStart || toLocalInput(change.actualStart)}
+                    onChange={(e) => setActualStart(e.target.value)}
+                    style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>Actual End</label>
+                  <input
+                    type="datetime-local"
+                    value={actualEnd || toLocalInput(change.actualEnd)}
+                    onChange={(e) => setActualEnd(e.target.value)}
+                    style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <button
+                  onClick={() => void handleSaveActuals()}
+                  disabled={savingActuals}
+                  style={{ padding: '7px 12px', backgroundColor: 'var(--accent-primary)', color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: savingActuals ? 'not-allowed' : 'pointer', opacity: savingActuals ? 0.6 : 1 }}
+                >
+                  {savingActuals ? 'Saving…' : 'Save Actuals'}
+                </button>
               </div>
             </div>
           )}
