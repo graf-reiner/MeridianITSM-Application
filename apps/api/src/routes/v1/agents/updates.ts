@@ -65,19 +65,33 @@ async function resolveAdminSession(request: FastifyRequest, reply: FastifyReply)
     }
   }
 
-  const user = request.user as { userId?: string; role?: string; systemRole?: string } | undefined;
+  const user = request.user as {
+    userId?: string;
+    role?: string;
+    systemRole?: string;
+    roles?: string[];
+  } | undefined;
   if (!user?.userId) {
     await reply.code(401).send({ error: 'Unauthorized' });
     return null;
   }
 
-  const role = user.systemRole ?? user.role;
-  if (role !== 'admin' && role !== 'msp_admin') {
+  // JWT payload shape: { roles: string[] } (case-preserved names like "Admin",
+  // "MSP Admin"). Also tolerate older single-role fields.
+  const roleNames = [
+    ...(user.roles ?? []),
+    user.role ?? '',
+    user.systemRole ?? '',
+  ].map((r) => r.toLowerCase());
+  const isAdmin = roleNames.some((r) =>
+    ['admin', 'msp admin', 'msp_admin'].includes(r),
+  );
+  if (!isAdmin) {
     await reply.code(403).send({ error: 'Admin access required' });
     return null;
   }
 
-  return user as { userId: string; role: string };
+  return user as { userId: string; role?: string; roles?: string[] };
 }
 
 /**
