@@ -5,6 +5,7 @@ import type { OwnerJwtPayload } from '@meridian/types';
 import { verifyOwnerToken } from '../../../lib/owner-auth';
 import { jsonResponse } from '../../../lib/serialize';
 import { uploadFile } from '../../../lib/storage';
+import { extractVersion } from '../../../lib/extract-version';
 
 const MAX_PACKAGE_SIZE = 200 * 1024 * 1024;
 const VALID_PLATFORMS = ['WINDOWS', 'LINUX', 'MACOS'] as const;
@@ -54,12 +55,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
   }
 
-  const version = String(formData.get('version') ?? '').trim();
+  const versionFromForm = String(formData.get('version') ?? '').trim();
   const platformRaw = String(formData.get('platform') ?? '').trim().toUpperCase();
   const releaseNotes = String(formData.get('releaseNotes') ?? '').trim() || null;
 
-  if (!version || !platformRaw) {
-    return NextResponse.json({ error: 'version and platform are required' }, { status: 400 });
+  if (!platformRaw) {
+    return NextResponse.json({ error: 'platform is required' }, { status: 400 });
   }
   if (!(VALID_PLATFORMS as readonly string[]).includes(platformRaw)) {
     return NextResponse.json(
@@ -79,6 +80,17 @@ export async function POST(request: Request) {
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
   const checksum = createHash('sha256').update(buffer).digest('hex');
+
+  // Prefer a version extracted from the binary itself (ProductVersion /
+  // FileVersion); fall back to whatever the client supplied.
+  const extractedVersion = extractVersion(buffer);
+  const version = extractedVersion ?? versionFromForm;
+  if (!version) {
+    return NextResponse.json(
+      { error: 'Could not detect a version in the uploaded file. Please specify one manually.' },
+      { status: 400 },
+    );
+  }
 
   const originalFilename = file.name || `agent-${platform.toLowerCase()}-${version}`;
   const ext = originalFilename.includes('.') ? originalFilename.split('.').pop() : 'bin';

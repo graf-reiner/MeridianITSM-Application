@@ -71,16 +71,12 @@ export default function AgentUpdatesPage() {
       setUploadError('Select a file.');
       return;
     }
-    if (!uploadVersion.trim()) {
-      setUploadError('Enter a version.');
-      return;
-    }
 
     setUploading(true);
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('version', uploadVersion.trim());
+      if (uploadVersion.trim()) formData.append('version', uploadVersion.trim());
       formData.append('platform', uploadPlatform);
       if (releaseNotes.trim()) formData.append('releaseNotes', releaseNotes.trim());
 
@@ -92,7 +88,8 @@ export default function AgentUpdatesPage() {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(data.error ?? `Upload failed (HTTP ${res.status})`);
       }
-      setUploadSuccess(`Package v${uploadVersion.trim()} (${uploadPlatform}) uploaded.`);
+      const data = (await res.json()) as { version?: string };
+      setUploadSuccess(`Package v${data.version ?? uploadVersion.trim()} (${uploadPlatform}) uploaded.`);
       setUploadVersion('');
       setReleaseNotes('');
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -177,14 +174,14 @@ export default function AgentUpdatesPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
             <div>
               <label htmlFor="upload-version" style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280', fontWeight: 600 }}>
-                Version
+                Version (auto-detected if blank)
               </label>
               <input
                 id="upload-version"
                 type="text"
                 value={uploadVersion}
                 onChange={(e) => setUploadVersion(e.target.value)}
-                placeholder="1.0.0.1"
+                placeholder="Detected from file"
                 style={{
                   width: '100%',
                   padding: '8px 10px',
