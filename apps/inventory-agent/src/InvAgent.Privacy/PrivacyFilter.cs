@@ -78,7 +78,6 @@ public static class PrivacyFilter
                 DeviceName = d.DeviceName,
                 Model = d.Model,
                 SizeBytes = d.SizeBytes,
-                FreeBytes = d.FreeBytes,
                 Type = d.Type,
                 BusType = d.BusType,
                 MediaType = d.MediaType,

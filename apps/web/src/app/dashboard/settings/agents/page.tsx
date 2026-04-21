@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
@@ -12,6 +12,7 @@ import {
   mdiChevronDown,
   mdiChevronUp,
   mdiQrcode,
+  mdiDownload,
 } from '@mdi/js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -48,6 +49,16 @@ interface GeneratedToken {
   id: string;
   token: string;
   prefix: string;
+}
+
+interface AgentUpdate {
+  id: string;
+  version: string;
+  platform: 'WINDOWS' | 'LINUX' | 'MACOS';
+  fileSize: number;
+  checksum: string;
+  releaseNotes: string | null;
+  createdAt: string;
 }
 
 // ─── Agent Status Badge ───────────────────────────────────────────────────────
@@ -381,15 +392,14 @@ export default function AgentsSettingsPage() {
   const [revoking, setRevoking] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [updatePolicy, setUpdatePolicy] = useState('manual');
-  const [uploadVersion, setUploadVersion] = useState('');
-  const [uploadPlatform, setUploadPlatform] = useState('WINDOWS');
-  const [uploading, setUploading] = useState(false);
+  const [deployPlatform, setDeployPlatform] = useState<'' | 'WINDOWS' | 'LINUX' | 'MACOS'>('');
+  const [deployVersion, setDeployVersion] = useState('');
+  const [deployTarget, setDeployTarget] = useState<'all' | 'single'>('all');
+  const [deployAgentId, setDeployAgentId] = useState<string>('');
   const [deployConfirm, setDeployConfirm] = useState(false);
   const [deploying, setDeploying] = useState(false);
   const [deployResult, setDeployResult] = useState<string | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [deployError, setDeployError] = useState<string | null>(null);
 
   const { data: agentsData, isLoading: agentsLoading } = useQuery<AgentListResponse>({
     queryKey: ['settings-agents'],
@@ -408,6 +418,27 @@ export default function AgentsSettingsPage() {
       return res.json() as Promise<TokenListResponse>;
     },
   });
+
+  const { data: updatesData } = useQuery<AgentUpdate[]>({
+    queryKey: ['agent-updates'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/agents/updates', { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load updates');
+      return res.json() as Promise<AgentUpdate[]>;
+    },
+  });
+  const updates = updatesData ?? [];
+
+  const { data: platformUpdatesData } = useQuery<AgentUpdate[]>({
+    queryKey: ['agent-updates', deployPlatform],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/agents/updates?platform=${deployPlatform}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load updates');
+      return res.json() as Promise<AgentUpdate[]>;
+    },
+    enabled: !!deployPlatform,
+  });
+  const platformUpdates = platformUpdatesData ?? [];
 
   const handleRevokeToken = useCallback(
     async (id: string) => {
@@ -895,139 +926,71 @@ export default function AgentsSettingsPage() {
           </select>
         </div>
 
-        {/* Upload Update Package */}
+        {/* Available Downloads (read-only — uploading is owner-admin only) */}
         <div style={{ marginBottom: 24 }}>
-          <label
-            style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}
-          >
-            Upload Update Package
-          </label>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            <div>
-              <label
-                htmlFor="uploadVersion"
-                style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}
-              >
-                Version
-              </label>
-              <input
-                id="uploadVersion"
-                type="text"
-                placeholder="e.g. 1.2.0"
-                value={uploadVersion}
-                onChange={(e) => setUploadVersion(e.target.value)}
-                style={{
-                  padding: '8px 10px',
-                  border: '1px solid var(--border-secondary)',
-                  borderRadius: 7,
-                  fontSize: 14,
-                  outline: 'none',
-                  width: 140,
-                }}
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="uploadPlatform"
-                style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}
-              >
-                Platform
-              </label>
-              <select
-                id="uploadPlatform"
-                value={uploadPlatform}
-                onChange={(e) => setUploadPlatform(e.target.value)}
-                style={{
-                  padding: '8px 10px',
-                  border: '1px solid var(--border-secondary)',
-                  borderRadius: 7,
-                  fontSize: 14,
-                  outline: 'none',
-                  backgroundColor: 'var(--bg-primary)',
-                  color: 'var(--text-primary)',
-                  width: 140,
-                }}
-              >
-                <option value="WINDOWS">Windows</option>
-                <option value="LINUX">Linux</option>
-                <option value="MACOS">macOS</option>
-              </select>
-            </div>
-            <div>
-              <label
-                htmlFor="uploadFile"
-                style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}
-              >
-                Package File
-              </label>
-              <input
-                id="uploadFile"
-                ref={fileInputRef}
-                type="file"
-                accept=".exe,.msi,.tar.gz,.zip"
-                style={{
-                  fontSize: 13,
-                  color: 'var(--text-secondary)',
-                }}
-              />
-            </div>
-            <button
-              disabled={uploading}
-              onClick={async () => {
-                const file = fileInputRef.current?.files?.[0];
-                if (!file) { setUploadError('Please select a file.'); return; }
-                if (!uploadVersion.trim()) { setUploadError('Please enter a version.'); return; }
-                setUploading(true);
-                setUploadError(null);
-                setUploadSuccess(null);
-                try {
-                  const formData = new FormData();
-                  formData.append('file', file);
-                  formData.append('version', uploadVersion.trim());
-                  formData.append('platform', uploadPlatform);
-                  const res = await fetch('/api/v1/agents/updates/upload', {
-                    method: 'POST',
-                    credentials: 'include',
-                    body: formData,
-                  });
-                  if (!res.ok) {
-                    const data = (await res.json()) as { error?: string };
-                    throw new Error(data.error ?? 'Upload failed');
-                  }
-                  setUploadSuccess(`Package v${uploadVersion.trim()} (${uploadPlatform}) uploaded successfully.`);
-                  setUploadVersion('');
-                  if (fileInputRef.current) fileInputRef.current.value = '';
-                } catch (err) {
-                  setUploadError(err instanceof Error ? err.message : 'Upload failed');
-                } finally {
-                  setUploading(false);
-                }
-              }}
-              style={{
-                padding: '8px 18px',
-                backgroundColor: uploading ? '#a5b4fc' : 'var(--accent-brand, #0284c7)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 7,
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: uploading ? 'not-allowed' : 'pointer',
-                whiteSpace: 'nowrap',
-              }}
+          {/* Available Downloads */}
+          <div style={{ marginTop: 20 }}>
+            <label
+              style={{ display: 'block', marginBottom: 8, fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}
             >
-              {uploading ? 'Uploading...' : 'Upload'}
-            </button>
+              Available Downloads
+            </label>
+            {updates.length === 0 ? (
+              <div style={{ padding: '12px 14px', border: '1px dashed var(--border-secondary)', borderRadius: 7, fontSize: 13, color: 'var(--text-muted)' }}>
+                No agent packages published yet. Your SaaS operator publishes new versions from the owner portal.
+              </div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 7, overflow: 'hidden' }}>
+                <thead>
+                  <tr style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+                    <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Version</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Platform</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Size</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Uploaded</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: 'var(--text-secondary)' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {updates.map((u) => (
+                    <tr key={u.id} style={{ borderTop: '1px solid var(--bg-tertiary)' }}>
+                      <td style={{ padding: '8px 12px', fontFamily: 'monospace', color: 'var(--text-primary)' }}>
+                        v{u.version}
+                      </td>
+                      <td style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>{u.platform}</td>
+                      <td style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>
+                        {(u.fileSize / (1024 * 1024)).toFixed(1)} MB
+                      </td>
+                      <td style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>
+                        {new Date(u.createdAt).toLocaleDateString()}
+                      </td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right' }}>
+                        <a
+                          href={`/api/v1/agents/updates/${u.id}/download`}
+                          download
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            padding: '4px 10px',
+                            backgroundColor: 'var(--bg-primary)',
+                            color: 'var(--accent-primary)',
+                            border: '1px solid var(--accent-primary)',
+                            borderRadius: 6,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            textDecoration: 'none',
+                          }}
+                        >
+                          <Icon path={mdiDownload} size={0.6} color="currentColor" />
+                          Download
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
-          {uploadError && (
-            <div style={{ marginTop: 8, padding: '6px 12px', backgroundColor: 'var(--badge-red-bg-subtle)', border: '1px solid #fecaca', borderRadius: 7, color: '#dc2626', fontSize: 13 }}>
-              {uploadError}
-            </div>
-          )}
-          {uploadSuccess && (
-            <div style={{ marginTop: 8, padding: '6px 12px', backgroundColor: 'var(--badge-green-bg-subtle)', border: '1px solid #86efac', borderRadius: 7, color: '#166534', fontSize: 13 }}>
-              {uploadSuccess}
-            </div>
-          )}
         </div>
 
         {/* Deploy Update */}
@@ -1037,9 +1000,169 @@ export default function AgentsSettingsPage() {
           >
             Deploy Update
           </label>
+
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 12 }}>
+            <div>
+              <label
+                htmlFor="deployPlatform"
+                style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}
+              >
+                OS Platform
+              </label>
+              <select
+                id="deployPlatform"
+                value={deployPlatform}
+                onChange={(e) => {
+                  const val = e.target.value as typeof deployPlatform;
+                  setDeployPlatform(val);
+                  setDeployVersion('');
+                  setDeployAgentId('');
+                  setDeployConfirm(false);
+                }}
+                style={{
+                  padding: '8px 10px',
+                  border: '1px solid var(--border-secondary)',
+                  borderRadius: 7,
+                  fontSize: 14,
+                  outline: 'none',
+                  backgroundColor: 'var(--bg-primary)',
+                  color: 'var(--text-primary)',
+                  width: 180,
+                }}
+              >
+                <option value="">Select platform…</option>
+                <option value="WINDOWS">Windows</option>
+                <option value="LINUX">Linux</option>
+                <option value="MACOS">macOS</option>
+              </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="deployVersion"
+                style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}
+              >
+                Version
+              </label>
+              <select
+                id="deployVersion"
+                value={deployVersion}
+                onChange={(e) => {
+                  setDeployVersion(e.target.value);
+                  setDeployConfirm(false);
+                }}
+                disabled={!deployPlatform || platformUpdates.length === 0}
+                style={{
+                  padding: '8px 10px',
+                  border: '1px solid var(--border-secondary)',
+                  borderRadius: 7,
+                  fontSize: 14,
+                  outline: 'none',
+                  backgroundColor: deployPlatform ? 'var(--bg-primary)' : 'var(--bg-tertiary)',
+                  color: deployPlatform ? 'var(--text-primary)' : 'var(--text-muted)',
+                  width: 180,
+                  cursor: deployPlatform ? 'pointer' : 'not-allowed',
+                }}
+              >
+                <option value="">
+                  {!deployPlatform
+                    ? 'Select platform first'
+                    : platformUpdates.length === 0
+                      ? 'No versions available'
+                      : 'Select version…'}
+                </option>
+                {platformUpdates.map((u) => (
+                  <option key={u.id} value={u.version}>
+                    v{u.version}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="deployTarget"
+                style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}
+              >
+                Target
+              </label>
+              <select
+                id="deployTarget"
+                value={deployTarget}
+                onChange={(e) => {
+                  setDeployTarget(e.target.value as 'all' | 'single');
+                  setDeployConfirm(false);
+                }}
+                style={{
+                  padding: '8px 10px',
+                  border: '1px solid var(--border-secondary)',
+                  borderRadius: 7,
+                  fontSize: 14,
+                  outline: 'none',
+                  backgroundColor: 'var(--bg-primary)',
+                  color: 'var(--text-primary)',
+                  width: 200,
+                }}
+              >
+                <option value="all">All Agents</option>
+                <option value="single">Single System</option>
+              </select>
+            </div>
+
+            {deployTarget === 'single' && (
+              <div>
+                <label
+                  htmlFor="deployAgentId"
+                  style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'var(--text-muted)' }}
+                >
+                  Agent
+                </label>
+                <select
+                  id="deployAgentId"
+                  value={deployAgentId}
+                  onChange={(e) => {
+                    setDeployAgentId(e.target.value);
+                    setDeployConfirm(false);
+                  }}
+                  disabled={!deployPlatform}
+                  style={{
+                    padding: '8px 10px',
+                    border: '1px solid var(--border-secondary)',
+                    borderRadius: 7,
+                    fontSize: 14,
+                    outline: 'none',
+                    backgroundColor: deployPlatform ? 'var(--bg-primary)' : 'var(--bg-tertiary)',
+                    color: deployPlatform ? 'var(--text-primary)' : 'var(--text-muted)',
+                    minWidth: 220,
+                    cursor: deployPlatform ? 'pointer' : 'not-allowed',
+                  }}
+                >
+                  <option value="">
+                    {deployPlatform ? 'Select agent…' : 'Select platform first'}
+                  </option>
+                  {agents
+                    .filter((a) => a.platform === deployPlatform && a.status !== 'DEREGISTERED')
+                    .map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.hostname}
+                        {a.agentVersion ? ` (v${a.agentVersion})` : ''}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
+          </div>
+
           {!deployConfirm ? (
             <button
-              onClick={() => setDeployConfirm(true)}
+              onClick={() => {
+                setDeployError(null);
+                setDeployResult(null);
+                if (!deployPlatform) { setDeployError('Select an OS platform.'); return; }
+                if (!deployVersion) { setDeployError('Select a version.'); return; }
+                if (deployTarget === 'single' && !deployAgentId) { setDeployError('Select an agent.'); return; }
+                setDeployConfirm(true);
+              }}
               style={{
                 padding: '8px 18px',
                 backgroundColor: 'var(--accent-warning, #f59e0b)',
@@ -1051,31 +1174,39 @@ export default function AgentsSettingsPage() {
                 cursor: 'pointer',
               }}
             >
-              Deploy Update to All Agents
+              {deployTarget === 'all' ? 'Deploy to All Agents' : 'Deploy to Selected Agent'}
             </button>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                Deploy the latest update to all agents? This cannot be undone.
+                {deployTarget === 'all'
+                  ? `Deploy v${deployVersion} (${deployPlatform}) to every ${deployPlatform} agent? This cannot be undone.`
+                  : `Deploy v${deployVersion} to ${agents.find((a) => a.id === deployAgentId)?.hostname ?? 'the selected agent'}? This cannot be undone.`}
               </span>
               <button
                 disabled={deploying}
                 onClick={async () => {
                   setDeploying(true);
                   setDeployResult(null);
+                  setDeployError(null);
                   try {
+                    const body = {
+                      agentIds: deployTarget === 'all' ? 'all' : [deployAgentId],
+                      version: deployVersion,
+                      platform: deployPlatform,
+                    };
                     const res = await fetch('/api/v1/agents/updates/deploy', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       credentials: 'include',
-                      body: JSON.stringify({ agentIds: 'all', version: 'latest', platform: 'WINDOWS' }),
+                      body: JSON.stringify(body),
                     });
                     if (!res.ok) {
                       const data = (await res.json()) as { error?: string };
                       throw new Error(data.error ?? 'Deploy failed');
                     }
-                    const data = (await res.json()) as { targeted?: number };
-                    setDeployResult(`Update deployed — ${data.targeted ?? 0} agent(s) targeted.`);
+                    const data = (await res.json()) as { deployed?: number };
+                    setDeployResult(`Update deployed — ${data.deployed ?? 0} agent(s) targeted.`);
                   } catch (err) {
                     setDeployResult(err instanceof Error ? err.message : 'Deploy failed');
                   } finally {
@@ -1111,6 +1242,11 @@ export default function AgentsSettingsPage() {
               >
                 Cancel
               </button>
+            </div>
+          )}
+          {deployError && (
+            <div style={{ marginTop: 8, padding: '6px 12px', backgroundColor: 'var(--badge-red-bg-subtle)', border: '1px solid #fecaca', borderRadius: 7, color: '#dc2626', fontSize: 13 }}>
+              {deployError}
             </div>
           )}
           {deployResult && (

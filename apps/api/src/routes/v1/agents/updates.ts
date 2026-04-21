@@ -1,10 +1,6 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { createHash } from 'node:crypto';
-import multipart from '@fastify/multipart';
 import { prisma } from '@meridian/db';
-import { uploadFile, getFileSignedUrl } from '../../../services/storage.service.js';
-
-const MAX_PACKAGE_SIZE = 200 * 1024 * 1024; // 200 MB
+import { getFileSignedUrl } from '../../../services/storage.service.js';
 
 /**
  * Resolve agent from Authorization: AgentKey <key> header.
@@ -87,129 +83,15 @@ async function resolveAdminSession(request: FastifyRequest, reply: FastifyReply)
 /**
  * Agent Update Package Routes
  *
- * POST /api/v1/agents/updates/upload    — Upload agent update package (admin auth)
+ * Uploading is owner-admin only (see apps/owner/src/app/api/agent-updates/route.ts).
+ * Tenant admins can list/deploy/download, and agents can fetch the latest per-platform.
+ *
  * GET  /api/v1/agents/updates/:platform — Download latest update for platform (agent key auth)
  * POST /api/v1/agents/updates/deploy    — Force-deploy update to agents (admin auth)
- * GET  /api/v1/agents/updates           — List all update packages (admin auth)
+ * GET  /api/v1/agents/updates           — List update packages, optional ?platform filter (admin auth)
+ * GET  /api/v1/agents/updates/:id/download — Admin redirect to signed URL for a package
  */
 export default async function agentUpdateRoutes(app: FastifyInstance): Promise<void> {
-  // Register multipart in this scoped plugin ONLY — avoids breaking JSON routes globally
-  await app.register(multipart, {
-    limits: {
-      fileSize: MAX_PACKAGE_SIZE,
-    },
-  });
-
-  // ─── POST /api/v1/agents/updates/upload ─────────────────────────────────────
-  // Admin auth. Accepts multipart upload of agent package.
-  app.post('/api/v1/agents/updates/upload', async (request, reply) => {
-    const admin = await resolveAdminSession(request, reply);
-    if (!admin) return;
-
-    let fileData: Buffer | null = null;
-    let version = '';
-    let platform = '';
-    let releaseNotes = '';
-    let originalFilename = 'agent-package';
-    let contentType = 'application/octet-stream';
-
-    try {
-      const data = await request.file();
-      if (!data) {
-        return reply.code(400).send({ error: 'No file uploaded' });
-      }
-
-      // Extract form fields from the multipart data
-      version = (data.fields.version as any)?.value ?? '';
-      platform = (data.fields.platform as any)?.value ?? '';
-      releaseNotes = (data.fields.releaseNotes as any)?.value ?? '';
-
-      if (!version || !platform) {
-        return reply.code(400).send({ error: 'version and platform are required fields' });
-      }
-
-      // Validate platform
-      const validPlatforms = ['WINDOWS', 'LINUX', 'MACOS'];
-      platform = platform.toUpperCase();
-      if (!validPlatforms.includes(platform)) {
-        return reply.code(400).send({
-          error: `Invalid platform. Expected one of: ${validPlatforms.join(', ')}`,
-        });
-      }
-
-      originalFilename = data.filename ?? 'agent-package';
-      contentType = data.mimetype ?? 'application/octet-stream';
-
-      // Read file data into buffer
-      const chunks: Buffer[] = [];
-      let totalSize = 0;
-
-      for await (const chunk of data.file) {
-        totalSize += chunk.length;
-        if (totalSize > MAX_PACKAGE_SIZE) {
-          return reply.code(413).send({ error: `File too large. Maximum size is ${MAX_PACKAGE_SIZE / 1024 / 1024}MB.` });
-        }
-        chunks.push(chunk);
-      }
-
-      fileData = Buffer.concat(chunks);
-    } catch {
-      return reply.code(400).send({ error: 'Failed to process file upload' });
-    }
-
-    if (!fileData || fileData.length === 0) {
-      return reply.code(400).send({ error: 'No file data received' });
-    }
-
-    // Compute SHA-256 checksum
-    const checksum = createHash('sha256').update(fileData).digest('hex');
-
-    // Determine file extension from original filename
-    const ext = originalFilename.includes('.')
-      ? originalFilename.split('.').pop()
-      : 'bin';
-
-    // Store in MinIO under agent-updates path
-    const storageKey = `agent-updates/${platform.toLowerCase()}/${version}/agent-${platform.toLowerCase()}-${version}.${ext}`;
-    await uploadFile(fileData, storageKey, contentType);
-
-    // Generate a signed download URL
-    const downloadUrl = await getFileSignedUrl(storageKey, 86400); // 24 hours
-
-    // Upsert the AgentUpdate record
-    const record = await prisma.agentUpdate.upsert({
-      where: {
-        version_platform: { version, platform: platform as any },
-      },
-      create: {
-        version,
-        platform: platform as any,
-        downloadUrl,
-        checksum,
-        fileSize: fileData.length,
-        releaseNotes: releaseNotes || null,
-        storageKey,
-        uploadedBy: admin.userId,
-      },
-      update: {
-        downloadUrl,
-        checksum,
-        fileSize: fileData.length,
-        releaseNotes: releaseNotes || null,
-        storageKey,
-        uploadedBy: admin.userId,
-      },
-    });
-
-    return reply.code(200).send({
-      id: record.id,
-      version: record.version,
-      platform: record.platform,
-      checksum: record.checksum,
-      fileSize: record.fileSize,
-    });
-  });
-
   // ─── GET /api/v1/agents/updates/:platform ───────────────────────────────────
   // Agent key auth. Redirects to download URL for latest update.
   app.get('/api/v1/agents/updates/:platform', async (request, reply) => {
@@ -239,11 +121,11 @@ export default async function agentUpdateRoutes(app: FastifyInstance): Promise<v
     // If we have a storage key, generate a fresh signed URL and redirect
     if (latest.storageKey) {
       const signedUrl = await getFileSignedUrl(latest.storageKey, 3600);
-      return reply.redirect(302, signedUrl);
+      return reply.redirect(signedUrl, 302);
     }
 
     // Otherwise redirect to the stored download URL
-    return reply.redirect(302, latest.downloadUrl);
+    return reply.redirect(latest.downloadUrl, 302);
   });
 
   // ─── POST /api/v1/agents/updates/deploy ─────────────────────────────────────
@@ -312,16 +194,55 @@ export default async function agentUpdateRoutes(app: FastifyInstance): Promise<v
   });
 
   // ─── GET /api/v1/agents/updates ─────────────────────────────────────────────
-  // Admin auth. Lists all uploaded update packages (newest first).
+  // Admin auth. Lists uploaded update packages (newest first). Optional ?platform=WINDOWS|LINUX|MACOS.
   app.get('/api/v1/agents/updates', async (request, reply) => {
     const admin = await resolveAdminSession(request, reply);
     if (!admin) return;
 
+    const { platform } = request.query as { platform?: string };
+    const where: { platform?: 'WINDOWS' | 'LINUX' | 'MACOS' } = {};
+    if (platform) {
+      const normalized = platform.toUpperCase();
+      const validPlatforms = ['WINDOWS', 'LINUX', 'MACOS'];
+      if (!validPlatforms.includes(normalized)) {
+        return reply.code(400).send({
+          error: `Invalid platform. Expected one of: ${validPlatforms.join(', ')}`,
+        });
+      }
+      where.platform = normalized as 'WINDOWS' | 'LINUX' | 'MACOS';
+    }
+
     const updates = await prisma.agentUpdate.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
 
     return reply.code(200).send(updates);
+  });
+
+  // ─── GET /api/v1/agents/updates/:id/download ────────────────────────────────
+  // Admin auth. Redirects to a fresh signed URL for the given update package.
+  // Used by the admin UI "Download" links next to the Upload form.
+  app.get('/api/v1/agents/updates/:id/download', async (request, reply) => {
+    const admin = await resolveAdminSession(request, reply);
+    if (!admin) return;
+
+    const { id } = request.params as { id: string };
+
+    const update = await prisma.agentUpdate.findUnique({
+      where: { id },
+    });
+
+    if (!update) {
+      return reply.code(404).send({ error: 'Update package not found' });
+    }
+
+    if (update.storageKey) {
+      const signedUrl = await getFileSignedUrl(update.storageKey, 3600);
+      return reply.redirect(signedUrl, 302);
+    }
+
+    return reply.redirect(update.downloadUrl, 302);
   });
 }

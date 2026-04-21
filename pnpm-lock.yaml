@@ -296,6 +296,12 @@ importers:
 
   apps/owner:
     dependencies:
+      '@aws-sdk/client-s3':
+        specifier: ^3.0.0
+        version: 3.1013.0
+      '@aws-sdk/s3-request-presigner':
+        specifier: ^3.1013.0
+        version: 3.1013.0
       '@meridian/db':
         specifier: workspace:*
         version: link:../../packages/db

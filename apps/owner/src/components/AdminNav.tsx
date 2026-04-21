@@ -8,6 +8,7 @@ const navItems = [
   { href: '/tenants', label: 'Tenants', icon: '⊞' },
   { href: '/billing', label: 'Billing', icon: '₿' },
   { href: '/plans', label: 'Plans', icon: '★' },
+  { href: '/agent-updates', label: 'Agent Updates', icon: '⬇' },
   { href: '/system', label: 'System', icon: '⚙' },
   { href: '/audit', label: 'Audit Log', icon: '≡' },
   { href: '/settings', label: 'Settings', icon: '👤' },

@@ -92,17 +92,43 @@ public class AgentWorker : BackgroundService
 
     private async Task RunHeartbeatLoopAsync(PeriodicTimer timer, CancellationToken ct)
     {
-        while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
+        _logger.LogInformation("Heartbeat loop started (interval={Seconds}s).", _config.HeartbeatIntervalSeconds);
+        try
         {
-            await SendHeartbeatAsync(ct);
+            while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
+            {
+                await SendHeartbeatAsync(ct);
+            }
+            _logger.LogWarning("Heartbeat loop exited: timer returned false (disposed).");
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Heartbeat loop stopping (cancellation requested).");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Heartbeat loop terminated by unhandled exception.");
         }
     }
 
     private async Task RunInventoryLoopAsync(PeriodicTimer timer, CancellationToken ct)
     {
-        while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
+        _logger.LogInformation("Inventory loop started (interval={Seconds}s).", _config.InventoryIntervalSeconds);
+        try
         {
-            await RunInventoryCycleAsync(ct);
+            while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
+            {
+                await RunInventoryCycleAsync(ct);
+            }
+            _logger.LogWarning("Inventory loop exited: timer returned false (disposed).");
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Inventory loop stopping (cancellation requested).");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Inventory loop terminated by unhandled exception.");
         }
     }
 
@@ -113,7 +139,7 @@ public class AgentWorker : BackgroundService
     {
         try
         {
-            _logger.LogDebug("Sending heartbeat...");
+            _logger.LogInformation("Sending heartbeat...");
             var payload = new HeartbeatPayload
             {
                 AgentVersion = GetAgentVersion(),
