@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
@@ -400,6 +400,10 @@ export default function AgentsSettingsPage() {
   const [deploying, setDeploying] = useState(false);
   const [deployResult, setDeployResult] = useState<string | null>(null);
   const [deployError, setDeployError] = useState<string | null>(null);
+  const [agentPage, setAgentPage] = useState(1);
+  const [tokenPage, setTokenPage] = useState(1);
+  const AGENT_PAGE_SIZE = 10;
+  const TOKEN_PAGE_SIZE = 10;
 
   const { data: agentsData, isLoading: agentsLoading } = useQuery<AgentListResponse>({
     queryKey: ['settings-agents'],
@@ -477,6 +481,24 @@ export default function AgentsSettingsPage() {
   const agents = agentsData?.agents ?? [];
   const tokens = tokensData?.tokens ?? [];
 
+  const totalAgentPages = Math.max(1, Math.ceil(agents.length / AGENT_PAGE_SIZE));
+  const totalTokenPages = Math.max(1, Math.ceil(tokens.length / TOKEN_PAGE_SIZE));
+  const pagedAgents = agents.slice(
+    (agentPage - 1) * AGENT_PAGE_SIZE,
+    agentPage * AGENT_PAGE_SIZE,
+  );
+  const pagedTokens = tokens.slice(
+    (tokenPage - 1) * TOKEN_PAGE_SIZE,
+    tokenPage * TOKEN_PAGE_SIZE,
+  );
+
+  useEffect(() => {
+    if (agentPage > totalAgentPages) setAgentPage(1);
+  }, [agentPage, totalAgentPages]);
+  useEffect(() => {
+    if (tokenPage > totalTokenPages) setTokenPage(1);
+  }, [tokenPage, totalTokenPages]);
+
   const formatDate = (date: string | null) => {
     if (!date) return '—';
     return new Date(date).toLocaleString();
@@ -493,7 +515,7 @@ export default function AgentsSettingsPage() {
     typeof window !== 'undefined' ? window.location.origin : 'https://your-server.example.com';
 
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+    <div style={{ maxWidth: 1000, margin: '0 auto', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <div
         style={{
@@ -502,6 +524,7 @@ export default function AgentsSettingsPage() {
           gap: 10,
           marginBottom: 8,
           flexWrap: 'wrap',
+          order: 0,
         }}
       >
         <Link
@@ -546,7 +569,7 @@ export default function AgentsSettingsPage() {
           </button>
         </div>
       </div>
-      <p style={{ margin: '0 0 24px', color: 'var(--text-muted)', fontSize: 14 }}>
+      <p style={{ margin: '0 0 24px', color: 'var(--text-muted)', fontSize: 14, order: 0 }}>
         Manage enrolled inventory agents and enrollment tokens.
       </p>
 
@@ -558,6 +581,7 @@ export default function AgentsSettingsPage() {
           borderRadius: 10,
           marginBottom: 24,
           overflow: 'hidden',
+          order: 30,
         }}
       >
         <button
@@ -608,6 +632,7 @@ export default function AgentsSettingsPage() {
                 No enrollment tokens yet. Click &quot;Generate Enrollment Token&quot; to create one.
               </div>
             ) : (
+              <>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                 <thead>
                   <tr style={{ backgroundColor: 'var(--bg-tertiary)' }}>
@@ -620,7 +645,7 @@ export default function AgentsSettingsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {tokens.map((token) => {
+                  {pagedTokens.map((token) => {
                     const status = getTokenStatus(token);
                     const isConfirmingRevoke = confirmRevokeId === token.id;
                     return (
@@ -715,20 +740,99 @@ export default function AgentsSettingsPage() {
                   })}
                 </tbody>
               </table>
+              {totalTokenPages > 1 && (
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '10px 16px',
+                    borderTop: '1px solid var(--bg-tertiary)',
+                    fontSize: 13,
+                    color: 'var(--text-muted)',
+                  }}
+                >
+                  <span style={{ marginRight: 4 }}>
+                    Page {tokenPage} of {totalTokenPages} · {tokens.length} tokens
+                  </span>
+                  <button
+                    onClick={() => setTokenPage((p) => Math.max(1, p - 1))}
+                    disabled={tokenPage === 1}
+                    style={{
+                      padding: '4px 12px',
+                      border: '1px solid var(--border-secondary)',
+                      borderRadius: 6,
+                      fontSize: 12,
+                      cursor: tokenPage === 1 ? 'not-allowed' : 'pointer',
+                      backgroundColor: 'var(--bg-primary)',
+                      opacity: tokenPage === 1 ? 0.5 : 1,
+                    }}
+                  >
+                    Prev
+                  </button>
+                  <button
+                    onClick={() => setTokenPage((p) => Math.min(totalTokenPages, p + 1))}
+                    disabled={tokenPage === totalTokenPages}
+                    style={{
+                      padding: '4px 12px',
+                      border: '1px solid var(--border-secondary)',
+                      borderRadius: 6,
+                      fontSize: 12,
+                      cursor: tokenPage === totalTokenPages ? 'not-allowed' : 'pointer',
+                      backgroundColor: 'var(--bg-primary)',
+                      opacity: tokenPage === totalTokenPages ? 0.5 : 1,
+                    }}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+              </>
             )}
           </>
         )}
       </div>
 
-      {/* Agents Table */}
+      {/* Hosts Section */}
       <div
         style={{
           backgroundColor: 'var(--bg-primary)',
           border: '1px solid var(--border-primary)',
           borderRadius: 10,
           overflow: 'hidden',
+          marginBottom: 24,
+          order: 20,
         }}
       >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '12px 16px',
+            backgroundColor: 'var(--bg-secondary)',
+            borderBottom: '1px solid var(--border-primary)',
+            fontSize: 14,
+            fontWeight: 600,
+            color: 'var(--text-secondary)',
+          }}
+        >
+          <Icon path={mdiDesktopClassic} size={0.85} color="#4f46e5" />
+          <span style={{ marginLeft: 6 }}>Hosts</span>
+          <span
+            style={{
+              marginLeft: 8,
+              padding: '1px 7px',
+              backgroundColor: 'var(--badge-indigo-bg)',
+              color: '#4f46e5',
+              borderRadius: 9999,
+              fontSize: 12,
+              fontWeight: 600,
+            }}
+          >
+            {agents.length}
+          </span>
+        </div>
         {agentsLoading ? (
           <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
             Loading agents...
@@ -768,6 +872,7 @@ export default function AgentsSettingsPage() {
             </button>
           </div>
         ) : (
+          <>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
               <tr style={{ backgroundColor: 'var(--bg-tertiary)' }}>
@@ -780,7 +885,7 @@ export default function AgentsSettingsPage() {
               </tr>
             </thead>
             <tbody>
-              {agents.map((agent) => {
+              {pagedAgents.map((agent) => {
                 const isConfirmingDelete = confirmDeleteId === agent.id;
                 return (
                   <tr key={agent.id} style={{ borderTop: '1px solid var(--bg-tertiary)' }}>
@@ -866,17 +971,67 @@ export default function AgentsSettingsPage() {
               })}
             </tbody>
           </table>
+          {totalAgentPages > 1 && (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+                gap: 8,
+                padding: '10px 16px',
+                borderTop: '1px solid var(--bg-tertiary)',
+                fontSize: 13,
+                color: 'var(--text-muted)',
+              }}
+            >
+              <span style={{ marginRight: 4 }}>
+                Page {agentPage} of {totalAgentPages} · {agents.length} hosts
+              </span>
+              <button
+                onClick={() => setAgentPage((p) => Math.max(1, p - 1))}
+                disabled={agentPage === 1}
+                style={{
+                  padding: '4px 12px',
+                  border: '1px solid var(--border-secondary)',
+                  borderRadius: 6,
+                  fontSize: 12,
+                  cursor: agentPage === 1 ? 'not-allowed' : 'pointer',
+                  backgroundColor: 'var(--bg-primary)',
+                  opacity: agentPage === 1 ? 0.5 : 1,
+                }}
+              >
+                Prev
+              </button>
+              <button
+                onClick={() => setAgentPage((p) => Math.min(totalAgentPages, p + 1))}
+                disabled={agentPage === totalAgentPages}
+                style={{
+                  padding: '4px 12px',
+                  border: '1px solid var(--border-secondary)',
+                  borderRadius: 6,
+                  fontSize: 12,
+                  cursor: agentPage === totalAgentPages ? 'not-allowed' : 'pointer',
+                  backgroundColor: 'var(--bg-primary)',
+                  opacity: agentPage === totalAgentPages ? 0.5 : 1,
+                }}
+              >
+                Next
+              </button>
+            </div>
+          )}
+          </>
         )}
       </div>
 
       {/* Agent Updates Section */}
       <div
         style={{
-          marginTop: 32,
+          marginBottom: 24,
           backgroundColor: 'var(--bg-primary)',
           borderRadius: 12,
           border: '1px solid var(--border-primary)',
           padding: 24,
+          order: 10,
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>

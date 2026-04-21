@@ -571,6 +571,7 @@ model User {
   majorIncidentCoordinations   Ticket[]                @relation("MajorIncidentCoordinator")
   notificationTemplatesCreated NotificationTemplate[]  @relation("NotificationTemplateCreatedBy")
   triggeredAgentDeployments    AgentUpdateDeployment[] @relation("UserTriggeredAgentDeployments")
+  knowledgeArticlesAuthored    KnowledgeArticle[]      @relation("KnowledgeArticleAuthor")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -1622,6 +1623,7 @@ model KnowledgeArticle {
   updatedAt     DateTime          @updatedAt
 
   tenant         Tenant                   @relation(fields: [tenantId], references: [id])
+  author         User?                    @relation("KnowledgeArticleAuthor", fields: [authorId], references: [id])
   ticketArticles TicketKnowledgeArticle[]
   problemTickets Ticket[]                 @relation("ProblemKnownError") // Problems linked as known errors
 

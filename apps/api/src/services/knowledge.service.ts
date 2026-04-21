@@ -218,6 +218,7 @@ export async function getArticleList(
       orderBy: { createdAt: 'desc' },
       skip,
       take: pageSize,
+      include: { author: { select: { firstName: true, lastName: true } } },
     }),
     prisma.knowledgeArticle.count({ where }),
   ]);

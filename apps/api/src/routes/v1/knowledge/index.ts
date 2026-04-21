@@ -61,7 +61,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance): Promise<void> {
       pageSize: query.pageSize ? parseInt(query.pageSize, 10) : undefined,
     });
 
-    return reply.status(200).send(result);
+    return reply.status(200).send({ articles: result.data, total: result.total });
   });
 
   // ─── GET /api/v1/knowledge/published — Portal view (PUBLIC + PUBLISHED) ─────
@@ -88,7 +88,7 @@ export async function knowledgeRoutes(fastify: FastifyInstance): Promise<void> {
       pageSize: query.pageSize ? parseInt(query.pageSize, 10) : undefined,
     });
 
-    return reply.status(200).send(result);
+    return reply.status(200).send({ articles: result.data, total: result.total });
   });
 
   // ─── POST /api/v1/knowledge — Create article ────────────────────────────────
