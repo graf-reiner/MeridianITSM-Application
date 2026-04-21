@@ -184,10 +184,12 @@ export default async function agentUpdateRoutes(app: FastifyInstance): Promise<v
     // hand out a direct MinIO URL because MinIO isn't publicly routable.
     const forceUpdateUrl = `api/v1/agents/updates/${normalizedPlatform.toLowerCase()}`;
 
-    // Build the where clause for agents to update
+    // Build the where clause for agents to update. Only deploy to agents in
+    // deployable states — ACTIVE (live) and OFFLINE (will pick up on next
+    // heartbeat). Skip ENROLLING (not ready) and SUSPENDED (admin-paused).
     const whereClause: Record<string, unknown> = {
       platform: normalizedPlatform,
-      status: { not: 'DEREGISTERED' },
+      status: { in: ['ACTIVE', 'OFFLINE'] },
     };
 
     if (agentIds && agentIds !== 'all') {
