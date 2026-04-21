@@ -8,6 +8,7 @@ import {
   recallChange,
   transitionStatus,
   addApprover,
+  removeApprover,
   recordApproval,
   getCollisions,
   linkAsset,
@@ -288,9 +289,30 @@ export async function changeRoutes(fastify: FastifyInstance): Promise<void> {
         return reply.status(201).send(approval);
       } catch (err) {
         const error = err as Error & { statusCode?: number };
-        if (error.statusCode === 404) {
-          return reply.status(404).send({ error: 'Change not found' });
-        }
+        if (error.statusCode === 404) return reply.status(404).send({ error: error.message });
+        if (error.statusCode === 409) return reply.status(409).send({ error: error.message });
+        throw err;
+      }
+    },
+  );
+
+  // ─── DELETE /api/v1/changes/:id/approvers/:approvalId — Remove approver ──────
+  // Permitted only in NEW/ASSESSMENT. After submission, you must recall first.
+  fastify.delete(
+    '/api/v1/changes/:id/approvers/:approvalId',
+    { preHandler: [requirePermission('changes.update')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string; userId: string };
+      const { tenantId, userId } = user;
+      const { id, approvalId } = request.params as { id: string; approvalId: string };
+
+      try {
+        await removeApprover(tenantId, id, approvalId, userId);
+        return reply.status(204).send();
+      } catch (err) {
+        const error = err as Error & { statusCode?: number };
+        if (error.statusCode === 404) return reply.status(404).send({ error: error.message });
+        if (error.statusCode === 409) return reply.status(409).send({ error: error.message });
         throw err;
       }
     },

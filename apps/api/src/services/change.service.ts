@@ -783,12 +783,21 @@ export async function addApprover(
 ) {
   const change = await prisma.change.findFirst({
     where: { id: changeId, tenantId },
-    select: { id: true, changeNumber: true, title: true },
+    select: { id: true, changeNumber: true, title: true, status: true },
   });
 
   if (!change) {
     const err = new Error('Change not found') as Error & { statusCode: number };
     err.statusCode = 404;
+    throw err;
+  }
+
+  const status = change.status as string;
+  if (status !== 'NEW' && status !== 'ASSESSMENT') {
+    const err = new Error(
+      `Cannot add approvers once the change has left ASSESSMENT. Recall the change first.`,
+    ) as Error & { statusCode: number };
+    err.statusCode = 409;
     throw err;
   }
 
@@ -834,6 +843,60 @@ export async function addApprover(
   })();
 
   return approval;
+}
+
+/**
+ * Remove an approver from a change. Only permitted while the change is in
+ * NEW or ASSESSMENT — approvers can't be silently removed mid-vote or after
+ * approval. To remove once submitted, recall the change first.
+ */
+export async function removeApprover(
+  tenantId: string,
+  changeId: string,
+  approvalId: string,
+  actorId: string,
+) {
+  const change = await prisma.change.findFirst({
+    where: { id: changeId, tenantId },
+    select: { id: true, status: true },
+  });
+  if (!change) {
+    const err = new Error('Change not found') as Error & { statusCode: number };
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const status = change.status as string;
+  if (status !== 'NEW' && status !== 'ASSESSMENT') {
+    const err = new Error(
+      `Cannot remove approvers once the change has left ASSESSMENT. Recall the change first.`,
+    ) as Error & { statusCode: number };
+    err.statusCode = 409;
+    throw err;
+  }
+
+  const approval = await prisma.changeApproval.findFirst({
+    where: { id: approvalId, changeId, tenantId },
+    select: { id: true, approverId: true },
+  });
+  if (!approval) {
+    const err = new Error('Approver not found on this change') as Error & { statusCode: number };
+    err.statusCode = 404;
+    throw err;
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.changeApproval.delete({ where: { id: approvalId } });
+    await tx.changeActivity.create({
+      data: {
+        tenantId,
+        changeId,
+        actorId,
+        activityType: 'APPROVER_REMOVED',
+        metadata: { approverId: approval.approverId, approvalId },
+      },
+    });
+  });
 }
 
 /**

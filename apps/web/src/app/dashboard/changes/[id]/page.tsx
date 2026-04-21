@@ -361,6 +361,9 @@ export default function ChangeDetailPage() {
   const [actualStart, setActualStart] = useState('');
   const [actualEnd, setActualEnd] = useState('');
   const [savingActuals, setSavingActuals] = useState(false);
+  const [newApproverId, setNewApproverId] = useState('');
+  const [addingApprover, setAddingApprover] = useState(false);
+  const [approverError, setApproverError] = useState<string | null>(null);
 
   // In a real app, you'd get this from the auth session. Using a placeholder.
   const currentUserId: string | null = null;
@@ -373,6 +376,16 @@ export default function ChangeDetailPage() {
       return res.json() as Promise<ChangeDetail>;
     },
   });
+
+  const { data: usersData } = useQuery<{ data?: { id: string; email: string; firstName: string | null; lastName: string | null }[] }>({
+    queryKey: ['users-for-change-approvers'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/settings/users?isActive=true&pageSize=200', { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load users');
+      return res.json();
+    },
+  });
+  const users = usersData?.data ?? [];
 
   const handleTransition = async (newStatus: string) => {
     setTransitioning(true);
@@ -493,6 +506,48 @@ export default function ChangeDetailPage() {
       if (res.ok) await queryClient.invalidateQueries({ queryKey: ['change', id] });
     } finally {
       setSavingActuals(false);
+    }
+  };
+
+  const handleAddApprover = async () => {
+    if (!newApproverId || !change) return;
+    setAddingApprover(true);
+    setApproverError(null);
+    try {
+      const sequenceOrder = change.approvals.length;
+      const res = await fetch(`/api/v1/changes/${id}/approvers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ approverId: newApproverId, sequenceOrder }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error ?? `Add approver failed (${res.status})`);
+      }
+      await queryClient.invalidateQueries({ queryKey: ['change', id] });
+      setNewApproverId('');
+    } catch (e) {
+      setApproverError(e instanceof Error ? e.message : 'Add approver failed');
+    } finally {
+      setAddingApprover(false);
+    }
+  };
+
+  const handleRemoveApprover = async (approvalId: string) => {
+    setApproverError(null);
+    try {
+      const res = await fetch(`/api/v1/changes/${id}/approvers/${approvalId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok && res.status !== 204) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error ?? `Remove approver failed (${res.status})`);
+      }
+      await queryClient.invalidateQueries({ queryKey: ['change', id] });
+    } catch (e) {
+      setApproverError(e instanceof Error ? e.message : 'Remove approver failed');
     }
   };
 
@@ -671,8 +726,79 @@ export default function ChangeDetailPage() {
         </div>
       )}
 
+      {/* ── Manage Approvers (NEW/ASSESSMENT only) ─────────────────────────────
+          NORMAL changes need at least one approver before they can move to
+          APPROVAL_PENDING. This panel lets the requester build that list. */}
+      {canEdit && (
+        <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: 20, marginBottom: 16 }}>
+          <h2 style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 600 }}>Approvers</h2>
+          <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--text-muted)' }}>
+            Add one or more approvers before submitting. They vote in the order you add them — the first approver must decide before the second is notified.
+          </p>
+          {change.approvals.length === 0 ? (
+            <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--text-placeholder)' }}>
+              No approvers yet. Add at least one before moving to APPROVAL_PENDING.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+              {change.approvals.map((a, idx) => {
+                const name = a.approver ? `${a.approver.firstName} ${a.approver.lastName}`.trim() || a.approver.email : 'Unknown';
+                return (
+                  <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', backgroundColor: 'var(--bg-tertiary)', borderRadius: 7, fontSize: 13 }}>
+                    <span style={{ width: 22, height: 22, borderRadius: '50%', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-secondary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>
+                      {idx + 1}
+                    </span>
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{name}</span>
+                    {a.approver?.email && (
+                      <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>{a.approver.email}</span>
+                    )}
+                    <button
+                      onClick={() => void handleRemoveApprover(a.id)}
+                      style={{ marginLeft: 'auto', padding: '4px 10px', backgroundColor: 'var(--bg-primary)', color: 'var(--accent-danger)', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <select
+              value={newApproverId}
+              onChange={(e) => setNewApproverId(e.target.value)}
+              style={{ flex: '1 1 240px', padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 14, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+            >
+              <option value="">Select a user to add…</option>
+              {users
+                .filter((u) => !change.approvals.some((a) => a.approver?.id === u.id))
+                .map((u) => {
+                  const name = [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email;
+                  return (
+                    <option key={u.id} value={u.id}>
+                      {name} ({u.email})
+                    </option>
+                  );
+                })}
+            </select>
+            <button
+              onClick={() => void handleAddApprover()}
+              disabled={!newApproverId || addingApprover}
+              style={{ padding: '8px 14px', backgroundColor: 'var(--accent-primary)', color: '#fff', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: (!newApproverId || addingApprover) ? 'not-allowed' : 'pointer', opacity: (!newApproverId || addingApprover) ? 0.6 : 1 }}
+            >
+              {addingApprover ? 'Adding…' : 'Add Approver'}
+            </button>
+          </div>
+          {approverError && (
+            <div style={{ marginTop: 10, padding: '6px 10px', fontSize: 13, color: '#991b1b', backgroundColor: 'var(--badge-red-bg)', borderRadius: 6 }}>
+              {approverError}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Inline Approval Panel (CONTEXT.md: shown at top) ──────────────────── */}
-      {change.approvals.length > 0 && (
+      {change.approvals.length > 0 && !canEdit && (
         <ApprovalPanel
           changeId={id}
           approvals={change.approvals}
