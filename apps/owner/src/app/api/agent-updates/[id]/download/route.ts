@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@meridian/db';
 import { verifyOwnerToken } from '../../../../../lib/owner-auth';
-import { getFileSignedUrl } from '../../../../../lib/storage';
+import { getFileObject } from '../../../../../lib/storage';
 
 async function requireOwner(request: Request): Promise<Response | null> {
   const authHeader = request.headers.get('authorization');
@@ -37,6 +37,17 @@ export async function GET(
     return NextResponse.json({ error: 'No storage key for this package' }, { status: 404 });
   }
 
-  const signedUrl = await getFileSignedUrl(update.storageKey, 3600);
-  return NextResponse.redirect(signedUrl, 302);
+  // Proxy the file from MinIO through this server. MinIO isn't publicly
+  // routable in this deployment, so a presigned redirect would point at
+  // localhost:9000 and fail from the admin's browser.
+  const { body, contentLength, contentType } = await getFileObject(update.storageKey);
+
+  const filename = update.storageKey.split('/').pop() ?? `agent-${update.version}.bin`;
+  const headers = new Headers();
+  headers.set('Content-Type', contentType ?? 'application/octet-stream');
+  if (contentLength) headers.set('Content-Length', String(contentLength));
+  headers.set('Content-Disposition', `attachment; filename="${filename}"`);
+  headers.set('Cache-Control', 'no-store');
+
+  return new Response(body, { status: 200, headers });
 }

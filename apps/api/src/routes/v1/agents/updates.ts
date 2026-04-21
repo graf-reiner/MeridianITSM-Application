@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { prisma } from '@meridian/db';
-import { getFileSignedUrl } from '../../../services/storage.service.js';
+import { getFileObject } from '../../../services/storage.service.js';
 
 /**
  * Resolve agent from Authorization: AgentKey <key> header.
@@ -128,18 +128,18 @@ export default async function agentUpdateRoutes(app: FastifyInstance): Promise<v
       orderBy: { createdAt: 'desc' },
     });
 
-    if (!latest) {
+    if (!latest?.storageKey) {
       return reply.code(404).send({ error: 'No update available for this platform' });
     }
 
-    // If we have a storage key, generate a fresh signed URL and redirect
-    if (latest.storageKey) {
-      const signedUrl = await getFileSignedUrl(latest.storageKey, 3600);
-      return reply.redirect(signedUrl, 302);
-    }
-
-    // Otherwise redirect to the stored download URL
-    return reply.redirect(latest.downloadUrl, 302);
+    // Stream the object through this server — MinIO is not publicly routable.
+    const { body, contentLength, contentType } = await getFileObject(latest.storageKey);
+    const filename = latest.storageKey.split('/').pop() ?? `agent-${latest.version}.bin`;
+    reply.header('Content-Type', contentType ?? 'application/octet-stream');
+    if (contentLength) reply.header('Content-Length', contentLength);
+    reply.header('Content-Disposition', `attachment; filename="${filename}"`);
+    reply.header('Cache-Control', 'no-store');
+    return reply.send(body);
   });
 
   // ─── POST /api/v1/agents/updates/deploy ─────────────────────────────────────
@@ -179,13 +179,10 @@ export default async function agentUpdateRoutes(app: FastifyInstance): Promise<v
       return reply.code(404).send({ error: 'Agent update not found for this version/platform' });
     }
 
-    // Build the download URL — prefer signed URL from storage, fall back to downloadUrl
-    let forceUpdateUrl: string;
-    if (agentUpdate.storageKey) {
-      forceUpdateUrl = await getFileSignedUrl(agentUpdate.storageKey, 86400); // 24 hours
-    } else {
-      forceUpdateUrl = agentUpdate.downloadUrl;
-    }
+    // Relative path — the agent's authenticated MeridianApiClient will fetch
+    // this against its configured ServerUrl, using AgentKey auth. We can't
+    // hand out a direct MinIO URL because MinIO isn't publicly routable.
+    const forceUpdateUrl = `api/v1/agents/updates/${normalizedPlatform.toLowerCase()}`;
 
     // Build the where clause for agents to update
     const whereClause: Record<string, unknown> = {
@@ -248,15 +245,16 @@ export default async function agentUpdateRoutes(app: FastifyInstance): Promise<v
       where: { id },
     });
 
-    if (!update) {
+    if (!update?.storageKey) {
       return reply.code(404).send({ error: 'Update package not found' });
     }
 
-    if (update.storageKey) {
-      const signedUrl = await getFileSignedUrl(update.storageKey, 3600);
-      return reply.redirect(signedUrl, 302);
-    }
-
-    return reply.redirect(update.downloadUrl, 302);
+    const { body, contentLength, contentType } = await getFileObject(update.storageKey);
+    const filename = update.storageKey.split('/').pop() ?? `agent-${update.version}.bin`;
+    reply.header('Content-Type', contentType ?? 'application/octet-stream');
+    if (contentLength) reply.header('Content-Length', contentLength);
+    reply.header('Content-Disposition', `attachment; filename="${filename}"`);
+    reply.header('Cache-Control', 'no-store');
+    return reply.send(body);
   });
 }

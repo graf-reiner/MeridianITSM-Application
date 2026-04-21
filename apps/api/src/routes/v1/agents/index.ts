@@ -325,7 +325,9 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
         if (shouldIncludeUpdate) {
           update = {
             latestVersion: latest.version,
-            updateUrl: latest.downloadUrl,
+            // Relative path so the agent's authenticated client fetches via our
+            // server and streams the binary (MinIO is not publicly routable).
+            updateUrl: `api/v1/agents/updates/${agent.platform.toLowerCase()}`,
             checksum: latest.checksum,
             fileSize: latest.fileSize,
           };

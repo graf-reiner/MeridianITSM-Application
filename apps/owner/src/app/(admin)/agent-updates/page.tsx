@@ -116,35 +116,30 @@ export default function AgentUpdatesPage() {
   }, [fetchUpdates]);
 
   const handleDownload = useCallback(async (id: string) => {
-    // ownerFetch handles auth; we need to follow redirect to the signed URL.
-    // Since Response.redirected is tricky with fetch here, just open via window with auth bridge:
-    // Strategy: fetch with Bearer, read Location via 302? Actually fetch follows redirects by default.
-    // Simpler: ask the API for the signed URL by fetching as JSON isn't implemented —
-    // Use a manual fetch with redirect='manual' to extract the signed URL, then navigate.
+    // The download route streams the file and requires a Bearer header, so we
+    // can't just navigate to it. Fetch → Blob → trigger a hidden anchor click.
     try {
-      const token = localStorage.getItem('owner_token');
-      const res = await fetch(`/api/agent-updates/${id}/download`, {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${token ?? ''}` },
-        redirect: 'manual',
-      });
-      // With redirect:'manual', Fetch returns an opaque response for cross-origin;
-      // for same-origin the Location header may be hidden. Fall back to following redirect:
-      if (res.type === 'opaqueredirect') {
-        // Just trigger a regular navigation with an authenticated fetch then window.open
-        // the signed URL is only accessible via the redirect, so let browser follow:
-        window.location.href = `/api/agent-updates/${id}/download`;
+      const res = await ownerFetch(`/api/agent-updates/${id}/download`);
+      if (!res.ok) {
+        setUploadError(`Download failed (HTTP ${res.status})`);
         return;
       }
-      const location = res.headers.get('Location');
-      if (location) {
-        window.location.href = location;
-      } else {
-        // Browser followed redirect; url is the signed URL
-        window.location.href = res.url;
-      }
-    } catch {
-      window.location.href = `/api/agent-updates/${id}/download`;
+      // Derive filename from Content-Disposition
+      const disposition = res.headers.get('Content-Disposition') ?? '';
+      const match = disposition.match(/filename="([^"]+)"/);
+      const filename = match?.[1] ?? 'agent-installer';
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Download failed');
     }
   }, []);
 

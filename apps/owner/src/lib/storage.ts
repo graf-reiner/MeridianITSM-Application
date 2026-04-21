@@ -36,3 +36,23 @@ export async function getFileSignedUrl(key: string, expiresIn = 3600): Promise<s
   });
   return getSignedUrl(s3Client, command, { expiresIn });
 }
+
+/**
+ * Fetch an object's body + metadata from MinIO/S3 for streaming to a client.
+ * Used when MinIO isn't publicly routable and the app must proxy the download.
+ */
+export async function getFileObject(key: string): Promise<{
+  body: ReadableStream<Uint8Array>;
+  contentLength: number | undefined;
+  contentType: string | undefined;
+}> {
+  const res = await s3Client.send(
+    new GetObjectCommand({ Bucket: BUCKET, Key: key }),
+  );
+  const body = res.Body as unknown as ReadableStream<Uint8Array>;
+  return {
+    body,
+    contentLength: res.ContentLength,
+    contentType: res.ContentType,
+  };
+}
