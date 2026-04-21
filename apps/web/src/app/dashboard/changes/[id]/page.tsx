@@ -16,6 +16,7 @@ import {
 } from '@mdi/js';
 import RichTextField from '@/components/RichTextField';
 import Breadcrumb from '@/components/Breadcrumb';
+import { useSession } from '@/hooks/useSession';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -365,8 +366,8 @@ export default function ChangeDetailPage() {
   const [addingApprover, setAddingApprover] = useState(false);
   const [approverError, setApproverError] = useState<string | null>(null);
 
-  // In a real app, you'd get this from the auth session. Using a placeholder.
-  const currentUserId: string | null = null;
+  const { userId } = useSession();
+  const currentUserId = userId;
 
   const { data: change, isLoading, error } = useQuery<ChangeDetail>({
     queryKey: ['change', id],
