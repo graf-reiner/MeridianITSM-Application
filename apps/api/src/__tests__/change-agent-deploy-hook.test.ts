@@ -10,11 +10,13 @@ const txAgentUpdateDeploymentUpdate = vi.fn();
 const txAgentUpdateDeploymentTargetUpdateMany = vi.fn();
 const txChangeUpdate = vi.fn();
 const txChangeActivityCreate = vi.fn();
+const txAgentEventLogCreateMany = vi.fn();
 
 Object.assign(mockTx, {
   agent: { updateMany: txAgentUpdateMany },
   agentUpdateDeployment: { update: txAgentUpdateDeploymentUpdate },
   agentUpdateDeploymentTarget: { updateMany: txAgentUpdateDeploymentTargetUpdateMany },
+  agentEventLog: { createMany: txAgentEventLogCreateMany },
   change: { update: txChangeUpdate },
   changeActivity: { create: txChangeActivityCreate },
 });

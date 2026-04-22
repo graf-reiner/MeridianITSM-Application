@@ -255,6 +255,36 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
       data: updateData,
     });
 
+    // Log a HEARTBEAT event — throttled to one row per agent per 15 min so a
+    // chatty agent doesn't bury the more interesting events. Also log a
+    // reconnect event if the agent was offline for a while (>15 min gap).
+    const now = new Date();
+    const FIFTEEN_MIN = 15 * 60 * 1000;
+    const priorBeat = agent.lastHeartbeatAt?.getTime() ?? 0;
+    const gap = priorBeat ? now.getTime() - priorBeat : Infinity;
+    const recentLog = await prisma.agentEventLog.findFirst({
+      where: { tenantId: agent.tenantId, agentId: agent.id, category: 'HEARTBEAT' },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+    const sinceLastLog = recentLog ? now.getTime() - recentLog.createdAt.getTime() : Infinity;
+    if (sinceLastLog > FIFTEEN_MIN) {
+      const reconnected = gap > FIFTEEN_MIN;
+      await prisma.agentEventLog.create({
+        data: {
+          tenantId: agent.tenantId,
+          agentId: agent.id,
+          level: 'INFO',
+          category: 'HEARTBEAT',
+          message: reconnected
+            ? `Agent reconnected after ${Math.round(gap / 60000)} min offline`
+            : 'Heartbeat received',
+          context: body.agentVersion ? { agentVersion: body.agentVersion } : undefined,
+          eventAt: now,
+        },
+      });
+    }
+
     // If the agent just reported a new version, close out any pending
     // deployment target waiting for it.
     if (versionChanged && body.agentVersion) {
@@ -284,6 +314,34 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
             },
           }),
         ]);
+        await prisma.agentEventLog.create({
+          data: {
+            tenantId: agent.tenantId,
+            agentId: agent.id,
+            level: 'INFO',
+            category: 'UPDATE_INSTALLED',
+            message: `Agent updated to v${body.agentVersion}`,
+            context: {
+              fromVersion: pendingTarget.fromVersion,
+              toVersion: body.agentVersion,
+              deploymentId: pendingTarget.deploymentId,
+            },
+            eventAt: new Date(),
+          },
+        });
+      } else if (versionChanged && body.agentVersion) {
+        // Version changed but not a tracked deployment (manual install etc.)
+        await prisma.agentEventLog.create({
+          data: {
+            tenantId: agent.tenantId,
+            agentId: agent.id,
+            level: 'INFO',
+            category: 'VERSION_CHANGED',
+            message: `Agent version changed to v${body.agentVersion}`,
+            context: { fromVersion: agent.agentVersion, toVersion: body.agentVersion },
+            eventAt: new Date(),
+          },
+        });
       }
     }
 

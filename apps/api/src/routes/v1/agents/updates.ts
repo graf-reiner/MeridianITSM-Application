@@ -288,6 +288,24 @@ export default async function agentUpdateRoutes(app: FastifyInstance): Promise<v
           })),
         });
 
+        await tx.agentEventLog.createMany({
+          data: targetAgents.map((a) => ({
+            tenantId,
+            agentId: a.id,
+            level: 'INFO' as const,
+            category: 'UPDATE_REQUESTED',
+            message: `Update to v${agentUpdate.version} queued — awaiting change approval (${change.id})`,
+            context: {
+              fromVersion: a.agentVersion ?? null,
+              toVersion: agentUpdate.version,
+              deploymentId: deploymentRow.id,
+              changeId: change.id,
+              mode: 'awaiting_approval',
+            },
+            eventAt: new Date(),
+          })),
+        });
+
         return deploymentRow;
       });
 
@@ -337,6 +355,22 @@ export default async function agentUpdateRoutes(app: FastifyInstance): Promise<v
           fromVersion: a.agentVersion ?? null,
           toVersion: agentUpdate.version,
           status: 'PENDING',
+        })),
+      });
+
+      await tx.agentEventLog.createMany({
+        data: targetAgents.map((a) => ({
+          tenantId,
+          agentId: a.id,
+          level: 'INFO' as const,
+          category: 'UPDATE_QUEUED',
+          message: `Update to v${agentUpdate.version} queued — agent will install on next heartbeat`,
+          context: {
+            fromVersion: a.agentVersion ?? null,
+            toVersion: agentUpdate.version,
+            deploymentId: deploymentRow.id,
+          },
+          eventAt: new Date(),
         })),
       });
 

@@ -803,6 +803,23 @@ async function applyAgentDeployChangeTransition(
           where: { tenantId, id: { in: agentIds } },
           data: { forceUpdateUrl, updateStartedAt: now, updateInProgress: true },
         });
+        await tx.agentEventLog.createMany({
+          data: pendingTargets.map((t) => ({
+            tenantId,
+            agentId: t.agentId,
+            level: 'INFO' as const,
+            category: 'UPDATE_QUEUED',
+            message: `Update to v${t.toVersion} queued by change approval — agent will install on next heartbeat`,
+            context: {
+              fromVersion: t.fromVersion,
+              toVersion: t.toVersion,
+              deploymentId: deployment.id,
+              changeId,
+              trigger: 'change_approved',
+            },
+            eventAt: now,
+          })),
+        });
       }
       await tx.agentUpdateDeployment.update({
         where: { id: deployment.id },
@@ -811,11 +828,31 @@ async function applyAgentDeployChangeTransition(
     });
   } else {
     // REJECTED or CANCELLED
+    const pendingTargets = deployment.targets.filter((t) => t.status === 'PENDING');
     await prisma.$transaction(async (tx) => {
       await tx.agentUpdateDeploymentTarget.updateMany({
         where: { tenantId, deploymentId: deployment.id, status: 'PENDING' },
         data: { status: 'CANCELLED' },
       });
+      if (pendingTargets.length > 0) {
+        await tx.agentEventLog.createMany({
+          data: pendingTargets.map((t) => ({
+            tenantId,
+            agentId: t.agentId,
+            level: 'WARN' as const,
+            category: 'UPDATE_CANCELLED',
+            message: `Pending update to v${t.toVersion} cancelled — change ${newStatus.toLowerCase()}`,
+            context: {
+              fromVersion: t.fromVersion,
+              toVersion: t.toVersion,
+              deploymentId: deployment.id,
+              changeId,
+              trigger: newStatus === 'REJECTED' ? 'change_rejected' : 'change_cancelled',
+            },
+            eventAt: new Date(),
+          })),
+        });
+      }
       await tx.agentUpdateDeployment.update({
         where: { id: deployment.id },
         data: { awaitingApproval: false },
