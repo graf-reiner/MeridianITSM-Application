@@ -455,11 +455,12 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
         orderBy: { createdAt: 'desc' },
       });
       if (forced) {
+        // Agent uses PropertyNamingPolicy.CamelCase — keys must be lowerCamel.
         return reply.code(200).send({
-          LatestVersion: forced.version,
-          UpdateUrl: agent.forceUpdateUrl,
-          Checksum: forced.checksum,
-          FileSize: forced.fileSize,
+          latestVersion: forced.version,
+          updateUrl: agent.forceUpdateUrl,
+          checksum: forced.checksum,
+          fileSize: forced.fileSize,
         });
       }
     }
@@ -498,10 +499,10 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
     }
 
     return reply.code(200).send({
-      LatestVersion: latest.version,
-      UpdateUrl: `api/v1/agents/updates/${agent.platform.toLowerCase()}`,
-      Checksum: latest.checksum,
-      FileSize: latest.fileSize,
+      latestVersion: latest.version,
+      updateUrl: `api/v1/agents/updates/${agent.platform.toLowerCase()}`,
+      checksum: latest.checksum,
+      fileSize: latest.fileSize,
     });
   });
 
