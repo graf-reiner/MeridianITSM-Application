@@ -241,12 +241,18 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
     const versionChanged = body.agentVersion && body.agentVersion !== agent.agentVersion;
     if (body.agentVersion) {
       updateData.agentVersion = body.agentVersion;
-      if (agent.updateInProgress) {
-        updateData.updateInProgress = false;
-        updateData.updateStartedAt = null;
-      }
-      if (agent.forceUpdateUrl) {
-        updateData.forceUpdateUrl = null;
+      // Only clear the pending forced update when the agent actually upgraded.
+      // Previously this cleared on every heartbeat that reported a version,
+      // which wiped the pending deploy before the agent had a chance to fetch
+      // the binary — agents could then never pick up forced updates.
+      if (versionChanged) {
+        if (agent.updateInProgress) {
+          updateData.updateInProgress = false;
+          updateData.updateStartedAt = null;
+        }
+        if (agent.forceUpdateUrl) {
+          updateData.forceUpdateUrl = null;
+        }
       }
     }
 
@@ -427,6 +433,76 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
     }
 
     return reply.code(200).send({ ok: true, update });
+  });
+
+  // ─── GET /api/v1/agents/update-check ──────────────────────────────────────────
+  // Legacy endpoint for old agent builds (v1.0.0.x) that poll for updates with
+  // a separate GET instead of reading the heartbeat response. Returns the same
+  // payload shape the agent's UpdateInfo model expects (capitalised keys:
+  // LatestVersion / UpdateUrl / Checksum / FileSize). 204 when nothing is due.
+  app.get('/api/v1/agents/update-check', async (request, reply) => {
+    const agent = await resolveAgent(request, reply);
+    if (!agent) return;
+
+    const query = request.query as { version?: string };
+    const currentVersion = query.version ?? agent.agentVersion ?? '0.0.0';
+
+    // Forced deploy first — honour the admin-set forceUpdateUrl even when the
+    // tenant policy is 'manual' (that's the whole point of a forced deploy).
+    if (agent.forceUpdateUrl) {
+      const forced = await prisma.agentUpdate.findFirst({
+        where: { platform: agent.platform },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (forced) {
+        return reply.code(200).send({
+          LatestVersion: forced.version,
+          UpdateUrl: agent.forceUpdateUrl,
+          Checksum: forced.checksum,
+          FileSize: forced.fileSize,
+        });
+      }
+    }
+
+    // Otherwise respect the tenant policy, same as the heartbeat path.
+    const latest = await prisma.agentUpdate.findFirst({
+      where: { platform: agent.platform },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!latest || latest.version <= currentVersion) {
+      return reply.code(204).send();
+    }
+
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: agent.tenantId },
+      select: {
+        agentUpdatePolicy: true,
+        agentUpdateWindowStart: true,
+        agentUpdateWindowEnd: true,
+        agentUpdateWindowDay: true,
+      },
+    });
+    const policy = tenant?.agentUpdatePolicy ?? 'manual';
+    let shouldServe = false;
+    if (policy === 'auto') {
+      shouldServe = true;
+    } else if (policy === 'scheduled') {
+      shouldServe = isWithinMaintenanceWindow(
+        tenant?.agentUpdateWindowStart ?? null,
+        tenant?.agentUpdateWindowEnd ?? null,
+        tenant?.agentUpdateWindowDay ?? null,
+      );
+    }
+    if (!shouldServe) {
+      return reply.code(204).send();
+    }
+
+    return reply.code(200).send({
+      LatestVersion: latest.version,
+      UpdateUrl: `api/v1/agents/updates/${agent.platform.toLowerCase()}`,
+      Checksum: latest.checksum,
+      FileSize: latest.fileSize,
+    });
   });
 
   // ─── POST /api/v1/agents/inventory ────────────────────────────────────────────
