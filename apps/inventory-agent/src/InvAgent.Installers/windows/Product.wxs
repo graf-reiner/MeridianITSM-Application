@@ -8,14 +8,14 @@
   Interactive:
     Double-click MeridianAgent.msi
 
-  Build:
-    wix build Product.wxs -d PublishDir=...\publish\win-x64-installer -d ProjectDir=...\src\InvAgent.Installers -o MeridianAgent.msi
+  Build (run via build-installer.ps1, which reads Version from Directory.Build.props):
+    wix build Product.wxs -d Version=1.0.0.2 -d PublishDir=...\publish\win-x64-installer -d ProjectDir=...\src\InvAgent.Installers -o MeridianAgent.msi
 -->
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
 
   <Package Name="Meridian Inventory Agent"
            Manufacturer="Meridian ITSM"
-           Version="1.0.0.2"
+           Version="$(var.Version)"
            UpgradeCode="A1B2C3D4-E5F6-7890-ABCD-EF1234567890"
            InstallerVersion="500"
            Compressed="yes"
@@ -69,18 +69,19 @@
                         Type="ownProcess"
                         Account="LocalSystem"
                         ErrorControl="normal" />
-        <!-- Do NOT auto-start during install — config.json must be written first -->
+        <!-- Start="install" runs at StartServices (seq 5900), after WriteConfigCA
+             (seq ~5801). On MajorUpgrade it restarts the service post-replacement. -->
         <ServiceControl Id="AgentServiceControl"
                         Name="MeridianAgent"
+                        Start="install"
                         Stop="both"
                         Remove="uninstall"
                         Wait="yes" />
       </Component>
     </ComponentGroup>
 
-    <!-- ── Custom actions ────────────────────────────────────────────────
-         1. Write config.json after files are installed
-         2. Start the service after config is written -->
+    <!-- Write config.json after files are installed, before StartServices.
+         NOT Installed = fresh install only; MajorUpgrade preserves existing config. -->
     <CustomAction Id="WriteConfigCA"
                   Directory="MeridianDataDir"
                   ExeCommand='cmd.exe /c echo {&quot;AgentConfig&quot;:{&quot;ServerUrl&quot;:&quot;[SERVER_URL]&quot;,&quot;EnrollmentToken&quot;:&quot;[ENROLLMENT_TOKEN]&quot;,&quot;PrivacyTier&quot;:&quot;[PRIVACY_TIER]&quot;,&quot;HeartbeatIntervalSeconds&quot;:300,&quot;InventoryIntervalSeconds&quot;:14400,&quot;LocalWebUiPort&quot;:8787,&quot;LocalQueueMaxSizeMb&quot;:100,&quot;LogLevel&quot;:&quot;Information&quot;}} > &quot;[MeridianDataDir]config.json&quot;'
@@ -88,16 +89,8 @@
                   Impersonate="no"
                   Return="check" />
 
-    <CustomAction Id="StartAgentServiceCA"
-                  Directory="INSTALLFOLDER"
-                  ExeCommand="cmd.exe /c sc start MeridianAgent"
-                  Execute="deferred"
-                  Impersonate="no"
-                  Return="ignore" />
-
     <InstallExecuteSequence>
       <Custom Action="WriteConfigCA" After="InstallServices" Condition="NOT Installed" />
-      <Custom Action="StartAgentServiceCA" After="WriteConfigCA" Condition="NOT Installed" />
     </InstallExecuteSequence>
 
     <!-- ── Features ─────────────────────────────────────────────────────── -->
