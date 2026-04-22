@@ -63,6 +63,8 @@ export interface ChangeListFilters {
   calendarEnd?: string;
   page?: number;
   pageSize?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -309,26 +311,30 @@ export async function getChange(tenantId: string, changeId: string) {
   if (!change) return null;
 
   // Enrich activities with actor names — ChangeActivity has no Prisma relation
-  // to User, so we fetch the needed users in one extra query and attach.
-  const actorIds = Array.from(
-    new Set(change.activities.map((a) => a.actorId).filter((v): v is string => !!v)),
-  );
-  const actors = actorIds.length
+  // to User, so we fetch the needed users (plus requester) in one extra query.
+  const userIds = new Set<string>();
+  change.activities.forEach((a) => a.actorId && userIds.add(a.actorId));
+  if (change.requestedById) userIds.add(change.requestedById);
+
+  const users = userIds.size
     ? await prisma.user.findMany({
-        where: { id: { in: actorIds }, tenantId },
+        where: { id: { in: Array.from(userIds) }, tenantId },
         select: { id: true, firstName: true, lastName: true, email: true },
       })
     : [];
-  const actorById = new Map(actors.map((u) => [u.id, u]));
+  const userById = new Map(users.map((u) => [u.id, u]));
+
   const activitiesWithActor = change.activities.map((a) => ({
     ...a,
-    actor: a.actorId ? actorById.get(a.actorId) ?? null : null,
+    actor: a.actorId ? userById.get(a.actorId) ?? null : null,
   }));
+  const requestedBy = change.requestedById ? userById.get(change.requestedById) ?? null : null;
 
   // Transform to frontend-friendly shape: assets, applications, meetings
   const { changeAssets, changeApplications, cabMeetingChanges, activities: _a, ...rest } = change;
   return {
     ...rest,
+    requestedBy,
     activities: activitiesWithActor,
     assets: changeAssets,
     applications: changeApplications,
@@ -380,6 +386,16 @@ export async function listChanges(tenantId: string, filters: ChangeListFilters) 
     where.OR = searchConditions;
   }
 
+  // Sort whitelist — prevent arbitrary column injection via sortBy
+  const allowedSortFields = new Set([
+    'changeNumber', 'title', 'type', 'status', 'riskLevel',
+    'scheduledStart', 'scheduledEnd', 'createdAt', 'updatedAt',
+  ]);
+  const sortBy = filters.sortBy && allowedSortFields.has(filters.sortBy)
+    ? filters.sortBy
+    : 'createdAt';
+  const sortDir: 'asc' | 'desc' = filters.sortDir === 'asc' ? 'asc' : 'desc';
+
   const [data, total] = await Promise.all([
     prisma.change.findMany({
       where,
@@ -388,15 +404,34 @@ export async function listChanges(tenantId: string, filters: ChangeListFilters) 
           select: { id: true, approverId: true, status: true, sequenceOrder: true },
           orderBy: { sequenceOrder: 'asc' },
         },
+        agentUpdateDeployment: {
+          select: { id: true },
+        },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { [sortBy]: sortDir },
       skip,
       take: pageSize,
     }),
     prisma.change.count({ where }),
   ]);
 
-  return { data, total, page, pageSize };
+  // Change has requestedById but no Prisma relation to User — fetch in batch.
+  const requesterIds = Array.from(
+    new Set(data.map((c) => c.requestedById).filter((v): v is string => !!v)),
+  );
+  const requesters = requesterIds.length
+    ? await prisma.user.findMany({
+        where: { id: { in: requesterIds }, tenantId },
+        select: { id: true, firstName: true, lastName: true, email: true },
+      })
+    : [];
+  const requesterById = new Map(requesters.map((u) => [u.id, u]));
+  const dataWithRequester = data.map((c) => ({
+    ...c,
+    requestedBy: c.requestedById ? requesterById.get(c.requestedById) ?? null : null,
+  }));
+
+  return { data: dataWithRequester, total, page, pageSize };
 }
 
 /**

@@ -129,6 +129,8 @@ export async function changeRoutes(fastify: FastifyInstance): Promise<void> {
         pageSize?: string;
         calendarStart?: string;
         calendarEnd?: string;
+        sortBy?: string;
+        sortDir?: string;
       };
 
       const result = await listChanges(tenantId, {
@@ -141,6 +143,8 @@ export async function changeRoutes(fastify: FastifyInstance): Promise<void> {
         pageSize: query.pageSize ? parseInt(query.pageSize, 10) : undefined,
         calendarStart: query.calendarStart,
         calendarEnd: query.calendarEnd,
+        sortBy: query.sortBy,
+        sortDir: query.sortDir === 'asc' ? 'asc' : query.sortDir === 'desc' ? 'desc' : undefined,
       });
 
       return reply.status(200).send(result);
