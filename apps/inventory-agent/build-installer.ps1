@@ -49,6 +49,10 @@ dotnet publish "$RepoRoot\src\InvAgent.Setup\InvAgent.Setup.csproj" `
     -o $OutputDir -verbosity:minimal
 if ($LASTEXITCODE -ne 0) { throw "Setup build failed" }
 
+# Copy the config-writer script alongside the binaries — the MSI's WriteConfigCA
+# invokes it from INSTALLFOLDER to avoid MSI Formatted-type brace-escape issues.
+Copy-Item "$RepoRoot\src\InvAgent.Installers\windows\write-config.ps1" $OutputDir -Force
+
 # Build the MSI with WiX (unless -SkipMsi). Version is passed in so Product.wxs
 # can't drift from Directory.Build.props.
 if (-not $SkipMsi) {
@@ -61,8 +65,12 @@ if (-not $SkipMsi) {
     $ProjDir = Join-Path $RepoRoot "src\InvAgent.Installers"
     $MsiOut  = Join-Path $OutputDir "MeridianAgent.msi"
 
-    Write-Host "Building MeridianAgent.msi (v$Version)..." -ForegroundColor Yellow
+    Write-Host "Building MeridianAgent.msi (v$Version, x64)..." -ForegroundColor Yellow
+    # -arch x64 is mandatory: the agent is a self-contained win-x64 binary, and
+    # without x64 the MSI lands in C:\Program Files (x86) and ServiceInstall is
+    # silently skipped (no service gets registered with SCM).
     & wix build $Wxs `
+        -arch x64 `
         -d "Version=$Version" `
         -d "PublishDir=$OutputDir" `
         -d "ProjectDir=$ProjDir" `

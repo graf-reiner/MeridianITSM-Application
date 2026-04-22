@@ -33,7 +33,11 @@
     <Property Id="PRIVACY_TIER" Value="full" Secure="yes" />
 
     <!-- ── Directories ──────────────────────────────────────────────────── -->
-    <StandardDirectory Id="ProgramFilesFolder">
+    <!-- ProgramFiles64Folder → C:\Program Files on x64 Windows. The self-contained
+         win-x64 .NET runtime must live under the 64-bit path; ProgramFilesFolder
+         would resolve to C:\Program Files (x86) and the service host would fail
+         to locate the x64 InvAgent.exe at StartServices time. -->
+    <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="MeridianDir" Name="Meridian">
         <Directory Id="INSTALLFOLDER" Name="Agent" />
       </Directory>
@@ -43,9 +47,10 @@
       <Directory Id="MeridianDataDir" Name="Meridian" />
     </StandardDirectory>
 
-    <!-- ── All agent files from publish directory ───────────────────────── -->
+    <!-- ── All agent files EXCEPT InvAgent.exe (service binary lives in its own
+         component below so its File Id anchors the service's ImagePath). ───── -->
     <ComponentGroup Id="AgentFiles" Directory="INSTALLFOLDER" Source="$(var.PublishDir)">
-      <Files Include="**" />
+      <Files Include="**;!InvAgent.exe" />
     </ComponentGroup>
 
     <!-- ── Config directory ──────────────────────────────────────────────── -->
@@ -58,9 +63,14 @@
     </ComponentGroup>
 
     <!-- ── Windows Service ──────────────────────────────────────────────── -->
+    <!-- The service binary (InvAgent.exe) MUST live in the same Component as the
+         ServiceInstall — Windows Installer derives the service's ImagePath from
+         the Component's KeyPath file. With a registry-only KeyPath, ImagePath is
+         empty and StartService times out after 30 s with Error 1920. -->
     <ComponentGroup Id="ServiceComponents" Directory="INSTALLFOLDER">
       <Component Id="AgentService" Guid="A3B4C5D6-E7F8-9012-3456-789ABCDEF012">
-        <RegistryValue Root="HKLM" Key="SOFTWARE\Meridian\Agent" Name="ServiceInstalled" Type="integer" Value="1" KeyPath="yes" />
+        <File Id="InvAgentExe" Source="$(var.PublishDir)\InvAgent.exe" KeyPath="yes" />
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Meridian\Agent" Name="ServiceInstalled" Type="integer" Value="1" />
         <ServiceInstall Id="AgentServiceInstall"
                         Name="MeridianAgent"
                         DisplayName="Meridian Inventory Agent"
@@ -81,10 +91,14 @@
     </ComponentGroup>
 
     <!-- Write config.json after files are installed, before StartServices.
-         NOT Installed = fresh install only; MajorUpgrade preserves existing config. -->
+         NOT Installed = fresh install only; MajorUpgrade preserves existing config.
+         We invoke a bundled PowerShell script rather than `cmd /c echo` because
+         MSI's Formatted type strips `{...}` as conditional-substring markers,
+         which mangles JSON. The helper script takes named args (no `{}` in the
+         ExeCommand string) and writes UTF-8 JSON via ConvertTo-Json. -->
     <CustomAction Id="WriteConfigCA"
-                  Directory="MeridianDataDir"
-                  ExeCommand='cmd.exe /c echo {&quot;AgentConfig&quot;:{&quot;ServerUrl&quot;:&quot;[SERVER_URL]&quot;,&quot;EnrollmentToken&quot;:&quot;[ENROLLMENT_TOKEN]&quot;,&quot;PrivacyTier&quot;:&quot;[PRIVACY_TIER]&quot;,&quot;HeartbeatIntervalSeconds&quot;:300,&quot;InventoryIntervalSeconds&quot;:14400,&quot;LocalWebUiPort&quot;:8787,&quot;LocalQueueMaxSizeMb&quot;:100,&quot;LogLevel&quot;:&quot;Information&quot;}} > &quot;[MeridianDataDir]config.json&quot;'
+                  Directory="INSTALLFOLDER"
+                  ExeCommand='powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLFOLDER]write-config.ps1&quot; -ServerUrl &quot;[SERVER_URL]&quot; -EnrollmentToken &quot;[ENROLLMENT_TOKEN]&quot; -PrivacyTier &quot;[PRIVACY_TIER]&quot; -OutputPath &quot;[MeridianDataDir]config.json&quot;'
                   Execute="deferred"
                   Impersonate="no"
                   Return="check" />
