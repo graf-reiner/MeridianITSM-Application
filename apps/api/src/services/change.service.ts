@@ -308,10 +308,28 @@ export async function getChange(tenantId: string, changeId: string) {
 
   if (!change) return null;
 
+  // Enrich activities with actor names — ChangeActivity has no Prisma relation
+  // to User, so we fetch the needed users in one extra query and attach.
+  const actorIds = Array.from(
+    new Set(change.activities.map((a) => a.actorId).filter((v): v is string => !!v)),
+  );
+  const actors = actorIds.length
+    ? await prisma.user.findMany({
+        where: { id: { in: actorIds }, tenantId },
+        select: { id: true, firstName: true, lastName: true, email: true },
+      })
+    : [];
+  const actorById = new Map(actors.map((u) => [u.id, u]));
+  const activitiesWithActor = change.activities.map((a) => ({
+    ...a,
+    actor: a.actorId ? actorById.get(a.actorId) ?? null : null,
+  }));
+
   // Transform to frontend-friendly shape: assets, applications, meetings
-  const { changeAssets, changeApplications, cabMeetingChanges, ...rest } = change;
+  const { changeAssets, changeApplications, cabMeetingChanges, activities: _a, ...rest } = change;
   return {
     ...rest,
+    activities: activitiesWithActor,
     assets: changeAssets,
     applications: changeApplications,
     meetings: cabMeetingChanges,

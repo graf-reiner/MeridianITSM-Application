@@ -33,9 +33,49 @@ interface Approver {
 interface Activity {
   id: string;
   activityType: string;
-  description: string | null;
-  performedBy: { firstName: string; lastName: string } | null;
+  fieldName: string | null;
+  oldValue: string | null;
+  newValue: string | null;
+  metadata: Record<string, unknown> | null;
+  actor: { id: string; firstName: string; lastName: string; email: string } | null;
   createdAt: string;
+}
+
+function formatActivity(a: Activity): string {
+  const meta = a.metadata ?? {};
+  switch (a.activityType) {
+    case 'CREATED':
+      return 'Change created';
+    case 'STATUS_CHANGED':
+      return `Status changed: ${a.oldValue?.replace(/_/g, ' ') ?? '—'} → ${a.newValue?.replace(/_/g, ' ') ?? '—'}`;
+    case 'FIELD_CHANGED': {
+      const label = a.fieldName ?? 'field';
+      const shorten = (v: string | null) => {
+        if (!v) return '—';
+        const plain = v.replace(/<[^>]+>/g, '').trim();
+        return plain.length > 80 ? plain.slice(0, 80) + '…' : plain || '—';
+      };
+      return `${label}: "${shorten(a.oldValue)}" → "${shorten(a.newValue)}"`;
+    }
+    case 'APPROVER_ADDED':
+      return `Approver added${typeof meta.sequenceOrder === 'number' ? ` (sequence ${meta.sequenceOrder + 1})` : ''}`;
+    case 'APPROVER_REMOVED':
+      return 'Approver removed';
+    case 'APPROVED': {
+      const comments = typeof meta.comments === 'string' ? meta.comments : '';
+      return `Approved${comments ? ` — ${comments}` : ''}`;
+    }
+    case 'REJECTED': {
+      const comments = typeof meta.comments === 'string' ? meta.comments : '';
+      return `Rejected${comments ? ` — ${comments}` : ''}`;
+    }
+    case 'RECALLED': {
+      const reason = typeof meta.reason === 'string' ? meta.reason : '';
+      return `Recalled to ASSESSMENT${reason ? ` — ${reason}` : ''}`;
+    }
+    default:
+      return a.activityType.replace(/_/g, ' ').toLowerCase();
+  }
 }
 
 interface LinkedAsset {
@@ -1082,22 +1122,22 @@ export default function ChangeDetailPage() {
                   borderBottom: idx < change.activities.length - 1 ? '1px solid var(--bg-tertiary)' : 'none',
                 }}
               >
-                <div style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-primary)', marginTop: 5 }} />
+                <div style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--accent-primary)', marginTop: 7 }} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', alignItems: 'baseline' }}>
+                    <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600 }}>
                       {activity.activityType.replace(/_/g, ' ')}
                     </span>
                     <span style={{ fontSize: 12, color: 'var(--text-placeholder)', whiteSpace: 'nowrap' }}>
                       {formatDateTime(activity.createdAt)}
                     </span>
                   </div>
-                  {activity.description && (
-                    <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>{activity.description}</p>
-                  )}
-                  {activity.performedBy && (
-                    <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-placeholder)' }}>
-                      by {activity.performedBy.firstName} {activity.performedBy.lastName}
+                  <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    {formatActivity(activity)}
+                  </p>
+                  {activity.actor && (
+                    <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
+                      by {`${activity.actor.firstName ?? ''} ${activity.actor.lastName ?? ''}`.trim() || activity.actor.email}
                     </p>
                   )}
                 </div>
