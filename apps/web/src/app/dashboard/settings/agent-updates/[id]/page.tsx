@@ -134,6 +134,13 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
               <tbody>
                 {data.targets.map((t) => {
                   const s = STATUS_COLORS[t.status] ?? { bg: 'var(--bg-tertiary)', color: '#6b7280' };
+                  // A PENDING target won't progress until the agent heartbeats.
+                  // Flag it as STALE if we haven't heard from the agent in >24h.
+                  const STALE_MS = 24 * 60 * 60 * 1000;
+                  const lastBeat = t.agentLastHeartbeatAt ? new Date(t.agentLastHeartbeatAt).getTime() : null;
+                  const isPendingState = t.status === 'PENDING' || t.status === 'DOWNLOADING' || t.status === 'INSTALLING';
+                  const isStale = isPendingState && (lastBeat === null || Date.now() - lastBeat > STALE_MS);
+                  const staleHours = lastBeat ? Math.floor((Date.now() - lastBeat) / 3600000) : null;
                   return (
                     <tr key={t.id} style={{ borderTop: '1px solid var(--bg-tertiary)' }}>
                       <td style={{ padding: '10px 14px' }}>
@@ -149,18 +156,41 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
                       </td>
                       <td style={{ padding: '10px 14px', fontFamily: 'monospace' }}>{t.toVersion}</td>
                       <td style={{ padding: '10px 14px' }}>
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            padding: '2px 10px',
-                            borderRadius: 9999,
-                            fontSize: 12,
-                            fontWeight: 600,
-                            backgroundColor: s.bg,
-                            color: s.color,
-                          }}
-                        >
-                          {t.status}
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              padding: '2px 10px',
+                              borderRadius: 9999,
+                              fontSize: 12,
+                              fontWeight: 600,
+                              backgroundColor: s.bg,
+                              color: s.color,
+                            }}
+                          >
+                            {t.status}
+                          </span>
+                          {isStale && (
+                            <span
+                              title={
+                                lastBeat
+                                  ? `Agent last heartbeat ${staleHours}h ago — update won't apply until it checks in.`
+                                  : `Agent has never heartbeated — update won't apply until it checks in.`
+                              }
+                              style={{
+                                display: 'inline-block',
+                                padding: '2px 8px',
+                                borderRadius: 9999,
+                                fontSize: 11,
+                                fontWeight: 700,
+                                backgroundColor: '#fee2e2',
+                                color: '#991b1b',
+                                border: '1px solid #fecaca',
+                              }}
+                            >
+                              STALE{lastBeat && staleHours !== null ? ` · ${staleHours}h` : ''}
+                            </span>
+                          )}
                         </span>
                       </td>
                       <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 13 }}>
