@@ -792,7 +792,8 @@ async function applyAgentDeployChangeTransition(
   if (!deployment || !deployment.awaitingApproval) return;
 
   if (newStatus === 'APPROVED') {
-    const forceUpdateUrl = `api/v1/agents/updates/${deployment.platform.toLowerCase()}`;
+    const { packageHintSuffix } = await import('../routes/v1/agents/updates.js');
+    const forceUpdateUrl = `api/v1/agents/updates/${deployment.platform.toLowerCase()}${packageHintSuffix(deployment.platform)}`;
     const pendingTargets = deployment.targets.filter((t) => t.status === 'PENDING');
     const agentIds = pendingTargets.map((t) => t.agentId);
     const now = new Date();

@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { createHash, randomBytes } from 'node:crypto';
 import { prisma } from '@meridian/db';
 import { Queue } from 'bullmq';
-import agentUpdateRoutes from './updates.js';
+import agentUpdateRoutes, { packageHintSuffix } from './updates.js';
 import {
   upsertServerExtensionByAsset,
   type AgentInventorySnapshot,
@@ -424,7 +424,8 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
             latestVersion: latest.version,
             // Relative path so the agent's authenticated client fetches via our
             // server and streams the binary (MinIO is not publicly routable).
-            updateUrl: `api/v1/agents/updates/${agent.platform.toLowerCase()}`,
+            // ?file=agent.<ext> hint so the agent picks the right installer.
+            updateUrl: `api/v1/agents/updates/${agent.platform.toLowerCase()}${packageHintSuffix(agent.platform)}`,
             checksum: latest.checksum,
             fileSize: latest.fileSize,
           };
@@ -500,7 +501,7 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
 
     return reply.code(200).send({
       latestVersion: latest.version,
-      updateUrl: `api/v1/agents/updates/${agent.platform.toLowerCase()}`,
+      updateUrl: `api/v1/agents/updates/${agent.platform.toLowerCase()}${packageHintSuffix(agent.platform)}`,
       checksum: latest.checksum,
       fileSize: latest.fileSize,
     });

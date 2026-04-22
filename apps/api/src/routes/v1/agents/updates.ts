@@ -4,6 +4,20 @@ import { getFileObject } from '../../../services/storage.service.js';
 import { createChange, transitionStatus } from '../../../services/change.service.js';
 
 /**
+ * Package-type hint appended to update URLs. The agent's UpdateInstaller
+ * picks msiexec / pkg installer / dpkg based on substring matches in the
+ * UpdateUrl — so the suffix must embed the extension even though the route
+ * itself ignores query params.
+ */
+export function packageHintSuffix(platform: string): string {
+  const p = platform.toUpperCase();
+  if (p === 'WINDOWS') return '?file=agent.msi';
+  if (p === 'MACOS') return '?file=agent.pkg';
+  if (p === 'LINUX') return '?file=agent.deb';
+  return '';
+}
+
+/**
  * Resolve agent from Authorization: AgentKey <key> header.
  * Returns the agent record or sends 401 and returns null.
  */
@@ -186,7 +200,9 @@ export default async function agentUpdateRoutes(app: FastifyInstance): Promise<v
     // Relative path — the agent's authenticated MeridianApiClient will fetch
     // this against its configured ServerUrl, using AgentKey auth. We can't
     // hand out a direct MinIO URL because MinIO isn't publicly routable.
-    const forceUpdateUrl = `api/v1/agents/updates/${normalizedPlatform.toLowerCase()}`;
+    // ?file= hint so the agent's UpdateInstaller detects the package type via
+    // UpdateUrl.Contains(".msi"/".pkg"/".deb") and launches the right installer.
+    const forceUpdateUrl = `api/v1/agents/updates/${normalizedPlatform.toLowerCase()}${packageHintSuffix(normalizedPlatform)}`;
 
     // Build the where clause for agents to update. Only deploy to agents in
     // deployable states — ACTIVE (live) and OFFLINE (will pick up on next
