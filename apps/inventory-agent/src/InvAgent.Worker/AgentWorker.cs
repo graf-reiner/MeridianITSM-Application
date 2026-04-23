@@ -1,6 +1,5 @@
 namespace InvAgent.Worker;
 
-using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using InvAgent.Collectors;
@@ -194,17 +193,13 @@ public class AgentWorker : BackgroundService
 
             // Parse server-advised next heartbeat time
             if (response?.NextHeartbeatAt is string nextHbAt
-                && DateTime.TryParse(nextHbAt, null, DateTimeStyles.RoundtripKind, out var nextHbTime))
+                && DateTimeOffset.TryParse(nextHbAt, out var nextHbOffset))
             {
-                var now = DateTime.UtcNow;
-                if (nextHbTime > now)
+                var delay = nextHbOffset.UtcDateTime - DateTime.UtcNow;
+                if (delay >= TimeSpan.FromSeconds(30))
                 {
-                    var delay = nextHbTime - now;
-                    if (delay >= TimeSpan.FromSeconds(30))
-                    {
-                        _logger.LogDebug("Server advised next heartbeat in {Seconds:F0}s.", delay.TotalSeconds);
-                        return delay;
-                    }
+                    _logger.LogDebug("Server advised next heartbeat in {Seconds:F0}s.", delay.TotalSeconds);
+                    return delay;
                 }
             }
 
@@ -290,17 +285,13 @@ public class AgentWorker : BackgroundService
 
             // Parse server-advised next inventory time
             if (submitResult?.NextInventoryAt is string nextAt
-                && DateTime.TryParse(nextAt, null, DateTimeStyles.RoundtripKind, out var nextTime))
+                && DateTimeOffset.TryParse(nextAt, out var nextOffset))
             {
-                var now = DateTime.UtcNow;
-                if (nextTime > now)
+                var delay = nextOffset.UtcDateTime - DateTime.UtcNow;
+                if (delay >= TimeSpan.FromSeconds(30))
                 {
-                    var delay = nextTime - now;
-                    if (delay >= TimeSpan.FromSeconds(30))
-                    {
-                        _logger.LogInformation("Server advised next inventory in {Minutes:F1}min.", delay.TotalMinutes);
-                        return delay;
-                    }
+                    _logger.LogInformation("Server advised next inventory in {Minutes:F1}min.", delay.TotalMinutes);
+                    return delay;
                 }
             }
 
