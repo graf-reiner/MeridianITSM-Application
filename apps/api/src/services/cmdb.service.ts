@@ -1229,6 +1229,235 @@ export async function updateCategory(
   });
 }
 
+// ─── CI Timeline ──────────────────────────────────────────────────────────────
+
+export type CITimelineEntry =
+  | {
+      type: 'inventory_diff';
+      id: string;
+      collectedAt: Date;
+      changedBy: 'AGENT';
+      agentId: string;
+      agentHostname: string | null;
+      diff: unknown;
+    }
+  | {
+      type: 'field_change';
+      id: string;
+      createdAt: Date;
+      changeType: 'CREATED' | 'UPDATED' | 'DELETED';
+      changedBy: 'USER' | 'AGENT' | 'IMPORT';
+      agentId?: string;
+      agentHostname?: string | null;
+      userId?: string;
+      userName?: string | null;
+      fields: Array<{ fieldName: string | null; oldValue: string | null; newValue: string | null }>;
+    };
+
+export type CITimelineResult = {
+  data: CITimelineEntry[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+/**
+ * Unified timeline for a CI, merging CmdbChangeRecord field-change events
+ * (grouped by actor within a 5-minute window) and InventoryDiff events.
+ *
+ * NOTE: Change record grouping is capped at 1000 rows fetched from the DB.
+ * CIs with more than 1000 change records will have their oldest records
+ * excluded from the grouped result set.
+ */
+export async function getCITimeline(
+  tenantId: string,
+  ciId: string,
+  page: number = 1,
+  pageSize: number = 25,
+): Promise<CITimelineResult> {
+  const CHANGE_RECORD_LIMIT = 1000;
+  const GROUPING_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+
+  // Fetch raw change records (capped) and all inventory diffs in parallel
+  const [rawChangeRecords, inventoryDiffs] = await Promise.all([
+    prisma.cmdbChangeRecord.findMany({
+      where: { ciId, tenantId },
+      orderBy: { createdAt: 'asc' },
+      take: CHANGE_RECORD_LIMIT,
+    }),
+    prisma.inventoryDiff.findMany({
+      where: { ciId, tenantId },
+      orderBy: { collectedAt: 'desc' },
+    }),
+  ]);
+
+  // ── Group consecutive change records by actor within a 5-minute window ──────
+
+  type RawChangeRecord = (typeof rawChangeRecords)[number];
+
+  const groupedFieldChanges: Extract<CITimelineEntry, { type: 'field_change' }>[] = [];
+
+  if (rawChangeRecords.length > 0) {
+    // Determine the actor key for a record (prefer agentId, fall back to userId)
+    const actorKey = (r: RawChangeRecord): string =>
+      r.agentId ? `agent:${r.agentId}` : r.userId ? `user:${r.userId}` : 'unknown';
+
+    let groupStart = 0;
+
+    const flushGroup = (endExclusive: number) => {
+      const slice = rawChangeRecords.slice(groupStart, endExclusive);
+      if (slice.length === 0) return;
+
+      const latestRecord = slice[slice.length - 1]!;
+      const firstRecord = slice[0]!;
+
+      // changeType priority: CREATED > DELETED > UPDATED
+      let changeType: 'CREATED' | 'UPDATED' | 'DELETED' = 'UPDATED';
+      for (const r of slice) {
+        if (r.changeType === 'CREATED') {
+          changeType = 'CREATED';
+          break;
+        }
+        if (r.changeType === 'DELETED') changeType = 'DELETED';
+      }
+
+      // Determine changedBy from the first record
+      const changedBy: 'USER' | 'AGENT' | 'IMPORT' =
+        firstRecord.changedBy === 'USER'
+          ? 'USER'
+          : firstRecord.changedBy === 'AGENT'
+            ? 'AGENT'
+            : 'IMPORT';
+
+      groupedFieldChanges.push({
+        type: 'field_change',
+        id: firstRecord.id,
+        createdAt: latestRecord.createdAt,
+        changeType,
+        changedBy,
+        agentId: firstRecord.agentId ?? undefined,
+        userId: firstRecord.userId ?? undefined,
+        fields: slice.map((r) => ({
+          fieldName: r.fieldName,
+          oldValue: r.oldValue,
+          newValue: r.newValue,
+        })),
+      });
+    };
+
+    for (let i = 1; i < rawChangeRecords.length; i++) {
+      const prev = rawChangeRecords[i - 1]!;
+      const curr = rawChangeRecords[i]!;
+
+      const sameActor = actorKey(curr) === actorKey(prev);
+      const withinWindow =
+        curr.createdAt.getTime() - prev.createdAt.getTime() <= GROUPING_WINDOW_MS;
+
+      if (!sameActor || !withinWindow) {
+        flushGroup(i);
+        groupStart = i;
+      }
+    }
+    // Flush the final group
+    flushGroup(rawChangeRecords.length);
+  }
+
+  // ── Build inventory_diff entries ─────────────────────────────────────────────
+
+  const diffEntries: Extract<CITimelineEntry, { type: 'inventory_diff' }>[] = inventoryDiffs.map(
+    (d) => ({
+      type: 'inventory_diff' as const,
+      id: d.id,
+      collectedAt: d.collectedAt,
+      changedBy: 'AGENT' as const,
+      agentId: d.agentId,
+      agentHostname: null, // resolved below
+      diff: d.diffJson,
+    }),
+  );
+
+  // ── Merge and sort all events by timestamp descending ────────────────────────
+
+  type AnyEntry = CITimelineEntry;
+
+  const allEvents: AnyEntry[] = [
+    ...groupedFieldChanges,
+    ...diffEntries,
+  ].sort((a, b) => {
+    const tsA = a.type === 'field_change' ? a.createdAt.getTime() : a.collectedAt.getTime();
+    const tsB = b.type === 'field_change' ? b.createdAt.getTime() : b.collectedAt.getTime();
+    return tsB - tsA;
+  });
+
+  const total = allEvents.length;
+
+  // ── Paginate ─────────────────────────────────────────────────────────────────
+
+  const skip = (page - 1) * pageSize;
+  const pageSlice = allEvents.slice(skip, skip + pageSize);
+
+  // ── Batch-resolve actor names only for the current page ──────────────────────
+
+  const pageUserIds = new Set<string>();
+  const pageAgentIds = new Set<string>();
+
+  for (const event of pageSlice) {
+    if (event.type === 'field_change') {
+      if (event.userId) pageUserIds.add(event.userId);
+      if (event.agentId) pageAgentIds.add(event.agentId);
+    } else {
+      pageAgentIds.add(event.agentId);
+    }
+  }
+
+  const [users, agents] = await Promise.all([
+    pageUserIds.size > 0
+      ? prisma.user.findMany({
+          where: { id: { in: [...pageUserIds] }, tenantId },
+          select: { id: true, displayName: true, firstName: true, lastName: true, email: true },
+        })
+      : Promise.resolve([]),
+    pageAgentIds.size > 0
+      ? prisma.agent.findMany({
+          where: { id: { in: [...pageAgentIds] }, tenantId },
+          select: { id: true, hostname: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const userMap = new Map(users.map((u) => [u.id, u]));
+  const agentMap = new Map(agents.map((a) => [a.id, a]));
+
+  // Resolve names on each page event
+  const resolvedPage: AnyEntry[] = pageSlice.map((event) => {
+    if (event.type === 'field_change') {
+      const userRecord = event.userId ? userMap.get(event.userId) : undefined;
+      const agentRecord = event.agentId ? agentMap.get(event.agentId) : undefined;
+
+      let userName: string | null = null;
+      if (userRecord) {
+        userName =
+          userRecord.displayName ??
+          (`${userRecord.firstName} ${userRecord.lastName}`.trim() || userRecord.email);
+      }
+
+      return {
+        ...event,
+        userName,
+        agentHostname: agentRecord?.hostname ?? null,
+      };
+    } else {
+      const agentRecord = agentMap.get(event.agentId);
+      return {
+        ...event,
+        agentHostname: agentRecord?.hostname ?? null,
+      };
+    }
+  });
+
+  return { data: resolvedPage, total, page, pageSize };
+}
+
 /**
  * Delete a CMDB category.
  */
