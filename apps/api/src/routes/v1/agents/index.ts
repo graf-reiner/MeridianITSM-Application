@@ -374,6 +374,18 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
       fileSize: number;
     } | null = null;
 
+    // Fetch tenant settings once — used for both update policy and nextHeartbeatAt jitter.
+    const tenantSettings = await prisma.tenant.findUnique({
+      where: { id: agent.tenantId },
+      select: {
+        agentUpdatePolicy: true,
+        agentUpdateWindowStart: true,
+        agentUpdateWindowEnd: true,
+        agentUpdateWindowDay: true,
+        heartbeatIntervalSeconds: true,
+      },
+    });
+
     if (agent.forceUpdateUrl) {
       const forced = await prisma.agentUpdate.findFirst({
         where: { platform: agent.platform },
@@ -396,26 +408,16 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
       });
 
       if (latest && latest.version > (body.agentVersion ?? '0.0.0')) {
-        const tenant = await prisma.tenant.findUnique({
-          where: { id: agent.tenantId },
-          select: {
-            agentUpdatePolicy: true,
-            agentUpdateWindowStart: true,
-            agentUpdateWindowEnd: true,
-            agentUpdateWindowDay: true,
-          },
-        });
-
-        const policy = tenant?.agentUpdatePolicy ?? 'manual';
+        const policy = tenantSettings?.agentUpdatePolicy ?? 'manual';
         let shouldIncludeUpdate = false;
 
         if (policy === 'auto') {
           shouldIncludeUpdate = true;
         } else if (policy === 'scheduled') {
           shouldIncludeUpdate = isWithinMaintenanceWindow(
-            tenant?.agentUpdateWindowStart ?? null,
-            tenant?.agentUpdateWindowEnd ?? null,
-            tenant?.agentUpdateWindowDay ?? null,
+            tenantSettings?.agentUpdateWindowStart ?? null,
+            tenantSettings?.agentUpdateWindowEnd ?? null,
+            tenantSettings?.agentUpdateWindowDay ?? null,
           );
         }
 
@@ -433,7 +435,12 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
       }
     }
 
-    return reply.code(200).send({ ok: true, update });
+    // Compute advised next heartbeat time with up-to-20% jitter to stagger agents.
+    const heartbeatIntervalMs = (tenantSettings?.heartbeatIntervalSeconds ?? 300) * 1000;
+    const heartbeatJitter = Math.random() * 0.2 * heartbeatIntervalMs;
+    const nextHeartbeatAt = new Date(Date.now() + heartbeatIntervalMs + heartbeatJitter).toISOString();
+
+    return reply.code(200).send({ ok: true, update, nextHeartbeatAt });
   });
 
   // ─── GET /api/v1/agents/update-check ──────────────────────────────────────────
@@ -529,6 +536,35 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
     const uptime = (body.uptime ?? {}) as Record<string, unknown>;
     const virt = (body.virtualization ?? {}) as Record<string, unknown>;
     const perf = (body.performance ?? {}) as Record<string, unknown>;
+
+    // Fetch tenant settings and last snapshot in parallel to enforce rate limiting.
+    const [inventoryTenantSettings, lastSnapshot] = await Promise.all([
+      prisma.tenant.findUnique({
+        where: { id: agent.tenantId },
+        select: {
+          inventoryMinIntervalMinutes: true,
+          inventoryIntervalMinutes: true,
+        },
+      }),
+      prisma.inventorySnapshot.findFirst({
+        where: { tenantId: agent.tenantId, agentId: agent.id },
+        orderBy: { collectedAt: 'desc' },
+        select: { collectedAt: true },
+      }),
+    ]);
+
+    // Rate-limit: reject if the agent submitted inventory too recently.
+    const minIntervalMs = (inventoryTenantSettings?.inventoryMinIntervalMinutes ?? 30) * 60 * 1000;
+    if (lastSnapshot?.collectedAt) {
+      const msSinceLast = Date.now() - lastSnapshot.collectedAt.getTime();
+      if (msSinceLast < minIntervalMs) {
+        const retryAfterSeconds = Math.ceil((minIntervalMs - msSinceLast) / 1000);
+        return reply
+          .code(429)
+          .header('Retry-After', String(retryAfterSeconds))
+          .send({ error: 'Inventory submitted too recently', retryAfter: retryAfterSeconds });
+      }
+    }
 
     // Create the InventorySnapshot with enriched fields
     const snapshot = await prisma.inventorySnapshot.create({
@@ -678,10 +714,16 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
       // Non-critical — reconciliation will still run on schedule
     }
 
+    // Compute advised next inventory time with up-to-20% jitter to stagger agents.
+    const inventoryIntervalMs = (inventoryTenantSettings?.inventoryIntervalMinutes ?? 240) * 60 * 1000;
+    const inventoryJitter = Math.random() * 0.2 * inventoryIntervalMs;
+    const nextInventoryAt = new Date(Date.now() + inventoryIntervalMs + inventoryJitter).toISOString();
+
     return reply.code(201).send({
       snapshotId: snapshot.id,
       ciId: extensionResult?.ciId ?? null,
       created: extensionResult?.created ?? false,
+      nextInventoryAt,
     });
   });
 
