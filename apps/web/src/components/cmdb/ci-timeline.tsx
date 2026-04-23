@@ -1,14 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Icon from '@mdi/react';
 import { mdiHistory } from '@mdi/js';
+import { SkeletonCard } from '@/components/Skeleton';
 import {
   useCITimeline,
   type CITimelineEntry,
   type FieldChangeEvent,
   type InventoryDiffEvent,
-  type TimelineResponse,
 } from '@/hooks/use-ci-timeline';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -120,6 +120,7 @@ function getBadgeStyle(changedBy: ChangedBy): React.CSSProperties {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
+// Fix 7: ActorBadge — display label instead of changedBy
 function ActorBadge({ changedBy, label }: { changedBy: ChangedBy; label: string }) {
   return (
     <span
@@ -134,7 +135,7 @@ function ActorBadge({ changedBy, label }: { changedBy: ChangedBy; label: string 
         ...getBadgeStyle(changedBy),
       }}
     >
-      {changedBy}
+      {label}
     </span>
   );
 }
@@ -153,7 +154,8 @@ function FieldChangeCard({ event }: { event: FieldChangeEvent }) {
       style={{
         borderLeft: `3px solid ${borderColor}`,
         borderRadius: 6,
-        backgroundColor: 'var(--bg-card)',
+        // Fix 2: use var(--card-bg) not var(--bg-card)
+        backgroundColor: 'var(--card-bg)',
         border: `1px solid var(--border-primary)`,
         borderLeftColor: borderColor,
         borderLeftWidth: 3,
@@ -164,8 +166,9 @@ function FieldChangeCard({ event }: { event: FieldChangeEvent }) {
       {/* Header row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: isCreated || isDeleted ? 0 : 10 }}>
         <ActorBadge changedBy={event.changedBy as ChangedBy} label={event.changedBy} />
+        {/* Fix 1: event.userName (was actorName) */}
         <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
-          {event.actorName ?? '—'}
+          {event.userName ?? '—'}
         </span>
         <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)' }}>
           {formatTime(event.timestamp)}
@@ -186,10 +189,10 @@ function FieldChangeCard({ event }: { event: FieldChangeEvent }) {
         </div>
       )}
 
-      {/* Updated — field changes */}
-      {!isCreated && !isDeleted && event.changes.length > 0 && (
+      {/* Updated — field changes. Fix 1: event.fields (was event.changes) */}
+      {!isCreated && !isDeleted && event.fields.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {event.changes.map((ch, idx) => (
+          {event.fields.map((ch, idx) => (
             <div key={idx} style={{ display: 'flex', alignItems: 'baseline', gap: 8, fontSize: 13 }}>
               <span style={{ fontWeight: 500, color: 'var(--text-secondary)', minWidth: 140 }}>
                 {getFieldDisplayName(ch.fieldName)}
@@ -219,8 +222,10 @@ function SectionDivider({ label }: { label: string }) {
 }
 
 function InventoryDiffCard({ event }: { event: InventoryDiffEvent }) {
-  const diff = event.diffJson;
-  const hasHardware = Array.isArray(diff.hardware) && diff.hardware.length > 0;
+  // Fix 1: event.diff (was event.diffJson)
+  const diff = event.diff;
+  // Fix 3: hardware is a Record, not an array
+  const hasHardware = !!diff.hardware && Object.keys(diff.hardware).length > 0;
   const hasSoftware = Array.isArray(diff.software) && diff.software.length > 0;
   const hasServices = Array.isArray(diff.services) && diff.services.length > 0;
   const hasNetwork = Array.isArray(diff.network) && diff.network.length > 0;
@@ -230,7 +235,8 @@ function InventoryDiffCard({ event }: { event: InventoryDiffEvent }) {
       style={{
         borderLeft: '3px solid #3b82f6',
         borderRadius: 6,
-        backgroundColor: 'var(--bg-card)',
+        // Fix 2: use var(--card-bg) not var(--bg-card)
+        backgroundColor: 'var(--card-bg)',
         border: '1px solid var(--border-primary)',
         borderLeftColor: '#3b82f6',
         borderLeftWidth: 3,
@@ -249,22 +255,22 @@ function InventoryDiffCard({ event }: { event: InventoryDiffEvent }) {
         </span>
       </div>
 
-      {/* Hardware section */}
+      {/* Fix 3: Hardware section — iterate over object entries */}
       {hasHardware && (
         <>
           <SectionDivider label="Hardware" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginBottom: 4 }}>
-            {diff.hardware!.map((h, idx) => (
-              <div key={idx} style={{ display: 'flex', alignItems: 'baseline', gap: 8, fontSize: 13 }}>
+            {Object.entries(diff.hardware!).map(([field, change]) => (
+              <div key={field} style={{ display: 'flex', alignItems: 'baseline', gap: 8, fontSize: 13 }}>
                 <span style={{ fontWeight: 500, color: 'var(--text-secondary)', minWidth: 140 }}>
-                  {getFieldDisplayName(h.field)}
+                  {getFieldDisplayName(field)}
                 </span>
                 <span style={{ color: '#991b1b', textDecoration: 'line-through' }}>
-                  {h.oldValue ?? <NullValue />}
+                  {String(change.from ?? '–')}
                 </span>
                 <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>→</span>
                 <span style={{ color: '#065f46' }}>
-                  {h.newValue ?? <NullValue />}
+                  {String(change.to ?? '–')}
                 </span>
               </div>
             ))}
@@ -349,18 +355,39 @@ function InventoryDiffCard({ event }: { event: InventoryDiffEvent }) {
         </>
       )}
 
-      {/* Network section */}
+      {/* Fix 6: Network section — handle 'added', 'removed', and 'changed' ops */}
       {hasNetwork && (
         <>
           <SectionDivider label="Network" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {diff.network!.map((n, idx) => (
-              <div key={idx} style={{ fontSize: 13, color: n.action === 'added' ? '#065f46' : '#991b1b' }}>
-                <span style={{ fontWeight: 700, marginRight: 4 }}>{n.action === 'added' ? '+' : '-'}</span>
-                {n.ipAddress ?? '—'}
-                {n.macAddress && <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>({n.macAddress})</span>}
-              </div>
-            ))}
+            {diff.network!.map((n, idx) => {
+              if (n.op === 'added') {
+                return (
+                  <div key={idx} style={{ fontSize: 13, color: '#065f46' }}>
+                    <span style={{ fontWeight: 700, marginRight: 4 }}>+</span>
+                    {n.ip ?? '—'}
+                    {n.mac && <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>({n.mac})</span>}
+                  </div>
+                );
+              }
+              if (n.op === 'removed') {
+                return (
+                  <div key={idx} style={{ fontSize: 13, color: '#991b1b' }}>
+                    <span style={{ fontWeight: 700, marginRight: 4 }}>-</span>
+                    {n.ip ?? '—'}
+                    {n.mac && <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>({n.mac})</span>}
+                  </div>
+                );
+              }
+              // changed
+              return (
+                <div key={idx} style={{ fontSize: 13, color: '#92400e' }}>
+                  <span style={{ fontWeight: 700, marginRight: 4 }}>~</span>
+                  {n.fromIp ?? '—'} → {n.ip ?? '—'}
+                  {n.mac && <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>({n.mac})</span>}
+                </div>
+              );
+            })}
           </div>
         </>
       )}
@@ -368,21 +395,13 @@ function InventoryDiffCard({ event }: { event: InventoryDiffEvent }) {
   );
 }
 
+// Fix 5: Use project SkeletonCard components instead of custom pulse animation
 function LoadingSkeleton() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {[1, 2, 3].map((i) => (
-        <div
-          key={i}
-          style={{
-            height: 72,
-            borderRadius: 6,
-            backgroundColor: 'var(--bg-tertiary)',
-            animation: 'pulse 1.5s ease-in-out infinite',
-            opacity: 0.6,
-          }}
-        />
-      ))}
+      <SkeletonCard height={72} />
+      <SkeletonCard height={72} />
+      <SkeletonCard height={72} />
     </div>
   );
 }
@@ -428,24 +447,19 @@ export function CITimeline({ ciId }: CITimelineProps) {
 
   const { data, isLoading, error } = useCITimeline(ciId, page);
 
-  // Accumulate pages as they arrive
-  if (data && !isLoading) {
-    const incomingIds = new Set(data.data.map((e) => e.id));
-    const existingIds = new Set(accumulatedData.map((e) => e.id));
-    const hasNew = data.data.some((e) => !existingIds.has(e.id));
-
-    if (hasNew || !hasLoadedOnce) {
-      // Merge: replace any existing entries from this page, append new ones
-      const filtered = accumulatedData.filter((e) => !incomingIds.has(e.id));
-      const merged = [...filtered, ...data.data];
-      if (merged.length !== accumulatedData.length || !hasLoadedOnce) {
-        setAccumulatedData(merged);
-        setTotalFromServer(data.total);
-        setCappedFromServer(data.capped);
-        if (!hasLoadedOnce) setHasLoadedOnce(true);
-      }
-    }
-  }
+  // Fix 4: Move state updates into useEffect instead of render body
+  useEffect(() => {
+    if (!data || isLoading) return;
+    setAccumulatedData(prev => {
+      const existingIds = new Set(prev.map(e => e.id));
+      const newEntries = data.data.filter(e => !existingIds.has(e.id));
+      if (newEntries.length === 0 && hasLoadedOnce) return prev;
+      return [...prev, ...newEntries];
+    });
+    setTotalFromServer(data.total);
+    setCappedFromServer(data.capped);
+    setHasLoadedOnce(true);
+  }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const grouped = groupByDate(accumulatedData);
   const hasMore = accumulatedData.length < totalFromServer;

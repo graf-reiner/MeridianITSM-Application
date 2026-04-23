@@ -10,9 +10,9 @@ export interface FieldChangeEvent {
   ciId: string;
   changeType: 'CREATED' | 'UPDATED' | 'DELETED';
   changedBy: 'AGENT' | 'USER' | 'IMPORT';
-  actorName: string | null;
+  userName: string | null;
   actorId: string | null;
-  changes: Array<{
+  fields: Array<{
     fieldName: string;
     oldValue: string | null;
     newValue: string | null;
@@ -20,11 +20,8 @@ export interface FieldChangeEvent {
   timestamp: string;
 }
 
-export interface HardwareDiff {
-  field: string;
-  oldValue: string | null;
-  newValue: string | null;
-}
+// Fix 3: hardware is a Record keyed by field name, not an array
+export type HardwareDiff = Record<string, { from: unknown; to: unknown }>;
 
 export interface SoftwareDiffEntry {
   action: 'added' | 'removed' | 'updated';
@@ -40,14 +37,16 @@ export interface ServiceDiffEntry {
   newStatus: string | null;
 }
 
+// Fix 6: include 'changed' op type
 export interface NetworkDiffEntry {
-  action: 'added' | 'removed';
-  ipAddress: string | null;
-  macAddress: string | null;
+  op: 'added' | 'removed' | 'changed';
+  mac: string;
+  ip?: string;
+  fromIp?: string;
 }
 
 export interface InventoryDiffJson {
-  hardware?: HardwareDiff[];
+  hardware?: HardwareDiff;
   software?: SoftwareDiffEntry[];
   services?: ServiceDiffEntry[];
   network?: NetworkDiffEntry[];
@@ -59,7 +58,7 @@ export interface InventoryDiffEvent {
   ciId: string;
   agentId: string;
   agentHostname: string | null;
-  diffJson: InventoryDiffJson;
+  diff: InventoryDiffJson;
   timestamp: string;
 }
 
