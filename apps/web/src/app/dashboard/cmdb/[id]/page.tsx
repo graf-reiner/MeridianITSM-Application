@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
+import { CITimeline } from '@/components/cmdb/ci-timeline';
 import Icon from '@mdi/react';
 import {
   mdiDatabase,
@@ -286,7 +287,7 @@ function EmptyState({ message }: { message: string }) {
 
 // ─── Tab definitions ─────────────────────────────────────────────────────────
 
-type Tab = 'general' | 'ownership' | 'technical' | 'service' | 'relationships' | 'governance' | 'linked' | 'baselines';
+type Tab = 'general' | 'ownership' | 'technical' | 'service' | 'relationships' | 'governance' | 'linked' | 'baselines' | 'history';
 
 // ─── Inventory Snapshot Section (for CIs with linked agents) ─────────────────
 
@@ -554,6 +555,7 @@ const TAB_DEFS: { key: Tab; label: string; icon: string }[] = [
   { key: 'governance', label: 'Governance', icon: mdiCertificate },
   { key: 'linked', label: 'Linked Records', icon: mdiLink },
   { key: 'baselines', label: 'Baselines', icon: mdiContentCopy },
+  { key: 'history', label: 'History', icon: mdiHistory },
 ];
 
 // ─── CMDB CI Detail Page ──────────────────────────────────────────────────────
@@ -1596,6 +1598,11 @@ export default function CMDBDetailPage() {
             <EmptyState message="No linked records found" />
           )}
         </div>
+      )}
+
+      {/* ── History Tab ───────────────────────────────────────────────────────── */}
+      {activeTab === 'history' && (
+        <CITimeline ciId={ci.id} />
       )}
 
       {/* ── Baselines Tab ──────────────────────────────────────────────────────── */}
