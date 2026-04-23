@@ -12,6 +12,7 @@ import {
   getCIRelationships,
   getImpactAnalysis,
   listCIChangeHistory,
+  getCITimeline,
   createCategory,
   listCategories,
   updateCategory,
@@ -500,6 +501,25 @@ export async function cmdbRoutes(fastify: FastifyInstance): Promise<void> {
         query.page ? parseInt(query.page, 10) : undefined,
         query.pageSize ? parseInt(query.pageSize, 10) : undefined,
       );
+
+      return reply.status(200).send(result);
+    },
+  );
+
+  // ─── GET /api/v1/cmdb/cis/:id/timeline — Unified timeline ───────────────────
+
+  fastify.get(
+    '/api/v1/cmdb/cis/:id/timeline',
+    { preHandler: [requirePermission('cmdb.view')] },
+    async (request, reply) => {
+      const user = request.user as { tenantId: string };
+      const { id } = request.params as { id: string };
+      const query = request.query as { page?: string; pageSize?: string };
+
+      const page = Math.max(1, parseInt(query.page ?? '1', 10) || 1);
+      const pageSize = Math.min(100, Math.max(1, parseInt(query.pageSize ?? '25', 10) || 25));
+
+      const result = await getCITimeline(user.tenantId, id, page, pageSize);
 
       return reply.status(200).send(result);
     },

@@ -13,6 +13,7 @@ import { pushNotificationWorker } from './workers/push-notification.js';
 import { chatCleanupWorker } from './workers/chat-cleanup.js';
 import { problemDetectionWorker } from './workers/problem-detection.js';
 import { certExpiryMonitorWorker } from './workers/cert-expiry-monitor.js';
+import { inventoryRetentionWorker, inventoryDiffBackfillWorker } from './workers/inventory-retention.worker.js';
 import {
   usageSnapshotQueue,
   trialExpiryQueue,
@@ -23,7 +24,10 @@ import {
   chatCleanupQueue,
   problemDetectionQueue,
   certExpiryMonitorQueue,
+  inventoryRetentionQueue,
+  inventoryDiffBackfillQueue,
 } from './queues/definitions.js';
+import { redisConnection } from './queues/connection.js';
 
 const workers = [
   { name: 'sla-monitor', worker: slaMonitorWorker },
@@ -40,6 +44,8 @@ const workers = [
   { name: 'chat-cleanup', worker: chatCleanupWorker },
   { name: 'problem-detection', worker: problemDetectionWorker },
   { name: 'cert-expiry-monitor', worker: certExpiryMonitorWorker },
+  { name: 'inventory-retention', worker: inventoryRetentionWorker },
+  { name: 'inventory-diff-backfill', worker: inventoryDiffBackfillWorker },
 ];
 
 // Schedule SLA breach check every minute
@@ -131,6 +137,32 @@ void certExpiryMonitorQueue.add(
     jobId: 'cert-expiry-monitor-repeatable',
   },
 );
+
+// Schedule nightly inventory retention sweep at 2 AM UTC
+void inventoryRetentionQueue.add(
+  'nightly-retention',
+  {},
+  {
+    repeat: { pattern: '0 2 * * *' },
+    jobId: 'inventory-retention-repeatable',
+  },
+);
+
+// One-time InventoryDiff backfill: enqueue only if not already completed
+void (async () => {
+  try {
+    const alreadyDone = await redisConnection.get('inventory-diff-backfill:completed');
+    if (!alreadyDone) {
+      await inventoryDiffBackfillQueue.add('backfill', {}, { jobId: 'inventory-diff-backfill-once' });
+      console.log('[inventory-diff-backfill] Enqueued one-time backfill job');
+    } else {
+      console.log('[inventory-diff-backfill] Backfill already completed — skipping enqueue');
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[inventory-diff-backfill] Failed to check/enqueue backfill: ${msg}`);
+  }
+})();
 
 console.log('Worker process started — active workers:');
 workers.forEach(({ name }) => console.log(`  - ${name}`));

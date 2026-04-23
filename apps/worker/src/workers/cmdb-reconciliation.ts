@@ -621,6 +621,18 @@ export const cmdbReconciliationWorker = new Worker(
             });
           }
         }
+
+        // ─── Inventory Diff ─────────────────────────────────────────────────
+        // Compute and store a diff between the previous and current snapshot.
+        // Duplicated inline from apps/api/src/services/inventory-diff.service.ts
+        // per the project's no-cross-app-import convention.
+        // Returns early if this is the first snapshot or nothing changed.
+        try {
+          await computeAndStoreInventoryDiff(tenantId, agent.id, snapshot);
+        } catch (diffErr) {
+          const msg = diffErr instanceof Error ? diffErr.message : String(diffErr);
+          console.error(`[cmdb-reconciliation] Diff write failed for agent ${agent.id}: ${msg}`);
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.error(`[cmdb-reconciliation] Error processing agent ${agent.id}: ${message}`);
@@ -735,4 +747,203 @@ function extractPrimaryIp(interfaces: unknown[]): string | null {
     }
   }
   return null;
+}
+
+// ─── Inventory Diff (inlined from apps/api/src/services/inventory-diff.service.ts) ──
+//
+// Duplicated here per the project's no-cross-app-import convention.
+// Keep in sync with the API service copy when diff logic or types change.
+
+type InventorySnapshotForDiff = {
+  id: string;
+  agentId: string;
+  ramGb?: number | null;
+  cpuCores?: number | null;
+  cpuThreads?: number | null;
+  cpuSpeedMhz?: number | null;
+  cpuModel?: string | null;
+  manufacturer?: string | null;
+  model?: string | null;
+  biosVersion?: string | null;
+  tpmVersion?: string | null;
+  secureBootEnabled?: boolean | null;
+  serialNumber?: string | null;
+  diskEncrypted?: boolean | null;
+  antivirusProduct?: string | null;
+  firewallEnabled?: boolean | null;
+  operatingSystem?: string | null;
+  osVersion?: string | null;
+  osBuild?: string | null;
+  installedSoftware?: unknown;
+  services?: unknown;
+  networkInterfaces?: unknown;
+  collectedAt: Date;
+};
+
+const DIFF_HARDWARE_FIELDS: ReadonlyArray<keyof InventorySnapshotForDiff> = [
+  'ramGb', 'cpuCores', 'cpuThreads', 'cpuSpeedMhz', 'cpuModel',
+  'manufacturer', 'model', 'biosVersion', 'tpmVersion', 'secureBootEnabled',
+  'serialNumber', 'diskEncrypted', 'antivirusProduct', 'firewallEnabled',
+  'operatingSystem', 'osVersion', 'osBuild',
+];
+
+function diffSoftwareInline(from: unknown, to: unknown) {
+  const parse = (blob: unknown): Array<{ name: string; version?: string }> => {
+    if (!blob) return [];
+    const arr = Array.isArray(blob)
+      ? blob
+      : typeof blob === 'object' && blob !== null && 'apps' in blob && Array.isArray((blob as { apps: unknown[] }).apps)
+        ? (blob as { apps: unknown[] }).apps
+        : [];
+    return arr
+      .filter((item): item is { name: string; version?: string } =>
+        item != null && typeof item === 'object' && 'name' in item && typeof (item as { name: unknown }).name === 'string')
+      .map((item) => ({ name: item.name, version: typeof item.version === 'string' ? item.version : undefined }));
+  };
+
+  const fromMap = new Map<string, { name: string; version: string }>();
+  for (const s of parse(from)) fromMap.set(s.name.trim().toLowerCase(), { name: s.name, version: s.version ?? '' });
+  const toMap = new Map<string, { name: string; version: string }>();
+  for (const s of parse(to)) toMap.set(s.name.trim().toLowerCase(), { name: s.name, version: s.version ?? '' });
+
+  const results: Array<{ op: 'added' | 'removed' | 'updated'; name: string; version?: string; from?: string; to?: string }> = [];
+  for (const [key, toEntry] of toMap) {
+    const fromEntry = fromMap.get(key);
+    if (!fromEntry) results.push({ op: 'added', name: toEntry.name, version: toEntry.version || undefined });
+    else if (fromEntry.version !== toEntry.version) results.push({ op: 'updated', name: toEntry.name, from: fromEntry.version || undefined, to: toEntry.version || undefined });
+  }
+  for (const [key, fromEntry] of fromMap) {
+    if (!toMap.has(key)) results.push({ op: 'removed', name: fromEntry.name, version: fromEntry.version || undefined });
+  }
+  return results;
+}
+
+function diffServicesInline(from: unknown, to: unknown) {
+  const parse = (blob: unknown): Array<{ name: string; status?: string }> => {
+    if (!blob || !Array.isArray(blob)) return [];
+    return blob
+      .filter((item): item is { name: string; status?: string } =>
+        item != null && typeof item === 'object' && 'name' in item && typeof (item as { name: unknown }).name === 'string')
+      .map((item) => ({ name: item.name, status: typeof item.status === 'string' ? item.status : undefined }));
+  };
+
+  const fromMap = new Map<string, string>();
+  for (const s of parse(from)) fromMap.set(s.name, s.status ?? '');
+  const toMap = new Map<string, string>();
+  for (const s of parse(to)) toMap.set(s.name, s.status ?? '');
+
+  const results: Array<{ op: 'added' | 'removed' | 'changed'; name: string; status?: string; from?: string; to?: string }> = [];
+  for (const [name, toStatus] of toMap) {
+    const fromStatus = fromMap.get(name);
+    if (fromStatus === undefined) results.push({ op: 'added', name, status: toStatus || undefined });
+    else if (fromStatus !== toStatus) results.push({ op: 'changed', name, from: fromStatus || undefined, to: toStatus || undefined });
+  }
+  for (const [name] of fromMap) {
+    if (!toMap.has(name)) results.push({ op: 'removed', name });
+  }
+  return results;
+}
+
+function diffHardwareInline(from: InventorySnapshotForDiff, to: InventorySnapshotForDiff) {
+  const result: Record<string, { from: unknown; to: unknown }> = {};
+  for (const field of DIFF_HARDWARE_FIELDS) {
+    const fromVal = from[field] ?? null;
+    const toVal = to[field] ?? null;
+    if (fromVal === null && toVal === null) continue;
+    if (fromVal !== toVal) result[field as string] = { from: fromVal, to: toVal };
+  }
+  return result;
+}
+
+function diffNetworkInline(from: unknown, to: unknown) {
+  const parse = (blob: unknown): Array<{ mac?: string; ip?: string; ipAddress?: string }> => {
+    if (!blob || !Array.isArray(blob)) return [];
+    return blob
+      .filter((item): item is { mac?: string; ip?: string; ipAddress?: string } =>
+        item != null && typeof item === 'object')
+      .map((item) => ({
+        mac: typeof item.mac === 'string' ? item.mac : undefined,
+        ip: typeof item.ip === 'string' ? item.ip : undefined,
+        ipAddress: typeof item.ipAddress === 'string' ? item.ipAddress : undefined,
+      }));
+  };
+
+  const fromArr = parse(from);
+  const fromMap = new Map<string, string>();
+  for (const iface of fromArr) {
+    if (!iface.mac) continue;
+    fromMap.set(iface.mac.toLowerCase(), iface.ip ?? iface.ipAddress ?? '');
+  }
+
+  const toArr = parse(to);
+  const toMap = new Map<string, { mac: string; ip: string }>();
+  for (const iface of toArr) {
+    if (!iface.mac) continue;
+    toMap.set(iface.mac.toLowerCase(), { mac: iface.mac, ip: iface.ip ?? iface.ipAddress ?? '' });
+  }
+
+  const results: Array<{ op: 'added' | 'removed' | 'changed'; mac: string; ip?: string; fromIp?: string }> = [];
+  for (const [key, toEntry] of toMap) {
+    const fromIp = fromMap.get(key);
+    if (fromIp === undefined) results.push({ op: 'added', mac: toEntry.mac, ip: toEntry.ip || undefined });
+    else if (fromIp !== toEntry.ip) results.push({ op: 'changed', mac: toEntry.mac, ip: toEntry.ip || undefined, fromIp: fromIp || undefined });
+  }
+  for (const [key] of fromMap) {
+    if (!toMap.has(key)) {
+      const original = fromArr.find((i) => i.mac?.toLowerCase() === key);
+      if (original?.mac) results.push({ op: 'removed', mac: original.mac });
+    }
+  }
+  return results;
+}
+
+/**
+ * Compute the diff between the previous snapshot and `toSnapshot` for this agent,
+ * then persist an InventoryDiff row. Returns early if no prior snapshot exists or
+ * if nothing changed across all diff sections.
+ *
+ * Inlined from apps/api/src/services/inventory-diff.service.ts — no-cross-app-import rule.
+ */
+async function computeAndStoreInventoryDiff(
+  tenantId: string,
+  agentId: string,
+  toSnapshot: InventorySnapshotForDiff,
+): Promise<void> {
+  const fromSnapshot = await prisma.inventorySnapshot.findFirst({
+    where: { tenantId, agentId, id: { not: toSnapshot.id } },
+    orderBy: { collectedAt: 'desc' },
+  });
+
+  if (!fromSnapshot) return; // first snapshot — nothing to diff
+
+  const software = diffSoftwareInline(fromSnapshot.installedSoftware, toSnapshot.installedSoftware);
+  const services = diffServicesInline(fromSnapshot.services, toSnapshot.services);
+  const hardware = diffHardwareInline(fromSnapshot as InventorySnapshotForDiff, toSnapshot);
+  const network  = diffNetworkInline(fromSnapshot.networkInterfaces, toSnapshot.networkInterfaces);
+
+  const hasChanges =
+    software.length > 0 ||
+    services.length > 0 ||
+    Object.keys(hardware).length > 0 ||
+    network.length > 0;
+
+  if (!hasChanges) return; // no-op snapshot
+
+  const diffJson: Record<string, unknown> = {};
+  if (software.length > 0) diffJson.software = software;
+  if (services.length > 0) diffJson.services = services;
+  if (Object.keys(hardware).length > 0) diffJson.hardware = hardware;
+  if (network.length > 0) diffJson.network = network;
+
+  await prisma.inventoryDiff.create({
+    data: {
+      tenantId,
+      agentId,
+      ciId: null, // linked by timeline API via agentId → CI lookup
+      fromSnapshotId: fromSnapshot.id,
+      toSnapshotId: toSnapshot.id,
+      diffJson: diffJson as never,
+      collectedAt: toSnapshot.collectedAt,
+    },
+  });
 }

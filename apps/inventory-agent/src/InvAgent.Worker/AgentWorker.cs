@@ -13,9 +13,14 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 /// <summary>
-/// Background worker that drives the heartbeat timer (every 5 min) and inventory
-/// collection timer (every 4 hr). On startup it flushes any offline-queued items
-/// and handles initial enrollment if an EnrollmentToken is set.
+/// Background worker that drives the heartbeat loop and inventory collection loop.
+/// Both loops are server-driven: the server returns <c>nextHeartbeatAt</c> /
+/// <c>nextInventoryAt</c> timestamps and the agent schedules accordingly.
+/// Falls back to local configured intervals when the server field is absent or
+/// unparseable (e.g. during an offline period or against an older server).
+///
+/// A random startup jitter (0–60 s) is applied before the first inventory run to
+/// prevent thundering-herd when many agents restart simultaneously.
 /// </summary>
 public class AgentWorker : BackgroundService
 {
@@ -74,35 +79,39 @@ public class AgentWorker : BackgroundService
             _logger.LogWarning(ex, "Failed to flush offline queue on startup — server may be unreachable.");
         }
 
-        var heartbeatInterval = TimeSpan.FromSeconds(_config.HeartbeatIntervalSeconds);
-        var inventoryInterval = TimeSpan.FromSeconds(_config.InventoryIntervalSeconds);
+        // Step 3: Startup jitter — stagger first inventory across the agent fleet
+        var startupJitterMs = (int)(Random.Shared.NextDouble() * 60_000);
+        _logger.LogInformation("Startup jitter: delaying first inventory by {Ms}ms ({Seconds:F1}s).",
+            startupJitterMs, startupJitterMs / 1000.0);
+        await Task.Delay(startupJitterMs, ct);
 
-        // Run initial inventory immediately on first start
-        await RunInventoryCycleAsync(ct);
+        // Step 4: Run initial inventory immediately; use the server-advised delay
+        //         as the first inter-cycle wait for the inventory loop.
+        var initialInventoryDelay = await RunInventoryCycleAsync(ct);
 
-        var lastHeartbeat = DateTime.UtcNow;
-        var lastInventory = DateTime.UtcNow;
-
-        using var heartbeatTimer = new PeriodicTimer(heartbeatInterval);
-        using var inventoryTimer = new PeriodicTimer(inventoryInterval);
-
-        // Run both timers concurrently via tasks
-        var heartbeatTask = RunHeartbeatLoopAsync(heartbeatTimer, ct);
-        var inventoryTask = RunInventoryLoopAsync(inventoryTimer, ct);
+        // Step 5: Start both loops concurrently (no PeriodicTimer — loops are Task.Delay-driven)
+        var heartbeatTask = RunHeartbeatLoopAsync(ct);
+        var inventoryTask = RunInventoryLoopAsync(initialInventoryDelay, ct);
 
         await Task.WhenAll(heartbeatTask, inventoryTask);
     }
 
-    private async Task RunHeartbeatLoopAsync(PeriodicTimer timer, CancellationToken ct)
+    // -------------------------------------------------------------------------
+    // Heartbeat loop
+    // -------------------------------------------------------------------------
+
+    private async Task RunHeartbeatLoopAsync(CancellationToken ct)
     {
         _logger.LogInformation("Heartbeat loop started (interval={Seconds}s).", _config.HeartbeatIntervalSeconds);
+        var nextDelay = TimeSpan.FromSeconds(_config.HeartbeatIntervalSeconds);
         try
         {
-            while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
+            while (!ct.IsCancellationRequested)
             {
-                await SendHeartbeatAsync(ct);
+                await Task.Delay(nextDelay, ct);
+                nextDelay = await SendHeartbeatAsync(ct);
             }
-            _logger.LogWarning("Heartbeat loop exited: timer returned false (disposed).");
+            _logger.LogInformation("Heartbeat loop stopping (cancellation requested).");
         }
         catch (OperationCanceledException)
         {
@@ -114,16 +123,22 @@ public class AgentWorker : BackgroundService
         }
     }
 
-    private async Task RunInventoryLoopAsync(PeriodicTimer timer, CancellationToken ct)
+    // -------------------------------------------------------------------------
+    // Inventory loop
+    // -------------------------------------------------------------------------
+
+    private async Task RunInventoryLoopAsync(TimeSpan initialDelay, CancellationToken ct)
     {
         _logger.LogInformation("Inventory loop started (interval={Seconds}s).", _config.InventoryIntervalSeconds);
+        var nextDelay = initialDelay;
         try
         {
-            while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
+            while (!ct.IsCancellationRequested)
             {
-                await RunInventoryCycleAsync(ct);
+                await Task.Delay(nextDelay, ct);
+                nextDelay = await RunInventoryCycleAsync(ct);
             }
-            _logger.LogWarning("Inventory loop exited: timer returned false (disposed).");
+            _logger.LogInformation("Inventory loop stopping (cancellation requested).");
         }
         catch (OperationCanceledException)
         {
@@ -135,11 +150,19 @@ public class AgentWorker : BackgroundService
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Heartbeat — returns the delay to use before the next heartbeat
+    // -------------------------------------------------------------------------
+
     /// <summary>
-    /// Sends a heartbeat to the server. Exceptions are caught and logged — never crash the worker.
+    /// Sends a heartbeat and returns the delay to use before the next one.
+    /// Uses the server-advised <c>nextHeartbeatAt</c> when present; otherwise
+    /// falls back to <see cref="AgentConfig.HeartbeatIntervalSeconds"/>.
+    /// Exceptions are caught and logged — the worker never crashes.
     /// </summary>
-    private async Task SendHeartbeatAsync(CancellationToken ct)
+    private async Task<TimeSpan> SendHeartbeatAsync(CancellationToken ct)
     {
+        var defaultDelay = TimeSpan.FromSeconds(_config.HeartbeatIntervalSeconds);
         try
         {
             _logger.LogInformation("Sending heartbeat...");
@@ -161,14 +184,26 @@ public class AgentWorker : BackgroundService
             catch (Exception flushEx) { _logger.LogWarning(flushEx, "Event flush failed — will retry next heartbeat."); }
 
             // Consume the update included in the heartbeat response directly.
-            // (The separate /update-check endpoint was removed; the server now
-            // advertises any pending update in the heartbeat response itself.)
             var updateInfo = response?.Update;
             if (updateInfo != null)
             {
                 _logger.LogInformation("Applying update to {Version}...", updateInfo.LatestVersion);
                 await _updateInstaller.InstallUpdateAsync(updateInfo, ct);
             }
+
+            // Parse server-advised next heartbeat time
+            if (response?.NextHeartbeatAt is string nextHbAt
+                && DateTimeOffset.TryParse(nextHbAt, out var nextHbOffset))
+            {
+                var delay = nextHbOffset.UtcDateTime - DateTime.UtcNow;
+                if (delay >= TimeSpan.FromSeconds(30))
+                {
+                    _logger.LogDebug("Server advised next heartbeat in {Seconds:F0}s.", delay.TotalSeconds);
+                    return delay;
+                }
+            }
+
+            return defaultDelay;
         }
         catch (OperationCanceledException)
         {
@@ -176,16 +211,22 @@ public class AgentWorker : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Heartbeat failed — will retry next interval.");
+            _logger.LogWarning(ex, "Heartbeat failed — will retry after default interval.");
+            return defaultDelay;
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Inventory cycle — returns the delay to use before the next cycle
+    // -------------------------------------------------------------------------
+
     /// <summary>
-    /// Runs a full inventory collection cycle: collect, apply privacy filter,
-    /// try to submit to server; queue on failure. On success, flush any queued items.
+    /// Runs a full inventory collection cycle: collect → privacy filter → submit → CMDB sync → flush queue.
+    /// Returns the server-advised delay until the next run, or the local default on any failure.
     /// </summary>
-    private async Task RunInventoryCycleAsync(CancellationToken ct)
+    private async Task<TimeSpan> RunInventoryCycleAsync(CancellationToken ct)
     {
+        var defaultDelay = TimeSpan.FromSeconds(_config.InventoryIntervalSeconds);
         try
         {
             _logger.LogInformation("Running inventory collection...");
@@ -193,23 +234,16 @@ public class AgentWorker : BackgroundService
             var payload = await _collector.CollectAsync(ct);
             var filtered = PrivacyFilter.Apply(payload, _config.PrivacyTier);
 
+            InventorySubmitResponse? submitResult = null;
             bool submitted = false;
             try
             {
-                var snapshotId = await _api.SubmitInventoryAsync(filtered, ct);
-                _logger.LogInformation("Inventory submitted. SnapshotId={SnapshotId}", snapshotId);
-
-                try
+                submitResult = await _api.SubmitInventoryAsync(filtered, ct);
+                if (submitResult != null)
                 {
-                    await _api.SubmitCmdbSyncAsync(filtered, ct);
-                    _logger.LogDebug("CMDB sync submitted.");
+                    _logger.LogInformation("Inventory submitted. SnapshotId={SnapshotId}", submitResult.SnapshotId);
+                    submitted = true;
                 }
-                catch (Exception cmdbEx)
-                {
-                    _logger.LogWarning(cmdbEx, "CMDB sync failed — inventory was still stored.");
-                }
-
-                submitted = true;
             }
             catch (OperationCanceledException)
             {
@@ -225,19 +259,43 @@ public class AgentWorker : BackgroundService
                 var json = JsonSerializer.Serialize(filtered, JsonOptions);
                 _queue.Enqueue("inventory", json);
                 _logger.LogInformation("Inventory queued. Queue depth: {Count}", _queue.Count);
+                return defaultDelay;
             }
-            else
+
+            // Submission succeeded — run CMDB sync
+            try
             {
-                // Submission succeeded — try to drain any previously queued items
-                try
+                await _api.SubmitCmdbSyncAsync(filtered, ct);
+                _logger.LogDebug("CMDB sync submitted.");
+            }
+            catch (Exception cmdbEx)
+            {
+                _logger.LogWarning(cmdbEx, "CMDB sync failed — inventory was still stored.");
+            }
+
+            // Drain any previously queued items
+            try
+            {
+                await _queue.FlushAsync(_api, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to flush offline queue after successful inventory.");
+            }
+
+            // Parse server-advised next inventory time
+            if (submitResult?.NextInventoryAt is string nextAt
+                && DateTimeOffset.TryParse(nextAt, out var nextOffset))
+            {
+                var delay = nextOffset.UtcDateTime - DateTime.UtcNow;
+                if (delay >= TimeSpan.FromSeconds(30))
                 {
-                    await _queue.FlushAsync(_api, ct);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to flush offline queue after successful inventory.");
+                    _logger.LogInformation("Server advised next inventory in {Minutes:F1}min.", delay.TotalMinutes);
+                    return delay;
                 }
             }
+
+            return defaultDelay;
         }
         catch (OperationCanceledException)
         {
@@ -246,8 +304,13 @@ public class AgentWorker : BackgroundService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error during inventory cycle.");
+            return defaultDelay;
         }
     }
+
+    // -------------------------------------------------------------------------
+    // Enrollment
+    // -------------------------------------------------------------------------
 
     private async Task TryEnrollAsync(CancellationToken ct)
     {
@@ -271,7 +334,6 @@ public class AgentWorker : BackgroundService
                 _config.AgentKey = result.AgentKey;
                 _api.SetAgentKey(result.AgentKey);
                 _logger.LogInformation("Enrollment successful. AgentKey stored.");
-                // Persist to platform config path
                 await PersistAgentKeyAsync(result.AgentKey, ct);
             }
             else
