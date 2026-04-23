@@ -17,6 +17,7 @@ export const QUEUE_NAMES = {
   PROBLEM_DETECTION: 'problem-detection',
   CERT_EXPIRY_MONITOR: 'cert-expiry-monitor',
   INVENTORY_RETENTION: 'inventory-retention',
+  INVENTORY_DIFF_BACKFILL: 'inventory-diff-backfill',
 } as const;
 
 export interface TenantJobData {
@@ -51,3 +52,4 @@ export const chatCleanupQueue = new Queue(QUEUE_NAMES.CHAT_CLEANUP, { connection
 export const problemDetectionQueue = new Queue(QUEUE_NAMES.PROBLEM_DETECTION, { connection: bullmqConnection });
 export const certExpiryMonitorQueue = new Queue(QUEUE_NAMES.CERT_EXPIRY_MONITOR, { connection: bullmqConnection });
 export const inventoryRetentionQueue = new Queue(QUEUE_NAMES.INVENTORY_RETENTION, { connection: bullmqConnection });
+export const inventoryDiffBackfillQueue = new Queue(QUEUE_NAMES.INVENTORY_DIFF_BACKFILL, { connection: bullmqConnection });
