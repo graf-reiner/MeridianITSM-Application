@@ -45,9 +45,9 @@ export const inventoryRetentionWorker = new Worker(
           let deletedSnapshots = 0;
 
           for (const agent of agents) {
-            // Snapshots referenced by any InventoryDiff
+            // Snapshots referenced by InventoryDiffs that survived the retention window
             const referencedDiffs = await prisma.inventoryDiff.findMany({
-              where: { tenantId, agentId: agent.id },
+              where: { tenantId, agentId: agent.id, collectedAt: { gte: cutoff } },
               select: { fromSnapshotId: true, toSnapshotId: true },
             });
             const referencedIds = new Set<string>(
@@ -68,8 +68,15 @@ export const inventoryRetentionWorker = new Worker(
 
             const keepIds = new Set([...referencedIds, ...recentIds]);
 
-            // Safety guard: if nothing to keep, skip to avoid deleting everything
-            if (keepIds.size === 0) continue;
+            // Safety guard: distinguish "no snapshots" from "nothing to keep"
+            const snapshotCount = await prisma.inventorySnapshot.count({
+              where: { tenantId, agentId: agent.id },
+            });
+            if (snapshotCount === 0) continue;
+            if (keepIds.size === 0) {
+              console.warn(`[inventory-retention] No keep candidates for agent ${agent.id} (${snapshotCount} snapshots exist) — skipping to avoid full deletion`);
+              continue;
+            }
 
             const result = await prisma.inventorySnapshot.deleteMany({
               where: {
