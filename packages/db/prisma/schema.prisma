@@ -371,6 +371,12 @@ model Tenant {
   agentUpdateWindowDay      String?
   agentDeployRequiresChange Boolean @default(false)
 
+  inventoryIntervalMinutes    Int @default(240)
+  heartbeatIntervalSeconds    Int @default(300)
+  changeRetentionDays         Int @default(90)
+  snapshotRetentionCount      Int @default(30)
+  inventoryMinIntervalMinutes Int @default(30)
+
   // Relations
   users                        User[]
   customerOrganizations        CustomerOrganization[]
@@ -481,6 +487,8 @@ model Tenant {
   // Phase 8: installed software + migration audit
   cmdbSoftwareInstalled CmdbSoftwareInstalled[]
   cmdbMigrationAudit    CmdbMigrationAudit[]
+
+  inventoryDiffs InventoryDiff[]
 
   @@map("tenants")
 }
@@ -1893,14 +1901,16 @@ model Agent {
   platformVersion String?
   agentVersion    String?
   status          AgentStatus   @default(ENROLLING)
-  lastHeartbeatAt DateTime?
-  enrolledAt      DateTime?
-  metadata        Json?
+  lastHeartbeatAt  DateTime?
+  enrolledAt       DateTime?
+  lastReconciledAt DateTime?
+  metadata         Json?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
   tenant             Tenant                        @relation(fields: [tenantId], references: [id])
   inventorySnapshots InventorySnapshot[]
+  inventoryDiffs     InventoryDiff[]
   metricSamples      MetricSample[]
   cmdbConfigItems    CmdbConfigurationItem[]
   cmdbChangeRecords  CmdbChangeRecord[]
@@ -2106,6 +2116,28 @@ model InventorySnapshot {
   @@index([tenantId, agentId])
   @@index([tenantId, collectedAt])
   @@map("inventory_snapshots")
+}
+
+// Model 38.1: InventoryDiff — pre-computed diff between consecutive InventorySnapshot records
+// fromSnapshotId / toSnapshotId are reference UUIDs only (no FK) so rows survive snapshot deletion
+model InventoryDiff {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @db.Uuid
+  agentId        String   @db.Uuid
+  ciId           String?  @db.Uuid
+  fromSnapshotId String?  @db.Uuid
+  toSnapshotId   String?  @db.Uuid
+  diffJson       Json
+  collectedAt    DateTime
+  createdAt      DateTime @default(now())
+
+  tenant Tenant                 @relation(fields: [tenantId], references: [id])
+  agent  Agent                  @relation(fields: [agentId], references: [id])
+  ci     CmdbConfigurationItem? @relation(fields: [ciId], references: [id])
+
+  @@index([tenantId, agentId, collectedAt])
+  @@index([tenantId, ciId, collectedAt])
+  @@map("inventory_diffs")
 }
 
 // Model 39: MetricSample
@@ -2388,6 +2420,8 @@ model CmdbConfigurationItem {
 
   // APM ↔ CMDB bridge — applications for which this CI is the primary
   primaryForApplications Application[] @relation("ApplicationPrimaryCi")
+
+  inventoryDiffs InventoryDiff[]
 
   @@unique([tenantId, ciNumber])
   @@index([tenantId])
