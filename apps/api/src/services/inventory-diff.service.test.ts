@@ -410,6 +410,7 @@ describe('computeAndStoreInventoryDiff', () => {
     expect(mockPrisma.inventorySnapshot.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
+          tenantId: TENANT,
           agentId: AGENT,
           id: { not: 'snap-1' },
         }),

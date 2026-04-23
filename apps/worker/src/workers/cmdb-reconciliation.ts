@@ -627,7 +627,12 @@ export const cmdbReconciliationWorker = new Worker(
         // Duplicated inline from apps/api/src/services/inventory-diff.service.ts
         // per the project's no-cross-app-import convention.
         // Returns early if this is the first snapshot or nothing changed.
-        await computeAndStoreInventoryDiff(tenantId, agent.id, snapshot);
+        try {
+          await computeAndStoreInventoryDiff(tenantId, agent.id, snapshot);
+        } catch (diffErr) {
+          const msg = diffErr instanceof Error ? diffErr.message : String(diffErr);
+          console.error(`[cmdb-reconciliation] Diff write failed for agent ${agent.id}: ${msg}`);
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.error(`[cmdb-reconciliation] Error processing agent ${agent.id}: ${message}`);
@@ -801,7 +806,7 @@ function diffSoftwareInline(from: unknown, to: unknown) {
   const toMap = new Map<string, { name: string; version: string }>();
   for (const s of parse(to)) toMap.set(s.name.trim().toLowerCase(), { name: s.name, version: s.version ?? '' });
 
-  const results: Array<{ op: string; name: string; version?: string; from?: string; to?: string }> = [];
+  const results: Array<{ op: 'added' | 'removed' | 'updated'; name: string; version?: string; from?: string; to?: string }> = [];
   for (const [key, toEntry] of toMap) {
     const fromEntry = fromMap.get(key);
     if (!fromEntry) results.push({ op: 'added', name: toEntry.name, version: toEntry.version || undefined });
@@ -827,7 +832,7 @@ function diffServicesInline(from: unknown, to: unknown) {
   const toMap = new Map<string, string>();
   for (const s of parse(to)) toMap.set(s.name, s.status ?? '');
 
-  const results: Array<{ op: string; name: string; status?: string; from?: string; to?: string }> = [];
+  const results: Array<{ op: 'added' | 'removed' | 'changed'; name: string; status?: string; from?: string; to?: string }> = [];
   for (const [name, toStatus] of toMap) {
     const fromStatus = fromMap.get(name);
     if (fromStatus === undefined) results.push({ op: 'added', name, status: toStatus || undefined });
@@ -877,7 +882,7 @@ function diffNetworkInline(from: unknown, to: unknown) {
     toMap.set(iface.mac.toLowerCase(), { mac: iface.mac, ip: iface.ip ?? iface.ipAddress ?? '' });
   }
 
-  const results: Array<{ op: string; mac: string; ip?: string; fromIp?: string }> = [];
+  const results: Array<{ op: 'added' | 'removed' | 'changed'; mac: string; ip?: string; fromIp?: string }> = [];
   for (const [key, toEntry] of toMap) {
     const fromIp = fromMap.get(key);
     if (fromIp === undefined) results.push({ op: 'added', mac: toEntry.mac, ip: toEntry.ip || undefined });
@@ -905,7 +910,7 @@ async function computeAndStoreInventoryDiff(
   toSnapshot: InventorySnapshotForDiff,
 ): Promise<void> {
   const fromSnapshot = await prisma.inventorySnapshot.findFirst({
-    where: { agentId, id: { not: toSnapshot.id } },
+    where: { tenantId, agentId, id: { not: toSnapshot.id } },
     orderBy: { collectedAt: 'desc' },
   });
 

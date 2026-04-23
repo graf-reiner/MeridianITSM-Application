@@ -271,7 +271,7 @@ export async function computeAndStoreInventoryDiff(
   toSnapshot: InventorySnapshotShape,
 ): Promise<void> {
   const fromSnapshot = await prisma.inventorySnapshot.findFirst({
-    where: { agentId, id: { not: toSnapshot.id } },
+    where: { tenantId, agentId, id: { not: toSnapshot.id } },
     orderBy: { collectedAt: 'desc' },
   });
 
