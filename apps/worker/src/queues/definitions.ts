@@ -16,6 +16,7 @@ export const QUEUE_NAMES = {
   CHAT_CLEANUP: 'chat-cleanup',
   PROBLEM_DETECTION: 'problem-detection',
   CERT_EXPIRY_MONITOR: 'cert-expiry-monitor',
+  INVENTORY_RETENTION: 'inventory-retention',
 } as const;
 
 export interface TenantJobData {
@@ -49,3 +50,4 @@ export const pushNotificationQueue = new Queue(QUEUE_NAMES.PUSH_NOTIFICATION, { 
 export const chatCleanupQueue = new Queue(QUEUE_NAMES.CHAT_CLEANUP, { connection: bullmqConnection });
 export const problemDetectionQueue = new Queue(QUEUE_NAMES.PROBLEM_DETECTION, { connection: bullmqConnection });
 export const certExpiryMonitorQueue = new Queue(QUEUE_NAMES.CERT_EXPIRY_MONITOR, { connection: bullmqConnection });
+export const inventoryRetentionQueue = new Queue(QUEUE_NAMES.INVENTORY_RETENTION, { connection: bullmqConnection });

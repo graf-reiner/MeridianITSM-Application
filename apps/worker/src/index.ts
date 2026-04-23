@@ -13,6 +13,7 @@ import { pushNotificationWorker } from './workers/push-notification.js';
 import { chatCleanupWorker } from './workers/chat-cleanup.js';
 import { problemDetectionWorker } from './workers/problem-detection.js';
 import { certExpiryMonitorWorker } from './workers/cert-expiry-monitor.js';
+import { inventoryRetentionWorker } from './workers/inventory-retention.worker.js';
 import {
   usageSnapshotQueue,
   trialExpiryQueue,
@@ -23,6 +24,7 @@ import {
   chatCleanupQueue,
   problemDetectionQueue,
   certExpiryMonitorQueue,
+  inventoryRetentionQueue,
 } from './queues/definitions.js';
 
 const workers = [
@@ -40,6 +42,7 @@ const workers = [
   { name: 'chat-cleanup', worker: chatCleanupWorker },
   { name: 'problem-detection', worker: problemDetectionWorker },
   { name: 'cert-expiry-monitor', worker: certExpiryMonitorWorker },
+  { name: 'inventory-retention', worker: inventoryRetentionWorker },
 ];
 
 // Schedule SLA breach check every minute
@@ -129,6 +132,16 @@ void certExpiryMonitorQueue.add(
   {
     repeat: { pattern: '0 7 * * *' },
     jobId: 'cert-expiry-monitor-repeatable',
+  },
+);
+
+// Schedule nightly inventory retention sweep at 2 AM UTC
+void inventoryRetentionQueue.add(
+  'nightly-retention',
+  {},
+  {
+    repeat: { pattern: '0 2 * * *' },
+    jobId: 'inventory-retention-repeatable',
   },
 );
 
