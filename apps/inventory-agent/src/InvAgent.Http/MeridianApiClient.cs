@@ -69,16 +69,16 @@ public class MeridianApiClient
     }
 
     /// <summary>
-    /// Submits an inventory payload. Returns the server-assigned snapshot ID, or null on failure.
+    /// Submits an inventory payload. Returns the server response (snapshotId + nextInventoryAt),
+    /// or null on any non-success HTTP status.
     /// </summary>
-    public async Task<string?> SubmitInventoryAsync(InventoryPayload payload, CancellationToken ct = default)
+    public async Task<InventorySubmitResponse?> SubmitInventoryAsync(InventoryPayload payload, CancellationToken ct = default)
     {
         var response = await _http.PostAsJsonAsync("api/v1/agents/inventory", payload, JsonOptions, ct);
         if (!response.IsSuccessStatusCode)
             return null;
 
-        var result = await response.Content.ReadFromJsonAsync<JsonElement>(ct);
-        return result.TryGetProperty("id", out var id) ? id.GetString() : null;
+        return await response.Content.ReadFromJsonAsync<InventorySubmitResponse>(JsonOptions, ct);
     }
 
     /// <summary>Pushes inventory to the CMDB sync endpoint. Throws on HTTP error (Polly will retry).</summary>
