@@ -1259,15 +1259,17 @@ export type CITimelineResult = {
   total: number;
   page: number;
   pageSize: number;
+  capped: boolean;
 };
 
 /**
  * Unified timeline for a CI, merging CmdbChangeRecord field-change events
  * (grouped by actor within a 5-minute window) and InventoryDiff events.
  *
- * NOTE: Change record grouping is capped at 1000 rows fetched from the DB.
- * CIs with more than 1000 change records will have their oldest records
- * excluded from the grouped result set.
+ * NOTE: Both change records and inventory diffs are capped at 1000 rows
+ * fetched from the DB to bound memory usage. CIs with more than 1000 records
+ * from either source will have their oldest records excluded from the
+ * result set.
  */
 export async function getCITimeline(
   tenantId: string,
@@ -1276,6 +1278,7 @@ export async function getCITimeline(
   pageSize: number = 25,
 ): Promise<CITimelineResult> {
   const CHANGE_RECORD_LIMIT = 1000;
+  const INVENTORY_DIFF_LIMIT = 1000;
   const GROUPING_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 
   // Fetch raw change records (capped) and all inventory diffs in parallel
@@ -1288,8 +1291,13 @@ export async function getCITimeline(
     prisma.inventoryDiff.findMany({
       where: { ciId, tenantId },
       orderBy: { collectedAt: 'desc' },
+      take: INVENTORY_DIFF_LIMIT,
     }),
   ]);
+
+  // ── Determine if either source hit its row limit ──────────────────────────────
+
+  const capped = rawChangeRecords.length >= CHANGE_RECORD_LIMIT || inventoryDiffs.length >= INVENTORY_DIFF_LIMIT;
 
   // ── Group consecutive change records by actor within a 5-minute window ──────
 
@@ -1455,7 +1463,7 @@ export async function getCITimeline(
     }
   });
 
-  return { data: resolvedPage, total, page, pageSize };
+  return { data: resolvedPage, total, page, pageSize, capped };
 }
 
 /**
