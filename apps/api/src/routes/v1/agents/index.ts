@@ -375,16 +375,29 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
     } | null = null;
 
     // Fetch tenant settings once — used for both update policy and nextHeartbeatAt jitter.
-    const tenantSettings = await prisma.tenant.findUnique({
-      where: { id: agent.tenantId },
-      select: {
-        agentUpdatePolicy: true,
-        agentUpdateWindowStart: true,
-        agentUpdateWindowEnd: true,
-        agentUpdateWindowDay: true,
-        heartbeatIntervalSeconds: true,
-      },
-    });
+    // Wrapped in try/catch: a transient DB error must not 500 a heartbeat that already
+    // committed its agent.update above. The jitter path handles null via `?? 300`.
+    let tenantSettings: {
+      agentUpdatePolicy: string | null;
+      agentUpdateWindowStart: string | null;
+      agentUpdateWindowEnd: string | null;
+      agentUpdateWindowDay: string | null;
+      heartbeatIntervalSeconds: number | null;
+    } | null = null;
+    try {
+      tenantSettings = await prisma.tenant.findUnique({
+        where: { id: agent.tenantId },
+        select: {
+          agentUpdatePolicy: true,
+          agentUpdateWindowStart: true,
+          agentUpdateWindowEnd: true,
+          agentUpdateWindowDay: true,
+          heartbeatIntervalSeconds: true,
+        },
+      });
+    } catch (err) {
+      request.log.warn({ err }, 'heartbeat: tenant fetch failed, using default intervals');
+    }
 
     if (agent.forceUpdateUrl) {
       const forced = await prisma.agentUpdate.findFirst({
@@ -538,20 +551,32 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
     const perf = (body.performance ?? {}) as Record<string, unknown>;
 
     // Fetch tenant settings and last snapshot in parallel to enforce rate limiting.
-    const [inventoryTenantSettings, lastSnapshot] = await Promise.all([
-      prisma.tenant.findUnique({
-        where: { id: agent.tenantId },
-        select: {
-          inventoryMinIntervalMinutes: true,
-          inventoryIntervalMinutes: true,
-        },
-      }),
-      prisma.inventorySnapshot.findFirst({
-        where: { tenantId: agent.tenantId, agentId: agent.id },
-        orderBy: { collectedAt: 'desc' },
-        select: { collectedAt: true },
-      }),
-    ]);
+    // Wrapped in try/catch: a transient DB error must not 500 a valid inventory
+    // submission. On failure both values stay null, which skips the rate-limit
+    // guard below and falls through to snapshot creation.
+    let inventoryTenantSettings: {
+      inventoryMinIntervalMinutes: number | null;
+      inventoryIntervalMinutes: number | null;
+    } | null = null;
+    let lastSnapshot: { collectedAt: Date } | null = null;
+    try {
+      [inventoryTenantSettings, lastSnapshot] = await Promise.all([
+        prisma.tenant.findUnique({
+          where: { id: agent.tenantId },
+          select: {
+            inventoryMinIntervalMinutes: true,
+            inventoryIntervalMinutes: true,
+          },
+        }),
+        prisma.inventorySnapshot.findFirst({
+          where: { tenantId: agent.tenantId, agentId: agent.id },
+          orderBy: { collectedAt: 'desc' },
+          select: { collectedAt: true },
+        }),
+      ]);
+    } catch (err) {
+      request.log.warn({ err }, 'inventory: tenant/snapshot fetch failed, skipping rate limit');
+    }
 
     // Rate-limit: reject if the agent submitted inventory too recently.
     const minIntervalMs = (inventoryTenantSettings?.inventoryMinIntervalMinutes ?? 30) * 60 * 1000;
