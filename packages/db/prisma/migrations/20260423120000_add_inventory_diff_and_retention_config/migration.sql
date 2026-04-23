@@ -30,11 +30,14 @@ CREATE INDEX "inventory_diffs_tenantId_agentId_collectedAt_idx" ON "inventory_di
 -- CreateIndex
 CREATE INDEX "inventory_diffs_tenantId_ciId_collectedAt_idx" ON "inventory_diffs"("tenantId", "ciId", "collectedAt");
 
--- AddForeignKey
-ALTER TABLE "inventory_diffs" ADD CONSTRAINT "inventory_diffs_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- CreateIndex
+CREATE INDEX "InventoryDiff_tenantId_idx" ON "inventory_diffs"("tenantId");
 
 -- AddForeignKey
-ALTER TABLE "inventory_diffs" ADD CONSTRAINT "inventory_diffs_agentId_fkey" FOREIGN KEY ("agentId") REFERENCES "agents"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "inventory_diffs" ADD CONSTRAINT "inventory_diffs_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "inventory_diffs" ADD CONSTRAINT "inventory_diffs_agentId_fkey" FOREIGN KEY ("agentId") REFERENCES "agents"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "inventory_diffs" ADD CONSTRAINT "inventory_diffs_ciId_fkey" FOREIGN KEY ("ciId") REFERENCES "cmdb_configuration_items"("id") ON DELETE SET NULL ON UPDATE CASCADE;

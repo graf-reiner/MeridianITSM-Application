@@ -2131,10 +2131,11 @@ model InventoryDiff {
   collectedAt    DateTime
   createdAt      DateTime @default(now())
 
-  tenant Tenant                 @relation(fields: [tenantId], references: [id])
-  agent  Agent                  @relation(fields: [agentId], references: [id])
-  ci     CmdbConfigurationItem? @relation(fields: [ciId], references: [id])
+  tenant Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  agent  Agent                  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  ci     CmdbConfigurationItem? @relation(fields: [ciId], references: [id], onDelete: SetNull)
 
+  @@index([tenantId])
   @@index([tenantId, agentId, collectedAt])
   @@index([tenantId, ciId, collectedAt])
   @@map("inventory_diffs")
