@@ -1,6 +1,6 @@
 import { Worker } from 'bullmq';
 import { prisma } from '@meridian/db';
-import { bullmqConnection } from '../queues/connection.js';
+import { bullmqConnection, redisConnection } from '../queues/connection.js';
 import { QUEUE_NAMES } from '../queues/definitions.js';
 
 // ─── Inline diff helpers (no-cross-app-import rule) ──────────────────────────
@@ -152,6 +152,9 @@ async function computeAndStoreInventoryDiff(
   agentId: string,
   toSnapshot: InventorySnapshotForDiff,
 ): Promise<void> {
+  // Narrow to snapshots strictly before toSnapshot in time — more precise than
+  // the API service version which only excludes by ID. Avoids edge-case tie-breaks
+  // during backfill where two snapshots could share a collectedAt timestamp.
   const fromSnapshot = await prisma.inventorySnapshot.findFirst({
     where: { tenantId, agentId, id: { not: toSnapshot.id }, collectedAt: { lt: toSnapshot.collectedAt } },
     orderBy: { collectedAt: 'desc' },
@@ -411,7 +414,6 @@ export const inventoryDiffBackfillWorker = new Worker(
     );
 
     // Mark completion in Redis so startup logic doesn't re-enqueue on next restart
-    const { redisConnection } = await import('../queues/connection.js');
     await redisConnection.set('inventory-diff-backfill:completed', '1');
     console.log('[inventory-diff-backfill] Completion flag set in Redis');
   },
