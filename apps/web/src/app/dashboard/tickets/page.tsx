@@ -63,25 +63,25 @@ interface ViewFilters {
 
 function getStatusStyle(status: string): { bg: string; text: string } {
   switch (status) {
-    case 'NEW': return { bg: 'var(--badge-blue-bg)', text: '#1e40af' };
-    case 'OPEN': return { bg: 'var(--badge-green-bg)', text: '#065f46' };
-    case 'IN_PROGRESS': return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
-    case 'PENDING': return { bg: 'var(--badge-orange-bg)', text: '#9a3412' };
-    case 'PENDING_APPROVAL': return { bg: 'var(--badge-orange-bg)', text: '#9a3412' };
-    case 'RESOLVED': return { bg: 'var(--bg-tertiary)', text: '#374151' };
-    case 'CLOSED': return { bg: 'var(--bg-tertiary)', text: '#6b7280' };
-    case 'CANCELLED': return { bg: 'var(--badge-red-bg)', text: '#991b1b' };
-    default: return { bg: 'var(--bg-tertiary)', text: '#374151' };
+    case 'NEW': return { bg: 'var(--badge-blue-bg)', text: 'var(--badge-blue-text)' };
+    case 'OPEN': return { bg: 'var(--badge-green-bg)', text: 'var(--badge-green-text)' };
+    case 'IN_PROGRESS': return { bg: 'var(--badge-yellow-bg)', text: 'var(--badge-yellow-text)' };
+    case 'PENDING': return { bg: 'var(--badge-orange-bg)', text: 'var(--badge-orange-text)' };
+    case 'PENDING_APPROVAL': return { bg: 'var(--badge-orange-bg)', text: 'var(--badge-orange-text)' };
+    case 'RESOLVED': return { bg: 'var(--bg-tertiary)', text: 'var(--badge-muted-text)' };
+    case 'CLOSED': return { bg: 'var(--bg-tertiary)', text: 'var(--text-muted)' };
+    case 'CANCELLED': return { bg: 'var(--badge-red-bg)', text: 'var(--badge-red-text)' };
+    default: return { bg: 'var(--bg-tertiary)', text: 'var(--badge-muted-text)' };
   }
 }
 
 function getPriorityStyle(priority: string): { bg: string; text: string } {
   switch (priority) {
-    case 'CRITICAL': return { bg: 'var(--badge-red-bg)', text: '#991b1b' };
-    case 'HIGH': return { bg: 'var(--badge-orange-bg)', text: '#9a3412' };
-    case 'MEDIUM': return { bg: 'var(--badge-yellow-bg)', text: '#92400e' };
-    case 'LOW': return { bg: 'var(--bg-tertiary)', text: '#374151' };
-    default: return { bg: 'var(--bg-tertiary)', text: '#374151' };
+    case 'CRITICAL': return { bg: 'var(--badge-red-bg)', text: 'var(--badge-red-text)' };
+    case 'HIGH': return { bg: 'var(--badge-orange-bg)', text: 'var(--badge-orange-text)' };
+    case 'MEDIUM': return { bg: 'var(--badge-yellow-bg)', text: 'var(--badge-yellow-text)' };
+    case 'LOW': return { bg: 'var(--bg-tertiary)', text: 'var(--badge-muted-text)' };
+    default: return { bg: 'var(--bg-tertiary)', text: 'var(--badge-muted-text)' };
   }
 }
 
@@ -381,7 +381,7 @@ export default function DashboardTicketsPage() {
                         }}
                         title="Delete view"
                         style={{ display: 'inline-flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 5, fontSize: 11, fontWeight: 500, color: '#dc2626', border: '1px solid transparent', background: 'none', cursor: 'pointer' }}
-                        onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#fef2f2'; e.currentTarget.style.borderColor = '#fecaca'; }}
+                        onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--danger-hover-bg)'; e.currentTarget.style.borderColor = 'var(--danger-hover-border)'; }}
                         onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; }}
                       >
                         <Icon path={mdiTrashCanOutline} size={0.5} color="currentColor" />
@@ -412,7 +412,7 @@ export default function DashboardTicketsPage() {
             placeholder="Search tickets..."
             value={filters.search ?? ''}
             onChange={(e) => { setFilters(prev => ({ ...prev, search: e.target.value || undefined })); setPage(1); }}
-            style={{ width: '100%', padding: '8px 10px 8px 34px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '8px 10px 8px 34px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box', backgroundColor: 'var(--input-bg)', color: 'var(--text-primary)' }}
           />
         </div>
 
@@ -420,7 +420,7 @@ export default function DashboardTicketsPage() {
         <select
           value={filters.status ?? ''}
           onChange={(e) => { setFilters(prev => ({ ...prev, status: e.target.value || undefined })); setPage(1); }}
-          style={{ padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}
+          style={{ padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
         >
           <option value="">All Statuses</option>
           <option value="NEW">New</option>
@@ -437,7 +437,7 @@ export default function DashboardTicketsPage() {
         <select
           value={filters.priority ?? ''}
           onChange={(e) => { setFilters(prev => ({ ...prev, priority: e.target.value || undefined })); setPage(1); }}
-          style={{ padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}
+          style={{ padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
         >
           <option value="">All Priorities</option>
           <option value="CRITICAL">Critical</option>
@@ -451,7 +451,7 @@ export default function DashboardTicketsPage() {
       {selectedIds.size > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', marginBottom: 12, backgroundColor: 'var(--badge-blue-bg)', borderRadius: 8, border: '1px solid var(--accent-primary)' }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-primary)' }}>{selectedIds.size} selected</span>
-          <select value={bulkAction} onChange={(e) => setBulkAction(e.target.value)} style={{ padding: '5px 8px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 13, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}>
+          <select value={bulkAction} onChange={(e) => setBulkAction(e.target.value)} style={{ padding: '5px 8px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 13, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
             <option value="">Choose action...</option>
             <option value="status_open">Set Open</option>
             <option value="status_in_progress">Set In Progress</option>

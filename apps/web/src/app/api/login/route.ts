@@ -47,6 +47,14 @@ export async function POST(request: NextRequest) {
       sameSite: 'lax',
       httpOnly: false,
     });
+    if (data.refreshToken) {
+      response.cookies.set('meridian_refresh', data.refreshToken, {
+        path: '/',
+        maxAge: 60 * 60, // 60-minute inactivity window
+        sameSite: 'lax',
+        httpOnly: true,
+      });
+    }
 
     return response;
   } catch {

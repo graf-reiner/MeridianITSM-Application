@@ -36,6 +36,16 @@ export async function POST(request: NextRequest) {
       sameSite: 'lax',
       httpOnly: false,
     });
+    // Store refresh token so the middleware can silently renew the session.
+    // maxAge acts as the inactivity window — reset on each successful refresh.
+    if (data.refreshToken) {
+      response.cookies.set('meridian_refresh', data.refreshToken, {
+        path: '/',
+        maxAge: 60 * 60, // 60-minute inactivity window
+        sameSite: 'lax',
+        httpOnly: true,
+      });
+    }
 
     return response;
   } catch {

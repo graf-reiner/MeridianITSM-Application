@@ -15,8 +15,40 @@ interface JwtPayload {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const AUTH_COOKIE_NAME = 'meridian_session';
+const REFRESH_COOKIE_NAME = 'meridian_refresh';
 const JWT_SECRET = process.env.JWT_SECRET || 'meridian-dev-jwt-secret-change-in-production';
+const API_URL = process.env.API_URL || 'http://localhost:4000';
 const APP_DOMAIN = process.env.APP_DOMAIN || process.env.NEXT_PUBLIC_APP_DOMAIN || '';
+
+// ─── Silent Token Refresh ─────────────────────────────────────────────────────
+
+/**
+ * Exchange an expired access token for a fresh pair using the refresh cookie.
+ * Returns new tokens on success, null if refresh token is missing or invalid.
+ * Resetting the refresh cookie maxAge each call implements the sliding 60-min window.
+ */
+async function tryRefresh(
+  request: NextRequest,
+): Promise<{ accessToken: string; refreshToken: string; payload: JwtPayload } | null> {
+  const refreshToken = request.cookies.get(REFRESH_COOKIE_NAME)?.value;
+  if (!refreshToken) return null;
+
+  try {
+    const res = await fetch(`${API_URL}/api/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!res.ok) return null;
+
+    const data = await res.json() as { accessToken: string; refreshToken: string };
+    const secret = new TextEncoder().encode(JWT_SECRET);
+    const { payload } = await jwtVerify(data.accessToken, secret);
+    return { accessToken: data.accessToken, refreshToken: data.refreshToken, payload: payload as JwtPayload };
+  } catch {
+    return null;
+  }
+}
 
 // ─── Subdomain Extraction ───────────────────────────────────────────────────
 
@@ -80,11 +112,21 @@ async function getTokenPayload(request: NextRequest): Promise<JwtPayload | null>
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const payload = await getTokenPayload(request);
-
   // ── Extract subdomain for tenant context ──────────────────────────────────
   const host = request.headers.get('host') ?? '';
   const subdomain = extractSubdomain(host);
+
+  // ── Resolve auth — try existing token, then silent refresh ────────────────
+  let payload = await getTokenPayload(request);
+  let refreshed: { accessToken: string; refreshToken: string } | null = null;
+
+  if (!payload) {
+    const result = await tryRefresh(request);
+    if (result) {
+      payload = result.payload;
+      refreshed = { accessToken: result.accessToken, refreshToken: result.refreshToken };
+    }
+  }
 
   // ── Redirect unauthenticated users to /login ──────────────────────────────
   if (!payload) {
@@ -141,13 +183,33 @@ export async function middleware(request: NextRequest) {
     response.cookies.set('meridian_subdomain', subdomain, { path: '/', httpOnly: false });
   }
 
+  // ── Write refreshed tokens (sliding 60-min inactivity window) ────────────
+  if (refreshed) {
+    response.cookies.set('meridian_session', refreshed.accessToken, {
+      path: '/', maxAge: 15 * 60, sameSite: 'lax', httpOnly: false,
+    });
+    response.cookies.set('meridian_refresh', refreshed.refreshToken, {
+      path: '/', maxAge: 60 * 60, sameSite: 'lax', httpOnly: true,
+    });
+  }
+
   // Support both `roles` (array from API JWT) and `role` (legacy single string)
   const roles = payload.roles ?? (payload.role ? [payload.role] : []);
 
   // ── MFA enforcement ────────────────────────────────────────────────────────
-  // If the JWT has mfaVerified explicitly set to false, redirect to MFA challenge
+  // If the JWT has mfaVerified explicitly set to false, redirect to MFA challenge.
+  // Carry any just-refreshed tokens so the MFA page can authenticate properly.
   if (payload.mfaVerified === false && !pathname.startsWith('/mfa')) {
-    return NextResponse.redirect(new URL('/mfa/challenge', request.url));
+    const mfaRedirect = NextResponse.redirect(new URL('/mfa/challenge', request.url));
+    if (refreshed) {
+      mfaRedirect.cookies.set('meridian_session', refreshed.accessToken, {
+        path: '/', maxAge: 15 * 60, sameSite: 'lax', httpOnly: false,
+      });
+      mfaRedirect.cookies.set('meridian_refresh', refreshed.refreshToken, {
+        path: '/', maxAge: 60 * 60, sameSite: 'lax', httpOnly: true,
+      });
+    }
+    return mfaRedirect;
   }
 
   // ── end_user accessing /dashboard → redirect to /portal ──────────────────

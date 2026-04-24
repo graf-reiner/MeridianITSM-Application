@@ -24,6 +24,7 @@ export async function refreshRoute(app: FastifyInstance): Promise<void> {
       email: string;
       roles: string[];
       type: string;
+      mfaVerified?: boolean;
     };
 
     try {
@@ -33,6 +34,7 @@ export async function refreshRoute(app: FastifyInstance): Promise<void> {
         email: string;
         roles: string[];
         type: string;
+        mfaVerified?: boolean;
       }>(refreshToken);
     } catch {
       return reply.code(401).send({ error: 'Invalid or expired refresh token' });
@@ -50,6 +52,7 @@ export async function refreshRoute(app: FastifyInstance): Promise<void> {
         roles: payload.roles,
       },
       app,
+      { mfaVerified: payload.mfaVerified === true },
     );
 
     return reply.code(200).send({

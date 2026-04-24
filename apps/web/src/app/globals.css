@@ -38,6 +38,20 @@
   --badge-purple-bg: #ede9fe;
   --badge-purple-bg-subtle: #f3e8ff;
   --badge-fuchsia-bg: #fdf4ff;
+  /* Badge text colors (light mode) */
+  --badge-red-text: #991b1b;
+  --badge-green-text: #065f46;
+  --badge-yellow-text: #92400e;
+  --badge-orange-text: #9a3412;
+  --badge-blue-text: #1e40af;
+  --badge-indigo-text: #3730a3;
+  --badge-purple-text: #5b21b6;
+  --badge-muted-text: #374151;
+  /* Danger hover (light mode) */
+  --danger-hover-bg: #fef2f2;
+  --danger-hover-border: #fecaca;
+  /* Nav active highlight */
+  --nav-active-bg: #e0f2fe;
 }
 
 [data-theme="dark"] {
@@ -77,6 +91,26 @@
   --badge-purple-bg: #2e1065;
   --badge-purple-bg-subtle: #3b0764;
   --badge-fuchsia-bg: #2e0536;
+  /* Badge text colors (dark mode — light/pastel variants for readability) */
+  --badge-red-text: #fca5a5;
+  --badge-green-text: #6ee7b7;
+  --badge-yellow-text: #fde68a;
+  --badge-orange-text: #fed7aa;
+  --badge-blue-text: #93c5fd;
+  --badge-indigo-text: #a5b4fc;
+  --badge-purple-text: #c4b5fd;
+  --badge-muted-text: #d1d5db;
+  /* Danger hover (dark mode) */
+  --danger-hover-bg: #450a0a;
+  --danger-hover-border: #7f1d1d;
+  /* Nav active highlight */
+  --nav-active-bg: #172554;
+}
+
+/* Ensure base text color cascades so color:inherit never falls back to browser black */
+body {
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
 }
 
 [data-theme] * {

@@ -90,7 +90,7 @@ function NavLink({ item, isActive, onClick }: { item: NavItem; isActive: boolean
         textDecoration: 'none',
         fontSize: 14,
         fontWeight: isActive ? 600 : 400,
-        backgroundColor: isActive ? '#e0f2fe' : 'transparent',
+        backgroundColor: isActive ? 'var(--nav-active-bg)' : 'transparent',
         color: isActive ? 'var(--accent-brand)' : 'var(--text-secondary)',
         transition: 'background-color 0.15s ease, color 0.15s ease',
       }}
