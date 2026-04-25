@@ -53,6 +53,11 @@ SUDOERS
 
 # SPEC
 cat > "$RPM_TOPDIR/SPECS/meridian-agent.spec" <<SPEC
+# Self-contained .NET binary has no separate debug symbols, and rpmbuild on
+# Debian-based hosts trips on the empty debuginfo extract. Disable.
+%global debug_package %{nil}
+%global __os_install_post %{nil}
+
 Name:           meridian-agent
 Version:        ${AGENT_VERSION}
 Release:        1%{?dist}
