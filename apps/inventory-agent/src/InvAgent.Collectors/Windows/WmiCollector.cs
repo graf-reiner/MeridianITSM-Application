@@ -31,7 +31,6 @@ public class WmiCollector : ICollector
 
         await Task.Run(() =>
         {
-#if WINDOWS
             // --- Identity ---
             CollectIdentity(payload);
 
@@ -76,15 +75,24 @@ public class WmiCollector : ICollector
 
             // --- Virtualization ---
             payload.Virtualization = CollectVirtualization(payload.Hardware);
-#endif
+
+            // --- Connected hardware (v1.0.0.6) ---
+            payload.Printers = CollectPrinters();
+            payload.UsbDevices = CollectUsbDevices();
+            payload.Cameras = CollectCameras();
+            payload.BiometricDevices = CollectBiometricDevices();
+            payload.SmartCardReaders = CollectSmartCardReaders();
+            payload.AudioDevices = CollectAudioDevices();
+
+            // --- Compliance hardware ---
+            payload.TpmDetails = CollectTpmDetails();
+            payload.Vbs = CollectVbsStatus();
         }, ct);
 
         sw.Stop();
         payload.ScanDurationMs = sw.Elapsed.TotalMilliseconds;
         return payload;
     }
-
-#if WINDOWS
 
     // ═══════════════════════════════════════════════════════════════════════════
     //  IDENTITY
@@ -1611,5 +1619,251 @@ public class WmiCollector : ICollector
         }
     }
 
-#endif
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  CONNECTED HARDWARE (v1.0.0.6)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    private static List<Printer> CollectPrinters()
+    {
+        var printers = new List<Printer>();
+        try
+        {
+            using var searcher = new System.Management.ManagementObjectSearcher("SELECT * FROM Win32_Printer");
+            foreach (System.Management.ManagementObject obj in searcher.Get())
+            {
+                printers.Add(new Printer
+                {
+                    Name = obj["Name"]?.ToString() ?? "",
+                    DriverName = obj["DriverName"]?.ToString() ?? "",
+                    PortName = obj["PortName"]?.ToString() ?? "",
+                    Default = obj["Default"] is bool d && d,
+                    Network = obj["Network"] is bool n && n,
+                    Shared = obj["Shared"] is bool s && s,
+                    ShareName = obj["ShareName"]?.ToString() ?? "",
+                    Status = obj["Status"]?.ToString() ?? "",
+                    Location = obj["Location"]?.ToString() ?? "",
+                    Comment = obj["Comment"]?.ToString() ?? "",
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[WmiCollector] Printers collection failed: {ex.Message}");
+        }
+        return printers;
+    }
+
+    private static List<UsbDevice> CollectUsbDevices()
+    {
+        var devices = new List<UsbDevice>();
+        try
+        {
+            // Filter to USB-attached PnP entities. The pattern matches both 'USB\\' and 'USBSTOR\\' families.
+            using var searcher = new System.Management.ManagementObjectSearcher(
+                "SELECT * FROM Win32_PnPEntity WHERE PNPDeviceID LIKE 'USB%'");
+            foreach (System.Management.ManagementObject obj in searcher.Get())
+            {
+                var hwIdRaw = obj["HardwareID"];
+                var hwIds = hwIdRaw is string[] arr ? arr.ToList() : new List<string>();
+
+                devices.Add(new UsbDevice
+                {
+                    DeviceId = obj["PNPDeviceID"]?.ToString() ?? "",
+                    Name = obj["Name"]?.ToString() ?? "",
+                    Manufacturer = obj["Manufacturer"]?.ToString() ?? "",
+                    HardwareId = hwIds,
+                    Service = obj["Service"]?.ToString() ?? "",
+                    Status = obj["Status"]?.ToString() ?? "",
+                    ClassGuid = obj["ClassGuid"]?.ToString() ?? "",
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[WmiCollector] USB devices collection failed: {ex.Message}");
+        }
+        return devices;
+    }
+
+    private static List<Camera> CollectCameras()
+    {
+        var cameras = new List<Camera>();
+        try
+        {
+            using var searcher = new System.Management.ManagementObjectSearcher(
+                "SELECT * FROM Win32_PnPEntity WHERE PNPClass = 'Camera' OR PNPClass = 'Image'");
+            foreach (System.Management.ManagementObject obj in searcher.Get())
+            {
+                cameras.Add(new Camera
+                {
+                    Name = obj["Name"]?.ToString() ?? "",
+                    Manufacturer = obj["Manufacturer"]?.ToString() ?? "",
+                    DeviceId = obj["PNPDeviceID"]?.ToString() ?? "",
+                    Status = obj["Status"]?.ToString() ?? "",
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[WmiCollector] Cameras collection failed: {ex.Message}");
+        }
+        return cameras;
+    }
+
+    private static List<BiometricDevice> CollectBiometricDevices()
+    {
+        var devices = new List<BiometricDevice>();
+        try
+        {
+            using var searcher = new System.Management.ManagementObjectSearcher(
+                "SELECT * FROM Win32_PnPEntity WHERE PNPClass = 'Biometric'");
+            foreach (System.Management.ManagementObject obj in searcher.Get())
+            {
+                var name = obj["Name"]?.ToString() ?? "";
+                var lower = name.ToLowerInvariant();
+                var deviceType = lower.Contains("fingerprint") ? "Fingerprint"
+                    : (lower.Contains("iris") ? "Iris"
+                    : (lower.Contains("face") || lower.Contains("ir camera") ? "Face/IR" : "Other"));
+
+                devices.Add(new BiometricDevice
+                {
+                    Name = name,
+                    Manufacturer = obj["Manufacturer"]?.ToString() ?? "",
+                    DeviceType = deviceType,
+                    Status = obj["Status"]?.ToString() ?? "",
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[WmiCollector] Biometric devices collection failed: {ex.Message}");
+        }
+        return devices;
+    }
+
+    private static List<SmartCardReader> CollectSmartCardReaders()
+    {
+        var readers = new List<SmartCardReader>();
+        try
+        {
+            using var searcher = new System.Management.ManagementObjectSearcher(
+                "SELECT * FROM Win32_PnPEntity WHERE PNPClass = 'SmartCardReader' OR PNPClass = 'SCSIAdapter' AND Name LIKE '%smart card%'");
+            foreach (System.Management.ManagementObject obj in searcher.Get())
+            {
+                readers.Add(new SmartCardReader
+                {
+                    Name = obj["Name"]?.ToString() ?? "",
+                    Manufacturer = obj["Manufacturer"]?.ToString() ?? "",
+                    Status = obj["Status"]?.ToString() ?? "",
+                    DriverVersion = "",
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[WmiCollector] Smart card readers collection failed: {ex.Message}");
+        }
+        return readers;
+    }
+
+    private static List<AudioDevice> CollectAudioDevices()
+    {
+        var devices = new List<AudioDevice>();
+        try
+        {
+            using var searcher = new System.Management.ManagementObjectSearcher("SELECT * FROM Win32_SoundDevice");
+            foreach (System.Management.ManagementObject obj in searcher.Get())
+            {
+                devices.Add(new AudioDevice
+                {
+                    Name = obj["Name"]?.ToString() ?? "",
+                    Manufacturer = obj["Manufacturer"]?.ToString() ?? "",
+                    ProductName = obj["ProductName"]?.ToString() ?? "",
+                    Status = obj["Status"]?.ToString() ?? "",
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[WmiCollector] Audio devices collection failed: {ex.Message}");
+        }
+        return devices;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  COMPLIANCE HARDWARE
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    private static TpmDetails CollectTpmDetails()
+    {
+        var tpm = new TpmDetails();
+        try
+        {
+            // TPM lives in a non-default WMI namespace; access requires admin in some configurations.
+            var scope = new System.Management.ManagementScope(@"\\.\ROOT\CIMV2\Security\MicrosoftTpm");
+            scope.Connect();
+
+            using var searcher = new System.Management.ManagementObjectSearcher(scope,
+                new System.Management.ObjectQuery("SELECT * FROM Win32_Tpm"));
+            foreach (System.Management.ManagementObject obj in searcher.Get())
+            {
+                tpm.Present = true;
+                tpm.Manufacturer = obj["ManufacturerIdTxt"]?.ToString() ?? "";
+                tpm.ManufacturerId = obj["ManufacturerId"]?.ToString() ?? "";
+                tpm.ManufacturerVersion = obj["ManufacturerVersion"]?.ToString() ?? "";
+                tpm.SpecVersion = obj["SpecVersion"]?.ToString() ?? "";
+                tpm.PhysicalPresenceVersion = obj["PhysicalPresenceVersionInfo"]?.ToString() ?? "";
+                tpm.IsActivated = obj["IsActivated_InitialValue"] is bool a && a;
+                tpm.IsEnabled = obj["IsEnabled_InitialValue"] is bool e && e;
+                tpm.IsOwned = obj["IsOwned_InitialValue"] is bool o && o;
+                // IsReady is reported via a method; treat the combined flags as a proxy.
+                tpm.IsReady = tpm.IsActivated && tpm.IsEnabled && tpm.IsOwned;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[WmiCollector] TPM details collection failed: {ex.Message}");
+        }
+        return tpm;
+    }
+
+    private static VbsStatus CollectVbsStatus()
+    {
+        var vbs = new VbsStatus();
+        try
+        {
+            // Win32_DeviceGuard exposes VBS / HVCI / Credential Guard status.
+            var scope = new System.Management.ManagementScope(@"\\.\ROOT\Microsoft\Windows\DeviceGuard");
+            scope.Connect();
+
+            using var searcher = new System.Management.ManagementObjectSearcher(scope,
+                new System.Management.ObjectQuery("SELECT * FROM Win32_DeviceGuard"));
+            foreach (System.Management.ManagementObject obj in searcher.Get())
+            {
+                // VirtualizationBasedSecurityStatus: 0=off, 1=configured but not running, 2=running.
+                if (obj["VirtualizationBasedSecurityStatus"] is uint vbsStatus)
+                {
+                    vbs.Enabled = vbsStatus >= 1;
+                    vbs.Running = vbsStatus == 2;
+                }
+
+                // SecurityServicesRunning: array of uint. 1 = Credential Guard, 2 = HVCI.
+                if (obj["SecurityServicesRunning"] is uint[] running)
+                {
+                    vbs.CredentialGuardRunning = running.Contains((uint)1);
+                    vbs.HvciRunning = running.Contains((uint)2);
+                }
+                if (obj["SecurityServicesConfigured"] is uint[] configured)
+                {
+                    vbs.CredentialGuardEnabled = configured.Contains((uint)1);
+                    vbs.HvciEnabled = configured.Contains((uint)2);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[WmiCollector] VBS status collection failed: {ex.Message}");
+        }
+        return vbs;
+    }
 }

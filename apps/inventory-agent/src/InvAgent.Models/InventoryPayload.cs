@@ -36,10 +36,109 @@ public class InventoryPayload
     public PerformanceSnapshot Performance { get; set; } = new();
     public VirtualizationInfo Virtualization { get; set; } = new();
 
+    // ─── Tier 4: Connected Hardware (added v1.0.0.6) ─────────────────────────
+
+    public List<Printer> Printers { get; set; } = [];
+    public List<UsbDevice> UsbDevices { get; set; } = [];
+    public List<Camera> Cameras { get; set; } = [];
+    public List<BiometricDevice> BiometricDevices { get; set; } = [];
+    public List<SmartCardReader> SmartCardReaders { get; set; } = [];
+    public List<AudioDevice> AudioDevices { get; set; } = [];
+
+    // ─── Tier 5: Compliance Hardware ─────────────────────────────────────────
+
+    public TpmDetails TpmDetails { get; set; } = new();
+    public VbsStatus Vbs { get; set; } = new();
+
     // ─── Agent Metadata ──────────────────────────────────────────────────────
 
     public DateTime CollectedAt { get; set; } = DateTime.UtcNow;
     public double ScanDurationMs { get; set; }
+}
+
+// ─── Connected Hardware ──────────────────────────────────────────────────────
+
+public class Printer
+{
+    public string Name { get; set; } = "";
+    public string DriverName { get; set; } = "";
+    public string PortName { get; set; } = "";
+    public bool Default { get; set; }
+    public bool Network { get; set; }
+    public bool Shared { get; set; }
+    public string ShareName { get; set; } = "";
+    public string Status { get; set; } = "";
+    public string Location { get; set; } = "";
+    public string Comment { get; set; } = "";
+}
+
+public class UsbDevice
+{
+    public string DeviceId { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Manufacturer { get; set; } = "";
+    public List<string> HardwareId { get; set; } = [];
+    public string Service { get; set; } = "";
+    public string Status { get; set; } = "";
+    public string ClassGuid { get; set; } = "";
+}
+
+public class Camera
+{
+    public string Name { get; set; } = "";
+    public string Manufacturer { get; set; } = "";
+    public string DeviceId { get; set; } = "";
+    public string Status { get; set; } = "";
+}
+
+public class BiometricDevice
+{
+    public string Name { get; set; } = "";
+    public string Manufacturer { get; set; } = "";
+    public string DeviceType { get; set; } = "";   // Fingerprint, IR, Iris (heuristic from name)
+    public string Status { get; set; } = "";
+}
+
+public class SmartCardReader
+{
+    public string Name { get; set; } = "";
+    public string Manufacturer { get; set; } = "";
+    public string Status { get; set; } = "";
+    public string DriverVersion { get; set; } = "";
+}
+
+public class AudioDevice
+{
+    public string Name { get; set; } = "";
+    public string Manufacturer { get; set; } = "";
+    public string ProductName { get; set; } = "";
+    public string Status { get; set; } = "";
+}
+
+// ─── Compliance Hardware ─────────────────────────────────────────────────────
+
+public class TpmDetails
+{
+    public bool Present { get; set; }
+    public string Manufacturer { get; set; } = "";
+    public string ManufacturerId { get; set; } = "";
+    public string ManufacturerVersion { get; set; } = "";
+    public string SpecVersion { get; set; } = "";
+    public string PhysicalPresenceVersion { get; set; } = "";
+    public bool IsActivated { get; set; }
+    public bool IsEnabled { get; set; }
+    public bool IsOwned { get; set; }
+    public bool IsReady { get; set; }
+}
+
+public class VbsStatus
+{
+    public bool Enabled { get; set; }
+    public bool Running { get; set; }
+    public bool HvciEnabled { get; set; }
+    public bool HvciRunning { get; set; }
+    public bool CredentialGuardEnabled { get; set; }
+    public bool CredentialGuardRunning { get; set; }
 }
 
 // ─── Operating System ────────────────────────────────────────────────────────
