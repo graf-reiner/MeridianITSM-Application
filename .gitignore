@@ -31,6 +31,9 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 
+# Microsoft Office lock files (~$ prefix on every open .docx/.xlsx/.pptx)
+~$*
+
 # IDE
 .vscode
 .idea
