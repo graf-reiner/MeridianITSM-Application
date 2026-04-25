@@ -39,3 +39,34 @@ Thumbs.db
 
 # Generated files
 packages/db/node_modules/.prisma
+
+# .NET build outputs (per-project bin/obj plus the inventory-agent publish dir)
+**/bin/
+**/obj/
+apps/inventory-agent/publish/
+
+# Playwright artifacts
+playwright-report/
+test-results/
+**/tests/.auth/
+
+# Tool / agent state directories
+.claude/
+.playwright-mcp/
+.superpowers/
+
+# Ad-hoc debug captures at repo root and the web app root
+# (legit asset PNGs live deeper under apps/{inventory-agent,mobile}/ —
+#  they're not affected by these top-level globs)
+/*.png
+/apps/web/*.png
+
+# Playwright snapshot dumps + Owner Admin debug exports in repo root
+/ci-detail-*.yml
+/edit-page-snapshot.yml
+
+# Local scratch space (not the tracked .planning/ tree)
+/scratch/
+
+# Stray output redirect from a one-off command
+/--
