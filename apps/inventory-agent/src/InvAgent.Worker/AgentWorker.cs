@@ -69,7 +69,21 @@ public class AgentWorker : BackgroundService
             await TryEnrollAsync(ct);
         }
 
-        // Step 2: Flush any offline queue from previous session
+        // Step 2: Send a single startup heartbeat IMMEDIATELY so the server records
+        // the running agentVersion within seconds of service start. Without this,
+        // the version column lags by up to one HeartbeatInterval (5 min default)
+        // after a self-update, which can mislead admins checking deploy status.
+        // Failures here are non-fatal — the regular heartbeat loop catches up.
+        try
+        {
+            await SendHeartbeatAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Startup heartbeat failed — version reporting will catch up on next cycle.");
+        }
+
+        // Step 3: Flush any offline queue from previous session
         try
         {
             await _queue.FlushAsync(_api, ct);
@@ -79,7 +93,7 @@ public class AgentWorker : BackgroundService
             _logger.LogWarning(ex, "Failed to flush offline queue on startup — server may be unreachable.");
         }
 
-        // Step 3: Startup jitter — stagger first inventory across the agent fleet
+        // Step 4: Startup jitter — stagger first inventory across the agent fleet
         var startupJitterMs = (int)(Random.Shared.NextDouble() * 60_000);
         _logger.LogInformation("Startup jitter: delaying first inventory by {Ms}ms ({Seconds:F1}s).",
             startupJitterMs, startupJitterMs / 1000.0);
@@ -205,7 +219,7 @@ public class AgentWorker : BackgroundService
 
             return defaultDelay;
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             throw;
         }
@@ -245,7 +259,7 @@ public class AgentWorker : BackgroundService
                     submitted = true;
                 }
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
                 throw;
             }
@@ -297,7 +311,7 @@ public class AgentWorker : BackgroundService
 
             return defaultDelay;
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             throw;
         }
