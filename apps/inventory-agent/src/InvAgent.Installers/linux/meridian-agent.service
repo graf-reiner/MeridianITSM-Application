@@ -22,7 +22,12 @@ EnvironmentFile=-/etc/meridian-agent/environment
 # PrivateTmp=yes is required: System.CommandLine writes a sentinel file under
 # /tmp on first invocation, and ProtectSystem=strict makes the host /tmp
 # read-only. PrivateTmp gives the service its own writable /tmp namespace.
-NoNewPrivileges=yes
+#
+# NoNewPrivileges deliberately NOT set: the self-update path needs sudo to
+# invoke dpkg/rpm + systemctl restart (limited to exact paths via
+# /etc/sudoers.d/meridian-agent), and NoNewPrivileges blocks setuid binaries
+# inside the cgroup. The non-root User= + narrow sudoers fragment provide
+# the privilege boundary instead.
 ProtectSystem=strict
 ProtectHome=yes
 PrivateTmp=yes
