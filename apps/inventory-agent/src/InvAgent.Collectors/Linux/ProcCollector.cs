@@ -74,6 +74,31 @@ public class ProcCollector : ICollector
 
             try { payload.Virtualization = CollectVirtualization(); }
             catch (Exception ex) { Console.Error.WriteLine($"[ProcCollector] Virtualization collection failed: {ex.Message}"); }
+
+            // Tier 4: Connected Hardware
+            try { payload.Printers = CollectPrinters(); }
+            catch (Exception ex) { Console.Error.WriteLine($"[ProcCollector] Printer collection failed: {ex.Message}"); }
+
+            try { payload.UsbDevices = CollectUsbDevices(); }
+            catch (Exception ex) { Console.Error.WriteLine($"[ProcCollector] USB device collection failed: {ex.Message}"); }
+
+            try { payload.Cameras = CollectCameras(); }
+            catch (Exception ex) { Console.Error.WriteLine($"[ProcCollector] Camera collection failed: {ex.Message}"); }
+
+            try { payload.BiometricDevices = CollectBiometricDevices(payload.UsbDevices); }
+            catch (Exception ex) { Console.Error.WriteLine($"[ProcCollector] Biometric device collection failed: {ex.Message}"); }
+
+            try { payload.SmartCardReaders = CollectSmartCardReaders(payload.UsbDevices); }
+            catch (Exception ex) { Console.Error.WriteLine($"[ProcCollector] Smart card reader collection failed: {ex.Message}"); }
+
+            try { payload.AudioDevices = CollectAudioDevices(); }
+            catch (Exception ex) { Console.Error.WriteLine($"[ProcCollector] Audio device collection failed: {ex.Message}"); }
+
+            // Tier 5: Compliance Hardware
+            try { payload.TpmDetails = CollectTpmDetails(); }
+            catch (Exception ex) { Console.Error.WriteLine($"[ProcCollector] TPM details collection failed: {ex.Message}"); }
+            // Vbs is Windows-specific (HVCI/Credential Guard); Linux LSM equivalents
+            // are reported via CollectSecurityPosture.
         }, ct);
 
         sw.Stop();
@@ -2434,5 +2459,353 @@ public class ProcCollector : ICollector
         }
 
         return "";
+    }
+
+    // ─── Tier 4: Connected Hardware ──────────────────────────────────────────────
+
+    /// <summary>
+    /// Enumerate CUPS printers via lpstat. Returns empty when CUPS isn't
+    /// installed (which is typical on headless servers). lpstat exits non-zero
+    /// when the cupsd socket is missing — we silently swallow that.
+    /// </summary>
+    private static List<Printer> CollectPrinters()
+    {
+        var list = new List<Printer>();
+        if (!File.Exists("/usr/bin/lpstat") && !File.Exists("/bin/lpstat"))
+            return list;
+
+        // -p: list each printer's status; -l: include attributes (Description / Location).
+        var stdout = RunCommand("lpstat", "-p -l");
+        if (string.IsNullOrWhiteSpace(stdout)) return list;
+
+        // lpstat default device (-d) is queried separately so we can mark it.
+        var defaultName = "";
+        var defaultLine = RunCommand("lpstat", "-d").Trim();
+        var defaultMatch = Regex.Match(defaultLine, @"system default destination:\s*(\S+)");
+        if (defaultMatch.Success) defaultName = defaultMatch.Groups[1].Value;
+
+        Printer? current = null;
+        foreach (var line in stdout.Split('\n'))
+        {
+            // "printer NAME is idle/disabled. enabled since ..."
+            var pm = Regex.Match(line, @"^printer\s+(\S+)\s+(.+)$");
+            if (pm.Success)
+            {
+                if (current != null) list.Add(current);
+                current = new Printer
+                {
+                    Name = pm.Groups[1].Value,
+                    Status = pm.Groups[2].Value.Trim(),
+                    Default = pm.Groups[1].Value == defaultName,
+                };
+                continue;
+            }
+            if (current == null) continue;
+
+            var trimmed = line.TrimStart();
+            if (trimmed.StartsWith("Description:", StringComparison.OrdinalIgnoreCase))
+                current.Comment = trimmed["Description:".Length..].Trim();
+            else if (trimmed.StartsWith("Location:", StringComparison.OrdinalIgnoreCase))
+                current.Location = trimmed["Location:".Length..].Trim();
+            else if (trimmed.StartsWith("Connection:", StringComparison.OrdinalIgnoreCase))
+            {
+                var conn = trimmed["Connection:".Length..].Trim();
+                current.Network = conn.Equals("remote", StringComparison.OrdinalIgnoreCase);
+            }
+            else if (trimmed.StartsWith("Interface:", StringComparison.OrdinalIgnoreCase))
+                current.PortName = trimmed["Interface:".Length..].Trim();
+        }
+        if (current != null) list.Add(current);
+        return list;
+    }
+
+    /// <summary>
+    /// Enumerate USB devices from sysfs. Each device under /sys/bus/usb/devices/
+    /// that has an idVendor file represents a real USB function (vs a hub control
+    /// endpoint). Falls back to lsusb when sysfs is unavailable (containers, WSL).
+    /// </summary>
+    private static List<UsbDevice> CollectUsbDevices()
+    {
+        var list = new List<UsbDevice>();
+        const string sysBus = "/sys/bus/usb/devices";
+        if (!Directory.Exists(sysBus))
+            return CollectUsbDevicesViaLsusb();
+
+        foreach (var dev in Directory.EnumerateDirectories(sysBus))
+        {
+            try
+            {
+                var idVendor = ReadSysFile(Path.Combine(dev, "idVendor"));
+                var idProduct = ReadSysFile(Path.Combine(dev, "idProduct"));
+                if (string.IsNullOrEmpty(idVendor) || string.IsNullOrEmpty(idProduct)) continue;
+
+                var product = ReadSysFile(Path.Combine(dev, "product"));
+                var manufacturer = ReadSysFile(Path.Combine(dev, "manufacturer"));
+                var serial = ReadSysFile(Path.Combine(dev, "serial"));
+                var bDeviceClass = ReadSysFile(Path.Combine(dev, "bDeviceClass"));
+
+                // Skip root hubs (class 09 = hub) — they're not user-relevant peripherals.
+                if (bDeviceClass.Equals("09", StringComparison.OrdinalIgnoreCase)) continue;
+
+                list.Add(new UsbDevice
+                {
+                    DeviceId = $"{idVendor}:{idProduct}".ToLowerInvariant(),
+                    Name = string.IsNullOrEmpty(product) ? $"USB {idVendor}:{idProduct}" : product,
+                    Manufacturer = manufacturer,
+                    HardwareId = string.IsNullOrEmpty(serial) ? [] : new List<string> { serial },
+                    ClassGuid = bDeviceClass,
+                    Status = "OK",
+                });
+            }
+            catch
+            {
+                // Skip devices that disappear mid-scan (USB hot-unplug).
+            }
+        }
+        return list;
+    }
+
+    private static List<UsbDevice> CollectUsbDevicesViaLsusb()
+    {
+        var list = new List<UsbDevice>();
+        var stdout = RunCommand("lsusb", "");
+        if (string.IsNullOrWhiteSpace(stdout)) return list;
+
+        foreach (var line in stdout.Split('\n'))
+        {
+            // "Bus 001 Device 003: ID 1d6b:0002 Linux Foundation 2.0 root hub"
+            var m = Regex.Match(line, @"ID\s+([0-9a-fA-F]{4}):([0-9a-fA-F]{4})\s+(.*)$");
+            if (!m.Success) continue;
+            var name = m.Groups[3].Value.Trim();
+            if (name.Contains("root hub", StringComparison.OrdinalIgnoreCase)) continue;
+
+            list.Add(new UsbDevice
+            {
+                DeviceId = $"{m.Groups[1].Value}:{m.Groups[2].Value}".ToLowerInvariant(),
+                Name = name,
+                Status = "OK",
+            });
+        }
+        return list;
+    }
+
+    /// <summary>
+    /// Enumerate cameras via /dev/video* nodes. v4l2-ctl gives a richer name
+    /// (driver model + bus path) when present; otherwise fall back to the bare
+    /// device path so headless containers without v4l2-utils still produce something.
+    /// </summary>
+    private static List<Camera> CollectCameras()
+    {
+        var list = new List<Camera>();
+        if (!Directory.Exists("/dev")) return list;
+
+        var hasV4l2 = File.Exists("/usr/bin/v4l2-ctl") || File.Exists("/usr/local/bin/v4l2-ctl");
+        foreach (var node in Directory.EnumerateFiles("/dev", "video*"))
+        {
+            try
+            {
+                var name = Path.GetFileName(node);
+                var entry = new Camera
+                {
+                    DeviceId = node,
+                    Name = name,
+                    Status = "OK",
+                };
+
+                if (hasV4l2)
+                {
+                    var info = RunCommand("v4l2-ctl", $"--device={node} --info");
+                    var card = Regex.Match(info, @"Card type\s*:\s*(.+)$", RegexOptions.Multiline);
+                    var driver = Regex.Match(info, @"Driver name\s*:\s*(\S+)", RegexOptions.Multiline);
+                    if (card.Success) entry.Name = card.Groups[1].Value.Trim();
+                    if (driver.Success) entry.Manufacturer = driver.Groups[1].Value.Trim();
+                }
+
+                list.Add(entry);
+            }
+            catch
+            {
+                // Some video* nodes are non-capture (encoders, metadata); skip on access errors.
+            }
+        }
+        return list;
+    }
+
+    /// <summary>
+    /// Identify USB fingerprint readers by vendor ID. Linux doesn't expose a
+    /// dedicated biometric class — we filter the already-collected USB list.
+    /// libfprint maintains an authoritative list; the vendor IDs below cover
+    /// the readers seen on the most common business laptops.
+    /// </summary>
+    private static List<BiometricDevice> CollectBiometricDevices(List<UsbDevice> usbDevices)
+    {
+        // Vendor IDs from libfprint drivers (most-deployed first):
+        //   138a Validity / Synaptics
+        //   06cb Synaptics
+        //   08ff AuthenTec
+        //   27c6 Goodix
+        //   1c7a LighTuning
+        //   147e Upek
+        var fingerprintVendors = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        { "138a", "06cb", "08ff", "27c6", "1c7a", "147e" };
+
+        var list = new List<BiometricDevice>();
+        foreach (var u in usbDevices)
+        {
+            var vendor = u.DeviceId.Split(':', 2)[0];
+            if (!fingerprintVendors.Contains(vendor)) continue;
+
+            list.Add(new BiometricDevice
+            {
+                Name = u.Name,
+                Manufacturer = u.Manufacturer,
+                DeviceType = "Fingerprint",
+                Status = u.Status,
+            });
+        }
+        return list;
+    }
+
+    /// <summary>
+    /// Smart card readers expose themselves as USB CCID class (0B) devices.
+    /// pcsc_scan adds reader names from PC/SC; if it isn't installed we fall
+    /// back to the USB class-code filter alone.
+    /// </summary>
+    private static List<SmartCardReader> CollectSmartCardReaders(List<UsbDevice> usbDevices)
+    {
+        var list = new List<SmartCardReader>();
+        // USB class 0b = CCID smart-card interface
+        foreach (var u in usbDevices)
+        {
+            if (!u.ClassGuid.Equals("0b", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            list.Add(new SmartCardReader
+            {
+                Name = u.Name,
+                Manufacturer = u.Manufacturer,
+                Status = u.Status,
+            });
+        }
+
+        // pcsc_scan -n prints "Reader 0: <name>" once and exits. Use it to
+        // pick up readers we missed (e.g. PCSC handles them through a daemon).
+        if (File.Exists("/usr/bin/pcsc_scan") || File.Exists("/usr/local/bin/pcsc_scan"))
+        {
+            var stdout = RunCommand("pcsc_scan", "-n");
+            foreach (var line in stdout.Split('\n'))
+            {
+                var m = Regex.Match(line, @"^Reader\s+\d+:\s+(.+)$");
+                if (!m.Success) continue;
+                var name = m.Groups[1].Value.Trim();
+                if (list.Any(r => r.Name == name)) continue;
+                list.Add(new SmartCardReader { Name = name, Status = "OK" });
+            }
+        }
+        return list;
+    }
+
+    /// <summary>
+    /// Discover audio sinks/sources. Try PulseAudio/PipeWire-pulse first
+    /// (single CLI handles both), then ALSA. Each backend exposes the same
+    /// hardware differently, so we prefer the highest-level view available.
+    /// </summary>
+    private static List<AudioDevice> CollectAudioDevices()
+    {
+        var list = new List<AudioDevice>();
+
+        // PulseAudio / PipeWire-pulse compatibility — same CLI either way.
+        if (File.Exists("/usr/bin/pactl") || File.Exists("/usr/local/bin/pactl"))
+        {
+            var sinks = RunCommand("pactl", "list short sinks");
+            foreach (var line in sinks.Split('\n'))
+            {
+                var parts = line.Split('\t', StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length < 2) continue;
+                list.Add(new AudioDevice
+                {
+                    Name = parts[1].Trim(),
+                    ProductName = parts[1].Trim(),
+                    Status = "OK",
+                });
+            }
+            var sources = RunCommand("pactl", "list short sources");
+            foreach (var line in sources.Split('\n'))
+            {
+                var parts = line.Split('\t', StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length < 2) continue;
+                var name = parts[1].Trim();
+                // Skip ".monitor" pseudo-sources — they shadow each sink and aren't real hardware.
+                if (name.Contains(".monitor", StringComparison.OrdinalIgnoreCase)) continue;
+                if (list.Any(d => d.Name == name)) continue;
+                list.Add(new AudioDevice { Name = name, ProductName = name, Status = "OK" });
+            }
+            if (list.Count > 0) return list;
+        }
+
+        // ALSA fallback — every distro ships aplay even on minimal images.
+        if (File.Exists("/usr/bin/aplay") || File.Exists("/proc/asound/cards"))
+        {
+            var stdout = RunCommand("aplay", "-l");
+            foreach (var line in stdout.Split('\n'))
+            {
+                // "card 0: PCH [HDA Intel PCH], device 0: ALC295 Analog [ALC295 Analog]"
+                var m = Regex.Match(line, @"^card\s+\d+:\s+\S+\s+\[(.+?)\],\s+device\s+\d+:\s+(.+?)\s+\[");
+                if (!m.Success) continue;
+                list.Add(new AudioDevice
+                {
+                    Name = m.Groups[2].Value.Trim(),
+                    ProductName = m.Groups[1].Value.Trim(),
+                    Status = "OK",
+                });
+            }
+        }
+        return list;
+    }
+
+    // ─── Tier 5: Compliance Hardware ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Read TPM 2.0 details from /sys/class/tpm/tpmN/. tpm2-tools (tpm2_getcap)
+    /// gives the same data with friendlier names but isn't installed by default;
+    /// sysfs is universally available on a kernel that has a TPM driver loaded.
+    /// </summary>
+    private static TpmDetails CollectTpmDetails()
+    {
+        var details = new TpmDetails();
+        var tpmRoot = "/sys/class/tpm";
+        if (!Directory.Exists(tpmRoot)) return details;
+
+        var tpms = Directory.GetDirectories(tpmRoot);
+        if (tpms.Length == 0) return details;
+        var tpm = tpms[0];
+
+        details.Present = true;
+        // If the kernel exposed /sys/class/tpm/tpmN, the chip is enabled and accessible.
+        details.IsEnabled = true;
+        details.IsActivated = true;
+        details.IsReady = true;
+
+        var versionMajor = ReadSysFile(Path.Combine(tpm, "tpm_version_major"));
+        if (!string.IsNullOrEmpty(versionMajor))
+            details.SpecVersion = versionMajor == "2" ? "2.0" : "1.2";
+
+        details.Manufacturer = ReadSysFile(Path.Combine(tpm, "device", "description"));
+        if (string.IsNullOrEmpty(details.Manufacturer))
+            details.Manufacturer = ReadSysFile("/sys/class/dmi/id/sys_vendor");
+
+        details.ManufacturerVersion = ReadSysFile(Path.Combine(tpm, "device", "firmware_version"));
+
+        // tpm2-tools enrichment when available.
+        if (File.Exists("/usr/bin/tpm2_getcap") || File.Exists("/usr/local/bin/tpm2_getcap"))
+        {
+            var caps = RunCommand("tpm2_getcap", "properties-fixed");
+            // Properties-fixed YAML includes TPM2_PT_MANUFACTURER as a hex raw value.
+            var mfg = Regex.Match(caps, @"TPM2_PT_MANUFACTURER:\s*\n\s*raw:\s*0x([0-9A-F]+)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+            if (mfg.Success && string.IsNullOrEmpty(details.ManufacturerId))
+                details.ManufacturerId = mfg.Groups[1].Value;
+        }
+
+        return details;
     }
 }
