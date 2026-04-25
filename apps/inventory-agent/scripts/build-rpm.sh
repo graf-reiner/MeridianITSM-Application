@@ -93,6 +93,7 @@ install -m 440 %{SOURCE2} %{buildroot}/etc/sudoers.d/meridian-agent
 
 mkdir -p %{buildroot}/etc/meridian-agent
 mkdir -p %{buildroot}/var/log/meridian-agent
+mkdir -p %{buildroot}/var/lib/meridian-agent
 
 %files
 /opt/meridian-agent
@@ -100,6 +101,7 @@ mkdir -p %{buildroot}/var/log/meridian-agent
 /etc/sudoers.d/meridian-agent
 %dir /etc/meridian-agent
 %dir /var/log/meridian-agent
+%dir /var/lib/meridian-agent
 
 %pre
 if ! id -u meridian-agent >/dev/null 2>&1; then
@@ -125,7 +127,7 @@ if [ ! -f /etc/meridian-agent/config.json ]; then
 CFG
     chmod 640 /etc/meridian-agent/config.json
 fi
-chown -R meridian-agent:meridian-agent /opt/meridian-agent /etc/meridian-agent /var/log/meridian-agent
+chown -R meridian-agent:meridian-agent /opt/meridian-agent /etc/meridian-agent /var/log/meridian-agent /var/lib/meridian-agent
 if command -v systemctl >/dev/null 2>&1; then
     systemctl daemon-reload
     systemctl enable meridian-agent >/dev/null 2>&1 || true

@@ -38,6 +38,7 @@ mkdir -p "$STAGING/etc/systemd/system"
 mkdir -p "$STAGING/etc/sudoers.d"
 mkdir -p "$STAGING/etc/meridian-agent"
 mkdir -p "$STAGING/var/log/meridian-agent"
+mkdir -p "$STAGING/var/lib/meridian-agent"
 
 # Agent binary + .NET self-contained dependencies
 cp -r "$PUBLISH_DIR/"* "$STAGING/opt/meridian-agent/"
@@ -86,12 +87,14 @@ set -e
 INSTALL_DIR="/opt/meridian-agent"
 CONFIG_DIR="/etc/meridian-agent"
 LOG_DIR="/var/log/meridian-agent"
+LIB_DIR="/var/lib/meridian-agent"
 SERVICE_NAME="meridian-agent"
 AGENT_USER="meridian-agent"
 
 if ! id -u "${AGENT_USER}" >/dev/null 2>&1; then
     useradd --system --no-create-home --shell /usr/sbin/nologin "${AGENT_USER}"
 fi
+mkdir -p "${LIB_DIR}"
 
 # Default config — only written if no existing config (preserve enrollment
 # state across upgrades).
@@ -114,7 +117,7 @@ DEFAULTCFG
     chmod 640 "${CONFIG_DIR}/config.json"
 fi
 
-chown -R "${AGENT_USER}:${AGENT_USER}" "${INSTALL_DIR}" "${CONFIG_DIR}" "${LOG_DIR}"
+chown -R "${AGENT_USER}:${AGENT_USER}" "${INSTALL_DIR}" "${CONFIG_DIR}" "${LOG_DIR}" "${LIB_DIR}"
 
 if command -v systemctl >/dev/null 2>&1; then
     systemctl daemon-reload
