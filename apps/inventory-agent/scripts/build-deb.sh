@@ -55,13 +55,14 @@ cat > "$STAGING/etc/sudoers.d/meridian-agent" <<'SUDOERS'
 # Installed by the meridian-agent .deb / .rpm. Allows the service user to
 # run only these exact commands without a password. Required so the agent
 # can apply update packages received via the heartbeat directive flow.
-# Path matches UpdateInstaller's /var/lib/meridian-agent/updates/ download
-# directory (must survive systemd restart, so /tmp can't be used under
-# PrivateTmp=yes).
-meridian-agent ALL=(root) NOPASSWD: /usr/bin/dpkg -i /var/lib/meridian-agent/updates/*.deb
-meridian-agent ALL=(root) NOPASSWD: /usr/bin/rpm -U --force /var/lib/meridian-agent/updates/*.rpm
-meridian-agent ALL=(root) NOPASSWD: /usr/bin/systemctl restart meridian-agent
-meridian-agent ALL=(root) NOPASSWD: /bin/systemctl restart meridian-agent
+#
+# UpdateInstaller wraps dpkg/rpm in `systemd-run --collect --unit=...` so
+# the package manager runs as a transient unit OUTSIDE the agent's cgroup
+# (escapes ProtectSystem=strict + namespace mounts that would otherwise
+# block dpkg's own database). The sudoers wildcards must therefore match
+# the full systemd-run invocation, not bare dpkg/rpm.
+meridian-agent ALL=(root) NOPASSWD: /usr/bin/systemd-run --collect --unit=meridian-update-* /usr/bin/dpkg -i /var/lib/meridian-agent/updates/*.deb
+meridian-agent ALL=(root) NOPASSWD: /usr/bin/systemd-run --collect --unit=meridian-update-* /usr/bin/rpm -U --force /var/lib/meridian-agent/updates/*.rpm
 SUDOERS
 chmod 440 "$STAGING/etc/sudoers.d/meridian-agent"
 

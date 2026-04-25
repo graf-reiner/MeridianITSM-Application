@@ -45,13 +45,12 @@ cp -r "$PUBLISH_DIR_ABS/"* "$PAYLOAD_DIR/"
 cp src/InvAgent.Installers/linux/meridian-agent.service "$RPM_TOPDIR/SOURCES/meridian-agent.service"
 cat > "$RPM_TOPDIR/SOURCES/meridian-agent.sudoers" <<'SUDOERS'
 # Meridian Inventory Agent — self-update privilege
-# Path matches UpdateInstaller's /var/lib/meridian-agent/updates/ download
-# directory (must survive systemd restart, so /tmp can't be used under
-# PrivateTmp=yes).
-meridian-agent ALL=(root) NOPASSWD: /usr/bin/dpkg -i /var/lib/meridian-agent/updates/*.deb
-meridian-agent ALL=(root) NOPASSWD: /usr/bin/rpm -U --force /var/lib/meridian-agent/updates/*.rpm
-meridian-agent ALL=(root) NOPASSWD: /usr/bin/systemctl restart meridian-agent
-meridian-agent ALL=(root) NOPASSWD: /bin/systemctl restart meridian-agent
+# UpdateInstaller wraps dpkg/rpm in `systemd-run --collect --unit=...` so
+# the package manager runs as a transient unit OUTSIDE the agent's cgroup
+# (escapes ProtectSystem=strict + namespace mounts that would otherwise
+# block dpkg's own database).
+meridian-agent ALL=(root) NOPASSWD: /usr/bin/systemd-run --collect --unit=meridian-update-* /usr/bin/dpkg -i /var/lib/meridian-agent/updates/*.deb
+meridian-agent ALL=(root) NOPASSWD: /usr/bin/systemd-run --collect --unit=meridian-update-* /usr/bin/rpm -U --force /var/lib/meridian-agent/updates/*.rpm
 SUDOERS
 
 # SPEC
