@@ -5,19 +5,78 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import Link from 'next/link';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiDesktopClassic, mdiMemory, mdiHarddisk, mdiLan, mdiPackageVariantClosed, mdiChartLine, mdiCloudUpload, mdiFormatListBulleted } from '@mdi/js';
+import {
+  mdiArrowLeft, mdiDesktopClassic, mdiMemory, mdiHarddisk, mdiLan,
+  mdiPackageVariantClosed, mdiChartLine, mdiCloudUpload, mdiFormatListBulleted,
+  mdiServer, mdiMonitor, mdiShieldLock, mdiCog, mdiUpdate, mdiBattery,
+  mdiAccountGroup, mdiCloud, mdiSpeedometer, mdiIdentifier,
+  mdiPrinter, mdiUsb, mdiCamera, mdiFingerprint, mdiCreditCardOutline, mdiVolumeHigh,
+} from '@mdi/js';
 
 interface Snapshot {
   id: string;
-  hostname: string;
+  hostname: string | null;
+  fqdn?: string | null;
+  deviceType?: string | null;
+  // OS quick-query
   operatingSystem: string | null;
   osVersion: string | null;
+  osBuild?: string | null;
+  osEdition?: string | null;
+  // CPU quick-query
   cpuModel: string | null;
   cpuCores: number | null;
+  cpuThreads?: number | null;
+  cpuSpeedMhz?: number | null;
+  // Memory
   ramGb: number | null;
-  disks: unknown;
-  networkInterfaces: unknown;
-  installedSoftware: unknown;
+  // Hardware identity quick-query
+  serialNumber?: string | null;
+  manufacturer?: string | null;
+  model?: string | null;
+  biosVersion?: string | null;
+  tpmVersion?: string | null;
+  secureBootEnabled?: boolean | null;
+  // Security quick-query
+  diskEncrypted?: boolean | null;
+  antivirusProduct?: string | null;
+  firewallEnabled?: boolean | null;
+  // Directory
+  domainName?: string | null;
+  // Virtualization
+  isVirtual?: boolean | null;
+  hypervisorType?: string | null;
+  // Uptime
+  lastBootTime?: string | null;
+  uptimeSeconds?: number | null;
+  // JSON collections
+  disks?: unknown;
+  networkInterfaces?: unknown;
+  installedSoftware?: unknown;
+  services?: unknown;
+  windowsUpdates?: unknown;
+  memoryModules?: unknown;
+  gpus?: unknown;
+  battery?: unknown;
+  monitors?: unknown;
+  bitLockerVolumes?: unknown;
+  securityPosture?: unknown;
+  directoryStatus?: unknown;
+  performance?: unknown;
+  virtualization?: unknown;
+  localUsers?: unknown;
+  // Connected hardware (added in agent v1.0.0.6)
+  printers?: unknown;
+  usbDevices?: unknown;
+  cameras?: unknown;
+  biometricDevices?: unknown;
+  smartCardReaders?: unknown;
+  audioDevices?: unknown;
+  // Compliance hardware
+  tpmDetails?: unknown;
+  vbsStatus?: unknown;
+  rawData?: unknown;
+  scanDurationMs?: number | null;
   collectedAt: string;
 }
 
@@ -57,6 +116,27 @@ function StatusBadge({ status }: { status: string }) {
       {status}
     </span>
   );
+}
+
+function Field({ label, value }: { label: string; value: string | number | null | undefined }) {
+  const display = value != null && value !== '' ? String(value) : '—';
+  return (
+    <div>
+      <div style={{ fontSize: 12, color: 'var(--text-placeholder)', marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 500, wordBreak: 'break-word' }}>{display}</div>
+    </div>
+  );
+}
+
+function formatUptime(seconds: number): string {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  parts.push(`${mins}m`);
+  return parts.join(' ');
 }
 
 export default function AgentDetailPage() {
@@ -118,6 +198,27 @@ export default function AgentDetailPage() {
   const disks = Array.isArray(snapshot?.disks) ? snapshot.disks as Array<Record<string, unknown>> : [];
   const nics = Array.isArray(snapshot?.networkInterfaces) ? snapshot.networkInterfaces as Array<Record<string, unknown>> : [];
   const software = Array.isArray(snapshot?.installedSoftware) ? snapshot.installedSoftware as Array<Record<string, unknown>> : [];
+  const services = Array.isArray(snapshot?.services) ? snapshot.services as Array<Record<string, unknown>> : [];
+  const windowsUpdates = Array.isArray(snapshot?.windowsUpdates) ? snapshot.windowsUpdates as Array<Record<string, unknown>> : [];
+  const memModules = Array.isArray(snapshot?.memoryModules) ? snapshot.memoryModules as Array<Record<string, unknown>> : [];
+  const gpus = Array.isArray(snapshot?.gpus) ? snapshot.gpus as Array<Record<string, unknown>> : [];
+  const monitors = Array.isArray(snapshot?.monitors) ? snapshot.monitors as Array<Record<string, unknown>> : [];
+  const bitLocker = Array.isArray(snapshot?.bitLockerVolumes) ? snapshot.bitLockerVolumes as Array<Record<string, unknown>> : [];
+  const localUsers = Array.isArray(snapshot?.localUsers) ? snapshot.localUsers as Array<Record<string, unknown>> : [];
+  const battery = (snapshot?.battery && typeof snapshot.battery === 'object') ? snapshot.battery as Record<string, unknown> : null;
+  const security = (snapshot?.securityPosture && typeof snapshot.securityPosture === 'object') ? snapshot.securityPosture as Record<string, unknown> : null;
+  const directory = (snapshot?.directoryStatus && typeof snapshot.directoryStatus === 'object') ? snapshot.directoryStatus as Record<string, unknown> : null;
+  const performance = (snapshot?.performance && typeof snapshot.performance === 'object') ? snapshot.performance as Record<string, unknown> : null;
+  const virtualization = (snapshot?.virtualization && typeof snapshot.virtualization === 'object') ? snapshot.virtualization as Record<string, unknown> : null;
+  // Connected hardware (v1.0.0.6)
+  const printers = Array.isArray(snapshot?.printers) ? snapshot.printers as Array<Record<string, unknown>> : [];
+  const usbDevices = Array.isArray(snapshot?.usbDevices) ? snapshot.usbDevices as Array<Record<string, unknown>> : [];
+  const cameras = Array.isArray(snapshot?.cameras) ? snapshot.cameras as Array<Record<string, unknown>> : [];
+  const biometricDevices = Array.isArray(snapshot?.biometricDevices) ? snapshot.biometricDevices as Array<Record<string, unknown>> : [];
+  const smartCardReaders = Array.isArray(snapshot?.smartCardReaders) ? snapshot.smartCardReaders as Array<Record<string, unknown>> : [];
+  const audioDevices = Array.isArray(snapshot?.audioDevices) ? snapshot.audioDevices as Array<Record<string, unknown>> : [];
+  const tpm = (snapshot?.tpmDetails && typeof snapshot.tpmDetails === 'object') ? snapshot.tpmDetails as Record<string, unknown> : null;
+  const vbs = (snapshot?.vbsStatus && typeof snapshot.vbsStatus === 'object') ? snapshot.vbsStatus as Record<string, unknown> : null;
 
   // Group metrics by metricName, keep latest value per name
   const metrics = metricsData?.metrics ?? [];
@@ -222,20 +323,94 @@ export default function AgentDetailPage() {
         <div style={{ ...cardStyle, textAlign: 'center', color: 'var(--text-placeholder)' }}>No inventory snapshots yet.</div>
       ) : (
         <>
-          {/* OS & Hardware */}
+          {/* System Info */}
           <div style={cardStyle}>
             <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
               <Icon path={mdiMemory} size={0.85} color="#4f46e5" /> System Info
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
-              <div><div style={labelStyle}>Operating System</div><div style={valueStyle}>{snapshot.operatingSystem ?? '\u2014'}</div></div>
-              <div><div style={labelStyle}>OS Version</div><div style={valueStyle}>{snapshot.osVersion ?? '\u2014'}</div></div>
-              <div><div style={labelStyle}>CPU</div><div style={valueStyle}>{snapshot.cpuModel ?? '\u2014'}</div></div>
-              <div><div style={labelStyle}>CPU Cores</div><div style={valueStyle}>{snapshot.cpuCores ?? '\u2014'}</div></div>
-              <div><div style={labelStyle}>RAM (GB)</div><div style={valueStyle}>{snapshot.ramGb != null ? `${snapshot.ramGb} GB` : '\u2014'}</div></div>
-              <div><div style={labelStyle}>Collected At</div><div style={valueStyle}>{new Date(snapshot.collectedAt).toLocaleString()}</div></div>
+              <Field label="Operating System" value={snapshot.operatingSystem} />
+              <Field label="OS Version" value={snapshot.osVersion} />
+              <Field label="OS Build" value={snapshot.osBuild} />
+              <Field label="OS Edition" value={snapshot.osEdition} />
+              <Field label="Domain / Workgroup" value={snapshot.domainName} />
+              <Field label="Device Type" value={snapshot.deviceType} />
+              <Field label="CPU" value={snapshot.cpuModel} />
+              <Field label="Cores / Threads" value={snapshot.cpuCores != null ? `${snapshot.cpuCores}${snapshot.cpuThreads != null ? ` / ${snapshot.cpuThreads}` : ''}` : null} />
+              <Field label="CPU Speed" value={snapshot.cpuSpeedMhz != null ? `${snapshot.cpuSpeedMhz} MHz` : null} />
+              <Field label="RAM" value={snapshot.ramGb != null ? `${snapshot.ramGb} GB` : null} />
+              <Field label="Last Boot" value={snapshot.lastBootTime ? new Date(snapshot.lastBootTime).toLocaleString() : null} />
+              <Field label="Uptime" value={snapshot.uptimeSeconds ? formatUptime(snapshot.uptimeSeconds) : null} />
+              <Field label="Collected At" value={new Date(snapshot.collectedAt).toLocaleString()} />
+              <Field label="Scan Duration" value={snapshot.scanDurationMs != null ? `${Math.round(snapshot.scanDurationMs)} ms` : null} />
             </div>
           </div>
+
+          {/* Hardware Identity */}
+          {(snapshot.manufacturer || snapshot.model || snapshot.serialNumber || snapshot.biosVersion || snapshot.tpmVersion || tpm) && (
+            <div style={cardStyle}>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon path={mdiIdentifier} size={0.85} color="#7c3aed" /> Hardware Identity
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                <Field label="Manufacturer" value={snapshot.manufacturer} />
+                <Field label="Model" value={snapshot.model} />
+                <Field label="Serial Number" value={snapshot.serialNumber} />
+                <Field label="BIOS Version" value={snapshot.biosVersion} />
+                <Field label="Secure Boot" value={snapshot.secureBootEnabled != null ? (snapshot.secureBootEnabled ? 'Enabled' : 'Disabled') : null} />
+              </div>
+              {/* TPM details (rich, replaces minimal tpmVersion field) */}
+              {(tpm?.present === true || snapshot.tpmVersion) && (
+                <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border-primary)' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 10 }}>TPM</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
+                    <Field label="Present" value={tpm ? (tpm.present ? 'Yes' : 'No') : null} />
+                    <Field label="Manufacturer" value={tpm?.manufacturer as string} />
+                    <Field label="Spec Version" value={(tpm?.specVersion as string) ?? snapshot.tpmVersion} />
+                    <Field label="Manufacturer Version" value={tpm?.manufacturerVersion as string} />
+                    <Field label="Physical Presence" value={tpm?.physicalPresenceVersion as string} />
+                    <Field label="Activated" value={tpm?.isActivated != null ? (tpm.isActivated ? 'Yes' : 'No') : null} />
+                    <Field label="Enabled" value={tpm?.isEnabled != null ? (tpm.isEnabled ? 'Yes' : 'No') : null} />
+                    <Field label="Owned" value={tpm?.isOwned != null ? (tpm.isOwned ? 'Yes' : 'No') : null} />
+                    <Field label="Ready" value={tpm?.isReady != null ? (tpm.isReady ? 'Yes' : 'No') : null} />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Memory Modules */}
+          {memModules.length > 0 && (
+            <div style={cardStyle}>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon path={mdiServer} size={0.85} color="#4f46e5" /> Memory Modules ({memModules.length})
+              </h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border-primary)' }}>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Slot</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'right', color: 'var(--text-muted)' }}>Size</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Type</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'right', color: 'var(--text-muted)' }}>Speed</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Manufacturer</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Part #</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {memModules.map((m, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                      <td style={{ padding: '6px 10px' }}>{String(m.deviceLocator ?? m.bankLabel ?? '')}</td>
+                      <td style={{ padding: '6px 10px', textAlign: 'right' }}>{m.capacityBytes ? `${Math.round(Number(m.capacityBytes) / 1073741824)} GB` : '\u2014'}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(m.memoryType ?? '')} {String(m.formFactor ?? '')}</td>
+                      <td style={{ padding: '6px 10px', textAlign: 'right', color: 'var(--text-muted)' }}>{m.speedMhz ? `${m.speedMhz} MHz` : '\u2014'}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(m.manufacturer ?? '')}</td>
+                      <td style={{ padding: '6px 10px', fontFamily: 'monospace', fontSize: 12, color: 'var(--text-placeholder)' }}>{String(m.partNumber ?? '')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           {/* Disks */}
           {disks.length > 0 && (
@@ -243,26 +418,49 @@ export default function AgentDetailPage() {
               <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Icon path={mdiHarddisk} size={0.85} color="#059669" /> Disks ({disks.length})
               </h3>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid var(--border-primary)' }}>
-                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Drive</th>
-                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Label</th>
-                    <th style={{ padding: '6px 10px', textAlign: 'right', color: 'var(--text-muted)' }}>Size (GB)</th>
-                    <th style={{ padding: '6px 10px', textAlign: 'right', color: 'var(--text-muted)' }}>Free (GB)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {disks.map((d, i) => (
-                    <tr key={i} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
-                      <td style={{ padding: '6px 10px' }}>{String(d.name ?? d.drive ?? d.mountPoint ?? '')}</td>
-                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(d.label ?? d.fileSystem ?? '')}</td>
-                      <td style={{ padding: '6px 10px', textAlign: 'right' }}>{d.sizeGb != null ? Number(d.sizeGb).toFixed(1) : '\u2014'}</td>
-                      <td style={{ padding: '6px 10px', textAlign: 'right' }}>{d.freeGb != null ? Number(d.freeGb).toFixed(1) : '\u2014'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {disks.map((d, i) => {
+                  const volumes = Array.isArray(d.volumes) ? d.volumes as Array<Record<string, unknown>> : [];
+                  return (
+                    <div key={i} style={{ border: '1px solid var(--border-primary)', borderRadius: 8, padding: 12 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8, marginBottom: volumes.length > 0 ? 12 : 0 }}>
+                        <Field label="Model" value={String(d.model ?? d.deviceName ?? '\u2014')} />
+                        <Field label="Size" value={d.sizeBytes ? `${Math.round(Number(d.sizeBytes) / 1073741824)} GB` : null} />
+                        <Field label="Type" value={String(d.type ?? '')} />
+                        <Field label="Bus" value={String(d.busType ?? '')} />
+                        <Field label="Serial" value={String(d.serialNumber ?? '')} />
+                        <Field label="SMART" value={String(d.smartStatus ?? '')} />
+                      </div>
+                      {volumes.length > 0 && (
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                          <thead>
+                            <tr style={{ borderBottom: '1px solid var(--border-primary)' }}>
+                              <th style={{ padding: '4px 8px', textAlign: 'left', color: 'var(--text-muted)' }}>Drive</th>
+                              <th style={{ padding: '4px 8px', textAlign: 'left', color: 'var(--text-muted)' }}>Label</th>
+                              <th style={{ padding: '4px 8px', textAlign: 'left', color: 'var(--text-muted)' }}>FS</th>
+                              <th style={{ padding: '4px 8px', textAlign: 'right', color: 'var(--text-muted)' }}>Size</th>
+                              <th style={{ padding: '4px 8px', textAlign: 'right', color: 'var(--text-muted)' }}>Free</th>
+                              <th style={{ padding: '4px 8px', textAlign: 'left', color: 'var(--text-muted)' }}>Encrypted</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {volumes.map((v, j) => (
+                              <tr key={j} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                                <td style={{ padding: '4px 8px', fontFamily: 'monospace' }}>{String(v.driveLetter ?? v.mountPoint ?? '')}</td>
+                                <td style={{ padding: '4px 8px', color: 'var(--text-muted)' }}>{String(v.label ?? '')}</td>
+                                <td style={{ padding: '4px 8px', color: 'var(--text-muted)' }}>{String(v.fileSystem ?? '')}</td>
+                                <td style={{ padding: '4px 8px', textAlign: 'right' }}>{v.sizeBytes ? `${(Number(v.sizeBytes) / 1073741824).toFixed(1)} GB` : '\u2014'}</td>
+                                <td style={{ padding: '4px 8px', textAlign: 'right' }}>{v.freeBytes != null ? `${(Number(v.freeBytes) / 1073741824).toFixed(1)} GB` : '\u2014'}</td>
+                                <td style={{ padding: '4px 8px' }}>{v.isEncrypted ? '\ud83d\udd12' : ''}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -276,16 +474,505 @@ export default function AgentDetailPage() {
                 <thead>
                   <tr style={{ borderBottom: '2px solid var(--border-primary)' }}>
                     <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Name</th>
-                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>IP Address</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>IP Address(es)</th>
                     <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>MAC</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'right', color: 'var(--text-muted)' }}>Speed</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Gateway</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {nics.map((n, i) => (
+                  {nics.map((n, i) => {
+                    const ips = Array.isArray(n.ipAddresses) ? (n.ipAddresses as string[]).filter((ip) => ip && !ip.startsWith('127.') && ip !== '::1') : [];
+                    const gws = Array.isArray(n.defaultGateways) ? (n.defaultGateways as string[]).filter(Boolean) : [];
+                    return (
+                      <tr key={i} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                        <td style={{ padding: '6px 10px' }}>{String(n.name ?? '')}</td>
+                        <td style={{ padding: '6px 10px', fontFamily: 'monospace', fontSize: 12 }}>{ips.length > 0 ? ips.join(', ') : '\u2014'}</td>
+                        <td style={{ padding: '6px 10px', fontFamily: 'monospace', fontSize: 12, color: 'var(--text-muted)' }}>{String(n.macAddress ?? '\u2014')}</td>
+                        <td style={{ padding: '6px 10px', textAlign: 'right', color: 'var(--text-muted)' }}>{n.speedMbps ? `${n.speedMbps} Mbps` : '\u2014'}</td>
+                        <td style={{ padding: '6px 10px', fontFamily: 'monospace', fontSize: 12, color: 'var(--text-muted)' }}>{gws.length > 0 ? gws.join(', ') : '\u2014'}</td>
+                        <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(n.status ?? '')}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* GPUs */}
+          {gpus.length > 0 && (
+            <div style={cardStyle}>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon path={mdiMonitor} size={0.85} color="#76b900" /> GPUs ({gpus.length})
+              </h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border-primary)' }}>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Name</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Manufacturer</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'right', color: 'var(--text-muted)' }}>VRAM</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Driver</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {gpus.map((g, i) => (
                     <tr key={i} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
-                      <td style={{ padding: '6px 10px' }}>{String(n.name ?? '')}</td>
-                      <td style={{ padding: '6px 10px', fontFamily: 'monospace', fontSize: 12 }}>{String(n.ipAddress ?? n.ip ?? '')}</td>
-                      <td style={{ padding: '6px 10px', fontFamily: 'monospace', fontSize: 12, color: 'var(--text-muted)' }}>{String(n.macAddress ?? n.mac ?? '')}</td>
+                      <td style={{ padding: '6px 10px' }}>{String(g.name ?? '')}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(g.manufacturer ?? '')}</td>
+                      <td style={{ padding: '6px 10px', textAlign: 'right' }}>{g.vramBytes ? `${Math.round(Number(g.vramBytes) / 1073741824)} GB` : '\u2014'}</td>
+                      <td style={{ padding: '6px 10px', fontFamily: 'monospace', fontSize: 12, color: 'var(--text-muted)' }}>{String(g.driverVersion ?? '')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Monitors */}
+          {monitors.length > 0 && (
+            <div style={cardStyle}>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon path={mdiMonitor} size={0.85} color="#0891b2" /> Monitors ({monitors.length})
+              </h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border-primary)' }}>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Name</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Manufacturer</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Serial</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Resolution</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {monitors.map((m, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                      <td style={{ padding: '6px 10px' }}>{String(m.name ?? '')}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(m.manufacturer ?? '')}</td>
+                      <td style={{ padding: '6px 10px', fontFamily: 'monospace', fontSize: 12, color: 'var(--text-muted)' }}>{String(m.serialNumber ?? '')}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(m.resolution ?? '')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Battery */}
+          {battery && (battery.designCapacityMwh || battery.fullChargeCapacityMwh || battery.healthPercent) && (
+            <div style={cardStyle}>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon path={mdiBattery} size={0.85} color="#059669" /> Battery
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
+                <Field label="Health" value={battery.healthPercent ? `${Math.round(Number(battery.healthPercent))}%` : null} />
+                <Field label="Design Capacity" value={battery.designCapacityMwh ? `${battery.designCapacityMwh} mWh` : null} />
+                <Field label="Full Charge" value={battery.fullChargeCapacityMwh ? `${battery.fullChargeCapacityMwh} mWh` : null} />
+                <Field label="Cycle Count" value={battery.cycleCount as number | null | undefined} />
+                <Field label="State" value={battery.chargingState as string} />
+                <Field label="Chemistry" value={battery.chemistry as string} />
+              </div>
+            </div>
+          )}
+
+          {/* Printers */}
+          {printers.length > 0 && (
+            <div style={cardStyle}>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon path={mdiPrinter} size={0.85} color="#0891b2" /> Printers ({printers.length})
+              </h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border-primary)' }}>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Name</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Port</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Driver</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Type</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Status</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Location</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {printers.map((p, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                      <td style={{ padding: '6px 10px' }}>
+                        {String(p.name ?? '')}
+                        {p.default ? <span style={{ marginLeft: 6, padding: '1px 6px', borderRadius: 9999, fontSize: 10, backgroundColor: 'var(--badge-green-bg)', color: '#065f46' }}>Default</span> : null}
+                        {p.shared ? <span style={{ marginLeft: 6, padding: '1px 6px', borderRadius: 9999, fontSize: 10, backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}>Shared</span> : null}
+                      </td>
+                      <td style={{ padding: '6px 10px', fontFamily: 'monospace', fontSize: 12, color: 'var(--text-muted)' }}>{String(p.portName ?? '')}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(p.driverName ?? '')}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{p.network ? 'Network' : 'Local'}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(p.status ?? '')}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-placeholder)' }}>{String(p.location ?? '')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* USB Devices */}
+          {usbDevices.length > 0 && (
+            <div style={cardStyle}>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon path={mdiUsb} size={0.85} color="#7c3aed" /> USB Devices ({usbDevices.length})
+              </h3>
+              <div style={{ maxHeight: 400, overflow: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead style={{ position: 'sticky', top: 0, backgroundColor: 'var(--bg-primary)' }}>
+                    <tr style={{ borderBottom: '2px solid var(--border-primary)' }}>
+                      <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Name</th>
+                      <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Manufacturer</th>
+                      <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Status</th>
+                      <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Device ID</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usbDevices.map((d, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                        <td style={{ padding: '6px 10px' }}>{String(d.name ?? '')}</td>
+                        <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(d.manufacturer ?? '')}</td>
+                        <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(d.status ?? '')}</td>
+                        <td style={{ padding: '6px 10px', fontFamily: 'monospace', fontSize: 11, color: 'var(--text-placeholder)', wordBreak: 'break-all' }}>{String(d.deviceId ?? '')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Cameras */}
+          {cameras.length > 0 && (
+            <div style={cardStyle}>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon path={mdiCamera} size={0.85} color="#059669" /> Cameras ({cameras.length})
+              </h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border-primary)' }}>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Name</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Manufacturer</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cameras.map((c, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                      <td style={{ padding: '6px 10px' }}>{String(c.name ?? '')}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(c.manufacturer ?? '')}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(c.status ?? '')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Biometric Devices */}
+          {biometricDevices.length > 0 && (
+            <div style={cardStyle}>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon path={mdiFingerprint} size={0.85} color="#7c3aed" /> Biometric Devices ({biometricDevices.length})
+              </h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border-primary)' }}>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Type</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Name</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Manufacturer</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {biometricDevices.map((b, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                      <td style={{ padding: '6px 10px' }}>
+                        <span style={{ padding: '1px 8px', borderRadius: 9999, fontSize: 11, backgroundColor: 'var(--badge-purple-bg, var(--bg-tertiary))', color: 'var(--text-muted)' }}>
+                          {String(b.deviceType ?? 'Other')}
+                        </span>
+                      </td>
+                      <td style={{ padding: '6px 10px' }}>{String(b.name ?? '')}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(b.manufacturer ?? '')}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(b.status ?? '')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Smart Card Readers */}
+          {smartCardReaders.length > 0 && (
+            <div style={cardStyle}>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon path={mdiCreditCardOutline} size={0.85} color="#dc2626" /> Smart Card Readers ({smartCardReaders.length})
+              </h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border-primary)' }}>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Name</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Manufacturer</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Driver</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {smartCardReaders.map((s, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                      <td style={{ padding: '6px 10px' }}>{String(s.name ?? '')}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(s.manufacturer ?? '')}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(s.driverVersion ?? '')}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(s.status ?? '')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Audio Devices */}
+          {audioDevices.length > 0 && (
+            <div style={cardStyle}>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon path={mdiVolumeHigh} size={0.85} color="#0891b2" /> Audio Devices ({audioDevices.length})
+              </h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border-primary)' }}>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Name</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Manufacturer</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Product</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {audioDevices.map((a, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                      <td style={{ padding: '6px 10px' }}>{String(a.name ?? '')}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(a.manufacturer ?? '')}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(a.productName ?? '')}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(a.status ?? '')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Security Posture */}
+          {((security && Object.keys(security).length > 0) || vbs) && (
+            <div style={cardStyle}>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon path={mdiShieldLock} size={0.85} color="#dc2626" /> Security Posture
+              </h3>
+              {security && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                  <Field label="Antivirus" value={security.antivirusProduct as string} />
+                  <Field label="AV Version" value={security.antivirusVersion as string} />
+                  <Field label="Real-Time Protection" value={security.realTimeProtectionEnabled != null ? (security.realTimeProtectionEnabled ? 'Enabled' : 'Disabled') : null} />
+                  <Field label="Firewall" value={security.firewallEnabled != null ? (security.firewallEnabled ? `Enabled${security.firewallProfile ? ` (${security.firewallProfile})` : ''}` : 'Disabled') : null} />
+                  <Field label="Disk Encryption" value={security.diskEncryptionEnabled != null ? (security.diskEncryptionEnabled ? `Enabled${security.encryptionProduct ? ` (${security.encryptionProduct})` : ''}` : 'Disabled') : null} />
+                  <Field label="Secure Boot" value={security.secureBootEnabled != null ? (security.secureBootEnabled ? 'Enabled' : 'Disabled') : null} />
+                  <Field label="TPM Ready" value={security.tpmReady != null ? (security.tpmReady ? 'Yes' : 'No') : null} />
+                  <Field label="Reboot Required" value={security.rebootRequired != null ? (security.rebootRequired ? 'Yes' : 'No') : null} />
+                  <Field label="Pending Updates" value={security.pendingUpdateCount as number} />
+                  <Field label="Last Security Update" value={security.lastSecurityUpdate ? new Date(security.lastSecurityUpdate as string).toLocaleDateString() : null} />
+                </div>
+              )}
+              {/* VBS / HVCI / Credential Guard (Win11 baseline) */}
+              {vbs && (
+                <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border-primary)' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 10 }}>Virtualization-Based Security</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
+                    <Field label="VBS Enabled" value={vbs.enabled != null ? (vbs.enabled ? 'Yes' : 'No') : null} />
+                    <Field label="VBS Running" value={vbs.running != null ? (vbs.running ? 'Yes' : 'No') : null} />
+                    <Field label="HVCI Enabled" value={vbs.hvciEnabled != null ? (vbs.hvciEnabled ? 'Yes' : 'No') : null} />
+                    <Field label="HVCI Running" value={vbs.hvciRunning != null ? (vbs.hvciRunning ? 'Yes' : 'No') : null} />
+                    <Field label="Credential Guard Enabled" value={vbs.credentialGuardEnabled != null ? (vbs.credentialGuardEnabled ? 'Yes' : 'No') : null} />
+                    <Field label="Credential Guard Running" value={vbs.credentialGuardRunning != null ? (vbs.credentialGuardRunning ? 'Yes' : 'No') : null} />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* BitLocker Volumes */}
+          {bitLocker.length > 0 && (
+            <div style={cardStyle}>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon path={mdiShieldLock} size={0.85} color="#7c3aed" /> BitLocker ({bitLocker.length})
+              </h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border-primary)' }}>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Drive</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Status</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Method</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'right', color: 'var(--text-muted)' }}>Encrypted %</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Recovery Key ID</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bitLocker.map((b, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                      <td style={{ padding: '6px 10px', fontFamily: 'monospace' }}>{String(b.driveLetter ?? '')}</td>
+                      <td style={{ padding: '6px 10px' }}>{String(b.protectionStatus ?? '')}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(b.encryptionMethod ?? '')}</td>
+                      <td style={{ padding: '6px 10px', textAlign: 'right' }}>{b.encryptionPercentage != null ? `${b.encryptionPercentage}%` : '\u2014'}</td>
+                      <td style={{ padding: '6px 10px', fontFamily: 'monospace', fontSize: 12, color: 'var(--text-placeholder)' }}>{String(b.recoveryKeyId ?? '')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Directory / MDM Status */}
+          {directory && (directory.adJoined || directory.azureAdJoined || directory.mdmEnrolled) && (
+            <div style={cardStyle}>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon path={mdiAccountGroup} size={0.85} color="#0891b2" /> Directory / MDM
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                <Field label="AD Joined" value={directory.adJoined ? 'Yes' : 'No'} />
+                <Field label="AD Domain" value={directory.adDomainName as string} />
+                <Field label="Azure AD Joined" value={directory.azureAdJoined ? 'Yes' : 'No'} />
+                <Field label="Azure AD Device ID" value={directory.azureAdDeviceId as string} />
+                <Field label="MDM Enrolled" value={directory.mdmEnrolled ? 'Yes' : 'No'} />
+                <Field label="MDM Provider" value={directory.mdmProvider as string} />
+                <Field label="Compliance State" value={directory.complianceState as string} />
+                <Field label="Last Sync" value={directory.lastSyncTime ? new Date(directory.lastSyncTime as string).toLocaleString() : null} />
+              </div>
+            </div>
+          )}
+
+          {/* Virtualization */}
+          {virtualization && virtualization.isVirtual && (
+            <div style={cardStyle}>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon path={mdiCloud} size={0.85} color="#0891b2" /> Virtualization
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                <Field label="Hypervisor" value={virtualization.hypervisorType as string} />
+                <Field label="VM Name" value={virtualization.vmName as string} />
+                <Field label="Host" value={virtualization.hostName as string} />
+                <Field label="Cloud Provider" value={virtualization.cloudProvider as string} />
+                <Field label="Instance ID" value={virtualization.instanceId as string} />
+                <Field label="Instance Type" value={virtualization.instanceType as string} />
+                <Field label="Region" value={virtualization.region as string} />
+                <Field label="vCPUs" value={virtualization.allocatedVcpus as number} />
+              </div>
+            </div>
+          )}
+
+          {/* Performance */}
+          {performance && (performance.cpuUtilizationPercent != null || performance.memoryUtilizationPercent != null) && (
+            <div style={cardStyle}>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon path={mdiSpeedometer} size={0.85} color="#dc2626" /> Performance (at scan time)
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
+                <Field label="CPU Utilization" value={performance.cpuUtilizationPercent != null ? `${Number(performance.cpuUtilizationPercent).toFixed(1)}%` : null} />
+                <Field label="Memory Utilization" value={performance.memoryUtilizationPercent != null ? `${Number(performance.memoryUtilizationPercent).toFixed(1)}%` : null} />
+                <Field label="Memory Used" value={performance.memoryUsedBytes ? `${(Number(performance.memoryUsedBytes) / 1073741824).toFixed(1)} GB` : null} />
+                <Field label="Memory Available" value={performance.memoryAvailableBytes ? `${(Number(performance.memoryAvailableBytes) / 1073741824).toFixed(1)} GB` : null} />
+              </div>
+            </div>
+          )}
+
+          {/* Services */}
+          {services.length > 0 && (
+            <div style={cardStyle}>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon path={mdiCog} size={0.85} color="#6b7280" /> Services ({services.length})
+              </h3>
+              <div style={{ maxHeight: 400, overflow: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead style={{ position: 'sticky', top: 0, backgroundColor: 'var(--bg-primary)' }}>
+                    <tr style={{ borderBottom: '2px solid var(--border-primary)' }}>
+                      <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Display Name</th>
+                      <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Name</th>
+                      <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Status</th>
+                      <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Start Type</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {services.map((s, i) => {
+                      const status = String(s.status ?? '').toLowerCase();
+                      const running = status === 'running';
+                      return (
+                        <tr key={i} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                          <td style={{ padding: '6px 10px' }}>{String(s.displayName ?? s.name ?? '')}</td>
+                          <td style={{ padding: '6px 10px', fontFamily: 'monospace', fontSize: 12, color: 'var(--text-muted)' }}>{String(s.name ?? '')}</td>
+                          <td style={{ padding: '6px 10px' }}>
+                            <span style={{ padding: '1px 8px', borderRadius: 9999, fontSize: 11, backgroundColor: running ? 'var(--badge-green-bg)' : 'var(--bg-tertiary)', color: running ? '#065f46' : 'var(--text-muted)' }}>
+                              {String(s.status ?? '')}
+                            </span>
+                          </td>
+                          <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(s.startType ?? '')}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Windows Updates */}
+          {windowsUpdates.length > 0 && (
+            <div style={cardStyle}>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon path={mdiUpdate} size={0.85} color="#0891b2" /> Windows Updates ({windowsUpdates.length})
+              </h3>
+              <div style={{ maxHeight: 400, overflow: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead style={{ position: 'sticky', top: 0, backgroundColor: 'var(--bg-primary)' }}>
+                    <tr style={{ borderBottom: '2px solid var(--border-primary)' }}>
+                      <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>KB</th>
+                      <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Description</th>
+                      <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Installed</th>
+                      <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>By</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {windowsUpdates.map((u, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                        <td style={{ padding: '6px 10px', fontFamily: 'monospace' }}>{String(u.hotFixId ?? '')}</td>
+                        <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{String(u.description ?? u.title ?? '')}</td>
+                        <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{u.installedDate ? new Date(u.installedDate as string).toLocaleDateString() : '\u2014'}</td>
+                        <td style={{ padding: '6px 10px', color: 'var(--text-placeholder)' }}>{String(u.installedBy ?? '')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Local Users */}
+          {localUsers.length > 0 && (
+            <div style={cardStyle}>
+              <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Icon path={mdiAccountGroup} size={0.85} color="#7c3aed" /> Local Users ({localUsers.length})
+              </h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border-primary)' }}>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Username</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Admin</th>
+                    <th style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text-muted)' }}>Last Logon</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {localUsers.map((u, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                      <td style={{ padding: '6px 10px' }}>{String(u.username ?? '')}</td>
+                      <td style={{ padding: '6px 10px' }}>{u.isAdmin ? 'Yes' : 'No'}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{u.lastLogon ? new Date(u.lastLogon as string).toLocaleString() : '\u2014'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -339,7 +1026,7 @@ export default function AgentDetailPage() {
                     <tr key={s.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
                       <td style={{ padding: '6px 10px' }}>{new Date(s.collectedAt).toLocaleString()}</td>
                       <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{s.operatingSystem ?? '\u2014'}</td>
-                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{s.hostname}</td>
+                      <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{s.hostname ?? '\u2014'}</td>
                     </tr>
                   ))}
                 </tbody>

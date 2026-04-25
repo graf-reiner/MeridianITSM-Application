@@ -167,6 +167,8 @@ export async function agentSettingsRoutes(fastify: FastifyInstance): Promise<voi
       const tenantId = user.tenantId;
       const { id } = request.params as { id: string };
 
+      // Latest snapshot includes all columns (System Info + JSON collections);
+      // older snapshots are returned with only the fields the History card needs.
       const agent = await prisma.agent.findFirst({
         where: { id, tenantId },
         select: {
@@ -179,29 +181,34 @@ export async function agentSettingsRoutes(fastify: FastifyInstance): Promise<voi
           lastHeartbeatAt: true,
           enrolledAt: true,
           metadata: true,
-          inventorySnapshots: {
-            orderBy: { collectedAt: 'desc' },
-            take: 5,
-            select: {
-              id: true,
-              hostname: true,
-              operatingSystem: true,
-              osVersion: true,
-              cpuModel: true,
-              cpuCores: true,
-              ramGb: true,
-              disks: true,
-              networkInterfaces: true,
-              installedSoftware: true,
-              collectedAt: true,
-            },
-          },
         },
       });
 
       if (!agent) {
         return reply.code(404).send({ error: 'Agent not found' });
       }
+
+      const [latestSnapshot, snapshotHistory] = await Promise.all([
+        prisma.inventorySnapshot.findFirst({
+          where: { agentId: id, tenantId },
+          orderBy: { collectedAt: 'desc' },
+        }),
+        prisma.inventorySnapshot.findMany({
+          where: { agentId: id, tenantId },
+          orderBy: { collectedAt: 'desc' },
+          take: 5,
+          select: {
+            id: true,
+            hostname: true,
+            operatingSystem: true,
+            collectedAt: true,
+          },
+        }),
+      ]);
+
+      const inventorySnapshots = latestSnapshot
+        ? [latestSnapshot, ...snapshotHistory.filter((s) => s.id !== latestSnapshot.id)]
+        : snapshotHistory;
 
       // Compute display status
       const staleThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -212,7 +219,7 @@ export async function agentSettingsRoutes(fastify: FastifyInstance): Promise<voi
           ? 'STALE'
           : agent.status;
 
-      return reply.send({ ...agent, displayStatus });
+      return reply.send({ ...agent, inventorySnapshots, displayStatus });
     },
   );
 
