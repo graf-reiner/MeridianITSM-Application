@@ -11,6 +11,26 @@ const MAX_PACKAGE_SIZE = 200 * 1024 * 1024;
 const VALID_PLATFORMS = ['WINDOWS', 'LINUX', 'MACOS'] as const;
 type Platform = (typeof VALID_PLATFORMS)[number];
 
+const VALID_FORMATS = ['MSI', 'EXE', 'DEB', 'RPM', 'PKG', 'TARGZ'] as const;
+type Format = (typeof VALID_FORMATS)[number];
+
+const PLATFORM_FORMATS: Record<Platform, readonly Format[]> = {
+  WINDOWS: ['MSI', 'EXE'],
+  LINUX: ['DEB', 'RPM', 'TARGZ'],
+  MACOS: ['PKG', 'TARGZ'],
+};
+
+function inferFormatFromFilename(filename: string): Format | null {
+  const lower = filename.toLowerCase();
+  if (lower.endsWith('.msi')) return 'MSI';
+  if (lower.endsWith('.exe')) return 'EXE';
+  if (lower.endsWith('.deb')) return 'DEB';
+  if (lower.endsWith('.rpm')) return 'RPM';
+  if (lower.endsWith('.pkg')) return 'PKG';
+  if (lower.endsWith('.tar.gz') || lower.endsWith('.tgz')) return 'TARGZ';
+  return null;
+}
+
 async function requireOwner(request: Request): Promise<OwnerJwtPayload | Response> {
   const authHeader = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) {
@@ -57,6 +77,7 @@ export async function POST(request: Request) {
 
   const versionFromForm = String(formData.get('version') ?? '').trim();
   const platformRaw = String(formData.get('platform') ?? '').trim().toUpperCase();
+  const formatRaw = String(formData.get('format') ?? '').trim().toUpperCase();
   const releaseNotes = String(formData.get('releaseNotes') ?? '').trim() || null;
 
   if (!platformRaw) {
@@ -69,6 +90,33 @@ export async function POST(request: Request) {
     );
   }
   const platform = platformRaw as Platform;
+
+  let format: Format;
+  if (formatRaw) {
+    if (!(VALID_FORMATS as readonly string[]).includes(formatRaw)) {
+      return NextResponse.json(
+        { error: `Invalid format. Expected one of: ${VALID_FORMATS.join(', ')}` },
+        { status: 400 },
+      );
+    }
+    format = formatRaw as Format;
+  } else {
+    const inferred = inferFormatFromFilename(file.name || '');
+    if (!inferred) {
+      return NextResponse.json(
+        { error: 'format is required (or use a filename with a recognizable extension: .msi, .exe, .deb, .rpm, .pkg, .tar.gz)' },
+        { status: 400 },
+      );
+    }
+    format = inferred;
+  }
+
+  if (!PLATFORM_FORMATS[platform].includes(format)) {
+    return NextResponse.json(
+      { error: `Format ${format} is not valid for platform ${platform}. Allowed: ${PLATFORM_FORMATS[platform].join(', ')}` },
+      { status: 400 },
+    );
+  }
 
   if (file.size > MAX_PACKAGE_SIZE) {
     return NextResponse.json(
@@ -100,10 +148,11 @@ export async function POST(request: Request) {
   await uploadFile(buffer, storageKey, contentType);
 
   const record = await prisma.agentUpdate.upsert({
-    where: { version_platform: { version, platform } },
+    where: { version_platform_format: { version, platform, format } },
     create: {
       version,
       platform,
+      format,
       downloadUrl: storageKey,
       checksum,
       fileSize: buffer.length,
@@ -125,6 +174,7 @@ export async function POST(request: Request) {
     id: record.id,
     version: record.version,
     platform: record.platform,
+    format: record.format,
     checksum: record.checksum,
     fileSize: record.fileSize,
     releaseNotes: record.releaseNotes,

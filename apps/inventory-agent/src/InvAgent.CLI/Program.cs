@@ -165,7 +165,8 @@ rootCommand.SetHandler(async (context) =>
                 cfg.EnrollmentToken,
                 Environment.MachineName,
                 System.Runtime.InteropServices.RuntimeInformation.OSDescription,
-                "1.0.0");
+                "1.0.0",
+                cfg.InstallFormat);
             if (enrollResult?.AgentKey != null)
             {
                 Log.Information("Enrolled successfully. AgentId: {AgentId}", enrollResult.AgentId);

@@ -4,12 +4,46 @@ import { getFileObject } from '../../../services/storage.service.js';
 import { createChange, transitionStatus } from '../../../services/change.service.js';
 
 /**
- * Package-type hint appended to update URLs. The agent's UpdateInstaller
- * picks msiexec / pkg installer / dpkg based on substring matches in the
- * UpdateUrl — so the suffix must embed the extension even though the route
- * itself ignores query params.
+ * Default install format per platform — used as a fallback when an agent
+ * record has no installFormat (older agents enrolled before the field
+ * existed) or when no AgentUpdate matches the agent's exact format.
  */
-export function packageHintSuffix(platform: string): string {
+export const PLATFORM_DEFAULT_FORMAT = {
+  WINDOWS: 'MSI',
+  LINUX: 'DEB',
+  MACOS: 'PKG',
+} as const;
+
+export type AgentUpdateFormatLike = 'MSI' | 'EXE' | 'DEB' | 'RPM' | 'PKG' | 'TARGZ';
+
+/**
+ * Resolve the format an agent should receive: its persisted installFormat,
+ * else the platform default.
+ */
+export function resolveAgentFormat(agent: {
+  platform: string;
+  installFormat?: AgentUpdateFormatLike | null;
+}): AgentUpdateFormatLike {
+  if (agent.installFormat) return agent.installFormat;
+  const p = agent.platform.toUpperCase() as keyof typeof PLATFORM_DEFAULT_FORMAT;
+  return (PLATFORM_DEFAULT_FORMAT[p] ?? 'MSI') as AgentUpdateFormatLike;
+}
+
+/**
+ * Package-type hint appended to update URLs. The agent's UpdateInstaller
+ * picks msiexec / pkg installer / dpkg / rpm based on substring matches in
+ * the UpdateUrl — so the suffix must embed the extension even though the
+ * route itself ignores query params.
+ */
+export function packageHintSuffix(platform: string, format?: string | null): string {
+  const f = (format ?? '').toUpperCase();
+  if (f === 'MSI') return '?file=agent.msi';
+  if (f === 'EXE') return '?file=agent.exe';
+  if (f === 'DEB') return '?file=agent.deb';
+  if (f === 'RPM') return '?file=agent.rpm';
+  if (f === 'PKG') return '?file=agent.pkg';
+  if (f === 'TARGZ') return '?file=agent.tar.gz';
+  // Fall back to platform default when format is unknown.
   const p = platform.toUpperCase();
   if (p === 'WINDOWS') return '?file=agent.msi';
   if (p === 'MACOS') return '?file=agent.pkg';
@@ -138,10 +172,25 @@ export default async function agentUpdateRoutes(app: FastifyInstance): Promise<v
       });
     }
 
-    const latest = await prisma.agentUpdate.findFirst({
-      where: { platform: normalizedPlatform as any },
+    // Prefer an artifact matching the agent's installFormat. Fall back to any
+    // artifact for the platform when nothing matches (older agents that
+    // enrolled before installFormat was tracked, or single-format platforms).
+    const desiredFormat = resolveAgentFormat({
+      platform: normalizedPlatform,
+      installFormat: agent.installFormat as AgentUpdateFormatLike | null,
+    });
+
+    let latest = await prisma.agentUpdate.findFirst({
+      where: { platform: normalizedPlatform as any, format: desiredFormat as any },
       orderBy: { createdAt: 'desc' },
     });
+
+    if (!latest) {
+      latest = await prisma.agentUpdate.findFirst({
+        where: { platform: normalizedPlatform as any },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
 
     if (!latest?.storageKey) {
       return reply.code(404).send({ error: 'No update available for this platform' });
@@ -186,11 +235,16 @@ export default async function agentUpdateRoutes(app: FastifyInstance): Promise<v
       });
     }
 
-    // Look up the AgentUpdate record
-    const agentUpdate = await prisma.agentUpdate.findUnique({
+    // Look up any AgentUpdate matching version+platform. Multiple formats can
+    // exist per (version, platform) — e.g. Linux ships both .deb and .rpm.
+    // Each agent's GET /updates/:platform picks the artifact matching its own
+    // installFormat at fetch time.
+    const agentUpdate = await prisma.agentUpdate.findFirst({
       where: {
-        version_platform: { version, platform: normalizedPlatform as any },
+        version,
+        platform: normalizedPlatform as any,
       },
+      orderBy: { createdAt: 'desc' },
     });
 
     if (!agentUpdate) {

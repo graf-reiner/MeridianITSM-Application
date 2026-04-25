@@ -13,4 +13,13 @@ public class AgentConfig
     public int LocalQueueMaxSizeMb { get; set; } = 100;
     public string LogLevel { get; set; } = "Information";
     public bool AutoUpdateEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Package format this agent was installed from: MSI / EXE on Windows,
+    /// DEB / RPM on Linux, PKG on macOS. Reported on enrollment and used by
+    /// the server to serve a matching artifact on update, and by
+    /// UpdateInstaller to pick the right install command (msiexec / dpkg / rpm).
+    /// Set by the installer (MSI postinst, bash installer) and persisted here.
+    /// </summary>
+    public string? InstallFormat { get; set; }
 }

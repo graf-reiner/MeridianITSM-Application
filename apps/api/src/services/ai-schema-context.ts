@@ -110,7 +110,7 @@ applications: id(uuid PK), "tenantId"(uuid FK→tenants), name(text), descriptio
 application_dependencies: id(uuid PK), "tenantId"(uuid FK→tenants), "applicationId"(uuid FK→applications), "dependsOnId"(uuid FK→applications), type(HARD|SOFT), description(text)
 
 -- AGENTS & INVENTORY --
-agents: id(uuid PK), "tenantId"(uuid FK→tenants), hostname(text), "lastHeartbeat"(timestamptz), status(ACTIVE|INACTIVE|STALE), "agentVersion"(text), metadata(jsonb), "lastReconciledAt"(timestamptz nullable), "createdAt"(timestamptz)
+agents: id(uuid PK), "tenantId"(uuid FK→tenants), hostname(text), platform(WINDOWS|LINUX|MACOS), "lastHeartbeat"(timestamptz), status(ACTIVE|INACTIVE|STALE), "agentVersion"(text), "installFormat"(MSI|EXE|DEB|RPM|PKG|TARGZ nullable — package format the agent was installed from; informs which artifact the server serves on update), metadata(jsonb), "lastReconciledAt"(timestamptz nullable), "createdAt"(timestamptz)
 
 inventory_snapshots: id(uuid PK), "tenantId"(uuid FK→tenants), "agentId"(uuid FK→agents), hostname(text), fqdn(text), "deviceType"(text), "operatingSystem"(text), "osVersion"(text), "cpuModel"(text), "cpuCores"(int), "ramGb"(float), "serialNumber"(text), manufacturer(text), model(text), "diskEncrypted"(bool), "antivirusProduct"(text), "firewallEnabled"(bool), "isVirtual"(bool), "installedSoftware"(jsonb — array of {name, version, publisher}), services(jsonb), "networkInterfaces"(jsonb), disks(jsonb), "windowsUpdates"(jsonb), "collectedAt"(timestamptz)
 

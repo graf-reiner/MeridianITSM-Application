@@ -2,7 +2,11 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { createHash, randomBytes } from 'node:crypto';
 import { prisma } from '@meridian/db';
 import { Queue } from 'bullmq';
-import agentUpdateRoutes, { packageHintSuffix } from './updates.js';
+import agentUpdateRoutes, {
+  packageHintSuffix,
+  resolveAgentFormat,
+  type AgentUpdateFormatLike,
+} from './updates.js';
 import {
   upsertServerExtensionByAsset,
   type AgentInventorySnapshot,
@@ -116,13 +120,25 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
       hostname?: string;
       platform?: string;
       agentVersion?: string;
+      installFormat?: string;
     };
 
-    const { token, hostname, platform, agentVersion } = body;
+    const { token, hostname, platform, agentVersion, installFormat } = body;
 
     if (!token || !hostname || !platform) {
       return reply.code(400).send({ error: 'token, hostname, and platform are required' });
     }
+
+    // Optional installFormat — if the agent reports it (modern bash installer
+    // and MSI-installed Windows agents do), persist so update-check can pick a
+    // matching artifact. If omitted, resolveAgentFormat() falls back to the
+    // platform default at lookup time.
+    const VALID_FORMATS = ['MSI', 'EXE', 'DEB', 'RPM', 'PKG', 'TARGZ'] as const;
+    const installFormatNormalized = installFormat?.toUpperCase();
+    const installFormatEnum =
+      installFormatNormalized && (VALID_FORMATS as readonly string[]).includes(installFormatNormalized)
+        ? (installFormatNormalized as (typeof VALID_FORMATS)[number])
+        : null;
 
     // Hash the submitted token for lookup
     const tokenHash = createHash('sha256').update(token).digest('hex');
@@ -179,6 +195,9 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
             status: 'ACTIVE',
             enrolledAt: now,
             lastHeartbeatAt: now,
+            // Only overwrite installFormat when the agent reports one — never
+            // null out a previously-recorded format on re-enroll.
+            ...(installFormatEnum ? { installFormat: installFormatEnum } : {}),
           },
         });
 
@@ -208,6 +227,7 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
           status: 'ACTIVE',
           enrolledAt: now,
           lastHeartbeatAt: now,
+          installFormat: installFormatEnum,
         },
       });
 
@@ -399,9 +419,14 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
       request.log.warn({ err }, 'heartbeat: tenant fetch failed, using default intervals');
     }
 
+    const agentFormat = resolveAgentFormat({
+      platform: agent.platform,
+      installFormat: agent.installFormat as AgentUpdateFormatLike | null,
+    });
+
     if (agent.forceUpdateUrl) {
       const forced = await prisma.agentUpdate.findFirst({
-        where: { platform: agent.platform },
+        where: { platform: agent.platform, format: agentFormat as any },
         orderBy: { createdAt: 'desc' },
       });
       if (forced) {
@@ -416,7 +441,7 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
 
     if (!update && body.agentVersion) {
       const latest = await prisma.agentUpdate.findFirst({
-        where: { platform: agent.platform },
+        where: { platform: agent.platform, format: agentFormat as any },
         orderBy: { createdAt: 'desc' },
       });
 
@@ -440,7 +465,7 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
             // Relative path so the agent's authenticated client fetches via our
             // server and streams the binary (MinIO is not publicly routable).
             // ?file=agent.<ext> hint so the agent picks the right installer.
-            updateUrl: `api/v1/agents/updates/${agent.platform.toLowerCase()}${packageHintSuffix(agent.platform)}`,
+            updateUrl: `api/v1/agents/updates/${agent.platform.toLowerCase()}${packageHintSuffix(agent.platform, agentFormat)}`,
             checksum: latest.checksum,
             fileSize: latest.fileSize,
           };
@@ -468,11 +493,16 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
     const query = request.query as { version?: string };
     const currentVersion = query.version ?? agent.agentVersion ?? '0.0.0';
 
+    const agentFormat = resolveAgentFormat({
+      platform: agent.platform,
+      installFormat: agent.installFormat as AgentUpdateFormatLike | null,
+    });
+
     // Forced deploy first — honour the admin-set forceUpdateUrl even when the
     // tenant policy is 'manual' (that's the whole point of a forced deploy).
     if (agent.forceUpdateUrl) {
       const forced = await prisma.agentUpdate.findFirst({
-        where: { platform: agent.platform },
+        where: { platform: agent.platform, format: agentFormat as any },
         orderBy: { createdAt: 'desc' },
       });
       if (forced) {
@@ -488,7 +518,7 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
 
     // Otherwise respect the tenant policy, same as the heartbeat path.
     const latest = await prisma.agentUpdate.findFirst({
-      where: { platform: agent.platform },
+      where: { platform: agent.platform, format: agentFormat as any },
       orderBy: { createdAt: 'desc' },
     });
     if (!latest || latest.version <= currentVersion) {
@@ -521,7 +551,7 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
 
     return reply.code(200).send({
       latestVersion: latest.version,
-      updateUrl: `api/v1/agents/updates/${agent.platform.toLowerCase()}${packageHintSuffix(agent.platform)}`,
+      updateUrl: `api/v1/agents/updates/${agent.platform.toLowerCase()}${packageHintSuffix(agent.platform, agentFormat)}`,
       checksum: latest.checksum,
       fileSize: latest.fileSize,
     });

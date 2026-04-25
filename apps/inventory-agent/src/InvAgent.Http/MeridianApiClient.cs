@@ -43,6 +43,7 @@ public class MeridianApiClient
         string hostname,
         string platform,
         string agentVersion,
+        string? installFormat,
         CancellationToken ct = default)
     {
         var body = new
@@ -51,6 +52,7 @@ public class MeridianApiClient
             hostname,
             platform,
             agentVersion,
+            installFormat,
         };
 
         var response = await _http.PostAsJsonAsync("api/v1/agents/enroll", body, JsonOptions, ct);

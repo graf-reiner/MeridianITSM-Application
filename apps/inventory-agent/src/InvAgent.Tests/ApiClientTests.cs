@@ -63,7 +63,7 @@ public class ApiClientTests
         var (client, handler) = CreateClient();
         handler.SetResponse(HttpStatusCode.OK, new { agentKey = "abc123def456", agentId = "uuid-1234" });
 
-        var result = await client.EnrollAsync("test-token", "workstation-1", "WINDOWS", "1.0.0");
+        var result = await client.EnrollAsync("test-token", "workstation-1", "WINDOWS", "1.0.0", "MSI");
 
         result.Should().NotBeNull();
         result!.AgentKey.Should().Be("abc123def456");
@@ -78,7 +78,7 @@ public class ApiClientTests
         var (client, handler) = CreateClient();
         handler.SetResponse(HttpStatusCode.Unauthorized, new { error = "Invalid token" });
 
-        var result = await client.EnrollAsync("bad-token", "workstation-1", "WINDOWS", "1.0.0");
+        var result = await client.EnrollAsync("bad-token", "workstation-1", "WINDOWS", "1.0.0", "MSI");
 
         result.Should().BeNull();
     }
@@ -89,13 +89,14 @@ public class ApiClientTests
         var (client, handler) = CreateClient();
         handler.SetResponse(HttpStatusCode.OK, new { agentKey = "key", agentId = "id" });
 
-        await client.EnrollAsync("my-token", "ws-42", "LINUX", "2.0.0");
+        await client.EnrollAsync("my-token", "ws-42", "LINUX", "2.0.0", "DEB");
 
         var body = JsonSerializer.Deserialize<JsonElement>(handler.LastRequestBody!);
         body.GetProperty("token").GetString().Should().Be("my-token");
         body.GetProperty("hostname").GetString().Should().Be("ws-42");
         body.GetProperty("platform").GetString().Should().Be("LINUX");
         body.GetProperty("agentVersion").GetString().Should().Be("2.0.0");
+        body.GetProperty("installFormat").GetString().Should().Be("DEB");
     }
 
     // ─── Heartbeat Tests ──────────────────────────────────────────────────

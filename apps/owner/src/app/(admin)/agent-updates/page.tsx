@@ -4,11 +4,13 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { ownerFetch } from '../../../lib/api';
 
 type Platform = 'WINDOWS' | 'LINUX' | 'MACOS';
+type Format = 'MSI' | 'EXE' | 'DEB' | 'RPM' | 'PKG' | 'TARGZ';
 
 interface AgentUpdate {
   id: string;
   version: string;
   platform: Platform;
+  format: Format;
   fileSize: number;
   checksum: string;
   releaseNotes: string | null;
@@ -19,6 +21,15 @@ const PLATFORM_LABELS: Record<Platform, string> = {
   WINDOWS: 'Windows',
   LINUX: 'Linux',
   MACOS: 'macOS',
+};
+
+const FORMAT_LABELS: Record<Format, string> = {
+  MSI: '.msi',
+  EXE: '.exe',
+  DEB: '.deb',
+  RPM: '.rpm',
+  PKG: '.pkg',
+  TARGZ: '.tar.gz',
 };
 
 function formatBytes(bytes: number): string {
@@ -214,15 +225,18 @@ export default function AgentUpdatesPage() {
 
           <div style={{ marginBottom: 12 }}>
             <label htmlFor="upload-file" style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#6b7280', fontWeight: 600 }}>
-              Package File (.msi / .exe / .tar.gz / .zip)
+              Package File (.msi / .exe / .deb / .rpm / .pkg / .tar.gz)
             </label>
             <input
               id="upload-file"
               ref={fileInputRef}
               type="file"
-              accept=".exe,.msi,.tar.gz,.zip"
+              accept=".exe,.msi,.deb,.rpm,.pkg,.tar.gz,.tgz,.zip"
               style={{ fontSize: 13 }}
             />
+            <div style={{ marginTop: 4, fontSize: 11, color: '#9ca3af' }}>
+              Format is inferred from the filename extension. Windows: .msi/.exe; Linux: .deb/.rpm; macOS: .pkg
+            </div>
           </div>
 
           <div style={{ marginBottom: 14 }}>
@@ -307,6 +321,7 @@ export default function AgentUpdatesPage() {
               <tr style={{ backgroundColor: '#f9fafb' }}>
                 <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Version</th>
                 <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Platform</th>
+                <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Format</th>
                 <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Size</th>
                 <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Uploaded</th>
                 <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#374151' }}>Release Notes</th>
@@ -320,6 +335,7 @@ export default function AgentUpdatesPage() {
                   <tr key={u.id} style={{ borderTop: '1px solid #f3f4f6' }}>
                     <td style={{ padding: '10px 16px', fontFamily: 'monospace' }}>v{u.version}</td>
                     <td style={{ padding: '10px 16px', color: '#6b7280' }}>{PLATFORM_LABELS[u.platform]}</td>
+                    <td style={{ padding: '10px 16px', color: '#6b7280', fontFamily: 'monospace', fontSize: 13 }}>{FORMAT_LABELS[u.format]}</td>
                     <td style={{ padding: '10px 16px', color: '#6b7280' }}>{formatBytes(u.fileSize)}</td>
                     <td style={{ padding: '10px 16px', color: '#6b7280', fontSize: 13 }}>
                       {new Date(u.createdAt).toLocaleDateString()}

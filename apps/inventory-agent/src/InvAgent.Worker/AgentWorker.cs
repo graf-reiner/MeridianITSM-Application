@@ -327,6 +327,7 @@ public class AgentWorker : BackgroundService
                 hostname,
                 platform,
                 GetAgentVersion(),
+                _config.InstallFormat,
                 ct);
 
             if (result != null && !string.IsNullOrEmpty(result.AgentKey))

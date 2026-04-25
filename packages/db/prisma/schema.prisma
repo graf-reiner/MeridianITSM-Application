@@ -124,6 +124,15 @@ enum AgentPlatform {
   MACOS
 }
 
+enum AgentUpdateFormat {
+  MSI
+  EXE
+  DEB
+  RPM
+  PKG
+  TARGZ
+}
+
 enum ArticleStatus {
   DRAFT
   IN_REVIEW
@@ -1921,26 +1930,29 @@ model Agent {
   updateInProgress Boolean   @default(false)
   updateStartedAt  DateTime?
 
+  installFormat    AgentUpdateFormat?
+
   @@index([tenantId])
   @@index([tenantId, status])
   @@map("agents")
 }
 
 model AgentUpdate {
-  id           String        @id @default(uuid()) @db.Uuid
+  id           String            @id @default(uuid()) @db.Uuid
   version      String
   platform     AgentPlatform
+  format       AgentUpdateFormat
   downloadUrl  String
   checksum     String
   fileSize     Int
   releaseNotes String?
   storageKey   String?
-  uploadedBy   String?       @db.Uuid
-  createdAt    DateTime      @default(now())
+  uploadedBy   String?           @db.Uuid
+  createdAt    DateTime          @default(now())
 
   deployments AgentUpdateDeployment[]
 
-  @@unique([version, platform])
+  @@unique([version, platform, format])
   @@map("agent_updates")
 }
 
@@ -2102,6 +2114,16 @@ model InventorySnapshot {
   performance       Json?
   virtualization    Json?
   localUsers        Json?
+  // Connected hardware (added in v1.0.0.6)
+  printers          Json?
+  usbDevices        Json?
+  cameras           Json?
+  biometricDevices  Json?
+  smartCardReaders  Json?
+  audioDevices      Json?
+  // Compliance hardware
+  tpmDetails        Json?
+  vbsStatus         Json?
   rawData           Json?
   scanDurationMs    Float?
 
