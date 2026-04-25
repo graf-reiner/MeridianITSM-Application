@@ -27,6 +27,7 @@ $config = @{
         LocalWebUiPort           = 8787
         LocalQueueMaxSizeMb      = 100
         LogLevel                 = 'Information'
+        InstallFormat            = 'MSI'
     }
 }
 

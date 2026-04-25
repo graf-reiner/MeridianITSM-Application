@@ -7,6 +7,7 @@ import agentUpdateRoutes, {
   resolveAgentFormat,
   type AgentUpdateFormatLike,
 } from './updates.js';
+import agentInstallRoutes from './install.js';
 import {
   upsertServerExtensionByAsset,
   type AgentInventorySnapshot,
@@ -110,6 +111,9 @@ async function resolveAgent(request: FastifyRequest, reply: FastifyReply) {
 export async function agentRoutes(app: FastifyInstance): Promise<void> {
   // Register agent update package routes (upload, download, deploy, list)
   await app.register(agentUpdateRoutes);
+
+  // Register Linux bash installer + native package download routes
+  await app.register(agentInstallRoutes);
 
   // ─── POST /api/v1/agents/enroll ───────────────────────────────────────────────
   // Public within external scope — validates enrollment token, creates Agent record.
