@@ -428,7 +428,12 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
       installFormat: agent.installFormat as AgentUpdateFormatLike | null,
     });
 
-    if (agent.forceUpdateUrl) {
+    // The earlier `updateData` block above clears forceUpdateUrl in the DB
+    // when the agent reports a NEW agentVersion (i.e. the upgrade landed).
+    // Skip re-issuing the directive in that same response, otherwise the
+    // freshly-updated agent reinstalls the same package immediately and ends
+    // up in dpkg's "half-installed" state from a self-collision.
+    if (agent.forceUpdateUrl && !versionChanged) {
       const forced = await prisma.agentUpdate.findFirst({
         where: { platform: agent.platform, format: agentFormat as any },
         orderBy: { createdAt: 'desc' },
@@ -683,6 +688,16 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
         performance: body.performance as never ?? null,
         virtualization: body.virtualization as never ?? null,
         localUsers: body.localUsers as never ?? null,
+        // Connected hardware (added in agent v1.0.0.6)
+        printers:         body.printers as never ?? null,
+        usbDevices:       body.usbDevices as never ?? null,
+        cameras:          body.cameras as never ?? null,
+        biometricDevices: body.biometricDevices as never ?? null,
+        smartCardReaders: body.smartCardReaders as never ?? null,
+        audioDevices:     body.audioDevices as never ?? null,
+        // Compliance hardware
+        tpmDetails:       body.tpmDetails as never ?? null,
+        vbsStatus:        body.vbs as never ?? null,
         rawData: body as never,
         scanDurationMs: typeof body.scanDurationMs === 'number' ? body.scanDurationMs : null,
         collectedAt: new Date(),
