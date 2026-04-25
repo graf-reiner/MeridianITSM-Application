@@ -23,15 +23,37 @@ public class LocalQueue : IDisposable
         _config = config.Value;
         _logger = logger;
 
-        var dir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "meridian-agent");
+        var dir = ResolveQueueDir();
         Directory.CreateDirectory(dir);
 
         var dbPath = Path.Combine(dir, "queue.db");
         _connection = new SqliteConnection($"Data Source={dbPath}");
         _connection.Open();
         InitSchema();
+    }
+
+    /// <summary>
+    /// Where to persist the offline queue. On Linux the agent runs as a
+    /// systemd service with ProtectHome=yes (no HOME) and ProtectSystem=strict
+    /// (read-only /opt), so the .NET default LocalApplicationData lookup falls
+    /// back to the working dir and fails. Use the FHS-standard
+    /// /var/lib/meridian-agent path that the .deb / .rpm postinst owns.
+    /// </summary>
+    private static string ResolveQueueDir()
+    {
+        if (OperatingSystem.IsLinux())
+        {
+            return "/var/lib/meridian-agent";
+        }
+
+        if (OperatingSystem.IsMacOS())
+        {
+            return "/var/lib/meridian-agent";
+        }
+
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "meridian-agent");
     }
 
     private void InitSchema()
