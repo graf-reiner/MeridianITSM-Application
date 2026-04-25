@@ -19,9 +19,13 @@ EnvironmentFile=-/etc/meridian-agent/environment
 
 # Harden the service. ReadWritePaths must reference dirs that exist at start
 # time — the .deb / .rpm postinst is responsible for creating each one.
+# PrivateTmp=yes is required: System.CommandLine writes a sentinel file under
+# /tmp on first invocation, and ProtectSystem=strict makes the host /tmp
+# read-only. PrivateTmp gives the service its own writable /tmp namespace.
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
+PrivateTmp=yes
 ReadWritePaths=/etc/meridian-agent /var/log/meridian-agent /var/lib/meridian-agent
 
 [Install]
