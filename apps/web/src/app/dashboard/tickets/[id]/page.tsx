@@ -5,13 +5,15 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
-import { mdiPaperclip, mdiSend, mdiAccountCircle, mdiClockOutline, mdiCloudUploadOutline, mdiPlus, mdiLinkVariant, mdiMerge, mdiEyeOutline, mdiEyeOffOutline, mdiCheckDecagram, mdiClose } from '@mdi/js';
+import { mdiPaperclip, mdiSend, mdiAccountCircle, mdiClockOutline, mdiCloudUploadOutline, mdiPlus, mdiLinkVariant, mdiMerge, mdiEyeOutline, mdiEyeOffOutline, mdiCheckDecagram, mdiClose, mdiAlertOctagram } from '@mdi/js';
 import CannedResponsePicker from '@/components/CannedResponsePicker';
 import RichTextField from '@/components/RichTextField';
 import Breadcrumb from '@/components/Breadcrumb';
 import SlaCountdown from '../../../../components/SlaCountdown';
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import { UnsavedChangesToast } from '@/components/UnsavedChangesToast';
+import { useSession } from '@/hooks/useSession';
+import { PromoteMajorIncidentModal, DeescalateMajorIncidentModal } from '@/components/PromoteMajorIncidentModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -23,6 +25,10 @@ interface TicketDetail {
   status: string;
   priority: string;
   type: string;
+  impact: string | null;
+  urgency: string | null;
+  isMajorIncident: boolean;
+  majorIncidentCoordinator: { id: string; firstName: string | null; lastName: string | null; email: string } | null;
   assignee: { id: string; firstName: string; lastName: string } | null;
   requester: { id: string; firstName: string; lastName: string; email: string } | null;
   category: { id: string; name: string } | null;
@@ -139,6 +145,9 @@ export default function TicketDetailPage() {
   const [approvalChecked, setApprovalChecked] = useState(false);
   const [approvalRequired, setApprovalRequired] = useState(false);
   const [approvalSubmitting, setApprovalSubmitting] = useState(false);
+  const [showPromoteMiModal, setShowPromoteMiModal] = useState(false);
+  const [showDeescalateMiModal, setShowDeescalateMiModal] = useState(false);
+  const { userId: currentUserId, isAdmin } = useSession();
 
   const { data: ticket, isLoading, error } = useQuery<TicketDetail>({
     queryKey: ['ticket', ticketId],
@@ -153,6 +162,10 @@ export default function TicketDetailPage() {
         assignee: data.assignee ?? data.assignedTo ?? null,
         requester: data.requester ?? data.requestedBy ?? null,
         slaPolicy: data.slaPolicy ?? data.sla ?? null,
+        isMajorIncident: Boolean(data.isMajorIncident),
+        majorIncidentCoordinator: data.majorIncidentCoordinator ?? null,
+        impact: data.impact ?? null,
+        urgency: data.urgency ?? null,
       } as TicketDetail;
     },
   });
@@ -576,6 +589,18 @@ export default function TicketDetailPage() {
   const priorityStyle = getPriorityStyle(ticket.priority);
   const transitions = STATUS_TRANSITIONS[ticket.status] ?? [];
 
+  // ─── Major Incident visibility logic ───────────────────────────────────────
+  // Server enforces the permission via requirePermission('tickets.major_incident.declare').
+  // Client only decides whether to render the controls — admin / msp_admin only.
+  const MI_OPEN_STATUSES = new Set(['NEW', 'OPEN', 'IN_PROGRESS', 'PENDING']);
+  const canDeclareMi = isAdmin && ticket.type === 'INCIDENT' && MI_OPEN_STATUSES.has(ticket.status) && !ticket.isMajorIncident;
+  const canDeescalateMi = isAdmin && ticket.isMajorIncident && !['RESOLVED', 'CLOSED', 'CANCELLED'].includes(ticket.status);
+  const isHighSeverity = ['HIGH', 'CRITICAL'].includes(ticket.impact ?? '') && ['HIGH', 'CRITICAL'].includes(ticket.urgency ?? '');
+  const showMiBanner = canDeclareMi && (ticket.priority === 'CRITICAL' || isHighSeverity);
+  const coordinatorName = ticket.majorIncidentCoordinator
+    ? `${ticket.majorIncidentCoordinator.firstName ?? ''} ${ticket.majorIncidentCoordinator.lastName ?? ''}`.trim() || ticket.majorIncidentCoordinator.email
+    : null;
+
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
 
@@ -584,6 +609,34 @@ export default function TicketDetailPage() {
         { label: 'Tickets', href: '/dashboard/tickets' },
         { label: ticket.ticketNumber },
       ]} />
+
+      {/* ── Major Incident proactive banner ──────────────────────────────── */}
+      {showMiBanner && (
+        <div
+          style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '12px 16px', marginBottom: 12,
+            backgroundColor: '#fef2f2', border: '1px solid #fecaca',
+            borderRadius: 12, color: '#991b1b',
+          }}
+        >
+          <Icon path={mdiAlertOctagram} size={1} color="#dc2626" />
+          <div style={{ flex: 1, fontSize: 13, lineHeight: 1.5 }}>
+            <div style={{ fontWeight: 700, marginBottom: 2 }}>This ticket meets Major Incident criteria.</div>
+            <div>Promote it to coordinate a formal response.</div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowPromoteMiModal(true)}
+            style={{
+              padding: '8px 14px', backgroundColor: '#dc2626', color: '#fff',
+              border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            }}
+          >
+            Promote →
+          </button>
+        </div>
+      )}
 
       {/* ── Header ────────────────────────────────────────────────────────────── */}
       <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: 24, marginBottom: 16 }}>
@@ -597,6 +650,21 @@ export default function TicketDetailPage() {
               <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 12, fontWeight: 500, backgroundColor: priorityStyle.bg, color: priorityStyle.text }}>
                 {ticket.priority}
               </span>
+              {ticket.isMajorIncident && (
+                <span
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    padding: '2px 8px', borderRadius: 12,
+                    fontSize: 11, fontWeight: 700, letterSpacing: '0.04em',
+                    backgroundColor: '#dc2626', color: '#fff',
+                    textTransform: 'uppercase',
+                  }}
+                  title={coordinatorName ? `Coordinator: ${coordinatorName}` : 'Major Incident'}
+                >
+                  <Icon path={mdiAlertOctagram} size={0.55} color="#fff" />
+                  Major Incident
+                </span>
+              )}
               {slaStatus && (
                 <SlaCountdown
                   slaBreachAt={slaStatus.slaBreachAt}
@@ -621,15 +689,20 @@ export default function TicketDetailPage() {
               )}
             </div>
             <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>{ticket.title}</h1>
+            {ticket.isMajorIncident && coordinatorName && (
+              <div style={{ margin: '0 0 4px', fontSize: 13, color: '#991b1b', fontWeight: 600 }}>
+                Coordinator: {coordinatorName}
+              </div>
+            )}
             {/* Description is rich HTML from TipTap editor — authored by authenticated users only */}
             {ticket.description && (
               <div style={{ margin: 0, fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: ticket.description }} />
             )}
           </div>
 
-          {/* Status change */}
-          {transitions.length > 0 && (
-            <div style={{ flexShrink: 0 }}>
+          {/* Status change + Major Incident actions */}
+          <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+            {transitions.length > 0 && (
               <select
                 onChange={(e) => { if (e.target.value) void handleStatusChange(e.target.value); e.target.value = ''; }}
                 disabled={statusUpdating}
@@ -641,8 +714,34 @@ export default function TicketDetailPage() {
                   <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
                 ))}
               </select>
-            </div>
-          )}
+            )}
+            {canDeclareMi && (
+              <button
+                type="button"
+                onClick={() => setShowPromoteMiModal(true)}
+                style={{
+                  padding: '8px 14px', backgroundColor: '#dc2626', color: '#fff',
+                  border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                }}
+              >
+                <Icon path={mdiAlertOctagram} size={0.7} color="#fff" />
+                Declare Major Incident
+              </button>
+            )}
+            {canDeescalateMi && (
+              <button
+                type="button"
+                onClick={() => setShowDeescalateMiModal(true)}
+                style={{
+                  padding: '8px 14px', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)',
+                  border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                De-escalate
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1377,6 +1476,29 @@ export default function TicketDetailPage() {
         onDiscard={handleSidebarDiscard}
         saving={sidebarSaving}
       />
+
+      {showPromoteMiModal && currentUserId && (
+        <PromoteMajorIncidentModal
+          ticketId={ticketId}
+          currentUserId={currentUserId}
+          users={(usersData ?? []).map((u) => ({
+            id: u.id,
+            firstName: u.firstName,
+            lastName: u.lastName,
+            email: (u as unknown as { email?: string }).email ?? '',
+          }))}
+          onClose={() => setShowPromoteMiModal(false)}
+          onSaved={() => { void qc.invalidateQueries({ queryKey: ['ticket', ticketId] }); }}
+        />
+      )}
+
+      {showDeescalateMiModal && (
+        <DeescalateMajorIncidentModal
+          ticketId={ticketId}
+          onClose={() => setShowDeescalateMiModal(false)}
+          onSaved={() => { void qc.invalidateQueries({ queryKey: ['ticket', ticketId] }); }}
+        />
+      )}
     </div>
   );
 }
