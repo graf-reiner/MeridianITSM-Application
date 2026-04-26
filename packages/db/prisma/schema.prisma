@@ -65,6 +65,20 @@ enum TicketPriority {
   CRITICAL
 }
 
+enum TicketImpact {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum TicketUrgency {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
 enum CommentVisibility {
   PUBLIC
   INTERNAL
@@ -160,6 +174,8 @@ enum NotificationType {
   CAB_INVITATION
   // APM ↔ CMDB bridge — fired by cert-expiry-monitor worker
   CERT_EXPIRY_WARNING
+  // Major Incident workflow — fired when a ticket is promoted to a Major Incident
+  MAJOR_INCIDENT_DECLARED
 }
 
 enum AuditAction {
@@ -734,8 +750,8 @@ model Ticket {
   title                      String
   description                String?
   priority                   TicketPriority @default(MEDIUM)
-  impact                     String?
-  urgency                    String?
+  impact                     TicketImpact?
+  urgency                    TicketUrgency?
   status                     TicketStatus   @default(NEW)
   assignedToId               String?        @db.Uuid
   assignedGroupId            String?        @db.Uuid
