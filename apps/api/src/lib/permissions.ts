@@ -5,6 +5,7 @@ export const PERMISSIONS = {
   TICKETS_CREATE: 'tickets.create',
   TICKETS_UPDATE: 'tickets.update',
   TICKETS_DELETE: 'tickets.delete',
+  TICKETS_MAJOR_INCIDENT_DECLARE: 'tickets.major_incident.declare',
   TICKETS_ALL: 'tickets.*',
 
   // Users
