@@ -592,11 +592,16 @@ export default function TicketDetailPage() {
   // ─── Major Incident visibility logic ───────────────────────────────────────
   // Server enforces the permission via requirePermission('tickets.major_incident.declare').
   // Client only decides whether to render the controls — admin / msp_admin only.
+  // Both the banner and the Declare button only appear once the ticket already
+  // meets MI criteria (priority=CRITICAL OR impact+urgency both HIGH/CRITICAL).
+  // Admins set those values first via the sidebar; the action then becomes available.
   const MI_OPEN_STATUSES = new Set(['NEW', 'OPEN', 'IN_PROGRESS', 'PENDING']);
-  const canDeclareMi = isAdmin && ticket.type === 'INCIDENT' && MI_OPEN_STATUSES.has(ticket.status) && !ticket.isMajorIncident;
-  const canDeescalateMi = isAdmin && ticket.isMajorIncident && !['RESOLVED', 'CLOSED', 'CANCELLED'].includes(ticket.status);
+  const isOpenIncident = ticket.type === 'INCIDENT' && MI_OPEN_STATUSES.has(ticket.status) && !ticket.isMajorIncident;
   const isHighSeverity = ['HIGH', 'CRITICAL'].includes(ticket.impact ?? '') && ['HIGH', 'CRITICAL'].includes(ticket.urgency ?? '');
-  const showMiBanner = canDeclareMi && (ticket.priority === 'CRITICAL' || isHighSeverity);
+  const meetsMiCriteria = ticket.priority === 'CRITICAL' || isHighSeverity;
+  const canDeclareMi = isAdmin && isOpenIncident && meetsMiCriteria;
+  const canDeescalateMi = isAdmin && ticket.isMajorIncident && !['RESOLVED', 'CLOSED', 'CANCELLED'].includes(ticket.status);
+  const showMiBanner = canDeclareMi;
   const coordinatorName = ticket.majorIncidentCoordinator
     ? `${ticket.majorIncidentCoordinator.firstName ?? ''} ${ticket.majorIncidentCoordinator.lastName ?? ''}`.trim() || ticket.majorIncidentCoordinator.email
     : null;
