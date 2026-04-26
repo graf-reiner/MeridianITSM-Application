@@ -785,3 +785,270 @@ export async function linkCmdbItem(
     update: { linkType },
   });
 }
+
+// ─── Major Incident Promotion / De-escalation ───────────────────────────────
+
+const MAJOR_INCIDENT_OPEN_STATUSES = new Set(['NEW', 'OPEN', 'IN_PROGRESS', 'PENDING']);
+
+export interface PromoteMajorIncidentData {
+  coordinatorId: string;
+  impact: 'HIGH' | 'CRITICAL';
+  urgency: 'HIGH' | 'CRITICAL';
+  summary: string;
+  bridgeUrl?: string | null;
+}
+
+function fullName(u: { firstName?: string | null; lastName?: string | null; email: string }): string {
+  const name = `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim();
+  return name || u.email;
+}
+
+/**
+ * Promote an existing INCIDENT-type ticket to a Major Incident.
+ *
+ * Atomic operation: updates ticket flag/coordinator/priority/impact/urgency,
+ * writes one TicketActivity row per changed field, posts an INTERNAL ticket
+ * comment with the situation summary, and dispatches the
+ * MAJOR_INCIDENT_DECLARED event so the coordinator is notified.
+ *
+ * Preconditions (throws statusCode-tagged Error if violated):
+ *   - ticket exists in tenant
+ *   - ticket.type === 'INCIDENT'
+ *   - ticket.status is open (NEW, OPEN, IN_PROGRESS, PENDING)
+ *   - ticket.isMajorIncident === false
+ *   - coordinator exists in same tenant
+ */
+export async function promoteToMajorIncident(
+  tenantId: string,
+  ticketId: string,
+  data: PromoteMajorIncidentData,
+  actorId: string,
+) {
+  const existing = await prisma.ticket.findFirst({
+    where: { id: ticketId, tenantId },
+    select: {
+      id: true,
+      ticketNumber: true,
+      title: true,
+      type: true,
+      status: true,
+      priority: true,
+      impact: true,
+      urgency: true,
+      isMajorIncident: true,
+      majorIncidentCoordinatorId: true,
+    },
+  });
+
+  if (!existing) {
+    const err = new Error('Ticket not found') as Error & { statusCode: number };
+    err.statusCode = 404;
+    throw err;
+  }
+  if (existing.type !== 'INCIDENT') {
+    const err = new Error('Only INCIDENT-type tickets can be promoted to a Major Incident') as Error & { statusCode: number };
+    err.statusCode = 400;
+    throw err;
+  }
+  if (!MAJOR_INCIDENT_OPEN_STATUSES.has(existing.status)) {
+    const err = new Error(`Ticket status ${existing.status} is not open; cannot promote`) as Error & { statusCode: number };
+    err.statusCode = 400;
+    throw err;
+  }
+  if (existing.isMajorIncident) {
+    const err = new Error('Ticket is already a Major Incident') as Error & { statusCode: number };
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const [coordinator, actor] = await Promise.all([
+    prisma.user.findFirst({
+      where: { id: data.coordinatorId, tenantId },
+      select: { id: true, firstName: true, lastName: true, email: true },
+    }),
+    prisma.user.findFirst({
+      where: { id: actorId, tenantId },
+      select: { id: true, firstName: true, lastName: true, email: true },
+    }),
+  ]);
+
+  if (!coordinator) {
+    const err = new Error('Coordinator not found in tenant') as Error & { statusCode: number };
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const changedFields: Array<{ fieldName: string; oldValue: string; newValue: string }> = [
+    { fieldName: 'isMajorIncident', oldValue: 'false', newValue: 'true' },
+    {
+      fieldName: 'majorIncidentCoordinatorId',
+      oldValue: String(existing.majorIncidentCoordinatorId ?? ''),
+      newValue: data.coordinatorId,
+    },
+    { fieldName: 'impact', oldValue: String(existing.impact ?? ''), newValue: data.impact },
+    { fieldName: 'urgency', oldValue: String(existing.urgency ?? ''), newValue: data.urgency },
+  ];
+  if (existing.priority !== 'CRITICAL') {
+    changedFields.push({ fieldName: 'priority', oldValue: existing.priority, newValue: 'CRITICAL' });
+  }
+
+  const actorName = actor ? fullName(actor) : 'Unknown';
+  const coordinatorName = fullName(coordinator);
+  const commentBody = [
+    `**Promoted to Major Incident** by ${actorName}.`,
+    `Coordinator: ${coordinatorName}`,
+    `Impact: ${data.impact} · Urgency: ${data.urgency} · Priority: CRITICAL`,
+    data.bridgeUrl ? `Bridge: ${data.bridgeUrl}` : null,
+    '',
+    `**Summary:** ${data.summary}`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  const updatedTicket = await prisma.$transaction(async (tx) => {
+    const ticket = await tx.ticket.update({
+      where: { id: ticketId },
+      data: {
+        isMajorIncident: true,
+        majorIncidentCoordinatorId: data.coordinatorId,
+        priority: 'CRITICAL',
+        impact: data.impact,
+        urgency: data.urgency,
+      },
+      include: TICKET_LIST_INCLUDE,
+    });
+
+    for (const c of changedFields) {
+      await tx.ticketActivity.create({
+        data: {
+          tenantId,
+          ticketId,
+          actorId,
+          activityType: 'FIELD_CHANGED',
+          fieldName: c.fieldName,
+          oldValue: c.oldValue,
+          newValue: c.newValue,
+        },
+      });
+    }
+
+    await tx.ticketComment.create({
+      data: {
+        tenantId,
+        ticketId,
+        authorId: actorId,
+        content: commentBody,
+        visibility: 'INTERNAL',
+      },
+    });
+
+    return ticket;
+  });
+
+  // Fire-and-forget notification — must not block the promotion
+  void (async () => {
+    try {
+      await dispatchNotificationEvent(tenantId, 'MAJOR_INCIDENT_DECLARED', {
+        ticket: updatedTicket as any,
+        actorId,
+        coordinatorId: data.coordinatorId,
+      });
+    } catch (err) {
+      console.error('[ticket.service] promoteToMajorIncident notification failed:', err);
+    }
+  })();
+
+  return updatedTicket;
+}
+
+/**
+ * De-escalate a Major Incident back to a regular ticket.
+ *
+ * Clears `isMajorIncident` and `majorIncidentCoordinatorId`, logs activity,
+ * posts an INTERNAL audit comment. No notification fires (de-escalation is
+ * not urgent).
+ *
+ * Preconditions (throws statusCode-tagged Error if violated):
+ *   - ticket exists in tenant
+ *   - ticket.isMajorIncident === true
+ */
+export async function deescalateMajorIncident(
+  tenantId: string,
+  ticketId: string,
+  reason: string,
+  actorId: string,
+) {
+  const existing = await prisma.ticket.findFirst({
+    where: { id: ticketId, tenantId },
+    select: {
+      id: true,
+      isMajorIncident: true,
+      majorIncidentCoordinatorId: true,
+    },
+  });
+
+  if (!existing) {
+    const err = new Error('Ticket not found') as Error & { statusCode: number };
+    err.statusCode = 404;
+    throw err;
+  }
+  if (!existing.isMajorIncident) {
+    const err = new Error('Ticket is not a Major Incident') as Error & { statusCode: number };
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const actor = await prisma.user.findFirst({
+    where: { id: actorId, tenantId },
+    select: { firstName: true, lastName: true, email: true },
+  });
+  const actorName = actor ? fullName(actor) : 'Unknown';
+
+  return prisma.$transaction(async (tx) => {
+    const ticket = await tx.ticket.update({
+      where: { id: ticketId },
+      data: {
+        isMajorIncident: false,
+        majorIncidentCoordinatorId: null,
+      },
+      include: TICKET_LIST_INCLUDE,
+    });
+
+    await tx.ticketActivity.create({
+      data: {
+        tenantId,
+        ticketId,
+        actorId,
+        activityType: 'FIELD_CHANGED',
+        fieldName: 'isMajorIncident',
+        oldValue: 'true',
+        newValue: 'false',
+      },
+    });
+    if (existing.majorIncidentCoordinatorId) {
+      await tx.ticketActivity.create({
+        data: {
+          tenantId,
+          ticketId,
+          actorId,
+          activityType: 'FIELD_CHANGED',
+          fieldName: 'majorIncidentCoordinatorId',
+          oldValue: existing.majorIncidentCoordinatorId,
+          newValue: '',
+        },
+      });
+    }
+
+    await tx.ticketComment.create({
+      data: {
+        tenantId,
+        ticketId,
+        authorId: actorId,
+        content: `**De-escalated from Major Incident** by ${actorName}.\n\n**Reason:** ${reason}`,
+        visibility: 'INTERNAL',
+      },
+    });
+
+    return ticket;
+  });
+}
