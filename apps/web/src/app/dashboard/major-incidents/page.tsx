@@ -104,17 +104,31 @@ export default function MajorIncidentsPage() {
           <Icon path={mdiAlertOctagonOutline} size={1} color="#dc2626" />
           Major Incidents
         </h1>
-        <Link
-          href="/dashboard/tickets/new?majorIncident=true"
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '8px 16px', backgroundColor: '#dc2626', color: '#fff',
-            textDecoration: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600,
-          }}
-        >
-          <Icon path={mdiPlus} size={0.8} color="currentColor" />
-          Declare Major Incident
-        </Link>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <Link
+            href="/dashboard/major-incidents/detected"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '8px 14px', backgroundColor: 'var(--bg-primary)',
+              color: 'var(--text-secondary)', textDecoration: 'none',
+              border: '1px solid var(--border-secondary)',
+              borderRadius: 8, fontSize: 14, fontWeight: 600,
+            }}
+          >
+            Detected signals
+          </Link>
+          <Link
+            href="/dashboard/tickets/new?majorIncident=true"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '8px 16px', backgroundColor: '#dc2626', color: '#fff',
+              textDecoration: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600,
+            }}
+          >
+            <Icon path={mdiPlus} size={0.8} color="currentColor" />
+            Declare Major Incident
+          </Link>
+        </div>
       </div>
 
       {/* ── Filters ─────────────────────────────────────────────────────────── */}
