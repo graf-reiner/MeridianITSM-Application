@@ -12,6 +12,7 @@ import { kbSuggestionRoutes } from './kb-suggestions.js';
 import { ticketApprovalRoutes } from './approvals.js';
 import { similarTicketRoutes } from './similar.js';
 import { ticketClassifyRoutes } from './classify.js';
+import { majorIncidentRoutes } from './major-incident.js';
 import {
   createTicket,
   updateTicket,
@@ -671,4 +672,7 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
 
   // Register AI ticket classification sub-routes
   await ticketClassifyRoutes(fastify);
+
+  // Register Major Incident promotion / de-escalation sub-routes
+  await majorIncidentRoutes(fastify);
 }
