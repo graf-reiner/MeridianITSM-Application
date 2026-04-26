@@ -12,6 +12,7 @@ import { webhookCleanupWorker } from './workers/webhook-cleanup.js';
 import { pushNotificationWorker } from './workers/push-notification.js';
 import { chatCleanupWorker } from './workers/chat-cleanup.js';
 import { problemDetectionWorker } from './workers/problem-detection.js';
+import { majorIncidentDetectionWorker } from './workers/major-incident-detection.js';
 import { certExpiryMonitorWorker } from './workers/cert-expiry-monitor.js';
 import { inventoryRetentionWorker, inventoryDiffBackfillWorker } from './workers/inventory-retention.worker.js';
 import {
@@ -23,6 +24,7 @@ import {
   webhookCleanupQueue,
   chatCleanupQueue,
   problemDetectionQueue,
+  majorIncidentDetectionQueue,
   certExpiryMonitorQueue,
   inventoryRetentionQueue,
   inventoryDiffBackfillQueue,
@@ -43,6 +45,7 @@ const workers = [
   { name: 'push-notification', worker: pushNotificationWorker },
   { name: 'chat-cleanup', worker: chatCleanupWorker },
   { name: 'problem-detection', worker: problemDetectionWorker },
+  { name: 'major-incident-detection', worker: majorIncidentDetectionWorker },
   { name: 'cert-expiry-monitor', worker: certExpiryMonitorWorker },
   { name: 'inventory-retention', worker: inventoryRetentionWorker },
   { name: 'inventory-diff-backfill', worker: inventoryDiffBackfillWorker },
@@ -125,6 +128,16 @@ void problemDetectionQueue.add(
   {
     repeat: { pattern: '0 4 * * *' },
     jobId: 'problem-detection-repeatable',
+  },
+);
+
+// Schedule major-incident detection every minute (outage signals must surface fast)
+void majorIncidentDetectionQueue.add(
+  'detect-major-incidents',
+  {},
+  {
+    repeat: { pattern: '* * * * *' },
+    jobId: 'major-incident-detection-repeatable',
   },
 );
 
