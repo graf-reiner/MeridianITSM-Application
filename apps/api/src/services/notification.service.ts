@@ -362,6 +362,54 @@ export async function notifyTicketUpdated(
   }
 }
 
+/**
+ * Notify the assigned coordinator when an incident is promoted to a Major Incident.
+ * Covers: MAJOR_INCIDENT_DECLARED.
+ *
+ * V1 sends only to the coordinator. Future work will route through the
+ * notification-rules engine so tenants can configure additional recipients
+ * (e.g., admin distribution lists, war-room channels).
+ */
+export async function notifyMajorIncidentDeclared(
+  tenantId: string,
+  ticket: TicketForNotification,
+  coordinatorId: string,
+  actorId: string,
+): Promise<void> {
+  try {
+    if (coordinatorId === actorId) return;
+
+    const coordinator = await prisma.user.findFirst({
+      where: { id: coordinatorId, tenantId },
+      select: { email: true },
+    });
+
+    await notifyUser({
+      tenantId,
+      userId: coordinatorId,
+      type: 'MAJOR_INCIDENT_DECLARED',
+      title: `Major Incident Declared: TKT-${ticket.ticketNumber}`,
+      body: `${ticket.title} — you have been assigned as Coordinator.`,
+      resourceId: ticket.id,
+      resource: 'ticket',
+      emailData: coordinator
+        ? {
+            to: coordinator.email,
+            templateName: 'major-incident-declared',
+            variables: {
+              ticketNumber: String(ticket.ticketNumber),
+              ticketTitle: ticket.title,
+              ticketId: ticket.id,
+            },
+          }
+        : undefined,
+      pushData: { screen: 'ticket', entityId: ticket.id },
+    });
+  } catch (err) {
+    console.error('[notification.service] notifyMajorIncidentDeclared failed:', err);
+  }
+}
+
 // ─── Notification Query Functions ─────────────────────────────────────────────
 
 /**

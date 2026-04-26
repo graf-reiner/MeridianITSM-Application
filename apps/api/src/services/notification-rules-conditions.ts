@@ -59,6 +59,8 @@ export interface EventContext {
   };
   actorId?: string;
   newAssignedToId?: string;
+  /** Major Incident workflow — coordinator assigned during promotion. */
+  coordinatorId?: string;
   changedFields?: string[];
   slaPercentage?: number;
   slaPolicy?: string;

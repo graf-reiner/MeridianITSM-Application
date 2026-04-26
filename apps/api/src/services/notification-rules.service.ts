@@ -13,6 +13,7 @@ import {
   notifyTicketCommented,
   notifyTicketResolved,
   notifyTicketUpdated,
+  notifyMajorIncidentDeclared,
 } from './notification.service.js';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -131,6 +132,11 @@ async function fireLegacyNotification(
     case 'TICKET_UPDATED':
       if (context.ticket && context.changedFields && context.actorId) {
         await notifyTicketUpdated(tenantId, context.ticket as any, context.changedFields, context.actorId);
+      }
+      break;
+    case 'MAJOR_INCIDENT_DECLARED':
+      if (context.ticket && context.coordinatorId && context.actorId) {
+        await notifyMajorIncidentDeclared(tenantId, context.ticket as any, context.coordinatorId, context.actorId);
       }
       break;
     default:
