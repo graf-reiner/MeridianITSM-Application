@@ -111,7 +111,7 @@ export async function oauthRoutes(fastify: FastifyInstance): Promise<void> {
         const tokens = await exchangeCodeForTokens(provider, code, creds.clientId, creds.clientSecret, redirectUri);
 
         // ── Fetch user info ──
-        const userInfo = await fetchUserInfo(provider, tokens.access_token);
+        const userInfo = await fetchUserInfo(provider, tokens);
 
         if (!userInfo.email) {
           return sendHtml({ type: 'oauth-error', error: 'Could not retrieve email address from OAuth provider' });

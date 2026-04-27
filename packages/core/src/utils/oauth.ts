@@ -208,12 +208,37 @@ export async function refreshAccessToken(
 
 export async function fetchUserInfo(
   provider: 'google' | 'microsoft',
-  accessToken: string,
+  tokens: OAuthTokens,
 ): Promise<OAuthUserInfo> {
-  const config = OAUTH_PROVIDERS[provider];
+  // Microsoft: decode the OIDC id_token JWT — do NOT call Microsoft Graph.
+  //
+  // Why: Microsoft v2.0 access tokens are issued for ONE resource. Our
+  // requested scopes target Exchange Online (IMAP.AccessAsUser.All / SMTP.Send),
+  // so the access token's `aud` is Exchange Online — Graph rejects it with
+  // 401 "Invalid audience." The `openid email profile` scopes we also request
+  // cause Microsoft to return an id_token whose JWT payload contains the
+  // user's email/name claims, which is everything we need for account creation.
+  if (provider === 'microsoft') {
+    if (!tokens.id_token) {
+      throw new Error('Microsoft id_token missing from token response — confirm "openid email profile" scopes are configured');
+    }
+    const claims = decodeJwtPayload(tokens.id_token);
+    return {
+      email:
+        (claims.email as string) ||
+        (claims.preferred_username as string) ||
+        (claims.upn as string) ||
+        '',
+      name: (claims.name as string) || '',
+    };
+  }
 
+  // Google: hit the userinfo endpoint with the access token. Google's userinfo
+  // endpoint accepts any access token issued with `openid` scope — no audience
+  // mismatch like Microsoft Graph has.
+  const config = OAUTH_PROVIDERS[provider];
   const response = await fetch(config.userInfoUrl, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: { Authorization: `Bearer ${tokens.access_token}` },
   });
 
   if (!response.ok) {
@@ -222,19 +247,27 @@ export async function fetchUserInfo(
   }
 
   const data = (await response.json()) as Record<string, unknown>;
-
-  if (provider === 'microsoft') {
-    return {
-      email: (data.mail as string) || (data.userPrincipalName as string) || '',
-      name: (data.displayName as string) || '',
-    };
-  }
-
-  // Google
   return {
     email: (data.email as string) || '',
     name: (data.name as string) || '',
   };
+}
+
+// Decode the payload section of a JWT. We trust the token's signature here
+// because (a) we just received it directly from Microsoft over TLS in the
+// token-exchange POST, and (b) we only read it for display purposes
+// (account name + email shown in the EmailAccount row). We do NOT use the
+// claims for authentication decisions.
+function decodeJwtPayload(jwt: string): Record<string, unknown> {
+  const parts = jwt.split('.');
+  if (parts.length !== 3) {
+    throw new Error('Invalid JWT structure');
+  }
+  const payload = parts[1]!;
+  // base64url -> base64 -> utf-8
+  const padded = payload + '='.repeat((4 - (payload.length % 4)) % 4);
+  const json = Buffer.from(padded.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf-8');
+  return JSON.parse(json) as Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------
