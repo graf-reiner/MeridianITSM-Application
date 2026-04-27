@@ -6,7 +6,33 @@
 import { Queue } from 'bullmq';
 import crypto from 'node:crypto';
 import { prisma } from '@meridian/db';
+import { redis } from '../lib/redis.js';
 import { renderTemplate, type EventContext } from './notification-rules-conditions.js';
+
+// ─── Cross-system dedupe net ────────────────────────────────────────────────
+// Prevents the same (tenant, ticket, trigger, channel, recipient) from being
+// notified twice within DEDUPE_TTL_SECONDS — for any reason (overlapping
+// notification rule + workflow, dispatch retries, etc.).
+const DEDUPE_TTL_SECONDS = 60;
+
+async function alreadyFired(
+  tenantId: string,
+  trigger: string,
+  resourceId: string | undefined,
+  recipient: string,
+  channel: 'email' | 'in_app' | 'push',
+): Promise<boolean> {
+  if (!resourceId || !trigger) return false;
+  const key = `notify:dedup:${tenantId}:${resourceId}:${trigger}:${channel}:${recipient}`;
+  try {
+    const set = await redis.set(key, '1', 'EX', DEDUPE_TTL_SECONDS, 'NX');
+    return set === null; // null === key already existed → duplicate
+  } catch (err) {
+    // Redis unavailable — fail open so notifications still go out.
+    console.error('[notify] dedupe check failed (failing open):', err);
+    return false;
+  }
+}
 
 // ─── BullMQ Connection helper (matches notification.service.ts pattern) ──────
 function makeRedisConnection() {
@@ -163,19 +189,36 @@ async function executeInApp(
     ? renderTemplate(config.body as string, context)
     : undefined;
 
+  const trigger = (context.trigger as string | undefined) ?? '';
+  const resourceId = context.ticket?.id ?? context.change?.id;
+
+  // Filter out users already notified for this (tenant, resource, trigger, in_app)
+  const recipients: string[] = [];
+  for (const userId of userIds) {
+    if (await alreadyFired(tenantId, trigger, resourceId, userId, 'in_app')) {
+      console.log(`[notify] dedupe skip in_app -> ${userId} (${resourceId} / ${trigger})`);
+      continue;
+    }
+    recipients.push(userId);
+  }
+
+  if (recipients.length === 0) {
+    return { type: 'in_app', success: true, detail: 'All recipients deduped' };
+  }
+
   await prisma.notification.createMany({
-    data: userIds.map((userId) => ({
+    data: recipients.map((userId) => ({
       tenantId,
       userId,
       type: (config.notificationType as string) ?? 'GENERAL',
       title,
       body,
-      resourceId: context.ticket?.id ?? context.change?.id,
+      resourceId,
       resource: context.ticket ? 'ticket' : context.change ? 'change' : undefined,
     })),
   });
 
-  return { type: 'in_app', success: true, detail: `Notified ${userIds.length} user(s)` };
+  return { type: 'in_app', success: true, detail: `Notified ${recipients.length} user(s)` };
 }
 
 async function executeEmail(
@@ -196,7 +239,15 @@ async function executeEmail(
   const subject = renderTemplate(subjectRaw, context);
   const body = renderTemplate(bodyRaw, context);
 
+  const trigger = (context.trigger as string | undefined) ?? '';
+  const resourceId = context.ticket?.id ?? context.change?.id;
+
+  let enqueued = 0;
   for (const to of emails) {
+    if (await alreadyFired(tenantId, trigger, resourceId, to, 'email')) {
+      console.log(`[notify] dedupe skip email -> ${to} (${resourceId} / ${trigger})`);
+      continue;
+    }
     await emailNotificationQueue.add('send-email', {
       tenantId,
       to,
@@ -209,9 +260,10 @@ async function executeEmail(
         ticketId: context.ticket?.id ?? '',
       },
     });
+    enqueued += 1;
   }
 
-  return { type: 'email', success: true, detail: `Enqueued ${emails.length} email(s)` };
+  return { type: 'email', success: true, detail: `Enqueued ${enqueued} email(s)` };
 }
 
 async function executeSlack(
@@ -497,8 +549,14 @@ async function executePush(
 
   const entityId = context.ticket?.id ?? context.change?.id ?? 'unknown';
   const screen = context.ticket ? 'ticket' : context.change ? 'change' : 'home';
+  const trigger = (context.trigger as string | undefined) ?? '';
 
+  let enqueued = 0;
   for (const userId of userIds) {
+    if (await alreadyFired(tenantId, trigger, entityId, userId, 'push')) {
+      console.log(`[notify] dedupe skip push -> ${userId} (${entityId} / ${trigger})`);
+      continue;
+    }
     const jobId = `push:${userId}:${entityId}`;
     await pushNotificationQueue.add(
       'send-push',
@@ -516,9 +574,10 @@ async function executePush(
         removeOnComplete: { age: 60 },
       },
     );
+    enqueued += 1;
   }
 
-  return { type: 'push', success: true, detail: `Enqueued ${userIds.length} push notification(s)` };
+  return { type: 'push', success: true, detail: `Enqueued ${enqueued} push notification(s)` };
 }
 
 async function executeEscalate(

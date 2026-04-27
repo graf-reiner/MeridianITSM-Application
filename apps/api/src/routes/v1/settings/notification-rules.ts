@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { prisma } from '@meridian/db';
 import { requirePermission } from '../../../plugins/rbac.js';
 import { invalidateRulesCache } from '../../../services/notification-rules.service.js';
+import { seedDefaultNotificationRules } from '../../../services/seed-notification-rules.js';
 import {
   evaluateConditionGroups,
   type ConditionGroup,
@@ -87,50 +88,21 @@ export async function notificationRulesRoutes(app: FastifyInstance): Promise<voi
     return reply.send({ ok: true, updated: body.rules.length });
   });
 
-  // POST /generate-defaults - Create default rules (registered before /:id)
+  // POST /generate-defaults - Create (or restore) default rules (registered before /:id).
+  // Idempotent via skip-by-name, so this doubles as the "Restore Defaults" UI action.
   app.post(BASE + '/generate-defaults', { preHandler: [requirePermission('settings:update')] }, async (request, reply) => {
     const user = request.user as { tenantId: string; userId: string };
     const { tenantId } = user;
-    const defaults = [
-      { name: 'Notify assignee on ticket creation', trigger: 'TICKET_CREATED', conditionGroups: [] as unknown[],
-        actions: [{ type: 'in_app', recipients: ['assignee'], title: 'New ticket assigned: {{ticket.title}}' },
-          { type: 'email', recipients: ['assignee'], subject: 'New ticket: {{ticket.title}}', body: 'A new ticket has been assigned to you.' }], priority: 10 },
-      { name: 'Notify on ticket assignment', trigger: 'TICKET_ASSIGNED', conditionGroups: [] as unknown[],
-        actions: [{ type: 'in_app', recipients: ['assignee'], title: 'Ticket assigned to you: {{ticket.title}}' },
-          { type: 'email', recipients: ['assignee'], subject: 'Ticket assigned: {{ticket.title}}', body: 'A ticket has been assigned to you.' }], priority: 20 },
-      { name: 'Notify on ticket comment', trigger: 'TICKET_COMMENTED', conditionGroups: [] as unknown[],
-        actions: [{ type: 'in_app', recipients: ['assignee', 'requester'], title: 'New comment on: {{ticket.title}}' },
-          { type: 'email', recipients: ['assignee', 'requester'], subject: 'New comment: {{ticket.title}}', body: 'A new comment has been added to your ticket.' }], priority: 30 },
-      { name: 'Notify requester on ticket resolution', trigger: 'TICKET_RESOLVED', conditionGroups: [] as unknown[],
-        actions: [{ type: 'in_app', recipients: ['requester'], title: 'Ticket resolved: {{ticket.title}}' },
-          { type: 'email', recipients: ['requester'], subject: 'Ticket resolved: {{ticket.title}}', body: 'Your ticket has been resolved.' }], priority: 40 },
-      { name: 'Notify on ticket update', trigger: 'TICKET_UPDATED', conditionGroups: [] as unknown[],
-        actions: [{ type: 'in_app', recipients: ['assignee', 'requester'], title: 'Ticket updated: {{ticket.title}}' }], priority: 50 },
-      { name: 'SLA breach alert', trigger: 'SLA_BREACH', conditionGroups: [] as unknown[],
-        actions: [{ type: 'in_app', recipients: ['assignee', 'group_members'], title: 'SLA BREACHED: {{ticket.title}}' },
-          { type: 'email', recipients: ['assignee', 'group_members'], subject: 'SLA Breach: {{ticket.title}}', body: 'An SLA has been breached. Immediate action required.' }], priority: 5, stopAfterMatch: false },
-      { name: 'SLA warning alert', trigger: 'SLA_WARNING', conditionGroups: [] as unknown[],
-        actions: [{ type: 'in_app', recipients: ['assignee'], title: 'SLA Warning: {{ticket.title}}' }], priority: 6 },
-    ];
-    const existingRules = await prisma.notificationRule.findMany({ where: { tenantId }, select: { name: true } });
-    const existingNames = new Set(existingRules.map((r) => r.name));
-    const created: string[] = [];
-    const skipped: string[] = [];
-    for (const def of defaults) {
-      if (existingNames.has(def.name)) { skipped.push(def.name); continue; }
-      await prisma.notificationRule.create({
-        data: {
-          tenantId, name: def.name, trigger: def.trigger,
-          conditionGroups: def.conditionGroups as never, actions: def.actions as never,
-          priority: def.priority,
-          stopAfterMatch: (def as { stopAfterMatch?: boolean }).stopAfterMatch ?? false,
-          isActive: true, createdById: user.userId,
-        },
-      });
-      created.push(def.name);
-    }
+    const result = await prisma.$transaction((tx) =>
+      seedDefaultNotificationRules(tx, tenantId, user.userId),
+    );
     await invalidateRulesCache(tenantId);
-    return reply.code(201).send({ created: created.length, skipped: skipped.length, createdNames: created, skippedNames: skipped });
+    return reply.code(201).send({
+      created: result.created.length,
+      skipped: result.skipped.length,
+      createdNames: result.created,
+      skippedNames: result.skipped,
+    });
   });
 
   // GET /:id - Get single rule with recent logs

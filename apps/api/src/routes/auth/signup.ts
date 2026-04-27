@@ -2,6 +2,8 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '@meridian/db';
 import { seedCmdbReferenceData } from '@meridian/db/seeds/cmdb-reference';
+import { seedDefaultNotificationRules } from '../../services/seed-notification-rules.js';
+import { invalidateRulesCache } from '../../services/notification-rules.service.js';
 import { hashSync } from '@node-rs/bcrypt';
 import { AUTH_RATE_LIMIT } from '../../plugins/rate-limit.js';
 
@@ -214,11 +216,17 @@ export async function signupRoute(app: FastifyInstance): Promise<void> {
           });
         }
 
+        // 8. Seed default notification rules (active by default; user can edit/disable in Settings)
+        await seedDefaultNotificationRules(tx, tenant.id, user.id);
+
         return {
           tenant: { id: tenant.id, name: tenant.name, slug: tenant.slug },
           user: { id: user.id, email: user.email },
         };
       });
+
+      // Drop the rules cache so the dispatcher doesn't wait 60s before picking up the new rules
+      await invalidateRulesCache(result.tenant.id);
 
       app.log.info(`[signup] Tenant '${result.tenant.name}' provisioned via self-service. Admin: ${result.user.email}`);
 

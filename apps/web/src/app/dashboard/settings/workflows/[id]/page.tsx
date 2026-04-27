@@ -22,7 +22,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import dagre from '@dagrejs/dagre';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiContentSave, mdiCheckCircle, mdiRocketLaunch, mdiPlay, mdiMagnify, mdiAutoFix } from '@mdi/js';
+import { mdiArrowLeft, mdiContentSave, mdiCheckCircle, mdiRocketLaunch, mdiPlay, mdiMagnify, mdiAutoFix, mdiClose } from '@mdi/js';
 import { VariableInput, VariableTextarea } from '@/components/variable-picker';
 import type { VariableContextKey } from '@meridian/core/template';
 import Link from 'next/link';
@@ -289,6 +289,8 @@ export default function WorkflowBuilderPage() {
   const [simulating, setSimulating] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [validationResult, setValidationResult] = useState<{ valid: boolean; errors: Array<{ nodeId?: string; message: string }> } | null>(null);
+  const [overlappingDefaults, setOverlappingDefaults] = useState<Array<{ id: string; name: string; trigger: string }>>([]);
+  const [dismissedOverlap, setDismissedOverlap] = useState(false);
 
   // ── Form fields for condition_form_field node ──
   const [formFields, setFormFields] = useState<FormFieldInfo[]>([]);
@@ -455,9 +457,25 @@ export default function WorkflowBuilderPage() {
     await handleSave();
     const res = await fetch(`/api/v1/settings/workflows/${workflowId}/publish`, { method: 'POST', credentials: 'include' });
     if (res.ok) {
+      const data = await res.json() as { overlappingDefaults?: Array<{ id: string; name: string; trigger: string }> };
+      setOverlappingDefaults(data.overlappingDefaults ?? []);
+      setDismissedOverlap(false);
       void qc.invalidateQueries({ queryKey: ['workflow-builder', workflowId] });
     }
     setPublishing(false);
+  };
+
+  // Disable an overlapping default rule and remove it from the banner.
+  const handleDisableDefault = async (ruleId: string) => {
+    const res = await fetch(`/api/v1/settings/notification-rules/${ruleId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ isActive: false }),
+    });
+    if (res.ok) {
+      setOverlappingDefaults(prev => prev.filter(r => r.id !== ruleId));
+    }
   };
 
   // Auto-layout using dagre
@@ -553,6 +571,48 @@ export default function WorkflowBuilderPage() {
           </Link>
         </div>
       </div>
+
+      {/* Overlapping default notification rules — surfaced after publish */}
+      {overlappingDefaults.length > 0 && !dismissedOverlap && (
+        <div style={{ padding: '10px 16px', backgroundColor: '#fffbeb', borderBottom: '1px solid #fde68a', fontSize: 13, color: '#92400e' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                {overlappingDefaults.length === 1
+                  ? 'You have a default notification rule for this trigger.'
+                  : `You have ${overlappingDefaults.length} default notification rules for this trigger.`}
+                {' '}It may overlap with this workflow — disable it if this workflow should take over.
+              </div>
+              <ul style={{ margin: '4px 0 0 0', padding: 0, listStyle: 'none' }}>
+                {overlappingDefaults.map(rule => (
+                  <li key={rule.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0' }}>
+                    <span style={{ flex: 1 }}>{rule.name} ({rule.trigger})</span>
+                    <Link
+                      href={`/dashboard/settings/notification-rules/${rule.id}`}
+                      style={{ color: '#92400e', textDecoration: 'underline', fontSize: 12 }}
+                    >
+                      View
+                    </Link>
+                    <button
+                      onClick={() => void handleDisableDefault(rule.id)}
+                      style={{ padding: '3px 10px', backgroundColor: '#92400e', color: '#fff', border: 'none', borderRadius: 4, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}
+                    >
+                      Disable
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <button
+              onClick={() => setDismissedOverlap(true)}
+              aria-label="Dismiss"
+              style={{ padding: 4, background: 'transparent', border: 'none', color: '#92400e', cursor: 'pointer', flexShrink: 0 }}
+            >
+              <Icon path={mdiClose} size={0.7} color="currentColor" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Validation errors */}
       {validationResult && !validationResult.valid && (

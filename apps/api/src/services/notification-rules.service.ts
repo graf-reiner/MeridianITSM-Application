@@ -159,6 +159,9 @@ export async function dispatchNotificationEvent(
   trigger: string,
   eventContext: EventContext,
 ): Promise<void> {
+  // Make trigger available downstream (action executors use it as part of the dedupe key).
+  eventContext.trigger = trigger;
+
   // Dispatch matching workflows (new workflow engine — coexists with legacy rules)
   try {
     const { dispatchWorkflows } = await import('./workflow-engine/index.js');

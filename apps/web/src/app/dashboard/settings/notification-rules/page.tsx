@@ -387,7 +387,7 @@ export default function NotificationRulesPage() {
             }}
           >
             <Icon path={mdiCogSync} size={0.75} color="currentColor" />
-            {generatingDefaults ? 'Generating...' : 'Generate Defaults'}
+            {generatingDefaults ? 'Restoring...' : 'Restore Defaults'}
           </button>
           <button
             onClick={() => void handleExportYaml()}

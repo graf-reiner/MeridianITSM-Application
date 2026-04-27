@@ -328,7 +328,18 @@ export async function workflowRoutes(fastify: FastifyInstance): Promise<void> {
 
     await invalidateWorkflowCache(user.tenantId);
 
-    return reply.status(200).send({ published: true, version: currentVersion.version });
+    // Surface any active default NotificationRules with the same trigger so the
+    // editor can show a soft "you may want to disable this default" banner.
+    const overlappingDefaults = await prisma.notificationRule.findMany({
+      where: { tenantId: user.tenantId, trigger: workflow.trigger, isActive: true },
+      select: { id: true, name: true, trigger: true },
+    });
+
+    return reply.status(200).send({
+      published: true,
+      version: currentVersion.version,
+      overlappingDefaults,
+    });
   });
 
   // ─── POST /:id/validate — Validate graph ──────────────────────────────────
