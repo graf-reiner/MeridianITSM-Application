@@ -302,18 +302,32 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
       const status = await client.status('INBOX', { messages: true, unseen: true });
       console.log(`[email-inbound] Account ${account.id}: INBOX has ${status.messages} total, ${status.unseen} unseen`);
 
-      // Bound the fetch by date so we don't try to ingest a massive backlog when
-      // a customer connects a long-lived mailbox (the unseen count can be in the
-      // tens of thousands; a single FETCH that wide makes M365 IMAP return
-      // "Command failed"). On the first poll for a new account, treat "now"
-      // as the cutoff — we don't back-fill historical mail into tickets.
-      // Subsequent polls catch everything since the last successful run.
+      // Bound the fetch by date AND by per-cycle count, then process newest-first.
+      //
+      // Reasoning:
+      // - On a long-lived mailbox the unseen count can be 60k+. A single wide
+      //   FETCH on that range makes M365 IMAP return "Command failed".
+      // - First poll on a new account: treat "now" as the cutoff so we don't
+      //   back-fill historical mail into tickets.
+      // - Newest-first: ensures recent messages (tickets, replies, connector-test
+      //   roundtrips) get processed even if there's an old backlog.
+      // - Per-cycle cap: leftover backlog drains across subsequent polls.
+      const MAX_MESSAGES_PER_CYCLE = 100;
       const sinceDate = account.lastPolledAt ?? new Date();
-      const messages = client.fetch(
-        { seen: false, since: sinceDate },
-        { envelope: true, source: true },
-        { uid: true },
-      );
+      const searchResult = await client.search({ seen: false, since: sinceDate }, { uid: true });
+      // imapflow returns `number[]` on success or `false` on no-match / error.
+      const matchingUids: number[] = Array.isArray(searchResult) ? searchResult : [];
+      const uidsNewestFirst = matchingUids
+        .sort((a, b) => b - a) // descending — IMAP UIDs are monotonically increasing per mailbox
+        .slice(0, MAX_MESSAGES_PER_CYCLE);
+
+      if (matchingUids.length > MAX_MESSAGES_PER_CYCLE) {
+        console.log(`[email-inbound] Account ${account.id}: ${matchingUids.length} matching unseen messages, processing newest ${MAX_MESSAGES_PER_CYCLE} this cycle`);
+      }
+
+      const messages = uidsNewestFirst.length === 0
+        ? (async function* (): AsyncGenerator<never, void, unknown> { /* empty */ })()
+        : client.fetch(uidsNewestFirst, { envelope: true, source: true }, { uid: true });
 
       for await (const message of messages) {
         try {
