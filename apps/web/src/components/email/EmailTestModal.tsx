@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Icon from '@mdi/react';
 import { mdiClose, mdiCheckCircle, mdiCloseCircle, mdiCircleSmall, mdiMinusCircle, mdiPlay } from '@mdi/js';
 
@@ -40,6 +40,42 @@ const PHASE_LABELS: Record<keyof TestState['phases'], string> = {
   imapAuth: 'IMAP authentication',
   roundtrip: 'Round-trip received',
 };
+
+interface ProviderHint {
+  title: string;
+  body: ReactNode;
+}
+
+// Match known provider error patterns and surface a one-line summary + remedy.
+// Add new patterns here as they show up in the field.
+function detectProviderHint(detail: string | undefined): ProviderHint | null {
+  if (!detail) return null;
+
+  // Microsoft 365 — SMTP AUTH disabled at tenant or per-mailbox level.
+  // The "5.7.139" code is the load-bearing identifier — Microsoft uses it
+  // exclusively for this case across all their SMTP frontends.
+  if (/5\.7\.139/.test(detail) || /SmtpClientAuthentication is disabled/i.test(detail)) {
+    return {
+      title: 'Microsoft 365 has SMTP AUTH disabled for this mailbox',
+      body: (
+        <>
+          <p style={{ margin: '4px 0' }}>
+            Microsoft disables Authenticated SMTP by default on every M365 tenant. Your OAuth credentials are correct — Microsoft is rejecting the SMTP login itself, before token validation. Enable it per-mailbox via PowerShell (the toggle was removed from the admin center web UI):
+          </p>
+          <pre style={{ background: '#0f172a', color: '#e5e7eb', padding: '8px 10px', borderRadius: 4, fontSize: 11, overflowX: 'auto', margin: '6px 0' }}>
+{`Connect-ExchangeOnline
+Set-CASMailbox -Identity <user@domain.com> -SmtpClientAuthenticationDisabled $false`}
+          </pre>
+          <p style={{ margin: '4px 0', fontSize: 11 }}>
+            Wait ~5 min for Microsoft&apos;s SMTP frontends to pick up the policy, then re-run this test. Microsoft&apos;s own docs: <a href="https://aka.ms/smtp_auth_disabled" target="_blank" rel="noopener noreferrer" style={{ color: '#92400e', textDecoration: 'underline' }}>aka.ms/smtp_auth_disabled</a>
+          </p>
+        </>
+      ),
+    };
+  }
+
+  return null;
+}
 
 function PhaseIcon({ status }: { status: PhaseStatus }) {
   if (status === 'OK') return <Icon path={mdiCheckCircle} size={0.85} color="#16a34a" />;
@@ -163,19 +199,30 @@ export default function EmailTestModal({ account, defaultTo, onClose }: Props) {
                 Started {new Date(state.startedAt).toLocaleTimeString()} &middot; Test ID <code>{state.testId}</code>
               </div>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
-                {phaseEntries.map(({ key, phase }) => (
-                  <li key={key} style={{ display: 'flex', gap: 12, padding: '10px 14px', borderBottom: '1px solid #f1f5f9', alignItems: 'flex-start' }}>
-                    <div style={{ paddingTop: 1 }}><PhaseIcon status={phase.status} /></div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 500, color: '#0f172a' }}>{PHASE_LABELS[key]}</div>
-                      {phase.detail && <div style={{ fontSize: 12, color: phase.status === 'FAILED' ? '#991b1b' : '#64748b', marginTop: 2, wordBreak: 'break-word' }}>{phase.detail}</div>}
-                      {phase.messageId && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2, fontFamily: 'monospace' }}>Message-ID: {phase.messageId}</div>}
-                    </div>
-                    {typeof phase.durationMs === 'number' && (
-                      <div style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap' }}>{phase.durationMs} ms</div>
-                    )}
-                  </li>
-                ))}
+                {phaseEntries.map(({ key, phase }) => {
+                  const hint = phase.status === 'FAILED' ? detectProviderHint(phase.detail) : null;
+                  return (
+                    <li key={key} style={{ display: 'flex', flexDirection: 'column', borderBottom: '1px solid #f1f5f9' }}>
+                      <div style={{ display: 'flex', gap: 12, padding: '10px 14px', alignItems: 'flex-start' }}>
+                        <div style={{ paddingTop: 1 }}><PhaseIcon status={phase.status} /></div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 500, color: '#0f172a' }}>{PHASE_LABELS[key]}</div>
+                          {phase.detail && <div style={{ fontSize: 12, color: phase.status === 'FAILED' ? '#991b1b' : '#64748b', marginTop: 2, wordBreak: 'break-word' }}>{phase.detail}</div>}
+                          {phase.messageId && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2, fontFamily: 'monospace' }}>Message-ID: {phase.messageId}</div>}
+                        </div>
+                        {typeof phase.durationMs === 'number' && (
+                          <div style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap' }}>{phase.durationMs} ms</div>
+                        )}
+                      </div>
+                      {hint && (
+                        <div style={{ margin: '0 14px 12px 40px', padding: '10px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, color: '#92400e', fontSize: 12, lineHeight: 1.6 }}>
+                          <div style={{ fontWeight: 600, marginBottom: 4 }}>⚠ {hint.title}</div>
+                          {hint.body}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
 
               <div style={{ marginTop: 14, padding: '10px 12px', background: overallBg, color: overallFg, borderRadius: 6, fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
