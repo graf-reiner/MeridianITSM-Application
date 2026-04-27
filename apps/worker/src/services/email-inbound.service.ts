@@ -10,6 +10,8 @@ import { randomUUID } from 'node:crypto';
 import { prisma, PrismaClient } from '@meridian/db';
 import { decrypt, encrypt, uploadFile, getFreshAccessToken, getOAuthCredentials } from '@meridian/core';
 import { Redis } from 'ioredis';
+import { logEmailActivity } from './email-activity.service.js';
+import { markTestReceived, CONNECTOR_TEST_SUBJECT_REGEX } from './connector-test.service.js';
 
 // Derive EmailAccount type from PrismaClient to avoid direct @prisma/client import
 type EmailAccount = Awaited<ReturnType<PrismaClient['emailAccount']['findUniqueOrThrow']>>;
@@ -276,6 +278,15 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
 
   let newTickets = 0;
   let comments = 0;
+  let testsReceived = 0;
+
+  // Activity-log the start of the cycle so the live tail surfaces the poll.
+  await logEmailActivity({
+    tenantId: account.tenantId,
+    emailAccountId: account.id,
+    direction: 'INBOUND',
+    status: 'POLL_STARTED',
+  });
 
   try {
     await client.connect();
@@ -297,6 +308,29 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
 
           const parsed = await simpleParser(message.source);
           const messageId = parsed.messageId;
+
+          // Connector-test correlation hook — runs BEFORE dedup so a test
+          // message never becomes a ticket. The api dropped this token in the
+          // subject when starting the test; we flip the test's roundtrip phase
+          // to OK and skip the rest of the per-message handling.
+          const tokenMatch = parsed.subject?.match(CONNECTOR_TEST_SUBJECT_REGEX);
+          if (tokenMatch && tokenMatch[1]) {
+            const token = tokenMatch[1];
+            await markTestReceived(account.tenantId, token, parsed);
+            await logEmailActivity({
+              tenantId: account.tenantId,
+              emailAccountId: account.id,
+              direction: 'INBOUND',
+              status: 'RECEIVED',
+              subject: parsed.subject ?? undefined,
+              fromAddress: parsed.from?.value?.[0]?.address ?? undefined,
+              messageId: messageId ?? undefined,
+              rawMeta: { connectorTest: true, token },
+            });
+            testsReceived++;
+            await client.messageFlagsAdd({ uid: message.uid }, ['\\Seen'], { uid: true });
+            continue;
+          }
 
           if (!messageId) {
             console.warn(`[email-inbound] No Message-ID in account ${account.id}, skipping`);
@@ -326,6 +360,17 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
           if (existingTicket) {
             await addEmailComment(account.tenantId, existingTicket.id, textContent);
             comments++;
+            await logEmailActivity({
+              tenantId: account.tenantId,
+              emailAccountId: account.id,
+              direction: 'INBOUND',
+              status: 'RECEIVED',
+              subject: parsed.subject ?? undefined,
+              fromAddress: parsed.from?.value?.[0]?.address ?? undefined,
+              messageId: messageId,
+              ticketId: existingTicket.id,
+              rawMeta: { kind: 'comment-on-existing' },
+            });
           } else {
             const fromEmail = parsed.from?.value?.[0]?.address;
             const requestedById = await lookupUserByEmail(account.tenantId, fromEmail);
@@ -339,6 +384,17 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
             });
 
             newTickets++;
+            await logEmailActivity({
+              tenantId: account.tenantId,
+              emailAccountId: account.id,
+              direction: 'INBOUND',
+              status: 'RECEIVED',
+              subject: parsed.subject ?? undefined,
+              fromAddress: fromEmail ?? undefined,
+              messageId: messageId,
+              ticketId: ticket.id,
+              rawMeta: { kind: 'new-ticket' },
+            });
 
             await prisma.ticket.update({
               where: { id: ticket.id },
@@ -408,15 +464,32 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
 
     await client.logout();
   } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err);
     console.error(
-      `[email-inbound] Failed to poll mailbox for account ${account.id}: ${err instanceof Error ? err.message : String(err)}`,
+      `[email-inbound] Failed to poll mailbox for account ${account.id}: ${errMsg}`,
     );
+    await logEmailActivity({
+      tenantId: account.tenantId,
+      emailAccountId: account.id,
+      direction: 'INBOUND',
+      status: 'POLL_FAILED',
+      errorMessage: errMsg,
+      rawMeta: { newTickets, comments, testsReceived },
+    });
     throw err;
   }
 
   await prisma.emailAccount.update({
     where: { id: account.id },
     data: { lastPolledAt: new Date() },
+  });
+
+  await logEmailActivity({
+    tenantId: account.tenantId,
+    emailAccountId: account.id,
+    direction: 'INBOUND',
+    status: 'POLL_COMPLETE',
+    rawMeta: { newTickets, comments, testsReceived },
   });
 
   return { newTickets, comments };

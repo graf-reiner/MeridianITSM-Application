@@ -15,6 +15,9 @@ import { problemDetectionWorker } from './workers/problem-detection.js';
 import { majorIncidentDetectionWorker } from './workers/major-incident-detection.js';
 import { certExpiryMonitorWorker } from './workers/cert-expiry-monitor.js';
 import { inventoryRetentionWorker, inventoryDiffBackfillWorker } from './workers/inventory-retention.worker.js';
+import { emailActivityCleanupWorker, EMAIL_ACTIVITY_CLEANUP_QUEUE_NAME } from './workers/email-activity-cleanup.js';
+import { Queue } from 'bullmq';
+import { bullmqConnection } from './queues/connection.js';
 import {
   usageSnapshotQueue,
   trialExpiryQueue,
@@ -49,7 +52,10 @@ const workers = [
   { name: 'cert-expiry-monitor', worker: certExpiryMonitorWorker },
   { name: 'inventory-retention', worker: inventoryRetentionWorker },
   { name: 'inventory-diff-backfill', worker: inventoryDiffBackfillWorker },
+  { name: 'email-activity-cleanup', worker: emailActivityCleanupWorker },
 ];
+
+const emailActivityCleanupQueue = new Queue(EMAIL_ACTIVITY_CLEANUP_QUEUE_NAME, { connection: bullmqConnection });
 
 // Schedule SLA breach check every minute
 void slaMonitorQueue.add(
@@ -148,6 +154,16 @@ void certExpiryMonitorQueue.add(
   {
     repeat: { pattern: '0 7 * * *' },
     jobId: 'cert-expiry-monitor-repeatable',
+  },
+);
+
+// Schedule EmailActivityLog retention sweep daily at 3:45 AM UTC
+void emailActivityCleanupQueue.add(
+  'cleanup',
+  {},
+  {
+    repeat: { pattern: '45 3 * * *' },
+    jobId: 'email-activity-cleanup-repeatable',
   },
 );
 

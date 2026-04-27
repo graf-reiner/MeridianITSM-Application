@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiEmail, mdiPlus, mdiPencil, mdiTrashCan, mdiCheckCircle, mdiCloseCircle, mdiHistory } from '@mdi/js';
+import { mdiArrowLeft, mdiEmail, mdiPlus, mdiPencil, mdiTrashCan, mdiCheckCircle, mdiCloseCircle, mdiHistory, mdiPlay, mdiFormatListBulleted } from '@mdi/js';
+import EmailTestModal from '@/components/email/EmailTestModal';
+import EmailActivityLogModal from '@/components/email/EmailActivityLogModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -743,6 +745,8 @@ export default function EmailSettingsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showProviderSelect, setShowProviderSelect] = useState(false);
   const [postConnectAccount, setPostConnectAccount] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [testAccount, setTestAccount] = useState<{ id: string; emailAddress: string } | null>(null);
+  const [activityAccount, setActivityAccount] = useState<{ id: string; emailAddress: string } | null>(null);
 
   const { data, isLoading } = useQuery<EmailAccount[]>({
     queryKey: ['settings-email'],
@@ -923,7 +927,13 @@ export default function EmailSettingsPage() {
                     {acc.lastPolledAt ? new Date(acc.lastPolledAt).toLocaleString() : 'Never'}
                   </td>
                   <td style={{ padding: '10px 14px' }}>
-                    <div style={{ display: 'flex', gap: 6 }}>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <button onClick={() => setTestAccount({ id: acc.id, emailAddress: acc.emailAddress })} title="Run end-to-end test" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: '#4338ca' }}>
+                        <Icon path={mdiPlay} size={0.65} color="currentColor" />Test
+                      </button>
+                      <button onClick={() => setActivityAccount({ id: acc.id, emailAddress: acc.emailAddress })} title="View live activity log (last 48h)" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
+                        <Icon path={mdiFormatListBulleted} size={0.65} color="currentColor" />Activity
+                      </button>
                       <button onClick={() => { setEditAccount(acc); setShowModal(true); }} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
                         <Icon path={mdiPencil} size={0.65} color="currentColor" />Edit
                       </button>
@@ -976,6 +986,14 @@ export default function EmailSettingsPage() {
           onClose={() => setPostConnectAccount(null)}
           onSaved={() => void qc.invalidateQueries({ queryKey: ['settings-email'] })}
         />
+      )}
+
+      {testAccount && (
+        <EmailTestModal account={testAccount} onClose={() => setTestAccount(null)} />
+      )}
+
+      {activityAccount && (
+        <EmailActivityLogModal account={activityAccount} onClose={() => setActivityAccount(null)} />
       )}
     </div>
   );

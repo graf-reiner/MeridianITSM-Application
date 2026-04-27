@@ -4,6 +4,7 @@ import { prisma } from '@meridian/db';
 import { decrypt, encrypt, getFreshAccessToken, getOAuthCredentials, renderTemplate as renderSharedTemplate } from '@meridian/core';
 import { bullmqConnection } from '../queues/connection.js';
 import { assertTenantId, QUEUE_NAMES } from '../queues/definitions.js';
+import { logEmailActivity } from '../services/email-activity.service.js';
 
 // ─── Template Rendering (worker-local, mirrors email.service.ts) ──────────────
 
@@ -214,40 +215,36 @@ export const emailNotificationWorker = new Worker(
       });
       messageId = info.messageId;
 
-      // Log successful send to email activity
-      await prisma.emailActivityLog.create({
-        data: {
-          tenantId,
-          emailAccountId: account.id,
-          direction: 'OUTBOUND',
-          status: 'SENT',
-          subject,
-          fromAddress: account.emailAddress,
-          toAddresses: [to],
-          messageId: messageId ?? null,
-          ticketId: variables.ticketId || null,
-          attemptNumber: 1,
-        },
-      }).catch(() => { /* activity logging is non-critical */ });
+      // Log successful send to email activity (publishes to live-tail SSE)
+      await logEmailActivity({
+        tenantId,
+        emailAccountId: account.id,
+        direction: 'OUTBOUND',
+        status: 'SENT',
+        subject,
+        fromAddress: account.emailAddress,
+        toAddresses: [to],
+        messageId: messageId ?? undefined,
+        ticketId: variables.ticketId || undefined,
+        attemptNumber: 1,
+      });
 
       console.log(`[email-notification] Sent ${templateName} to ${to} for tenant ${tenantId} (${messageId})`);
     } catch (sendErr) {
-      // Log failed send to email activity
+      // Log failed send to email activity (publishes to live-tail SSE)
       const errMsg = sendErr instanceof Error ? sendErr.message : String(sendErr);
-      await prisma.emailActivityLog.create({
-        data: {
-          tenantId,
-          emailAccountId: account.id,
-          direction: 'OUTBOUND',
-          status: 'FAILED',
-          subject,
-          fromAddress: account.emailAddress,
-          toAddresses: [to],
-          ticketId: variables.ticketId || null,
-          attemptNumber: 1,
-          errorMessage: errMsg,
-        },
-      }).catch(() => { /* activity logging is non-critical */ });
+      await logEmailActivity({
+        tenantId,
+        emailAccountId: account.id,
+        direction: 'OUTBOUND',
+        status: 'FAILED',
+        subject,
+        fromAddress: account.emailAddress,
+        toAddresses: [to],
+        ticketId: variables.ticketId || undefined,
+        attemptNumber: 1,
+        errorMessage: errMsg,
+      });
 
       throw sendErr; // Re-throw so BullMQ marks the job as failed
     } finally {

@@ -4,6 +4,8 @@ import { encrypt, decrypt, getFreshAccessToken, getOAuthCredentials } from '@mer
 import { requirePermission } from '../../../plugins/rbac.js';
 import { testSmtpConnection, testImapConnection } from '../../../services/email.service.js';
 import { oauthRoutes } from './oauth.js';
+import { testRoundtripRoutes } from './test-roundtrip.js';
+import { emailActivityRoutes } from './activity.js';
 
 /**
  * Email Account Management Routes (EMAL-01 to EMAL-06)
@@ -480,4 +482,7 @@ export async function emailAccountRoutes(fastify: FastifyInstance): Promise<void
 
   // Register OAuth sub-routes
   await oauthRoutes(fastify);
+  // Register end-to-end test + activity log sub-routes
+  await testRoundtripRoutes(fastify);
+  await emailActivityRoutes(fastify);
 }

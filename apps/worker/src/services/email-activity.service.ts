@@ -1,5 +1,10 @@
+// ─── Email Activity Logging (worker-side) ───────────────────────────────────
+// Writes EmailActivityLog rows AND publishes them to the tenant+account-scoped
+// Redis pub/sub channel that the api's SSE endpoint forwards to live-tail
+// viewers. Mirrors apps/api/src/services/email-activity.service.ts; keep in sync.
+
 import { prisma } from '@meridian/db';
-import { redis } from '../lib/redis.js';
+import { redisConnection } from '../queues/connection.js';
 
 interface LogEntry {
   tenantId: string;
@@ -17,29 +22,11 @@ interface LogEntry {
   rawMeta?: Record<string, unknown>;
 }
 
-export interface EmailActivityStreamEvent {
-  id: string;
-  tenantId: string;
-  emailAccountId: string;
-  direction: string;
-  status: string;
-  subject: string | null;
-  fromAddress: string | null;
-  toAddresses: string[];
-  messageId: string | null;
-  ticketId: string | null;
-  attemptNumber: number;
-  errorCode: string | null;
-  errorMessage: string | null;
-  rawMeta: unknown;
-  occurredAt: string;
-}
-
-export function channelFor(tenantId: string, emailAccountId: string): string {
+function channelFor(tenantId: string, emailAccountId: string): string {
   return `email-activity:${tenantId}:${emailAccountId}`;
 }
 
-export function serializeForStream(row: {
+function serializeForStream(row: {
   id: string;
   tenantId: string;
   emailAccountId: string;
@@ -55,7 +42,7 @@ export function serializeForStream(row: {
   errorMessage: string | null;
   rawMeta: unknown;
   occurredAt: Date;
-}): EmailActivityStreamEvent {
+}) {
   return {
     id: row.id,
     tenantId: row.tenantId,
@@ -94,9 +81,8 @@ export async function logEmailActivity(entry: LogEntry): Promise<void> {
         rawMeta: entry.rawMeta as never,
       },
     });
-    // Publish to the live-tail SSE channel — never block the caller on a pub/sub error
     try {
-      await redis.publish(channelFor(row.tenantId, row.emailAccountId), JSON.stringify(serializeForStream(row)));
+      await redisConnection.publish(channelFor(row.tenantId, row.emailAccountId), JSON.stringify(serializeForStream(row)));
     } catch (pubErr) {
       console.error(`[activity-log] pub/sub publish failed (non-critical): ${pubErr instanceof Error ? pubErr.message : String(pubErr)}`);
     }

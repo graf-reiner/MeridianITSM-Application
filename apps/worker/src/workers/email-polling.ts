@@ -12,6 +12,32 @@ import { pollMailbox } from '../services/email-inbound.service.js';
 export const emailPollingWorker = new Worker(
   QUEUE_NAMES.EMAIL_POLLING,
   async (job) => {
+    // ── Ad-hoc single-account poll (job.name === 'poll-once') ────────────────
+    // The api enqueues this when a connector test starts so the test sees its
+    // own message arrive without waiting for the next 5-minute cycle.
+    if (job.name === 'poll-once') {
+      const data = job.data as { tenantId?: string; accountId?: string } | undefined;
+      if (!data?.accountId || !data?.tenantId) {
+        console.warn(`[email-polling] poll-once job ${job.id} missing tenantId/accountId, skipping`);
+        return;
+      }
+      const account = await prisma.emailAccount.findFirst({
+        where: { id: data.accountId, tenantId: data.tenantId, isActive: true },
+      });
+      if (!account) {
+        console.warn(`[email-polling] poll-once: account ${data.accountId} not found / inactive for tenant ${data.tenantId}`);
+        return;
+      }
+      try {
+        const { newTickets, comments } = await pollMailbox(account);
+        console.log(`[email-polling] poll-once for ${account.id}: ${newTickets} new tickets, ${comments} comments`);
+      } catch (err) {
+        console.error(`[email-polling] poll-once failed for ${account.id}: ${err instanceof Error ? err.message : String(err)}`);
+      }
+      return;
+    }
+
+    // ── Scheduled all-accounts cycle (default) ───────────────────────────────
     console.log(`[email-polling] Starting poll run (job ${job.id})`);
 
     const accounts = await prisma.emailAccount.findMany({
@@ -44,7 +70,7 @@ export const emailPollingWorker = new Worker(
   },
   {
     connection: bullmqConnection,
-    concurrency: 1, // Cross-tenant sentinel — one run at a time
+    concurrency: 2, // Allow ad-hoc poll-once to run alongside the scheduled cycle
   },
 );
 
