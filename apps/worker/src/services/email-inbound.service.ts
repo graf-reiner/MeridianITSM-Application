@@ -268,10 +268,15 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
     imapAuth = { user: account.imapUser, pass: decryptedPassword };
   }
 
+  // IMAP on port 993 is implicit TLS (NOT STARTTLS like SMTP/587). Honor the
+  // per-account imapSecure flag — both Google and Microsoft default it to true
+  // when their OAuth accounts are created. Forcing secure:false here for OAuth
+  // (the prior behavior) caused imapflow to send plain-text on a TLS port and
+  // time out waiting for an unencrypted greeting.
   const client = new ImapFlow({
     host: account.imapHost,
     port: account.imapPort ?? 993,
-    secure: (authProvider === 'GOOGLE' || authProvider === 'MICROSOFT') ? false : account.imapSecure,
+    secure: account.imapSecure,
     auth: imapAuth,
     logger: false,
   });
