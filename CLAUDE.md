@@ -51,7 +51,7 @@ docker-compose up    # PostgreSQL:5432, Redis:6379, MinIO:9001, MailHog:8025
 - When modifying existing code, verify that tenant scoping is preserved. Never remove or bypass `tenantId` filters.
 - Background workers that process data across tenants must iterate per-tenant, never mix tenant data.
 - File storage paths must include `tenantId` (e.g., `{tenantId}/tickets/{ticketId}/filename`).
-- The only exceptions are: the Owner Admin app (which manages tenants globally), the `OwnerUser`/`OwnerSession`/`OwnerNote`/`OwnerSmtpConfig` models (which are global), and `SubscriptionPlan` (shared across tenants).
+- The only exceptions are: the Owner Admin app (which manages tenants globally), the `OwnerUser`/`OwnerSession`/`OwnerNote`/`OwnerSmtpConfig`/`OwnerOAuthIntegration` models (which are global), and `SubscriptionPlan` (shared across tenants).
 
 **Violating tenant isolation is a critical security bug. Always verify tenant scoping in every code change.**
 

@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '@meridian/db';
-import { encrypt, decrypt, getFreshAccessToken } from '@meridian/core';
+import { encrypt, decrypt, getFreshAccessToken, getOAuthCredentials } from '@meridian/core';
 import { requirePermission } from '../../../plugins/rbac.js';
 import { testSmtpConnection, testImapConnection } from '../../../services/email.service.js';
 import { oauthRoutes } from './oauth.js';
@@ -249,16 +249,18 @@ export async function emailAccountRoutes(fastify: FastifyInstance): Promise<void
         // OAuth account — use xoauth2 auth
         if (account.authProvider !== 'MANUAL' && account.oauthAccessTokenEnc && account.oauthRefreshTokenEnc && account.oauthTokenExpiresAt) {
           const provider = account.authProvider.toLowerCase() as 'google' | 'microsoft';
-          const clientId = provider === 'google' ? process.env.GOOGLE_CLIENT_ID! : process.env.MICROSOFT_CLIENT_ID!;
-          const clientSecret = provider === 'google' ? process.env.GOOGLE_CLIENT_SECRET! : process.env.MICROSOFT_CLIENT_SECRET!;
+          const creds = await getOAuthCredentials(prisma, provider);
+          if (!creds) {
+            return reply.status(500).send({ error: `OAuth credentials not configured for ${provider}` });
+          }
 
           const tokenResult = await getFreshAccessToken(
             provider,
             account.oauthAccessTokenEnc,
             account.oauthRefreshTokenEnc,
             account.oauthTokenExpiresAt,
-            clientId,
-            clientSecret,
+            creds.clientId,
+            creds.clientSecret,
           );
 
           // Persist refreshed token if needed
@@ -374,16 +376,18 @@ export async function emailAccountRoutes(fastify: FastifyInstance): Promise<void
         // OAuth account — use xoauth2 auth
         if (account.authProvider !== 'MANUAL' && account.oauthAccessTokenEnc && account.oauthRefreshTokenEnc && account.oauthTokenExpiresAt) {
           const provider = account.authProvider.toLowerCase() as 'google' | 'microsoft';
-          const clientId = provider === 'google' ? process.env.GOOGLE_CLIENT_ID! : process.env.MICROSOFT_CLIENT_ID!;
-          const clientSecret = provider === 'google' ? process.env.GOOGLE_CLIENT_SECRET! : process.env.MICROSOFT_CLIENT_SECRET!;
+          const creds = await getOAuthCredentials(prisma, provider);
+          if (!creds) {
+            return reply.status(500).send({ error: `OAuth credentials not configured for ${provider}` });
+          }
 
           const tokenResult = await getFreshAccessToken(
             provider,
             account.oauthAccessTokenEnc,
             account.oauthRefreshTokenEnc,
             account.oauthTokenExpiresAt,
-            clientId,
-            clientSecret,
+            creds.clientId,
+            creds.clientSecret,
           );
 
           // Persist refreshed token if needed

@@ -3052,6 +3052,31 @@ model OwnerSmtpConfig {
   @@map("owner_smtp_config")
 }
 
+// Model 50c: OwnerOAuthIntegration (GLOBAL)
+// One row per provider — holds the platform-wide OAuth app registration that
+// every tenant uses when connecting their Microsoft 365 / Google mailbox.
+// Configured via the Owner Admin "Integrations" wizard. The API OAuth route
+// reads this DB row first and falls back to env vars (MICROSOFT_CLIENT_ID etc.)
+// for backward compatibility with env-only deployments.
+enum OwnerOAuthProvider {
+  MICROSOFT
+  GOOGLE
+}
+
+model OwnerOAuthIntegration {
+  id              String              @id @default(uuid()) @db.Uuid
+  provider        OwnerOAuthProvider  @unique
+  clientId        String
+  clientSecretEnc String                                  // encrypted via @meridian/core encrypt()
+  secretExpiresAt DateTime?
+  notes           String?
+  isEnabled       Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@map("owner_oauth_integrations")
+}
+
 // ─── Supporting ───────────────────────────────────────────────────────────────
 
 // Model 51: Vendor

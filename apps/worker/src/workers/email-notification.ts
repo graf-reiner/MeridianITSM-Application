@@ -1,7 +1,7 @@
 import { Worker } from 'bullmq';
 import nodemailer from 'nodemailer';
 import { prisma } from '@meridian/db';
-import { decrypt, encrypt, getFreshAccessToken, renderTemplate as renderSharedTemplate } from '@meridian/core';
+import { decrypt, encrypt, getFreshAccessToken, getOAuthCredentials, renderTemplate as renderSharedTemplate } from '@meridian/core';
 import { bullmqConnection } from '../queues/connection.js';
 import { assertTenantId, QUEUE_NAMES } from '../queues/definitions.js';
 
@@ -144,27 +144,25 @@ export const emailNotificationWorker = new Worker(
         return;
       }
 
-      const isGoogle = authProvider === 'GOOGLE';
-      const clientId = isGoogle ? process.env.GOOGLE_CLIENT_ID : process.env.MICROSOFT_CLIENT_ID;
-      const clientSecret = isGoogle ? process.env.GOOGLE_CLIENT_SECRET : process.env.MICROSOFT_CLIENT_SECRET;
+      const providerLower = authProvider.toLowerCase() as 'google' | 'microsoft';
 
-      if (!clientId || !clientSecret) {
-        console.warn(`[email-notification] Missing ${authProvider} OAuth client credentials in env, skipping`);
+      // Resolve OAuth credentials — DB first (Owner Admin Integrations wizard), env fallback
+      const creds = await getOAuthCredentials(prisma, providerLower);
+      if (!creds) {
+        console.warn(`[email-notification] Missing ${authProvider} OAuth client credentials (DB + env both empty), skipping`);
         return;
       }
 
       const encAccess = (account as any).oauthAccessTokenEnc as string | null;
       const expiresAt = (account as any).oauthTokenExpiresAt as Date | null;
 
-      const providerLower = authProvider.toLowerCase() as 'google' | 'microsoft';
-
       const result = await getFreshAccessToken(
         providerLower,
         encAccess ?? '',
         encRefresh,
         expiresAt ?? new Date(0),
-        clientId,
-        clientSecret,
+        creds.clientId,
+        creds.clientSecret,
       );
 
       if (result.refreshed) {

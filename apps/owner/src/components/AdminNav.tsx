@@ -10,6 +10,7 @@ const navItems = [
   { href: '/plans', label: 'Plans', icon: '★' },
   { href: '/agent-updates', label: 'Agent Updates', icon: '⬇' },
   { href: '/system', label: 'System', icon: '⚙' },
+  { href: '/integrations', label: 'Integrations', icon: '⚡' },
   { href: '/audit', label: 'Audit Log', icon: '≡' },
   { href: '/settings', label: 'Settings', icon: '👤' },
 ];

@@ -8,7 +8,7 @@ import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
 import { randomUUID } from 'node:crypto';
 import { prisma, PrismaClient } from '@meridian/db';
-import { decrypt, encrypt, uploadFile, getFreshAccessToken } from '@meridian/core';
+import { decrypt, encrypt, uploadFile, getFreshAccessToken, getOAuthCredentials } from '@meridian/core';
 import { Redis } from 'ioredis';
 
 // Derive EmailAccount type from PrismaClient to avoid direct @prisma/client import
@@ -172,16 +172,14 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
       return { newTickets: 0, comments: 0 };
     }
 
-    const isGoogle = authProvider === 'GOOGLE';
-    const clientId = isGoogle ? process.env.GOOGLE_CLIENT_ID : process.env.MICROSOFT_CLIENT_ID;
-    const clientSecret = isGoogle ? process.env.GOOGLE_CLIENT_SECRET : process.env.MICROSOFT_CLIENT_SECRET;
+    const providerLower = authProvider.toLowerCase() as 'google' | 'microsoft';
 
-    if (!clientId || !clientSecret) {
-      console.warn(`[email-inbound] Missing ${authProvider} OAuth client credentials in env, skipping account ${account.id}`);
+    // Resolve OAuth credentials — DB first (Owner Admin Integrations wizard), env fallback
+    const creds = await getOAuthCredentials(prisma, providerLower);
+    if (!creds) {
+      console.warn(`[email-inbound] Missing ${authProvider} OAuth client credentials (DB + env both empty), skipping account ${account.id}`);
       return { newTickets: 0, comments: 0 };
     }
-
-    const providerLower = authProvider.toLowerCase() as 'google' | 'microsoft';
 
     try {
       const encAccess = (account as any).oauthAccessTokenEnc as string | null;
@@ -192,8 +190,8 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
         encAccess ?? '',
         encRefresh,
         expiresAt ?? new Date(0),
-        clientId,
-        clientSecret,
+        creds.clientId,
+        creds.clientSecret,
       );
 
       if (result.refreshed) {

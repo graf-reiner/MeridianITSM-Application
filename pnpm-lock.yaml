@@ -302,6 +302,9 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.1013.0
         version: 3.1013.0
+      '@meridian/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@meridian/db':
         specifier: workspace:*
         version: link:../../packages/db

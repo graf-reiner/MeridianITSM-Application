@@ -7,6 +7,7 @@ import {
   buildAuthorizationUrl,
   exchangeCodeForTokens,
   fetchUserInfo,
+  getOAuthCredentials,
   OAUTH_PROVIDERS,
 } from '@meridian/core';
 import { requirePermission } from '../../../plugins/rbac.js';
@@ -31,24 +32,16 @@ export async function oauthRoutes(fastify: FastifyInstance): Promise<void> {
 
       const typedProvider = provider as 'google' | 'microsoft';
 
-      // Resolve OAuth credentials from env
-      const clientId =
-        typedProvider === 'google'
-          ? process.env.GOOGLE_CLIENT_ID
-          : process.env.MICROSOFT_CLIENT_ID;
-      const clientSecret =
-        typedProvider === 'google'
-          ? process.env.GOOGLE_CLIENT_SECRET
-          : process.env.MICROSOFT_CLIENT_SECRET;
-
-      if (!clientId || !clientSecret) {
+      // Resolve OAuth credentials — DB first (Owner Admin Integrations wizard), env fallback
+      const creds = await getOAuthCredentials(prisma, typedProvider);
+      if (!creds) {
         return reply.status(500).send({ error: `OAuth credentials not configured for ${provider}` });
       }
 
       const user = request.user as { tenantId: string; userId: string };
       const redirectUri = `${process.env.APP_URL}/api/v1/email-accounts/oauth/callback`;
       const state = createOAuthState(user.tenantId, user.userId, typedProvider);
-      const url = buildAuthorizationUrl(typedProvider, clientId, redirectUri, state);
+      const url = buildAuthorizationUrl(typedProvider, creds.clientId, redirectUri, state);
 
       return reply.status(200).send({ url, state });
     },
@@ -105,17 +98,9 @@ export async function oauthRoutes(fastify: FastifyInstance): Promise<void> {
       const provider = statePayload.provider as 'google' | 'microsoft';
       const { tenantId, userId } = statePayload;
 
-      // ── Resolve credentials ──
-      const clientId =
-        provider === 'google'
-          ? process.env.GOOGLE_CLIENT_ID
-          : process.env.MICROSOFT_CLIENT_ID;
-      const clientSecret =
-        provider === 'google'
-          ? process.env.GOOGLE_CLIENT_SECRET
-          : process.env.MICROSOFT_CLIENT_SECRET;
-
-      if (!clientId || !clientSecret) {
+      // ── Resolve credentials — DB first, env fallback ──
+      const creds = await getOAuthCredentials(prisma, provider);
+      if (!creds) {
         return sendHtml({ type: 'oauth-error', error: `OAuth credentials not configured for ${provider}` });
       }
 
@@ -123,7 +108,7 @@ export async function oauthRoutes(fastify: FastifyInstance): Promise<void> {
 
       try {
         // ── Exchange code for tokens ──
-        const tokens = await exchangeCodeForTokens(provider, code, clientId, clientSecret, redirectUri);
+        const tokens = await exchangeCodeForTokens(provider, code, creds.clientId, creds.clientSecret, redirectUri);
 
         // ── Fetch user info ──
         const userInfo = await fetchUserInfo(provider, tokens.access_token);
