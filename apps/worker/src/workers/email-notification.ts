@@ -1,18 +1,22 @@
 import { Worker } from 'bullmq';
 import nodemailer from 'nodemailer';
 import { prisma } from '@meridian/db';
-import { decrypt, encrypt, getFreshAccessToken } from '@meridian/core';
+import { decrypt, encrypt, getFreshAccessToken, renderTemplate as renderSharedTemplate } from '@meridian/core';
 import { bullmqConnection } from '../queues/connection.js';
 import { assertTenantId, QUEUE_NAMES } from '../queues/definitions.js';
 
 // ─── Template Rendering (worker-local, mirrors email.service.ts) ──────────────
 
 function buildDefaultHtml(title: string, body: string): string {
+  const trimmedTitle = title.trim();
+  const headerBlock = trimmedTitle
+    ? `<div class="header"><h1>${trimmedTitle}</h1></div>`
+    : '';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>${title}</title>
+  <title>${trimmedTitle}</title>
   <style>
     body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
     .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
@@ -24,7 +28,7 @@ function buildDefaultHtml(title: string, body: string): string {
 </head>
 <body>
   <div class="container">
-    <div class="header"><h1>${title}</h1></div>
+    ${headerBlock}
     <div class="body">${body}</div>
     <div class="footer">Powered by MeridianITSM</div>
   </div>
@@ -32,34 +36,59 @@ function buildDefaultHtml(title: string, body: string): string {
 </html>`;
 }
 
+function buildCtx(variables: Record<string, string>): Record<string, unknown> {
+  // Promote known flat keys (legacy callers) into the nested shape used by
+  // saved templates and the unified picker UI, so {{ticket.title}} resolves.
+  return {
+    ...variables,
+    ticket: {
+      number: variables.ticketNumber ?? '',
+      title: variables.ticketTitle ?? '',
+      id: variables.ticketId ?? '',
+    },
+  };
+}
+
 async function renderTemplate(
   tenantId: string,
-  templateName: string,
+  templateName: string | null,
   variables: Record<string, string>,
 ): Promise<{ subject: string; html: string }> {
-  const template = await prisma.emailTemplate.findFirst({
-    where: {
-      tenantId,
-      OR: [{ name: templateName }, { isDefault: true }],
-    },
-    orderBy: [{ isDefault: 'asc' }],
-  });
+  const ctx = buildCtx(variables);
 
-  let subject: string;
-  let htmlBody: string;
-
-  if (template) {
-    subject = template.subject;
-    htmlBody = template.htmlBody;
-  } else {
-    subject = variables['subject'] ?? templateName;
-    htmlBody = buildDefaultHtml(variables['title'] ?? templateName, variables['body'] ?? '');
+  // Pre-rendered path: caller already substituted variables (notification-rule
+  // action executor). Trust that content and just wrap it in default chrome.
+  if (variables.subject !== undefined && variables.body !== undefined) {
+    return {
+      subject: variables.subject,
+      html: buildDefaultHtml(variables.subject, variables.body),
+    };
   }
 
-  const substitute = (text: string): string =>
-    text.replace(/\{\{(\w+)\}\}/g, (_, key: string) => variables[key] ?? '');
+  // Named-template path: look up an EmailTemplate row by name (or default).
+  const template = templateName
+    ? await prisma.emailTemplate.findFirst({
+        where: {
+          tenantId,
+          OR: [{ name: templateName }, { isDefault: true }],
+        },
+        orderBy: [{ isDefault: 'asc' }],
+      })
+    : await prisma.emailTemplate.findFirst({
+        where: { tenantId, isDefault: true },
+      });
 
-  return { subject: substitute(subject), html: substitute(htmlBody) };
+  if (template) {
+    const subject = renderSharedTemplate(template.subject, ctx);
+    const html = renderSharedTemplate(template.htmlBody, ctx, { escapeHtml: true });
+    return { subject, html };
+  }
+
+  // Bare-fallback path: no pre-rendered content and no DB template. Best-effort
+  // wrap whatever the caller provided; use the resolved subject as the header.
+  const subject = renderSharedTemplate(variables.subject ?? '', ctx);
+  const body = renderSharedTemplate(variables.body ?? '', ctx, { escapeHtml: true });
+  return { subject, html: buildDefaultHtml(subject, body) };
 }
 
 // ─── Email Notification Worker ────────────────────────────────────────────────
@@ -83,7 +112,7 @@ export const emailNotificationWorker = new Worker(
     } = job.data as {
       tenantId: string;
       to: string;
-      templateName: string;
+      templateName: string | null;
       variables: Record<string, string>;
       inReplyTo?: string;
       references?: string[];

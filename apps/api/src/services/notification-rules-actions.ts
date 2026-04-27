@@ -200,7 +200,7 @@ async function executeEmail(
     await emailNotificationQueue.add('send-email', {
       tenantId,
       to,
-      templateName: (config.templateName as string) ?? 'notification-rule',
+      templateName: (config.templateName as string) ?? null,
       variables: {
         subject,
         body,
