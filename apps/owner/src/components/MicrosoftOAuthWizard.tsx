@@ -221,10 +221,35 @@ export default function MicrosoftOAuthWizard({ redirectUri, existing, onClose }:
                   <li>From the app, go to <strong>Certificates &amp; secrets → + New client secret</strong>.</li>
                   <li>Description: anything memorable (e.g. <code>dev-2026</code>).</li>
                   <li>Expires: 12 or 24 months (24 is the max).</li>
-                  <li>Click <strong>Add</strong>.</li>
-                  <li><strong>Copy the <em>Value</em> immediately</strong> — Microsoft only displays it this one time. The "Secret ID" is irrelevant.</li>
+                  <li>Click <strong>Add</strong>. Stay on this page.</li>
                 </ol>
-                <div style={{ padding: 12, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, fontSize: 13, color: '#991b1b', marginTop: 12 }}>
+
+                <div style={{ padding: 14, background: '#fef2f2', border: '2px solid #fecaca', borderRadius: 6, fontSize: 13, color: '#991b1b', marginTop: 12, marginBottom: 12 }}>
+                  <p style={{ margin: '0 0 10px 0', fontWeight: 700, fontSize: 14 }}>⚠ Read this carefully — this is the #1 mistake everyone makes.</p>
+                  <p style={{ margin: '0 0 10px 0' }}>Azure shows two columns side by side. You want the <strong>Value</strong>, NOT the Secret ID:</p>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', fontSize: 12 }}>
+                    <thead>
+                      <tr>
+                        <th style={{ padding: '6px 8px', textAlign: 'left', borderBottom: '1px solid #fecaca', fontWeight: 600, color: '#16a34a' }}>✓ Value (what you want)</th>
+                        <th style={{ padding: '6px 8px', textAlign: 'left', borderBottom: '1px solid #fecaca', fontWeight: 600, color: '#dc2626' }}>✗ Secret ID (NOT this)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td style={{ padding: '6px 8px', fontFamily: 'monospace', color: '#0f172a' }}><code>BLs8Q~5snaMsf6SnoQRfR~tfuVJ6iMPJD…</code></td>
+                        <td style={{ padding: '6px 8px', fontFamily: 'monospace', color: '#94a3b8' }}><code>6828f127-90b8-4da5-8127-1a7040727b65</code></td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '6px 8px', color: '#475569' }}>~40 chars, mix of letters/digits/<code>~</code><code>.</code></td>
+                        <td style={{ padding: '6px 8px', color: '#475569' }}>UUID format (8-4-4-4-12)</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <p style={{ margin: '10px 0 0 0' }}>The Value is <strong>truncated visually</strong> in Azure's table — only ~30 chars are shown. Use the small <strong>copy icon</strong> next to the Value (not the text) to copy the full secret to your clipboard.</p>
+                  <p style={{ margin: '6px 0 0 0' }}><strong>Microsoft only shows the Value once</strong>, immediately after you click Add. If you navigate away or refresh the page, the Value column shows <code>***</code> forever — you'll have to delete the secret and create a new one.</p>
+                </div>
+
+                <div style={{ padding: 12, background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 6, fontSize: 13, color: '#92400e' }}>
                   <strong>Set a calendar reminder for the expiry date.</strong> When the secret expires, every customer's connection breaks at the same moment — no warning. Plan to rotate ~30 days before expiry.
                 </div>
               </div>
@@ -255,8 +280,13 @@ export default function MicrosoftOAuthWizard({ redirectUri, existing, onClose }:
                     value={clientSecret}
                     onChange={(e) => setClientSecret(e.target.value)}
                     placeholder={existing?.source === 'db' ? '••••••••' : 'paste secret here'}
-                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: 13, fontFamily: 'monospace' }}
+                    style={{ width: '100%', padding: '8px 10px', border: `1px solid ${/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientSecret) ? '#dc2626' : '#cbd5e1'}`, borderRadius: 4, fontSize: 13, fontFamily: 'monospace' }}
                   />
+                  {/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientSecret) && (
+                    <div style={{ marginTop: 6, padding: '8px 10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 4, fontSize: 12, color: '#991b1b' }}>
+                      ⚠ This looks like the <strong>Secret ID</strong>, not the secret <strong>Value</strong>. Microsoft secret values are ~40 chars and contain <code>~</code> and <code>.</code> characters — see step 3.
+                    </div>
+                  )}
                 </label>
 
                 <label style={{ display: 'block', marginBottom: 12 }}>
