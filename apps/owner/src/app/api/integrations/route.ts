@@ -35,7 +35,8 @@ interface IntegrationStatus {
   provider: Provider;
   source: 'db' | 'env' | null;
   configured: boolean;
-  clientIdMasked: string | null;
+  clientId: string | null;        // full value — Client ID is not a secret (it's embedded in every OAuth URL)
+  clientIdMasked: string | null;  // for compact display in cards
   secretExpiresAt: string | null;
   notes: string | null;
   updatedAt: string | null;
@@ -72,6 +73,7 @@ export async function GET(request: Request) {
         provider,
         source: 'db' as const,
         configured: true,
+        clientId: row.clientId,
         clientIdMasked: maskClientId(row.clientId),
         secretExpiresAt: row.secretExpiresAt?.toISOString() ?? null,
         notes: row.notes,
@@ -79,11 +81,13 @@ export async function GET(request: Request) {
       };
     }
     if (envConfigured(provider)) {
+      const envCid = envClientId(provider) ?? '';
       return {
         provider,
         source: 'env' as const,
         configured: true,
-        clientIdMasked: maskClientId(envClientId(provider) ?? ''),
+        clientId: envCid,
+        clientIdMasked: maskClientId(envCid),
         secretExpiresAt: null,
         notes: null,
         updatedAt: null,
@@ -93,6 +97,7 @@ export async function GET(request: Request) {
       provider,
       source: null,
       configured: false,
+      clientId: null,
       clientIdMasked: null,
       secretExpiresAt: null,
       notes: null,
@@ -170,6 +175,7 @@ export async function POST(request: Request) {
       provider: saved.provider,
       source: 'db' as const,
       configured: true,
+      clientId: saved.clientId,
       clientIdMasked: maskClientId(saved.clientId),
       secretExpiresAt: saved.secretExpiresAt?.toISOString() ?? null,
       notes: saved.notes,

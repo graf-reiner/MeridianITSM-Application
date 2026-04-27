@@ -49,8 +49,9 @@ function CopyField({ label, value }: { label: string; value: string }) {
 export default function MicrosoftOAuthWizard({ redirectUri, existing, onClose }: Props) {
   const [step, setStep] = useState(0);
 
-  // Step 5 form state
-  const [clientId, setClientId] = useState(existing?.source === 'db' ? '' : '');
+  // Step 5 form state — Client ID is not a secret (it's embedded in every OAuth URL),
+  // so we pre-populate from the saved record. Client secret never round-trips back.
+  const [clientId, setClientId] = useState(existing?.clientId ?? '');
   const [clientSecret, setClientSecret] = useState('');
   const [secretExpiresAt, setSecretExpiresAt] = useState(existing?.secretExpiresAt?.slice(0, 10) ?? '');
   const [notes, setNotes] = useState(existing?.notes ?? '');
@@ -264,9 +265,13 @@ export default function MicrosoftOAuthWizard({ redirectUri, existing, onClose }:
                   <span style={{ display: 'block', fontSize: 12, color: '#64748b', marginBottom: 4 }}>Application (client) ID</span>
                   <input
                     type="text"
+                    name="ms-azure-client-id"
+                    autoComplete="off"
+                    data-1p-ignore
+                    data-lpignore="true"
                     value={clientId}
                     onChange={(e) => setClientId(e.target.value)}
-                    placeholder={existing?.source === 'db' ? existing.clientIdMasked ?? '' : '00000000-0000-0000-0000-000000000000'}
+                    placeholder={'00000000-0000-0000-0000-000000000000'}
                     style={{ width: '100%', padding: '8px 10px', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: 13, fontFamily: 'monospace' }}
                   />
                 </label>
@@ -277,6 +282,10 @@ export default function MicrosoftOAuthWizard({ redirectUri, existing, onClose }:
                   </span>
                   <input
                     type="password"
+                    name="ms-azure-client-secret"
+                    autoComplete="new-password"
+                    data-1p-ignore
+                    data-lpignore="true"
                     value={clientSecret}
                     onChange={(e) => setClientSecret(e.target.value)}
                     placeholder={existing?.source === 'db' ? '••••••••' : 'paste secret here'}

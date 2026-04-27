@@ -44,7 +44,8 @@ function CopyField({ label, value }: { label: string; value: string }) {
 
 export default function GoogleOAuthWizard({ redirectUri, existing, onClose }: Props) {
   const [step, setStep] = useState(0);
-  const [clientId, setClientId] = useState('');
+  // Client ID is not a secret (embedded in every OAuth URL); pre-populate from saved record.
+  const [clientId, setClientId] = useState(existing?.clientId ?? '');
   const [clientSecret, setClientSecret] = useState('');
   const [secretExpiresAt, setSecretExpiresAt] = useState(existing?.secretExpiresAt?.slice(0, 10) ?? '');
   const [notes, setNotes] = useState(existing?.notes ?? '');
@@ -192,11 +193,31 @@ export default function GoogleOAuthWizard({ redirectUri, existing, onClose }: Pr
                 <p style={{ fontSize: 13, color: '#64748b' }}>Stored encrypted at rest. The secret never round-trips back to the browser after saving.</p>
                 <label style={{ display: 'block', marginBottom: 12 }}>
                   <span style={{ display: 'block', fontSize: 12, color: '#64748b', marginBottom: 4 }}>Client ID</span>
-                  <input type="text" value={clientId} onChange={(e) => setClientId(e.target.value)} placeholder={existing?.source === 'db' ? existing.clientIdMasked ?? '' : 'XXXXXXX.apps.googleusercontent.com'} style={{ width: '100%', padding: '8px 10px', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: 13, fontFamily: 'monospace' }} />
+                  <input
+                    type="text"
+                    name="google-oauth-client-id"
+                    autoComplete="off"
+                    data-1p-ignore
+                    data-lpignore="true"
+                    value={clientId}
+                    onChange={(e) => setClientId(e.target.value)}
+                    placeholder={'XXXXXXX.apps.googleusercontent.com'}
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: 13, fontFamily: 'monospace' }}
+                  />
                 </label>
                 <label style={{ display: 'block', marginBottom: 12 }}>
                   <span style={{ display: 'block', fontSize: 12, color: '#64748b', marginBottom: 4 }}>Client secret {existing?.source === 'db' && <em style={{ color: '#94a3b8' }}>(leave blank to keep existing)</em>}</span>
-                  <input type="password" value={clientSecret} onChange={(e) => setClientSecret(e.target.value)} placeholder={existing?.source === 'db' ? '••••••••' : 'paste secret here'} style={{ width: '100%', padding: '8px 10px', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: 13, fontFamily: 'monospace' }} />
+                  <input
+                    type="password"
+                    name="google-oauth-client-secret"
+                    autoComplete="new-password"
+                    data-1p-ignore
+                    data-lpignore="true"
+                    value={clientSecret}
+                    onChange={(e) => setClientSecret(e.target.value)}
+                    placeholder={existing?.source === 'db' ? '••••••••' : 'paste secret here'}
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: 13, fontFamily: 'monospace' }}
+                  />
                 </label>
                 <label style={{ display: 'block', marginBottom: 12 }}>
                   <span style={{ display: 'block', fontSize: 12, color: '#64748b', marginBottom: 4 }}>Secret expiry date <em style={{ color: '#94a3b8' }}>(optional — Google secrets don't auto-expire, but you may want a rotation reminder)</em></span>

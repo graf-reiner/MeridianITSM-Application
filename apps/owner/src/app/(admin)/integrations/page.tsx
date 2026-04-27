@@ -10,6 +10,7 @@ export interface IntegrationStatus {
   provider: 'MICROSOFT' | 'GOOGLE';
   source: 'db' | 'env' | null;
   configured: boolean;
+  clientId: string | null;
   clientIdMasked: string | null;
   secretExpiresAt: string | null;
   notes: string | null;
