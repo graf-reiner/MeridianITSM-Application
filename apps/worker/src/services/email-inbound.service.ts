@@ -302,7 +302,18 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
       const status = await client.status('INBOX', { messages: true, unseen: true });
       console.log(`[email-inbound] Account ${account.id}: INBOX has ${status.messages} total, ${status.unseen} unseen`);
 
-      const messages = client.fetch({ seen: false }, { envelope: true, source: true }, { uid: true });
+      // Bound the fetch by date so we don't try to ingest a massive backlog when
+      // a customer connects a long-lived mailbox (the unseen count can be in the
+      // tens of thousands; a single FETCH that wide makes M365 IMAP return
+      // "Command failed"). On the first poll for a new account, treat "now"
+      // as the cutoff — we don't back-fill historical mail into tickets.
+      // Subsequent polls catch everything since the last successful run.
+      const sinceDate = account.lastPolledAt ?? new Date();
+      const messages = client.fetch(
+        { seen: false, since: sinceDate },
+        { envelope: true, source: true },
+        { uid: true },
+      );
 
       for await (const message of messages) {
         try {
