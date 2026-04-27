@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ownerFetch } from '../lib/api';
 import type { IntegrationStatus } from '../app/(admin)/integrations/page';
+import AzurePermissionsManifestModal from './AzurePermissionsManifestModal';
 
 interface Props {
   redirectUri: string;
@@ -62,6 +63,9 @@ export default function MicrosoftOAuthWizard({ redirectUri, existing, onClose }:
   // Step 6 test state
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ valid: boolean; message: string } | null>(null);
+
+  // Step 3 — detailed manifest walkthrough modal
+  const [showManifestWalkthrough, setShowManifestWalkthrough] = useState(false);
 
   async function handleSave() {
     setSaving(true);
@@ -186,6 +190,16 @@ export default function MicrosoftOAuthWizard({ redirectUri, existing, onClose }:
               <div>
                 <h3 style={{ fontSize: 16, marginTop: 0 }}>Add API permissions</h3>
                 <p>From your new app, go to <strong>API permissions → + Add a permission</strong>, then add each of these as <strong>Delegated permissions</strong>:</p>
+                <div style={{ margin: '8px 0 14px 0', padding: '10px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, fontSize: 13, color: '#1e40af', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                  <span>Prefer to edit the JSON manifest directly? (Faster, no clicking through the permissions UI.)</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowManifestWalkthrough(true)}
+                    style={{ padding: '6px 12px', background: '#1e40af', color: '#fff', border: 'none', borderRadius: 4, fontSize: 12, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                  >
+                    📖 Manifest walkthrough
+                  </button>
+                </div>
                 <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 12 }}>
                   <thead>
                     <tr style={{ background: '#f8fafc' }}>
@@ -382,6 +396,10 @@ export default function MicrosoftOAuthWizard({ redirectUri, existing, onClose }:
           )}
         </div>
       </div>
+
+      {showManifestWalkthrough && (
+        <AzurePermissionsManifestModal onClose={() => setShowManifestWalkthrough(false)} />
+      )}
     </div>
   );
 }
