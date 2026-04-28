@@ -147,13 +147,30 @@ export async function emailAccountRoutes(fastify: FastifyInstance): Promise<void
         return reply.status(404).send({ error: 'Email account not found' });
       }
 
-      // Guard: OAuth accounts can only update a subset of fields
+      // Guard: OAuth accounts can only update a subset of fields. Only block
+      // when a connection-level field is being CHANGED — the edit modal
+      // pre-populates and re-sends every field including the OAuth-managed
+      // ones, so a strict presence check would reject every save. Compare
+      // each blocked field's incoming value against the existing record and
+      // only error if they differ.
       if (existing.authProvider !== 'MANUAL') {
-        const allowed = ['name', 'pollInterval', 'defaultQueueId', 'defaultCategoryId', 'isActive', 'emailToTicket'];
-        const attempted = Object.keys(body).filter(k => (body as Record<string, unknown>)[k] !== undefined);
-        const blocked = attempted.filter(k => !allowed.includes(k));
-        if (blocked.length > 0) {
-          return reply.status(400).send({ error: `Cannot modify ${blocked.join(', ')} on OAuth accounts. Use reconnect instead.` });
+        const allowed = new Set(['name', 'pollInterval', 'defaultQueueId', 'defaultCategoryId', 'isActive', 'emailToTicket']);
+        const bodyRec = body as Record<string, unknown>;
+        const existingRec = existing as unknown as Record<string, unknown>;
+        const changed: string[] = [];
+        for (const key of Object.keys(bodyRec)) {
+          if (allowed.has(key)) continue;
+          if (bodyRec[key] === undefined) continue;
+          // smtp/imapPassword aren't on the existing record (only smtpPasswordEnc)
+          // — any non-empty password attempt is a real change.
+          if (key === 'smtpPassword' || key === 'imapPassword') {
+            if (bodyRec[key] !== '' && bodyRec[key] !== null) changed.push(key);
+            continue;
+          }
+          if (bodyRec[key] !== existingRec[key]) changed.push(key);
+        }
+        if (changed.length > 0) {
+          return reply.status(400).send({ error: `Cannot modify ${changed.join(', ')} on OAuth accounts. Use reconnect instead.` });
         }
       }
 
