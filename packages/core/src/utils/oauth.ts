@@ -131,12 +131,16 @@ export function buildAuthorizationUrl(
     scope: config.scopes.join(' '),
     state,
     access_type: 'offline',
-    // 'select_account consent' lets returning users pick a different mailbox
-    // (e.g., re-OAuth as servicedesk@ after first connecting as admin@) without
-    // re-prompting for already-granted tenant-wide consent. Microsoft accepts
-    // space-separated prompt values per OIDC; Google still honors `consent`
-    // which it requires to reliably return refresh_tokens.
-    prompt: 'select_account consent',
+    // Per-provider — Microsoft v2 (/oauth2/v2.0/authorize) only accepts ONE
+    // of: login | none | consent | select_account, and rejects space-separated
+    // values with AADSTS90023. Google accepts space-separated values and
+    // requires `consent` to reliably return refresh_tokens.
+    //
+    // Microsoft: `select_account` lets returning users pick a different
+    // mailbox (re-OAuth as servicedesk@ after first connecting as admin@).
+    // The tenant admin grants consent once via the owner-admin wizard, so
+    // subsequent users in that tenant don't need a consent prompt.
+    prompt: provider === 'microsoft' ? 'select_account' : 'select_account consent',
   });
   return `${config.authUrl}?${params.toString()}`;
 }
