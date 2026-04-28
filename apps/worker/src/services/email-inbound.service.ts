@@ -273,12 +273,19 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
   // when their OAuth accounts are created. Forcing secure:false here for OAuth
   // (the prior behavior) caused imapflow to send plain-text on a TLS port and
   // time out waiting for an unencrypted greeting.
+  // socketTimeout default in imapflow is 60s, which kills M365 FETCH cycles
+  // mid-stream — a single pollMailbox can take longer than 60s when fetching
+  // RFC822 source for several messages (each FETCH BODY[] is sequential and
+  // M365 is slow returning full bodies). 5 min is a safe upper bound; the
+  // worker job's own timeout catches anything truly stuck.
   const client = new ImapFlow({
     host: account.imapHost,
     port: account.imapPort ?? 993,
     secure: account.imapSecure,
     auth: imapAuth,
     logger: false,
+    greetingTimeout: 30_000,
+    socketTimeout: 5 * 60 * 1000,
   });
 
   let newTickets = 0;
@@ -566,14 +573,27 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
       `[email-inbound] Failed to poll mailbox for account ${account.id}: ${expandedMessage}`,
       errDetail,
     );
-    await logEmailActivity({
-      tenantId: account.tenantId,
-      emailAccountId: account.id,
-      direction: 'INBOUND',
-      status: 'POLL_FAILED',
-      errorMessage: expandedMessage,
-      rawMeta: { newTickets, comments, testsReceived, ...errDetail },
-    });
+    // Wrap the activity log in its own try — a dead/timed-out IMAP connection
+    // shouldn't prevent us from recording the POLL_FAILED row. Same for the
+    // lastPolledAt update so the next poll uses a sensible cutoff.
+    try {
+      await logEmailActivity({
+        tenantId: account.tenantId,
+        emailAccountId: account.id,
+        direction: 'INBOUND',
+        status: 'POLL_FAILED',
+        errorMessage: expandedMessage,
+        rawMeta: { newTickets, comments, testsReceived, ...errDetail },
+      });
+    } catch (logErr) {
+      console.error('[email-inbound] Failed to write POLL_FAILED activity row:', logErr);
+    }
+    try {
+      await prisma.emailAccount.update({
+        where: { id: account.id },
+        data: { lastPolledAt: new Date() },
+      });
+    } catch { /* non-critical */ }
     throw err;
   }
 

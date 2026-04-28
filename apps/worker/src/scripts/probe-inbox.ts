@@ -4,14 +4,17 @@
  *
  * Usage:
  *   tsx src/scripts/probe-inbox.ts <emailAccountId>
+ *   tsx src/scripts/probe-inbox.ts <emailAccountId> --mark-seen <uid1,uid2,...>
  */
 import { ImapFlow } from 'imapflow';
 import { prisma } from '@meridian/db';
 import { decrypt, getFreshAccessToken, getOAuthCredentials } from '@meridian/core';
 
 const accountId = process.argv[2];
+const markSeenIdx = process.argv.indexOf('--mark-seen');
+const markSeenUids = markSeenIdx > 0 ? (process.argv[markSeenIdx + 1] ?? '').split(',').map(n => parseInt(n.trim(), 10)).filter(n => Number.isFinite(n)) : [];
 if (!accountId) {
-  console.error('Usage: tsx src/scripts/probe-inbox.ts <emailAccountId>');
+  console.error('Usage: tsx src/scripts/probe-inbox.ts <emailAccountId> [--mark-seen 23,25,27]');
   process.exit(1);
 }
 
@@ -57,6 +60,23 @@ async function main(): Promise<void> {
 
   await client.connect();
   console.log('connected.');
+
+  if (markSeenUids.length > 0) {
+    console.log(`\n--- marking UIDs ${markSeenUids.join(',')} as \\Seen in INBOX ---`);
+    const lock = await client.getMailboxLock('INBOX');
+    try {
+      for (const uid of markSeenUids) {
+        try {
+          const result = await client.messageFlagsAdd(uid, ['\\Seen'], { uid: true });
+          console.log(`  uid=${uid}: result=${JSON.stringify(result)}`);
+        } catch (err) {
+          console.log(`  uid=${uid}: ERROR ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+    } finally {
+      lock.release();
+    }
+  }
 
   // List all top-level mailboxes
   const tree = await client.list();
