@@ -51,6 +51,31 @@ interface ProviderHint {
 function detectProviderHint(detail: string | undefined): ProviderHint | null {
   if (!detail) return null;
 
+  // Microsoft 365 — IMAP disabled at the mailbox level. Microsoft's IMAP
+  // frontend rejects XOAUTH2 with "AUTHENTICATE failed." (no further
+  // detail) when ImapEnabled is false on the target mailbox — the M365
+  // default since 2023. The toggle isn't in the admin center web UI; only
+  // PowerShell can flip it.
+  if (/AUTHENTICATE failed/i.test(detail) || /XOAUTH2 rejected.*IMAP/i.test(detail)) {
+    return {
+      title: 'Microsoft 365 has IMAP disabled for this mailbox',
+      body: (
+        <>
+          <p style={{ margin: '4px 0' }}>
+            Your OAuth login is correct (SMTP works) but Microsoft is rejecting the IMAP login itself, before token validation. Microsoft disables IMAP per-mailbox by default. Enable it via PowerShell:
+          </p>
+          <pre style={{ background: '#0f172a', color: '#e5e7eb', padding: '8px 10px', borderRadius: 4, fontSize: 11, overflowX: 'auto', margin: '6px 0' }}>
+{`Connect-ExchangeOnline
+Set-CASMailbox -Identity <user@domain.com> -ImapEnabled $true`}
+          </pre>
+          <p style={{ margin: '4px 0', fontSize: 11 }}>
+            Wait ~5 min for Microsoft&apos;s IMAP frontends to pick up the policy, then re-run this test. Microsoft&apos;s docs: <a href="https://learn.microsoft.com/en-us/exchange/clients-and-mobile-in-exchange-online/enable-or-disable-pop3-or-imap4-access" target="_blank" rel="noopener noreferrer" style={{ color: '#92400e', textDecoration: 'underline' }}>IMAP / POP per-mailbox toggle</a>
+          </p>
+        </>
+      ),
+    };
+  }
+
   // Microsoft 365 — SMTP AUTH disabled at tenant or per-mailbox level.
   // The "5.7.139" code is the load-bearing identifier — Microsoft uses it
   // exclusively for this case across all their SMTP frontends.

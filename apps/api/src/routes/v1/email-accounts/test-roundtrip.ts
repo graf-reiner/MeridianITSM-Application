@@ -17,6 +17,7 @@
 import type { FastifyInstance } from 'fastify';
 import { Queue } from 'bullmq';
 import nodemailer from 'nodemailer';
+import { ImapFlow } from 'imapflow';
 import { prisma } from '@meridian/db';
 import { decrypt, encrypt, getFreshAccessToken, getOAuthCredentials } from '@meridian/core';
 import { requirePermission } from '../../../plugins/rbac.js';
@@ -267,15 +268,70 @@ async function runPhases(account: AccountRow, initial: TestState): Promise<void>
     });
     return;
   }
-  // For OAuth, the existing testImapConnection helper takes manual user/password.
-  // For an OAuth round-trip we skip its connection probe and let the actual poll-once
-  // exercise IMAP — if the poll succeeds we'll see the message; if not, the
-  // worker logs POLL_FAILED to the activity log and the roundtrip phase will TIMEOUT.
+  // For OAuth, run a real IMAP probe with the access token: connect + lock
+  // INBOX + logout. Surfaces XOAUTH2 failures (most commonly "IMAP disabled
+  // on the mailbox") at Phase 3 with the actual server response, instead of
+  // letting the test silently TIMEOUT 5 minutes later at Phase 4.
   if (isOAuthSmtp) {
-    await patchState(tenantId, testId, s => {
-      s.phases.imapAuth = { status: 'OK', detail: 'OAuth — verified during inbound poll' };
-      return s;
-    });
+    const provider = account.authProvider!.toLowerCase() as 'google' | 'microsoft';
+    const imapStart = Date.now();
+    try {
+      const creds = await getOAuthCredentials(prisma, provider);
+      if (!creds) throw new Error(`OAuth credentials not configured for ${provider}`);
+      if (!account.oauthRefreshTokenEnc) throw new Error('Account is missing OAuth refresh token — reconnect from Settings');
+      const tok = await getFreshAccessToken(
+        provider,
+        account.oauthAccessTokenEnc ?? '',
+        account.oauthRefreshTokenEnc,
+        account.oauthTokenExpiresAt ?? new Date(0),
+        creds.clientId,
+        creds.clientSecret,
+      );
+      if (tok.refreshed) {
+        await prisma.emailAccount.update({
+          where: { id: account.id },
+          data: {
+            oauthAccessTokenEnc: encrypt(tok.accessToken),
+            oauthTokenExpiresAt: tok.newExpiresAt ?? null,
+            oauthConnectionStatus: 'CONNECTED',
+          },
+        });
+      }
+      const client = new ImapFlow({
+        host: account.imapHost,
+        port: account.imapPort ?? 993,
+        secure: account.imapSecure,
+        auth: { user: account.imapUser ?? account.emailAddress, accessToken: tok.accessToken },
+        logger: false,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
+      });
+      try {
+        await client.connect();
+        const lock = await client.getMailboxLock('INBOX');
+        lock.release();
+      } finally {
+        try { await client.logout(); } catch { /* ignore */ }
+      }
+      await patchState(tenantId, testId, s => {
+        s.phases.imapAuth = { status: 'OK', detail: 'OAuth IMAP authenticated', durationMs: Date.now() - imapStart };
+        return s;
+      });
+    } catch (err) {
+      // imapflow attaches `responseText` when the server returned a NO/BAD
+      // response — that's the field with the actionable message (e.g.
+      // "AUTHENTICATE failed."). Bare err.message is just "Command failed".
+      const errAny = err as { message?: string; responseText?: string; authenticationFailed?: boolean };
+      const detail = errAny.responseText
+        ? `${errAny.responseText}${errAny.authenticationFailed ? ' (XOAUTH2 rejected — IMAP likely disabled on the mailbox)' : ''}`
+        : (err instanceof Error ? err.message : String(err));
+      await patchState(tenantId, testId, s => {
+        s.phases.imapAuth = { status: 'FAILED', detail, durationMs: Date.now() - imapStart };
+        return s;
+      });
+      await markFailed(tenantId, testId, 'roundtrip');
+      return;
+    }
   } else {
     let imapPass = '';
     if (account.imapPasswordEnc) { try { imapPass = decrypt(account.imapPasswordEnc); } catch { /* */ } }
