@@ -163,6 +163,10 @@ export default function MicrosoftOAuthWizard({ redirectUri, existing, onClose }:
                 <div style={{ marginTop: 20, padding: 12, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, fontSize: 13, color: '#1e40af' }}>
                   <strong>Heads up:</strong> The redirect URI shown on the next step must be registered <em>exactly</em> in Azure or sign-in will fail with <code>AADSTS50011</code>.
                 </div>
+                <div style={{ marginTop: 12, padding: 12, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, fontSize: 13, color: '#1e40af' }}>
+                  <strong>Important — which account each customer signs in as:</strong>{' '}
+                  When a customer connects their email later, they should sign in as the <em>mailbox they want MeridianITSM to monitor</em> (e.g. <code>servicedesk@example.com</code>) — not necessarily their Microsoft admin account. The admin only needs to consent to this app <em>once per tenant</em>; after that, any user in the tenant can sign in to MeridianITSM and connect their own mailbox without further admin involvement.
+                </div>
               </div>
             )}
 

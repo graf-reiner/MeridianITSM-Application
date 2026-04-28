@@ -131,7 +131,12 @@ export function buildAuthorizationUrl(
     scope: config.scopes.join(' '),
     state,
     access_type: 'offline',
-    prompt: 'consent',
+    // 'select_account consent' lets returning users pick a different mailbox
+    // (e.g., re-OAuth as servicedesk@ after first connecting as admin@) without
+    // re-prompting for already-granted tenant-wide consent. Microsoft accepts
+    // space-separated prompt values per OIDC; Google still honors `consent`
+    // which it requires to reliably return refresh_tokens.
+    prompt: 'select_account consent',
   });
   return `${config.authUrl}?${params.toString()}`;
 }

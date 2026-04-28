@@ -488,6 +488,54 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
           );
         }
       }
+
+      // Connector-test secondary search — find test messages even after the
+      // user opened them in OWA (which marks \Seen and excludes them from the
+      // main `seen: false` search above), or after the per-cycle cap pushed
+      // them out of the newest-first window. Scoped to the last 30 minutes
+      // and a unique subject string, so it's cheap and false-positive free.
+      // markTestReceived is idempotent (Redis state update), so re-processing
+      // on subsequent polls is harmless.
+      try {
+        const testCutoff = new Date(Date.now() - 30 * 60 * 1000);
+        const testSearchResult = await client.search(
+          { subject: 'MeridianITSM Connector Test', since: testCutoff },
+          { uid: true },
+        );
+        const testUids: number[] = Array.isArray(testSearchResult) ? testSearchResult : [];
+        if (testUids.length > 0) {
+          const testMessages = client.fetch(testUids, { envelope: true, source: true }, { uid: true });
+          for await (const message of testMessages) {
+            try {
+              if (!message.source) continue;
+              const parsed = await simpleParser(message.source);
+              const m = parsed.subject?.match(CONNECTOR_TEST_SUBJECT_REGEX);
+              if (!m || !m[1]) continue;
+              await markTestReceived(account.tenantId, m[1], parsed);
+              await logEmailActivity({
+                tenantId: account.tenantId,
+                emailAccountId: account.id,
+                direction: 'INBOUND',
+                status: 'RECEIVED',
+                subject: parsed.subject ?? undefined,
+                fromAddress: parsed.from?.value?.[0]?.address ?? undefined,
+                messageId: parsed.messageId ?? undefined,
+                rawMeta: { connectorTest: true, token: m[1], viaSecondarySearch: true },
+              });
+              testsReceived++;
+            } catch (innerErr) {
+              console.error(
+                `[email-inbound] Secondary connector-test parse failed in account ${account.id}: ${innerErr instanceof Error ? innerErr.message : String(innerErr)}`,
+              );
+            }
+          }
+        }
+      } catch (secondaryErr) {
+        // Secondary search failure must not abort the poll cycle.
+        console.error(
+          `[email-inbound] Secondary connector-test search failed in account ${account.id}: ${secondaryErr instanceof Error ? secondaryErr.message : String(secondaryErr)}`,
+        );
+      }
     } finally {
       lock.release();
     }
