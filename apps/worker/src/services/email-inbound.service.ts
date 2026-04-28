@@ -542,17 +542,33 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
 
     await client.logout();
   } catch (err) {
+    // imapflow throws errors with rich context (response, responseText,
+    // serverResponseCode, code, command, authenticationFailed) but only `.message`
+    // is the bare "Command failed" string. Capture everything for diagnosis.
+    const errAny = err as { message?: string; code?: string; command?: string; response?: unknown; responseText?: string; serverResponseCode?: string; authenticationFailed?: boolean };
     const errMsg = err instanceof Error ? err.message : String(err);
+    const errDetail = {
+      code: errAny.code,
+      command: errAny.command,
+      responseText: errAny.responseText,
+      response: typeof errAny.response === 'string' ? errAny.response : undefined,
+      serverResponseCode: errAny.serverResponseCode,
+      authenticationFailed: errAny.authenticationFailed,
+    };
+    const expandedMessage = errAny.responseText
+      ? `${errMsg} | server: ${errAny.responseText}`
+      : errMsg;
     console.error(
-      `[email-inbound] Failed to poll mailbox for account ${account.id}: ${errMsg}`,
+      `[email-inbound] Failed to poll mailbox for account ${account.id}: ${expandedMessage}`,
+      errDetail,
     );
     await logEmailActivity({
       tenantId: account.tenantId,
       emailAccountId: account.id,
       direction: 'INBOUND',
       status: 'POLL_FAILED',
-      errorMessage: errMsg,
-      rawMeta: { newTickets, comments, testsReceived },
+      errorMessage: expandedMessage,
+      rawMeta: { newTickets, comments, testsReceived, ...errDetail },
     });
     throw err;
   }
