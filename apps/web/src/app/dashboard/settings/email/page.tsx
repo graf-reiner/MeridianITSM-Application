@@ -318,9 +318,11 @@ function TestResultModal({ type, result, onClose }: { type: 'SMTP' | 'IMAP'; res
 
 // ─── Delete Confirmation Modal ───────────────────────────────────────────────
 
-function DeleteConfirmModal({ account, rules, onConfirm, onCancel }: {
+function DeleteConfirmModal({ account, rules, error, isDeleting, onConfirm, onCancel }: {
   account: EmailAccount;
   rules: Array<{ id: string; name: string }>;
+  error: string | null;
+  isDeleting: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -348,10 +350,16 @@ function DeleteConfirmModal({ account, rules, onConfirm, onCancel }: {
               </ul>
             </div>
           )}
+          {error && (
+            <div style={{ padding: '10px 14px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#991b1b' }}>
+              <strong style={{ display: 'block', marginBottom: 4 }}>Delete failed</strong>
+              {error}
+            </div>
+          )}
         </div>
         <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border-primary)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button onClick={onCancel} style={{ padding: '6px 16px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 13, cursor: 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>Cancel</button>
-          <button onClick={onConfirm} style={{ padding: '6px 16px', backgroundColor: 'var(--accent-danger)', color: 'var(--bg-primary)', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Delete</button>
+          <button onClick={onCancel} disabled={isDeleting} style={{ padding: '6px 16px', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 13, cursor: isDeleting ? 'not-allowed' : 'pointer', backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)', opacity: isDeleting ? 0.6 : 1 }}>Cancel</button>
+          <button onClick={onConfirm} disabled={isDeleting} style={{ padding: '6px 16px', backgroundColor: 'var(--accent-danger)', color: 'var(--bg-primary)', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: isDeleting ? 'wait' : 'pointer', opacity: isDeleting ? 0.7 : 1 }}>{isDeleting ? 'Deleting…' : 'Delete'}</button>
         </div>
       </div>
     </div>
@@ -743,6 +751,7 @@ export default function EmailSettingsPage() {
   const [editAccount, setEditAccount] = useState<EmailAccount | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ account: EmailAccount; rules: Array<{ id: string; name: string }> } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [showProviderSelect, setShowProviderSelect] = useState(false);
   const [postConnectAccount, setPostConnectAccount] = useState<{ id: string; name: string; email: string } | null>(null);
   const [testAccount, setTestAccount] = useState<{ id: string; emailAddress: string } | null>(null);
@@ -800,12 +809,26 @@ export default function EmailSettingsPage() {
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     setIsDeleting(true);
+    setDeleteError(null);
     try {
-      await fetch(`/api/v1/email-accounts/${deleteTarget.account.id}`, { method: 'DELETE', credentials: 'include' });
+      const res = await fetch(`/api/v1/email-accounts/${deleteTarget.account.id}`, { method: 'DELETE', credentials: 'include' });
+      if (!res.ok) {
+        // Extract a useful message — Fastify returns { error: string } or { message: string }
+        let message = `Delete failed (${res.status} ${res.statusText})`;
+        try {
+          const body = await res.json();
+          if (typeof body?.error === 'string') message = body.error;
+          else if (typeof body?.message === 'string') message = body.message;
+        } catch { /* response had no JSON body */ }
+        setDeleteError(message);
+        return;
+      }
       void qc.invalidateQueries({ queryKey: ['settings-email'] });
+      setDeleteTarget(null);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Delete failed — network error');
     } finally {
       setIsDeleting(false);
-      setDeleteTarget(null);
     }
   };
 
@@ -966,8 +989,10 @@ export default function EmailSettingsPage() {
         <DeleteConfirmModal
           account={deleteTarget.account}
           rules={deleteTarget.rules}
+          error={deleteError}
+          isDeleting={isDeleting}
           onConfirm={() => void handleDeleteConfirm()}
-          onCancel={() => setDeleteTarget(null)}
+          onCancel={() => { setDeleteTarget(null); setDeleteError(null); }}
         />
       )}
 

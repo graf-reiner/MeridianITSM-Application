@@ -1107,7 +1107,7 @@ model EmailActivityLog {
   occurredAt     DateTime @default(now())
 
   tenant       Tenant       @relation(fields: [tenantId], references: [id])
-  emailAccount EmailAccount @relation(fields: [emailAccountId], references: [id])
+  emailAccount EmailAccount @relation(fields: [emailAccountId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, emailAccountId])
   @@index([tenantId, status])
@@ -1127,7 +1127,7 @@ model EmailPollJob {
   isPaused            Boolean   @default(false)
   pauseReason         String?
 
-  emailAccount EmailAccount @relation(fields: [emailAccountId], references: [id])
+  emailAccount EmailAccount @relation(fields: [emailAccountId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([nextPollAt])
@@ -1918,20 +1918,20 @@ model ApplicationAsset {
 
 // Model 36: Agent
 model Agent {
-  id              String        @id @default(uuid()) @db.Uuid
-  tenantId        String        @db.Uuid
-  agentKey        String        @unique
-  hostname        String
-  platform        AgentPlatform
-  platformVersion String?
-  agentVersion    String?
-  status          AgentStatus   @default(ENROLLING)
+  id               String        @id @default(uuid()) @db.Uuid
+  tenantId         String        @db.Uuid
+  agentKey         String        @unique
+  hostname         String
+  platform         AgentPlatform
+  platformVersion  String?
+  agentVersion     String?
+  status           AgentStatus   @default(ENROLLING)
   lastHeartbeatAt  DateTime?
   enrolledAt       DateTime?
   lastReconciledAt DateTime?
   metadata         Json?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   tenant             Tenant                        @relation(fields: [tenantId], references: [id])
   inventorySnapshots InventorySnapshot[]
@@ -1946,7 +1946,7 @@ model Agent {
   updateInProgress Boolean   @default(false)
   updateStartedAt  DateTime?
 
-  installFormat    AgentUpdateFormat?
+  installFormat AgentUpdateFormat?
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -1974,19 +1974,19 @@ model AgentUpdate {
 
 // Model 37.5: AgentUpdateDeployment — one row per deploy action
 model AgentUpdateDeployment {
-  id            String        @id @default(uuid()) @db.Uuid
-  tenantId      String        @db.Uuid
-  agentUpdateId String        @db.Uuid
-  triggeredById String?       @db.Uuid
-  targetKind    String // "ALL" | "SINGLE" | "SELECTION"
-  platform      AgentPlatform
-  targetCount   Int           @default(0)
-  successCount  Int           @default(0)
-  errorCount    Int           @default(0)
-  pendingCount  Int           @default(0)
-  changeId      String?       @unique @db.Uuid
-  awaitingApproval Boolean    @default(false)
-  createdAt     DateTime      @default(now())
+  id               String        @id @default(uuid()) @db.Uuid
+  tenantId         String        @db.Uuid
+  agentUpdateId    String        @db.Uuid
+  triggeredById    String?       @db.Uuid
+  targetKind       String // "ALL" | "SINGLE" | "SELECTION"
+  platform         AgentPlatform
+  targetCount      Int           @default(0)
+  successCount     Int           @default(0)
+  errorCount       Int           @default(0)
+  pendingCount     Int           @default(0)
+  changeId         String?       @unique @db.Uuid
+  awaitingApproval Boolean       @default(false)
+  createdAt        DateTime      @default(now())
 
   tenant      Tenant                        @relation(fields: [tenantId], references: [id])
   agentUpdate AgentUpdate                   @relation(fields: [agentUpdateId], references: [id])
@@ -3064,15 +3064,15 @@ enum OwnerOAuthProvider {
 }
 
 model OwnerOAuthIntegration {
-  id              String              @id @default(uuid()) @db.Uuid
-  provider        OwnerOAuthProvider  @unique
+  id              String             @id @default(uuid()) @db.Uuid
+  provider        OwnerOAuthProvider @unique
   clientId        String
-  clientSecretEnc String                                  // encrypted via @meridian/core encrypt()
+  clientSecretEnc String // encrypted via @meridian/core encrypt()
   secretExpiresAt DateTime?
   notes           String?
-  isEnabled       Boolean             @default(true)
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  isEnabled       Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
   @@map("owner_oauth_integrations")
 }
