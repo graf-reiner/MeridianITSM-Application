@@ -340,6 +340,14 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
         ? (async function* (): AsyncGenerator<never, void, unknown> { /* empty */ })()
         : client.fetch(uidsNewestFirst, { envelope: true, source: true }, { uid: true });
 
+      // CRITICAL: do NOT issue STORE (messageFlagsAdd) calls inside the
+      // for-await loop while the FETCH iterator is still streaming. IMAP is
+      // a single-command-at-a-time protocol per connection, and M365 in
+      // particular hangs the FETCH if a STORE is interleaved — the iterator
+      // never yields a second message and the socket eventually times out.
+      // Collect UIDs here and issue a single batched STORE after the loop.
+      const uidsToMarkSeen: number[] = [];
+
       for await (const message of messages) {
         try {
           if (!message.source) {
@@ -369,7 +377,7 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
               rawMeta: { connectorTest: true, token },
             });
             testsReceived++;
-            await client.messageFlagsAdd(message.uid, ['\\Seen'], { uid: true });
+            uidsToMarkSeen.push(message.uid);
             continue;
           }
 
@@ -380,7 +388,7 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
 
           if (await isDuplicate(account.tenantId, messageId)) {
             console.log(`[email-inbound] Duplicate Message-ID ${messageId}, skipping`);
-            await client.messageFlagsAdd(message.uid, ['\\Seen'], { uid: true });
+            uidsToMarkSeen.push(message.uid);
             continue;
           }
 
@@ -492,10 +500,23 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
             }
           }
 
-          await client.messageFlagsAdd(message.uid, ['\\Seen'], { uid: true });
+          uidsToMarkSeen.push(message.uid);
         } catch (msgErr) {
           console.error(
             `[email-inbound] Error processing message in account ${account.id}: ${msgErr instanceof Error ? msgErr.message : String(msgErr)}`,
+          );
+        }
+      }
+
+      // Now that the FETCH iterator has fully closed, issue the batched
+      // STORE. Doing it here (instead of inside the loop) is what stops M365
+      // from hanging the iterator after the first message.
+      if (uidsToMarkSeen.length > 0) {
+        try {
+          await client.messageFlagsAdd(uidsToMarkSeen, ['\\Seen'], { uid: true });
+        } catch (flagErr) {
+          console.error(
+            `[email-inbound] Failed to mark ${uidsToMarkSeen.length} messages \\Seen for account ${account.id}: ${flagErr instanceof Error ? flagErr.message : String(flagErr)}`,
           );
         }
       }
