@@ -307,13 +307,17 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
       // Reasoning:
       // - On a long-lived mailbox the unseen count can be 60k+. A single wide
       //   FETCH on that range makes M365 IMAP return "Command failed".
-      // - First poll on a new account: treat "now" as the cutoff so we don't
-      //   back-fill historical mail into tickets.
+      // - First poll on a new account: look back FIRST_POLL_LOOKBACK_MS so we
+      //   catch messages that arrived in the gap between account creation and
+      //   the first scheduled poll (notably connector-test messages). We do
+      //   NOT use `new Date()` as the cutoff — that excludes everything,
+      //   including the message the user just sent to validate the connector.
       // - Newest-first: ensures recent messages (tickets, replies, connector-test
       //   roundtrips) get processed even if there's an old backlog.
       // - Per-cycle cap: leftover backlog drains across subsequent polls.
       const MAX_MESSAGES_PER_CYCLE = 100;
-      const sinceDate = account.lastPolledAt ?? new Date();
+      const FIRST_POLL_LOOKBACK_MS = 30 * 60 * 1000; // 30 min
+      const sinceDate = account.lastPolledAt ?? new Date(Date.now() - FIRST_POLL_LOOKBACK_MS);
       const searchResult = await client.search({ seen: false, since: sinceDate }, { uid: true });
       // imapflow returns `number[]` on success or `false` on no-match / error.
       const matchingUids: number[] = Array.isArray(searchResult) ? searchResult : [];
@@ -358,7 +362,7 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
               rawMeta: { connectorTest: true, token },
             });
             testsReceived++;
-            await client.messageFlagsAdd({ uid: message.uid }, ['\\Seen'], { uid: true });
+            await client.messageFlagsAdd(message.uid, ['\\Seen'], { uid: true });
             continue;
           }
 
@@ -369,7 +373,7 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
 
           if (await isDuplicate(account.tenantId, messageId)) {
             console.log(`[email-inbound] Duplicate Message-ID ${messageId}, skipping`);
-            await client.messageFlagsAdd({ uid: message.uid }, ['\\Seen'], { uid: true });
+            await client.messageFlagsAdd(message.uid, ['\\Seen'], { uid: true });
             continue;
           }
 
@@ -481,7 +485,7 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
             }
           }
 
-          await client.messageFlagsAdd({ uid: message.uid }, ['\\Seen'], { uid: true });
+          await client.messageFlagsAdd(message.uid, ['\\Seen'], { uid: true });
         } catch (msgErr) {
           console.error(
             `[email-inbound] Error processing message in account ${account.id}: ${msgErr instanceof Error ? msgErr.message : String(msgErr)}`,

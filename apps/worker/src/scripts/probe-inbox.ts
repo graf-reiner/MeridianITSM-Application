@@ -85,7 +85,7 @@ async function main(): Promise<void> {
         const from = msg.envelope?.from?.[0]?.address ?? '?';
         const to = msg.envelope?.to?.map(t => t.address).join(', ') ?? '?';
         const flags = [...(msg.flags ?? [])].join(',');
-        const date = msg.internalDate?.toISOString() ?? '?';
+        const date = msg.internalDate ? new Date(msg.internalDate).toISOString() : '?';
         console.log(`  uid=${msg.uid} date=${date} flags=[${flags}] from=${from} to=${to}`);
         console.log(`    subject: ${subject.slice(0, 100)}`);
       }
