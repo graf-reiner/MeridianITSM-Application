@@ -1,0 +1,21 @@
+{
+  "name": "@meridian/notifications",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@meridian/core": "workspace:*",
+    "@meridian/db": "workspace:*",
+    "bullmq": "^5.71.0",
+    "ioredis": "^5.3.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
