@@ -61,9 +61,13 @@ export async function invalidateRulesCache(tenantId: string): Promise<void> {
 
 export interface DispatchOptions {
   /**
-   * Optional legacy-fallback hook. Called when no notification rules are
-   * defined for the trigger. apps/api passes its existing notify*() functions
-   * here; apps/worker passes undefined.
+   * Optional legacy-fallback hook. Called in two cases:
+   *   1. When no notification rules are defined for the trigger.
+   *   2. When rule loading or evaluation throws (DB outage / unexpected
+   *      error path) — last-resort so the user still gets notified.
+   *
+   * apps/api passes its existing per-trigger notify*() functions here;
+   * apps/worker passes undefined.
    */
   legacyFallback?: (tenantId: string, trigger: string, ctx: EventContext) => Promise<void>;
 }
@@ -110,8 +114,10 @@ export async function dispatchNotificationEvent(
             data: {
               tenantId, ruleId: rule.id, trigger: trigger as string,
               matched: true,
-              eventPayload: eventContext as never,
-              actionsFired: results as never,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              eventPayload: eventContext as any,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              actionsFired: results as any,
             },
           });
         } catch (logErr) {
