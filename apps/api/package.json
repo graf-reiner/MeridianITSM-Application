@@ -23,6 +23,7 @@
     "@fastify/swagger": "^9.7.0",
     "@meridian/core": "workspace:*",
     "@meridian/db": "workspace:*",
+    "@meridian/notifications": "workspace:*",
     "@meridian/types": "workspace:*",
     "@node-rs/bcrypt": "^1.10.7",
     "@types/mailparser": "^3.4.6",
