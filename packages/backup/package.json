@@ -19,7 +19,8 @@
     "@aws-sdk/client-s3": "^3.0.0",
     "@aws-sdk/s3-request-presigner": "^3.1013.0",
     "@meridian/core": "workspace:*",
-    "@meridian/db": "workspace:*"
+    "@meridian/db": "workspace:*",
+    "tar": "^7.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",
