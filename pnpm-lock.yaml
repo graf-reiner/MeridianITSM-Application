@@ -538,6 +538,9 @@ importers:
       '@meridian/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@meridian/notifications':
+        specifier: workspace:*
+        version: link:../../packages/notifications
       '@types/mailparser':
         specifier: ^3.4.6
         version: 3.4.6
