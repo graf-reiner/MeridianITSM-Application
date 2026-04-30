@@ -12,6 +12,7 @@ import { decrypt, encrypt, uploadFile, getFreshAccessToken, getOAuthCredentials 
 import { Redis } from 'ioredis';
 import { logEmailActivity } from './email-activity.service.js';
 import { markTestReceived, CONNECTOR_TEST_SUBJECT_REGEX } from './connector-test.service.js';
+import { dispatchNotificationEvent, type EventContext } from '@meridian/notifications';
 
 // Derive EmailAccount type from PrismaClient to avoid direct @prisma/client import
 type EmailAccount = Awaited<ReturnType<PrismaClient['emailAccount']['findUniqueOrThrow']>>;
@@ -141,8 +142,8 @@ async function createTicketFromEmail(
   });
 }
 
-async function addEmailComment(tenantId: string, ticketId: string, content: string): Promise<void> {
-  await prisma.ticketComment.create({
+async function addEmailComment(tenantId: string, ticketId: string, content: string): Promise<string> {
+  const created = await prisma.ticketComment.create({
     data: {
       tenantId,
       ticketId,
@@ -150,7 +151,9 @@ async function addEmailComment(tenantId: string, ticketId: string, content: stri
       content,
       visibility: 'PUBLIC',
     },
+    select: { id: true },
   });
+  return created.id;
 }
 
 // ─── Mailbox Polling ──────────────────────────────────────────────────────────
@@ -407,7 +410,7 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
           const textContent: string = parsed.text ?? htmlContent ?? '(No content)';
 
           if (existingTicket) {
-            await addEmailComment(account.tenantId, existingTicket.id, textContent);
+            const commentId = await addEmailComment(account.tenantId, existingTicket.id, textContent);
             comments++;
             await logEmailActivity({
               tenantId: account.tenantId,
@@ -420,6 +423,34 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
               ticketId: existingTicket.id,
               rawMeta: { kind: 'comment-on-existing' },
             });
+
+            // Fires NotificationRule actions only. User-built Workflow dispatch
+            // requires the workflow engine in apps/api and is not reachable from
+            // the worker process. See Phase 1.5 for planned resolution.
+            // Wrapped in try/catch so a dispatch failure doesn't abort the poll cycle.
+            try {
+              const fullTicket = await prisma.ticket.findUnique({
+                where: { id: existingTicket.id },
+                include: {
+                  queue: true,
+                  assignedTo: { select: { id: true, email: true, firstName: true, lastName: true } },
+                  requestedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
+                  category: true,
+                },
+              });
+              if (fullTicket) {
+                await dispatchNotificationEvent(account.tenantId, 'TICKET_COMMENTED', {
+                  ticket: fullTicket as unknown as EventContext['ticket'],
+                  comment: { id: commentId, visibility: 'PUBLIC', content: textContent, fromEmail: parsed.from?.value?.[0]?.address ?? null },
+                  actorId: undefined,
+                  trigger: 'TICKET_COMMENTED',
+                });
+              }
+            } catch (dispatchErr) {
+              console.error(
+                `[email-inbound] TICKET_COMMENTED dispatch failed for ticket ${existingTicket.id}: ${dispatchErr instanceof Error ? dispatchErr.message : String(dispatchErr)}`,
+              );
+            }
           } else {
             const fromEmail = parsed.from?.value?.[0]?.address;
             const requestedById = await lookupUserByEmail(account.tenantId, fromEmail);
@@ -497,6 +528,34 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
                   );
                 }
               }
+            }
+
+            // Fires NotificationRule actions only. User-built Workflow dispatch
+            // requires the workflow engine in apps/api and is not reachable from
+            // the worker process. See Phase 1.5 for planned resolution.
+            // Re-fetch the ticket with relations the rules engine reads.
+            // Wrapped in try/catch so a dispatch failure doesn't abort the poll cycle.
+            try {
+              const fullTicket = await prisma.ticket.findUnique({
+                where: { id: ticket.id },
+                include: {
+                  queue: true,
+                  assignedTo: { select: { id: true, email: true, firstName: true, lastName: true } },
+                  requestedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
+                  category: true,
+                },
+              });
+              if (fullTicket) {
+                await dispatchNotificationEvent(account.tenantId, 'TICKET_CREATED', {
+                  ticket: fullTicket as unknown as EventContext['ticket'],
+                  actorId: requestedById ?? undefined,
+                  trigger: 'TICKET_CREATED',
+                });
+              }
+            } catch (dispatchErr) {
+              console.error(
+                `[email-inbound] TICKET_CREATED dispatch failed for ticket ${ticket.id}: ${dispatchErr instanceof Error ? dispatchErr.message : String(dispatchErr)}`,
+              );
             }
           }
 
