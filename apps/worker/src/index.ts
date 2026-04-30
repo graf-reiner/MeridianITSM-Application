@@ -16,6 +16,7 @@ import { majorIncidentDetectionWorker } from './workers/major-incident-detection
 import { certExpiryMonitorWorker } from './workers/cert-expiry-monitor.js';
 import { inventoryRetentionWorker, inventoryDiffBackfillWorker } from './workers/inventory-retention.worker.js';
 import { emailActivityCleanupWorker, EMAIL_ACTIVITY_CLEANUP_QUEUE_NAME } from './workers/email-activity-cleanup.js';
+import { backupWorker } from './workers/backup.worker.js';
 import { Queue } from 'bullmq';
 import { bullmqConnection } from './queues/connection.js';
 import {
@@ -31,6 +32,7 @@ import {
   certExpiryMonitorQueue,
   inventoryRetentionQueue,
   inventoryDiffBackfillQueue,
+  backupQueue,
 } from './queues/definitions.js';
 import { redisConnection } from './queues/connection.js';
 
@@ -53,6 +55,7 @@ const workers = [
   { name: 'inventory-retention', worker: inventoryRetentionWorker },
   { name: 'inventory-diff-backfill', worker: inventoryDiffBackfillWorker },
   { name: 'email-activity-cleanup', worker: emailActivityCleanupWorker },
+  { name: 'backup-create + backup-prune', worker: backupWorker },
 ];
 
 const emailActivityCleanupQueue = new Queue(EMAIL_ACTIVITY_CLEANUP_QUEUE_NAME, { connection: bullmqConnection });
@@ -174,6 +177,28 @@ void inventoryRetentionQueue.add(
   {
     repeat: { pattern: '0 2 * * *' },
     jobId: 'inventory-retention-repeatable',
+  },
+);
+
+// Schedule nightly database + attachment backup at 2:00 AM UTC
+// (cron may be overridden at runtime via OwnerSetting backup.scheduledCron;
+//  the worker reads live config per-job — the schedule here uses the default)
+void backupQueue.add(
+  'backup-create',
+  { trigger: 'SCHEDULED' },
+  {
+    repeat: { pattern: '0 2 * * *', tz: 'UTC' },
+    jobId: 'backup-create-scheduled',
+  },
+);
+
+// Schedule nightly backup prune at 3:00 AM UTC (1 hour after the backup)
+void backupQueue.add(
+  'backup-prune',
+  {},
+  {
+    repeat: { pattern: '0 3 * * *', tz: 'UTC' },
+    jobId: 'backup-prune-scheduled',
   },
 );
 
