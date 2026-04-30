@@ -12,7 +12,7 @@ import { decrypt, encrypt, uploadFile, getFreshAccessToken, getOAuthCredentials 
 import { Redis } from 'ioredis';
 import { logEmailActivity } from './email-activity.service.js';
 import { markTestReceived, CONNECTOR_TEST_SUBJECT_REGEX } from './connector-test.service.js';
-import { dispatchNotificationEvent } from '@meridian/notifications';
+import { dispatchNotificationEvent, type EventContext } from '@meridian/notifications';
 
 // Derive EmailAccount type from PrismaClient to avoid direct @prisma/client import
 type EmailAccount = Awaited<ReturnType<PrismaClient['emailAccount']['findUniqueOrThrow']>>;
@@ -142,8 +142,8 @@ async function createTicketFromEmail(
   });
 }
 
-async function addEmailComment(tenantId: string, ticketId: string, content: string): Promise<void> {
-  await prisma.ticketComment.create({
+async function addEmailComment(tenantId: string, ticketId: string, content: string): Promise<string> {
+  const created = await prisma.ticketComment.create({
     data: {
       tenantId,
       ticketId,
@@ -151,7 +151,9 @@ async function addEmailComment(tenantId: string, ticketId: string, content: stri
       content,
       visibility: 'PUBLIC',
     },
+    select: { id: true },
   });
+  return created.id;
 }
 
 // ─── Mailbox Polling ──────────────────────────────────────────────────────────
@@ -408,7 +410,7 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
           const textContent: string = parsed.text ?? htmlContent ?? '(No content)';
 
           if (existingTicket) {
-            await addEmailComment(account.tenantId, existingTicket.id, textContent);
+            const commentId = await addEmailComment(account.tenantId, existingTicket.id, textContent);
             comments++;
             await logEmailActivity({
               tenantId: account.tenantId,
@@ -422,7 +424,9 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
               rawMeta: { kind: 'comment-on-existing' },
             });
 
-            // Fire TICKET_COMMENTED so notification rules + workflows react.
+            // Fires NotificationRule actions only. User-built Workflow dispatch
+            // requires the workflow engine in apps/api and is not reachable from
+            // the worker process. See Phase 1.5 for planned resolution.
             // Wrapped in try/catch so a dispatch failure doesn't abort the poll cycle.
             try {
               const fullTicket = await prisma.ticket.findUnique({
@@ -436,8 +440,8 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
               });
               if (fullTicket) {
                 await dispatchNotificationEvent(account.tenantId, 'TICKET_COMMENTED', {
-                  ticket: fullTicket as never,
-                  comment: { id: '', visibility: 'PUBLIC', content: textContent, fromEmail: parsed.from?.value?.[0]?.address ?? null },
+                  ticket: fullTicket as unknown as EventContext['ticket'],
+                  comment: { id: commentId, visibility: 'PUBLIC', content: textContent, fromEmail: parsed.from?.value?.[0]?.address ?? null },
                   actorId: undefined,
                   trigger: 'TICKET_COMMENTED',
                 });
@@ -526,7 +530,9 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
               }
             }
 
-            // Fire TICKET_CREATED so notification rules + workflows react.
+            // Fires NotificationRule actions only. User-built Workflow dispatch
+            // requires the workflow engine in apps/api and is not reachable from
+            // the worker process. See Phase 1.5 for planned resolution.
             // Re-fetch the ticket with relations the rules engine reads.
             // Wrapped in try/catch so a dispatch failure doesn't abort the poll cycle.
             try {
@@ -541,7 +547,7 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
               });
               if (fullTicket) {
                 await dispatchNotificationEvent(account.tenantId, 'TICKET_CREATED', {
-                  ticket: fullTicket as never,
+                  ticket: fullTicket as unknown as EventContext['ticket'],
                   actorId: requestedById ?? undefined,
                   trigger: 'TICKET_CREATED',
                 });
