@@ -58,6 +58,7 @@ export async function createBackup(input: CreateBackupInput): Promise<CreateBack
   let sizeBytes = 0;
   let attachmentCount = 0;
   let archiveSha256 = '';
+  let archivePath: string | null = null;
 
   try {
     // Step 2 — pg_dump
@@ -104,7 +105,7 @@ export async function createBackup(input: CreateBackupInput): Promise<CreateBack
     // Step 4 — tar+gzip into a temp archive on disk, then compute sha256+size before upload
     // Note: RESTORE.md is intentionally NOT included here. The owner-admin UI renders
     // an env-specific RESTORE.md on demand from BackupRun + MANIFEST data.
-    const archivePath = path.join(tmpdir(), `meridian-backup-${run.id}.tar.gz`);
+    archivePath = path.join(tmpdir(), `meridian-backup-${run.id}.tar.gz`);
     await tarCreate(
       { gzip: true, file: archivePath, cwd: tempRoot },
       ['database.dump', 'attachments', 'attachments-manifest.json', 'KEY.txt', 'MANIFEST.json'],
@@ -139,8 +140,6 @@ export async function createBackup(input: CreateBackupInput): Promise<CreateBack
       },
     });
 
-    await rm(archivePath, { force: true });
-
     return { runId: run.id, objectKey, sizeBytes, attachmentCount, archiveSha256 };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -162,6 +161,7 @@ export async function createBackup(input: CreateBackupInput): Promise<CreateBack
     throw err;
   } finally {
     await rm(tempRoot, { recursive: true, force: true });
+    if (archivePath) await rm(archivePath, { force: true });
   }
 }
 
@@ -169,9 +169,28 @@ export async function createBackup(input: CreateBackupInput): Promise<CreateBack
 
 function runPgDump(databaseUrl: string, outPath: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn('pg_dump', ['--format=c', '--file', outPath, databaseUrl], {
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
+    let parsed: URL;
+    try { parsed = new URL(databaseUrl); }
+    catch (err) {
+      reject(new Error(`Invalid databaseUrl: ${err instanceof Error ? err.message : String(err)}`));
+      return;
+    }
+
+    const args = [
+      '--format=c',
+      '--file', outPath,
+      '--host', parsed.hostname,
+      '--port', parsed.port || '5432',
+      '--username', decodeURIComponent(parsed.username),
+      parsed.pathname.replace(/^\//, ''),  // database name
+    ];
+
+    const env: NodeJS.ProcessEnv = {
+      ...process.env,
+      PGPASSWORD: parsed.password ? decodeURIComponent(parsed.password) : undefined,
+    };
+
+    const child = spawn('pg_dump', args, { stdio: ['ignore', 'pipe', 'pipe'], env });
     let stderr = '';
     child.stderr?.on('data', (d: Buffer) => {
       stderr += String(d);

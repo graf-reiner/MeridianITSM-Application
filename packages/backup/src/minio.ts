@@ -14,18 +14,19 @@ let _client: S3Client | null = null;
 
 /**
  * Lazy singleton S3Client configured from environment variables.
- * Uses S3_* env vars (same naming as core/storage.ts but separate instance
- * so the backup package can target a different bucket/endpoint if needed).
+ * Uses MINIO_* env vars to match the project-wide naming convention
+ * (packages/core/src/utils/storage.ts, apps/api/src/services/storage.service.ts).
+ * S3_REGION is kept separate — MinIO ignores it but the AWS SDK requires a value.
  */
 function client(): S3Client {
   if (_client) return _client;
   _client = new S3Client({
-    endpoint:       process.env['S3_ENDPOINT'] ?? 'http://localhost:9000',
+    endpoint:       process.env['MINIO_ENDPOINT'] ?? 'http://localhost:9000',
     region:         process.env['S3_REGION'] ?? 'us-east-1',
     forcePathStyle: true, // Required for MinIO — virtual-hosted style does not work
     credentials: {
-      accessKeyId:     process.env['S3_ACCESS_KEY'] ?? 'meridian',
-      secretAccessKey: process.env['S3_SECRET_KEY'] ?? 'meridian123',
+      accessKeyId:     process.env['MINIO_ACCESS_KEY'] ?? 'meridian',
+      secretAccessKey: process.env['MINIO_SECRET_KEY'] ?? 'meridian123',
     },
   });
   return _client;
