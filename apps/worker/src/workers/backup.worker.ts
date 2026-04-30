@@ -59,7 +59,7 @@ export const backupWorker = new Worker(
         envName:          process.env['ENV_NAME'] ?? 'dev',
         databaseUrl:      process.env['DATABASE_URL']!,
         encryptionKey:    process.env['ENCRYPTION_KEY']!,
-        attachmentBucket: process.env['MINIO_BUCKET'] ?? 'meridian-attachments',
+        attachmentBucket: process.env['MINIO_BUCKET'] ?? 'meridian',
         restoreCtx: {
           dbHost:  process.env['DB_HOST_DISPLAY']  ?? '10.1.200.78',
           dbName:  process.env['DB_NAME_DISPLAY']  ?? 'meridian',

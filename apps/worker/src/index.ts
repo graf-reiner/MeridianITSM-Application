@@ -17,6 +17,8 @@ import { certExpiryMonitorWorker } from './workers/cert-expiry-monitor.js';
 import { inventoryRetentionWorker, inventoryDiffBackfillWorker } from './workers/inventory-retention.worker.js';
 import { emailActivityCleanupWorker, EMAIL_ACTIVITY_CLEANUP_QUEUE_NAME } from './workers/email-activity-cleanup.js';
 import { backupWorker } from './workers/backup.worker.js';
+import { prisma } from '@meridian/db';
+import { DEFAULT_BACKUP_CONFIG } from '@meridian/backup';
 import { Queue } from 'bullmq';
 import { bullmqConnection } from './queues/connection.js';
 import {
@@ -180,27 +182,44 @@ void inventoryRetentionQueue.add(
   },
 );
 
-// Schedule nightly database + attachment backup at 2:00 AM UTC
-// (cron may be overridden at runtime via OwnerSetting backup.scheduledCron;
-//  the worker reads live config per-job — the schedule here uses the default)
-void backupQueue.add(
-  'backup-create',
-  { trigger: 'SCHEDULED' },
-  {
-    repeat: { pattern: '0 2 * * *', tz: 'UTC' },
-    jobId: 'backup-create-scheduled',
-  },
-);
+// Schedule nightly database + attachment backup, honouring the
+// backup.scheduledEnabled owner setting.  backup-prune is always registered
+// so manual backups are pruned even when scheduled backups are disabled.
+(async () => {
+  const enabledSetting = await prisma.ownerSetting.findUnique({ where: { key: 'backup.scheduledEnabled' } });
+  let enabled = DEFAULT_BACKUP_CONFIG.scheduledEnabled;
+  if (enabledSetting) {
+    try {
+      const v = JSON.parse(enabledSetting.value);
+      if (typeof v === 'boolean') enabled = v;
+    } catch { /* corrupt row — fall back to default */ }
+  }
 
-// Schedule nightly backup prune at 3:00 AM UTC (1 hour after the backup)
-void backupQueue.add(
-  'backup-prune',
-  {},
-  {
+  const cronSetting = await prisma.ownerSetting.findUnique({ where: { key: 'backup.scheduledCron' } });
+  let cron = DEFAULT_BACKUP_CONFIG.scheduledCron;
+  if (cronSetting) {
+    try {
+      const v = JSON.parse(cronSetting.value);
+      if (typeof v === 'string') cron = v;
+    } catch { /* corrupt row — fall back to default */ }
+  }
+
+  if (enabled) {
+    await backupQueue.add('backup-create', { trigger: 'SCHEDULED' }, {
+      repeat: { pattern: cron, tz: 'UTC' },
+      jobId: 'backup-create-scheduled',
+    });
+  } else {
+    // Remove a previously-registered cron if the user just disabled it
+    await backupQueue.removeRepeatable('backup-create', { pattern: cron, tz: 'UTC' });
+  }
+
+  // Prune is unconditional — manual backups also need pruning
+  await backupQueue.add('backup-prune', {}, {
     repeat: { pattern: '0 3 * * *', tz: 'UTC' },
     jobId: 'backup-prune-scheduled',
-  },
-);
+  });
+})().catch(err => console.error('[boot] backup schedule registration failed:', err));
 
 // One-time InventoryDiff backfill: enqueue only if not already completed
 void (async () => {
