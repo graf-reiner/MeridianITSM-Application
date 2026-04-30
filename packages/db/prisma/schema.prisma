@@ -2937,8 +2937,8 @@ model OwnerUser {
 
   sessions             OwnerSession[]
   notes                OwnerNote[]
-  backupRunsTriggered  BackupRun[]
-  ownerSettingsUpdated OwnerSetting[]
+  backupRuns       BackupRun[]
+  settingsUpdated  OwnerSetting[]
 
   @@map("owner_users")
 }
