@@ -19,11 +19,18 @@ function getBullmqConnection() {
   };
 }
 
+// HMR connection leak prevention: Next.js dev re-executes this module on every
+// hot reload, which would open a new Redis connection each time. Caching the
+// Queue instance on globalThis keeps exactly one connection alive across reloads.
+declare global {
+  // eslint-disable-next-line no-var
+  var _backupsQueue: Queue | undefined;
+}
+
 // Singleton Queue producer — only enqueues jobs, never processes them.
 // The worker (apps/worker) is the sole consumer of this queue.
-const backupsQueue = new Queue('backups', {
-  connection: getBullmqConnection(),
-});
+const backupsQueue: Queue = globalThis._backupsQueue ?? new Queue('backups', { connection: getBullmqConnection() });
+if (!globalThis._backupsQueue) globalThis._backupsQueue = backupsQueue;
 
 // ─── Auth helper ──────────────────────────────────────────────────────────────
 async function authenticate(request: Request) {
@@ -45,8 +52,10 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const limit  = Math.min(parseInt(searchParams.get('limit')  ?? '25', 10), 100);
-  const offset = parseInt(searchParams.get('offset') ?? '0', 10);
+  const rawLimit  = parseInt(searchParams.get('limit')  ?? '25', 10);
+  const rawOffset = parseInt(searchParams.get('offset') ?? '0',  10);
+  const limit  = Math.min(Number.isFinite(rawLimit)  && rawLimit  > 0 ? rawLimit  : 25, 100);
+  const offset = Number.isFinite(rawOffset) && rawOffset >= 0 ? rawOffset : 0;
 
   const [rows, total] = await Promise.all([
     prisma.backupRun.findMany({
