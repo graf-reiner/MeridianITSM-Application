@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ownerFetch } from '../../../lib/api';
 import SmtpSettings from '../../../components/SmtpSettings';
+import BackupsSection from '../../../components/BackupsSection';
 
 interface OwnerUser {
   id: string;
@@ -462,6 +463,9 @@ export default function SettingsPage() {
 
       {/* ── SMTP Email Configuration ───────────────────────────────────────── */}
       <SmtpSettings />
+
+      {/* ── Backup Configuration ──────────────────────────────────────────── */}
+      <BackupsSection />
     </div>
   );
 }
