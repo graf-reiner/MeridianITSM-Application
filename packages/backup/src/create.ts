@@ -125,7 +125,7 @@ export async function createBackup(input: CreateBackupInput): Promise<CreateBack
     objectKey = `backups/${input.trigger.toLowerCase()}/${ts}${triggeredSuffix}_${run.id}.tar.gz`;
 
     const uploadStream = createReadStream(archivePath);
-    await putObject(input.bucketName, objectKey, uploadStream, 'application/gzip');
+    await putObject(input.bucketName, objectKey, uploadStream, 'application/gzip', sizeBytes);
 
     // Close audit row — success
     await prisma.backupRun.update({

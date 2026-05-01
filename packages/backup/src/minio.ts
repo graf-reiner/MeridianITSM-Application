@@ -41,13 +41,17 @@ export async function putObject(
   key: string,
   body: Buffer | Readable,
   contentType = 'application/octet-stream',
+  contentLength?: number,
 ): Promise<void> {
+  // MinIO requires Content-Length on stream uploads — the SDK can't infer it from a Readable.
+  // Callers that have the size (e.g. from fs.stat) should pass contentLength.
   await client().send(
     new PutObjectCommand({
       Bucket: bucket,
       Key: key,
       Body: body,
       ContentType: contentType,
+      ContentLength: contentLength,
       ServerSideEncryption: 'AES256',
     }),
   );
