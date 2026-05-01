@@ -34,7 +34,16 @@ function client(): S3Client {
 
 /**
  * Upload a Buffer or Readable stream to the given bucket/key.
- * Applies AES256 server-side encryption by default.
+ *
+ * Server-side encryption is OPT-IN via the BACKUP_SSE env var:
+ *   BACKUP_SSE=AES256   → SSE-S3 (works on AWS S3 and on MinIO with a KMS backend)
+ *   BACKUP_SSE=aws:kms  → SSE-KMS (AWS only; requires KMS key configured)
+ *   unset / anything else → no SSE header sent
+ *
+ * Default OFF because MinIO without KMS rejects SSE with "Server side encryption
+ * specified but KMS is not configured." The spec's trust model treats bucket access
+ * as the primary boundary; SSE is defense-in-depth and should be enabled in
+ * production once MinIO/S3 KMS is available.
  */
 export async function putObject(
   bucket: string,
@@ -43,8 +52,9 @@ export async function putObject(
   contentType = 'application/octet-stream',
   contentLength?: number,
 ): Promise<void> {
-  // MinIO requires Content-Length on stream uploads — the SDK can't infer it from a Readable.
-  // Callers that have the size (e.g. from fs.stat) should pass contentLength.
+  const sseRaw = (process.env['BACKUP_SSE'] ?? '').trim();
+  const sse = sseRaw === 'AES256' || sseRaw === 'aws:kms' ? sseRaw : undefined;
+
   await client().send(
     new PutObjectCommand({
       Bucket: bucket,
@@ -52,7 +62,7 @@ export async function putObject(
       Body: body,
       ContentType: contentType,
       ContentLength: contentLength,
-      ServerSideEncryption: 'AES256',
+      ...(sse ? { ServerSideEncryption: sse } : {}),
     }),
   );
 }
