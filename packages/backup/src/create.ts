@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { mkdtemp, rm, writeFile, mkdir, stat } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, mkdir, stat, readFile } from 'node:fs/promises';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
@@ -124,8 +124,11 @@ export async function createBackup(input: CreateBackupInput): Promise<CreateBack
       input.trigger === 'MANUAL' && input.triggeredById ? `_${input.triggeredById}` : '';
     objectKey = `backups/${input.trigger.toLowerCase()}/${ts}${triggeredSuffix}_${run.id}.tar.gz`;
 
-    const uploadStream = createReadStream(archivePath);
-    await putObject(input.bucketName, objectKey, uploadStream, 'application/gzip', sizeBytes);
+    // Load the archive as a Buffer so the AWS SDK can compute Content-Length itself
+    // and MinIO doesn't reject a Transfer-Encoding: chunked stream upload.
+    // For multi-GB production backups, swap to @aws-sdk/lib-storage Upload (multipart).
+    const archiveBuffer = await readFile(archivePath);
+    await putObject(input.bucketName, objectKey, archiveBuffer, 'application/gzip', sizeBytes);
 
     // Close audit row — success
     await prisma.backupRun.update({
