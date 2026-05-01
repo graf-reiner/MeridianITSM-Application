@@ -59,10 +59,9 @@ function TriggerCell({ row }: { row: BackupRow }) {
   }
   return (
     <span style={{ fontSize: 13, color: '#374151' }}>
-      Manual
-      {row.triggeredBy?.email && (
-        <span style={{ display: 'block', fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{row.triggeredBy.email}</span>
-      )}
+      {row.triggeredBy?.email
+        ? `Manual (${row.triggeredBy.email})`
+        : 'Manual'}
     </span>
   );
 }
@@ -78,13 +77,20 @@ function RowActions({ row, onDeleted, onRestoreInstructions }: { row: BackupRow;
     setDownloading(true);
     try {
       const res = await ownerFetch(`/api/backups/${row.id}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json() as { downloadUrl: string | null };
-      if (data.downloadUrl) {
-        window.location.href = data.downloadUrl;
-      } else {
-        alert('Download URL not available. The backup file may have expired or been removed.');
+      if (!res.ok) {
+        if (res.status === 404) {
+          alert('Backup file not found in storage. The bucket may be misconfigured, or the object may have been deleted.');
+          return;
+        }
+        alert(`Failed to fetch download URL: HTTP ${res.status}`);
+        return;
       }
+      const data = await res.json() as { downloadUrl: string | null };
+      if (!data.downloadUrl) {
+        alert('Download URL not available. The backup may still be in progress or the object key is missing.');
+        return;
+      }
+      window.location.href = data.downloadUrl;
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to get download URL');
     } finally {

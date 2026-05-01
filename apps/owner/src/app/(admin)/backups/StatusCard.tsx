@@ -53,6 +53,7 @@ function formatSize(sizeBytes: string | null): string {
 export default function StatusCard({ rows, config, isRunning, onBackupEnqueued }: Props) {
   const [enqueuing, setEnqueuing] = useState(false);
   const [enqueueResult, setEnqueueResult] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [errorDialogOpen, setErrorDialogOpen] = useState(false);
 
   const lastComplete = rows.find(r => r.status === 'COMPLETE');
   const lastFailed   = rows.find(r => r.status === 'FAILED');
@@ -104,7 +105,15 @@ export default function StatusCard({ rows, config, isRunning, onBackupEnqueued }
             <span style={{ fontSize: 13, color: '#374151' }}>
               {config
                 ? config.scheduledEnabled
-                  ? humanCron(config.scheduledCron)
+                  ? (
+                    <>
+                      {humanCron(config.scheduledCron)}
+                      {' '}
+                      <a href="/settings#backups" style={{ fontSize: 12, color: '#4338ca', textDecoration: 'none' }}>
+                        Edit in Settings →
+                      </a>
+                    </>
+                  )
                   : <span style={{ color: '#9ca3af' }}>Disabled</span>
                 : <span style={{ color: '#9ca3af' }}>Loading…</span>}
             </span>
@@ -135,6 +144,17 @@ export default function StatusCard({ rows, config, isRunning, onBackupEnqueued }
             {recentFailed ? (
               <span style={{ fontSize: 13, color: '#b91c1c' }}>
                 {formatRelative(recentFailed.startedAt)}
+                {recentFailed.errorMessage && (
+                  <>
+                    {' '}
+                    <button
+                      onClick={() => setErrorDialogOpen(true)}
+                      style={{ fontSize: 12, color: '#b91c1c', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textDecoration: 'underline' }}
+                    >
+                      View error
+                    </button>
+                  </>
+                )}
               </span>
             ) : (
               <span style={{ fontSize: 13, color: '#6b7280' }}>None in 30 days</span>
@@ -210,6 +230,29 @@ export default function StatusCard({ rows, config, isRunning, onBackupEnqueued }
           )}
         </div>
       </div>
+
+      {/* Error detail dialog */}
+      {errorDialogOpen && recentFailed?.errorMessage && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60, padding: 24 }}
+          onClick={e => { if (e.target === e.currentTarget) setErrorDialogOpen(false); }}
+        >
+          <div style={{ background: '#fff', borderRadius: 10, padding: 24, maxWidth: 540, width: '100%', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <h3 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600, color: '#991b1b' }}>Backup Error</h3>
+            <pre style={{ margin: 0, fontSize: 12, color: '#374151', background: '#fee2e2', padding: 12, borderRadius: 6, overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: 280, overflowY: 'auto' }}>
+              {recentFailed.errorMessage}
+            </pre>
+            <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setErrorDialogOpen(false)}
+                style={{ padding: '7px 18px', fontSize: 13, fontWeight: 500, backgroundColor: '#4338ca', color: '#fff', border: 'none', borderRadius: 5, cursor: 'pointer' }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

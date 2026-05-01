@@ -28,9 +28,11 @@ export default function BackupsPage() {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ─── Fetch the backup list ─────────────────────────────────────────────────
-  const fetchRows = useCallback(async (currentOffset: number) => {
+  // useCallback captures `offset` so the polling interval always uses the
+  // current page rather than a stale closure value.
+  const fetchRows = useCallback(async () => {
     try {
-      const res = await ownerFetch(`/api/backups?limit=${PAGE_LIMIT}&offset=${currentOffset}`);
+      const res = await ownerFetch(`/api/backups?limit=${PAGE_LIMIT}&offset=${offset}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: BackupListResponse = await res.json();
       setRows(data.rows);
@@ -41,7 +43,7 @@ export default function BackupsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [offset]);
 
   // ─── Fetch backup settings (for StatusCard) ────────────────────────────────
   const fetchConfig = useCallback(async () => {
@@ -57,7 +59,7 @@ export default function BackupsPage() {
 
   // ─── Initial load ─────────────────────────────────────────────────────────
   useEffect(() => {
-    void fetchRows(0);
+    void fetchRows();
     void fetchConfig();
   }, [fetchRows, fetchConfig]);
 
@@ -65,25 +67,21 @@ export default function BackupsPage() {
   const hasRunning = rows.some(r => r.status === 'RUNNING');
 
   useEffect(() => {
+    // Clean up any existing interval first — handles offset/limit changes too.
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
     if (hasRunning) {
-      if (pollRef.current) return; // already polling
-      pollRef.current = setInterval(() => {
-        void fetchRows(offset);
-      }, POLL_INTERVAL_MS);
-    } else {
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
+      pollRef.current = setInterval(() => fetchRows(), POLL_INTERVAL_MS);
     }
     return () => {
-      // cleanup on unmount
       if (pollRef.current) {
         clearInterval(pollRef.current);
         pollRef.current = null;
       }
     };
-  }, [hasRunning, fetchRows, offset]);
+  }, [hasRunning, fetchRows]);
 
   // ─── Handle row deleted ───────────────────────────────────────────────────
   function handleDeleted(id: string) {
@@ -96,7 +94,7 @@ export default function BackupsPage() {
     // Brief delay then refresh so the RUNNING row has time to appear
     setTimeout(() => {
       setLoading(true);
-      void fetchRows(offset);
+      void fetchRows();
     }, 800);
   }
 
@@ -108,7 +106,19 @@ export default function BackupsPage() {
     const newOffset = (page - 1) * PAGE_LIMIT;
     setOffset(newOffset);
     setLoading(true);
-    void fetchRows(newOffset);
+    // fetchRows captures offset via useCallback dep — the state update above
+    // triggers a re-render which produces a fresh fetchRows with newOffset.
+    // Call it directly with the value to avoid the one-render lag.
+    void ownerFetch(`/api/backups?limit=${PAGE_LIMIT}&offset=${newOffset}`)
+      .then(async res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data: BackupListResponse = await res.json();
+        setRows(data.rows);
+        setTotal(data.total);
+        setError(null);
+      })
+      .catch(err => setError(err instanceof Error ? err.message : 'Failed to load backups'))
+      .finally(() => setLoading(false));
   }
 
   return (
@@ -124,11 +134,9 @@ export default function BackupsPage() {
       {/* Warning banner */}
       <div style={{ padding: '12px 16px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 6, color: '#92400e', fontSize: 13, marginBottom: 24, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
         <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>⚠</span>
-        <div>
-          <strong>Owner-only operation.</strong>{' '}
-          Backup archives are stored in object storage and contain all tenant data. Treat them as highly sensitive.
-          Restore operations require direct database access — see the Restore guide for each completed backup.
-        </div>
+        <span>
+          Backups contain your encryption key. Anyone who can read the backup bucket can decrypt all stored OAuth tokens and SMTP passwords. The bucket is restricted to the owner-admin app and sysadmins.
+        </span>
       </div>
 
       {/* Status card */}
