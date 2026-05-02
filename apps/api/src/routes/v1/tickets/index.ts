@@ -447,7 +447,11 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
     return reply.status(201).send(attachment);
   });
 
-  // ─── GET /api/v1/tickets/:id/attachments/:attachmentId/url — Signed URL ───
+  // ─── GET /api/v1/tickets/:id/attachments/:attachmentId/url ────────────────
+  // Returns a relative path to the streaming download endpoint below — NOT a
+  // presigned MinIO URL. Browsers reach MinIO indirectly through the api so
+  // MinIO doesn't have to be publicly exposed (Cloudflare → app domain → api
+  // → internal MinIO).
 
   fastify.get(
     '/api/v1/tickets/:id/attachments/:attachmentId/url',
@@ -461,16 +465,64 @@ export async function ticketRoutes(fastify: FastifyInstance): Promise<void> {
 
       const attachment = await prisma.ticketAttachment.findFirst({
         where: { id: attachmentId, ticketId, tenantId },
-        select: { storagePath: true },
+        select: { id: true },
       });
 
       if (!attachment) {
         return reply.status(404).send({ error: 'Attachment not found' });
       }
 
-      const url = await storageService.getFileSignedUrl(attachment.storagePath);
+      return reply.status(200).send({
+        url: `/api/v1/tickets/${ticketId}/attachments/${attachmentId}/download`,
+      });
+    },
+  );
 
-      return reply.status(200).send({ url });
+  // ─── GET /api/v1/tickets/:id/attachments/:attachmentId/download ───────────
+  // Streams the attachment bytes through the api so MinIO doesn't have to be
+  // public. Authenticates via JWT (Authorization header OR meridian_session
+  // cookie) so browser-rendered <img>/<a> tags work transparently.
+
+  fastify.get(
+    '/api/v1/tickets/:id/attachments/:attachmentId/download',
+    async (request, reply) => {
+      const user = request.user as { tenantId: string };
+      const tenantId = user.tenantId;
+      const { id: ticketId, attachmentId } = request.params as {
+        id: string;
+        attachmentId: string;
+      };
+
+      const attachment = await prisma.ticketAttachment.findFirst({
+        where: { id: attachmentId, ticketId, tenantId },
+        select: { storagePath: true, filename: true, mimeType: true },
+      });
+
+      if (!attachment) {
+        return reply.status(404).send({ error: 'Attachment not found' });
+      }
+
+      try {
+        const obj = await storageService.getFileObject(attachment.storagePath);
+        reply.header(
+          'Content-Type',
+          obj.contentType ?? attachment.mimeType ?? 'application/octet-stream',
+        );
+        if (obj.contentLength != null) {
+          reply.header('Content-Length', obj.contentLength);
+        }
+        // `inline` lets browsers preview images/PDFs in-place; the filename
+        // hint is what save-as dialogs use. Strip quotes to keep the header
+        // valid for filenames containing them.
+        const safeName = attachment.filename.replace(/"/g, '');
+        reply.header('Content-Disposition', `inline; filename="${safeName}"`);
+        // Private content — never cache at Cloudflare or other intermediaries.
+        reply.header('Cache-Control', 'private, no-store');
+        return reply.send(obj.body);
+      } catch (err) {
+        request.log.error({ err }, '[attachments] storage fetch failed');
+        return reply.status(502).send({ error: 'Storage fetch failed' });
+      }
     },
   );
 
