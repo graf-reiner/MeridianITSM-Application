@@ -1,16 +1,12 @@
-// ─── Workflow Engine — Public API ──────────────────────────────────────────────
-
-export { registerNode, getNodeDefinition, getAllNodeDefinitions, getAllNodeDefinitionDTOs, getNodesByCategory } from './node-registry.js';
-export { executeWorkflow } from './executor.js';
-export type { WorkflowGraph, WorkflowNode, WorkflowEdge, NodeDefinition, NodeResult, ExecutionContext, NodeDefinitionDTO, FieldSchema, PortDefinition } from './types.js';
+// ─── Workflow Engine — Dispatcher ──────────────────────────────────────────────
+// Public surface for firing workflows from event triggers.
+// Called by the shared dispatchNotificationEvent so api- AND worker-originated
+// events both fire user-built workflows.
 
 import { prisma } from '@meridian/db';
-import { redis } from '../../lib/redis.js';
+import { redis } from '../redis.js';
 import { executeWorkflow } from './executor.js';
-import type { EventContext } from '../notification-rules-conditions.js';
-
-// Import all node definitions so they self-register
-import './nodes/index.js';
+import type { EventContext } from '../conditions.js';
 
 const WORKFLOW_CACHE_TTL = 60; // seconds
 
@@ -22,7 +18,7 @@ interface CachedWorkflow {
 
 /**
  * Dispatch matching published workflows for a tenant + trigger.
- * Called from dispatchNotificationEvent() for coexistence.
+ * Called from the shared dispatchNotificationEvent.
  * Never throws.
  */
 export async function dispatchWorkflows(

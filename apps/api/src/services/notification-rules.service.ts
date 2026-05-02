@@ -1,6 +1,8 @@
 // ─── Notification Rules — api-side dispatcher wrapper ───────────────────────
-// Fires workflow engine (api-only) AND notification rules (shared package).
-// The actual rule evaluation and action execution live in @meridian/notifications.
+// Thin wrapper around the shared dispatcher that injects the api's legacy
+// per-trigger notify*() helpers as the legacyFallback. Workflow dispatch
+// itself now lives in @meridian/notifications and fires automatically for both
+// api- and worker-originated events.
 
 import {
   dispatchNotificationEvent as sharedDispatch,
@@ -14,7 +16,6 @@ import {
   notifyTicketUpdated,
   notifyMajorIncidentDeclared,
 } from './notification.service.js';
-import { dispatchWorkflows } from './workflow-engine/index.js';
 
 // Legacy fallback — delegates to per-trigger notify*() helpers in
 // notification.service.ts. Called by the shared dispatcher when no
@@ -61,19 +62,16 @@ async function fireLegacyNotification(
 }
 
 /**
- * api-side dispatch entry point. Fires user-built workflows (which still live
- * in this app), then delegates to the shared dispatcher for NotificationRule
- * actions and legacy fallback. NEVER throws.
+ * api-side dispatch entry point. Delegates to the shared dispatcher (which
+ * fires user-built workflows AND NotificationRule actions) and supplies the
+ * api's legacy per-trigger helpers as the fallback when no rules exist.
+ * NEVER throws.
  */
 export async function dispatchNotificationEvent(
   tenantId: string,
   trigger: string,
   eventContext: EventContext,
 ): Promise<void> {
-  // Workflow dispatch — apps/api-only until Phase 1.5.
-  try { await dispatchWorkflows(tenantId, trigger, eventContext); }
-  catch (err) { console.error('[notifications] workflow dispatch failed:', err); }
-
   await sharedDispatch(tenantId, trigger, eventContext, {
     legacyFallback: fireLegacyNotification,
   });

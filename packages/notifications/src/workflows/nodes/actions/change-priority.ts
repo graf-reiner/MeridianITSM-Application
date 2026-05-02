@@ -3,34 +3,31 @@ import type { ExecutionContext, NodeResult } from '../../types.js';
 import { prisma } from '@meridian/db';
 
 registerNode({
-  type: 'action_change_status',
+  type: 'action_change_priority',
   category: 'action',
-  label: 'Change Ticket Status',
-  description: 'Change the status of the current ticket',
-  icon: 'mdiSwapHorizontal',
+  label: 'Change Priority',
+  description: 'Change the priority of the current ticket',
+  icon: 'mdiAlertCircle',
   color: '#059669',
   inputs: [{ id: 'in', label: 'Input', type: 'default' }],
   outputs: [{ id: 'out', label: 'Next', type: 'default' }],
   configSchema: [
     {
-      key: 'status',
-      label: 'New Status',
+      key: 'priority',
+      label: 'New Priority',
       type: 'select',
       required: true,
       options: [
-        { label: 'New', value: 'NEW' },
-        { label: 'Open', value: 'OPEN' },
-        { label: 'In Progress', value: 'IN_PROGRESS' },
-        { label: 'Pending', value: 'PENDING' },
-        { label: 'Resolved', value: 'RESOLVED' },
-        { label: 'Closed', value: 'CLOSED' },
-        { label: 'Cancelled', value: 'CANCELLED' },
+        { label: 'Low', value: 'LOW' },
+        { label: 'Medium', value: 'MEDIUM' },
+        { label: 'High', value: 'HIGH' },
+        { label: 'Critical', value: 'CRITICAL' },
       ],
     },
   ],
   execute: async (config: Record<string, unknown>, context: ExecutionContext): Promise<NodeResult> => {
     if (context.isSimulation) {
-      return { success: true, output: { simulated: true, action: 'change_status', config } };
+      return { success: true, output: { simulated: true, action: 'change_priority', config } };
     }
 
     const ticketId = context.eventContext.ticket?.id;
@@ -38,16 +35,13 @@ registerNode({
       return { success: false, error: 'No ticket in context' };
     }
 
-    const newStatus = config.status as string;
-    const oldStatus = context.eventContext.ticket?.status;
+    const newPriority = config.priority as string;
+    const oldPriority = context.eventContext.ticket?.priority;
 
     await prisma.ticket.update({
       where: { id: ticketId },
-      data: {
-        status: newStatus,
-        ...(newStatus === 'RESOLVED' ? { resolvedAt: new Date() } : {}),
-        ...(newStatus === 'CLOSED' ? { closedAt: new Date() } : {}),
-      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: { priority: newPriority as any },
     });
 
     await prisma.ticketActivity.create({
@@ -55,9 +49,9 @@ registerNode({
         tenantId: context.tenantId,
         ticketId,
         activityType: 'FIELD_CHANGED',
-        fieldName: 'status',
-        oldValue: oldStatus,
-        newValue: newStatus,
+        fieldName: 'priority',
+        oldValue: oldPriority,
+        newValue: newPriority,
         metadata: {
           source: 'workflow',
           workflowId: context.workflowId,
@@ -69,7 +63,7 @@ registerNode({
 
     return {
       success: true,
-      output: { ticketId, oldStatus, newStatus },
+      output: { ticketId, oldPriority, newPriority },
     };
   },
 });
