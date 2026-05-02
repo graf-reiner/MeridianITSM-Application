@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Icon from '@mdi/react';
+import { formatTicketNumber } from '@meridian/core';
 import {
   mdiArrowLeft,
   mdiHistory,
@@ -197,7 +198,7 @@ function SubmissionDetailModal({
                     href={`/dashboard/tickets/${submission.ticket.id}`}
                     style={{ color: 'var(--accent-primary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                   >
-                    TKT-{submission.ticket.ticketNumber}
+                    {formatTicketNumber(submission.ticket.ticketNumber)}
                     <Icon path={mdiOpenInNew} size={0.55} color="currentColor" />
                   </Link>
                 ) : (
@@ -353,7 +354,7 @@ export default function SubmissionHistoryPage() {
                         onClick={(e) => e.stopPropagation()}
                         style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 500 }}
                       >
-                        TKT-{sub.ticket.ticketNumber}
+                        {formatTicketNumber(sub.ticket.ticketNumber)}
                       </Link>
                     ) : (
                       <span style={{ color: 'var(--text-muted)' }}>--</span>

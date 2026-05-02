@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiArrowLeft, mdiCloudUpload, mdiChevronRight } from '@mdi/js';
 import { useQuery } from '@tanstack/react-query';
+import { formatChangeNumber } from '@meridian/core';
 
 interface DeploymentRow {
   id: string;
@@ -151,8 +152,7 @@ export default function AgentUpdatesHistoryPage() {
                       <Link
                         href={`/dashboard/changes/${r.change.id}`}
                         style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontFamily: 'monospace' }}
-                      >
-                        CHG-{r.change.changeNumber}
+                      >{formatChangeNumber(r.change.changeNumber)}
                       </Link>
                     ) : (
                       <span style={{ color: 'var(--text-muted)' }}>—</span>

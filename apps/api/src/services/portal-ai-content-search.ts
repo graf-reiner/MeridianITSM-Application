@@ -12,6 +12,7 @@
  */
 
 import pg from 'pg';
+import { formatTicketNumber } from '@meridian/core';
 
 const { Pool } = pg;
 
@@ -177,7 +178,7 @@ async function searchPortalTicketsFTS(
   return res.rows.map((r: Record<string, unknown>) => ({
     source: 'ticket' as const,
     id: r.id as string,
-    title: `TKT-${r.ticketNumber}: ${r.title}`,
+    title: `${formatTicketNumber(r.ticketNumber)}: ${r.title}`,
     snippet: (r.snippet as string) || '',
     rank: r.rank as number,
     metadata: { ticketNumber: r.ticketNumber, status: r.status, priority: r.priority },
@@ -207,7 +208,7 @@ async function searchPortalCommentsFTS(
   return res.rows.map((r: Record<string, unknown>) => ({
     source: 'ticket_comment' as const,
     id: r.id as string,
-    title: `Comment on TKT-${r.ticketNumber}: ${r.ticket_title}`,
+    title: `Comment on ${formatTicketNumber(r.ticketNumber)}: ${r.ticket_title}`,
     snippet: (r.snippet as string) || '',
     rank: r.rank as number,
   }));
@@ -258,7 +259,7 @@ async function searchPortalTicketsLike(
   return res.rows.map((r: Record<string, unknown>) => ({
     source: 'ticket' as const,
     id: r.id as string,
-    title: `TKT-${r.ticketNumber}: ${r.title}`,
+    title: `${formatTicketNumber(r.ticketNumber)}: ${r.title}`,
     snippet: (r.snippet as string) || '',
     rank: 1,
     metadata: { ticketNumber: r.ticketNumber, status: r.status, priority: r.priority },
@@ -285,7 +286,7 @@ async function searchPortalCommentsLike(
   return res.rows.map((r: Record<string, unknown>) => ({
     source: 'ticket_comment' as const,
     id: r.id as string,
-    title: `Comment on TKT-${r.ticketNumber}: ${r.ticket_title}`,
+    title: `Comment on ${formatTicketNumber(r.ticketNumber)}: ${r.ticket_title}`,
     snippet: (r.snippet as string) || '',
     rank: 1,
   }));

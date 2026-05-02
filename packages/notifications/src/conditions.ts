@@ -239,7 +239,7 @@ export function evaluateConditionGroups(
 
 // ─── Template Renderer ───────────────────────────────────────────────────────
 
-import { renderTemplate as renderSharedTemplate } from "@meridian/core";
+import { renderTemplate as renderSharedTemplate, formatTicketNumber } from "@meridian/core";
 
 /**
  * Renders a notification-rule template using the shared `@meridian/core`
@@ -263,7 +263,10 @@ import { renderTemplate as renderSharedTemplate } from "@meridian/core";
 export function renderTemplate(template: string, context: EventContext): string {
   const t: Record<string, unknown> = (context.ticket ?? {}) as Record<string, unknown>;
   const now = new Date();
-  const ticketNumber = typeof t.ticketNumber === 'number' ? t.ticketNumber.toString() : '';
+  // ticket.number renders as the human-facing record number (SR-#####).
+  // Templates rarely want the raw integer; if you do, use ticket.numericId.
+  const ticketNumberRaw = typeof t.ticketNumber === 'number' ? t.ticketNumber : null;
+  const ticketNumber = ticketNumberRaw != null ? formatTicketNumber(ticketNumberRaw) : '';
   const title = typeof t.title === 'string' ? t.title : '';
   const priority = typeof t.priority === 'string' ? t.priority : '';
   const status = typeof t.status === 'string' ? t.status : '';
@@ -289,6 +292,7 @@ export function renderTemplate(template: string, context: EventContext): string 
     // nested (picker registry paths)
     ticket: {
       number: ticketNumber,
+      numericId: ticketNumberRaw ?? '',
       title,
       priority,
       status,

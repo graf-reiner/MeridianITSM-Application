@@ -1,6 +1,7 @@
 import { prisma } from '@meridian/db';
 import { stringify } from 'csv-stringify/sync';
 import { Queue } from 'bullmq';
+import { formatTicketNumber } from '@meridian/core';
 
 // Queue names mirrored here to avoid cross-app import from apps/worker
 const QUEUE_NAMES = {
@@ -224,7 +225,7 @@ export async function getTicketReport(tenantId: string, filters: TicketReportFil
 
   if (filters.format === 'csv') {
     const rows = tickets.map((t) => [
-      `TKT-${String(t.ticketNumber).padStart(5, '0')}`,
+      `${formatTicketNumber(t.ticketNumber)}`,
       t.title,
       t.status,
       t.priority,

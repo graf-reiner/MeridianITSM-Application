@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import Icon from '@mdi/react';
 import { mdiCalendar, mdiChevronLeft, mdiChevronRight, mdiViewList } from '@mdi/js';
+import { formatChangeNumber } from '@meridian/core';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -261,9 +262,9 @@ export default function ChangeCalendarPage() {
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
                           }}
-                          title={`CHG-${c.changeNumber}: ${c.title}`}
+                          title={`${formatChangeNumber(c.changeNumber)}: ${c.title}`}
                         >
-                          {isEmergency && '! '}CHG-{c.changeNumber}
+                          {isEmergency && '! '}{formatChangeNumber(c.changeNumber)}
                         </Link>
                       );
                     })}

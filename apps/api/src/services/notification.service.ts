@@ -1,5 +1,6 @@
 import { Queue } from 'bullmq';
 import { prisma } from '@meridian/db';
+import { formatTicketNumber } from '@meridian/core';
 
 // ─── BullMQ Connection helper ─────────────────────────────────────────────────
 function makeRedisConnection() {
@@ -162,7 +163,7 @@ export async function notifyTicketCreated(
       tenantId,
       userId: ticket.assignedToId,
       type: 'TICKET_ASSIGNED',
-      title: `Ticket TKT-${ticket.ticketNumber} assigned to you`,
+      title: `Ticket ${formatTicketNumber(ticket.ticketNumber)} assigned to you`,
       body: ticket.title,
       resourceId: ticket.id,
       resource: 'ticket',
@@ -206,7 +207,7 @@ export async function notifyTicketAssigned(
       tenantId,
       userId: assigneeId,
       type: 'TICKET_ASSIGNED',
-      title: `Ticket TKT-${ticket.ticketNumber} assigned to you`,
+      title: `Ticket ${formatTicketNumber(ticket.ticketNumber)} assigned to you`,
       body: ticket.title,
       resourceId: ticket.id,
       resource: 'ticket',
@@ -268,7 +269,7 @@ export async function notifyTicketCommented(
         tenantId,
         userId,
         type: 'TICKET_COMMENTED',
-        title: `New comment on TKT-${ticket.ticketNumber}`,
+        title: `New comment on ${formatTicketNumber(ticket.ticketNumber)}`,
         body: ticket.title,
         resourceId: ticket.id,
         resource: 'ticket',
@@ -312,7 +313,7 @@ export async function notifyTicketResolved(
       tenantId,
       userId: ticket.requestedById,
       type: 'TICKET_RESOLVED',
-      title: `Ticket TKT-${ticket.ticketNumber} has been resolved`,
+      title: `Ticket ${formatTicketNumber(ticket.ticketNumber)} has been resolved`,
       body: ticket.title,
       resourceId: ticket.id,
       resource: 'ticket',
@@ -351,7 +352,7 @@ export async function notifyTicketUpdated(
       tenantId,
       userId: ticket.assignedToId,
       type: 'TICKET_UPDATED',
-      title: `Ticket TKT-${ticket.ticketNumber} was updated`,
+      title: `Ticket ${formatTicketNumber(ticket.ticketNumber)} was updated`,
       body: `Changed: ${changes.join(', ')}`,
       resourceId: ticket.id,
       resource: 'ticket',
@@ -388,7 +389,7 @@ export async function notifyMajorIncidentDeclared(
       tenantId,
       userId: coordinatorId,
       type: 'MAJOR_INCIDENT_DECLARED',
-      title: `Major Incident Declared: TKT-${ticket.ticketNumber}`,
+      title: `Major Incident Declared: ${formatTicketNumber(ticket.ticketNumber)}`,
       body: `${ticket.title} — you have been assigned as Coordinator.`,
       resourceId: ticket.id,
       resource: 'ticket',

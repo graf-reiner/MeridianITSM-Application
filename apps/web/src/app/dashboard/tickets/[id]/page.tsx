@@ -14,6 +14,7 @@ import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import { UnsavedChangesToast } from '@/components/UnsavedChangesToast';
 import { useSession } from '@/hooks/useSession';
 import { PromoteMajorIncidentModal, DeescalateMajorIncidentModal } from '@/components/PromoteMajorIncidentModal';
+import { formatTicketNumber } from '@meridian/core';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1089,7 +1090,7 @@ export default function TicketDetailPage() {
                   (childrenData ?? []).map((child) => (
                     <Link key={child.id} href={`/dashboard/tickets/${child.id}`} style={{ textDecoration: 'none', display: 'block', padding: '10px 14px', backgroundColor: 'var(--bg-secondary)', borderRadius: 8, border: '1px solid var(--bg-tertiary)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--accent-primary)' }}>TKT-{child.ticketNumber}</span>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--accent-primary)' }}>{formatTicketNumber(child.ticketNumber)}</span>
                         <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{child.title}</span>
                         <span style={{ padding: '1px 6px', borderRadius: 10, fontSize: 11, fontWeight: 500, backgroundColor: getStatusStyle(child.status).bg, color: getStatusStyle(child.status).text }}>
                           {child.status.replace(/_/g, ' ')}
@@ -1136,7 +1137,7 @@ export default function TicketDetailPage() {
                         {link.linkType.replace(/_/g, ' ')}
                       </span>
                       <Link href={`/dashboard/tickets/${link.ticket.id}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
-                        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--accent-primary)' }}>TKT-{link.ticket.ticketNumber}</span>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--accent-primary)' }}>{formatTicketNumber(link.ticket.ticketNumber)}</span>
                         <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{link.ticket.title}</span>
                       </Link>
                       <span style={{ padding: '1px 6px', borderRadius: 10, fontSize: 11, fontWeight: 500, backgroundColor: getStatusStyle(link.ticket.status).bg, color: getStatusStyle(link.ticket.status).text }}>
@@ -1152,7 +1153,7 @@ export default function TicketDetailPage() {
                       <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700 }}>Link Ticket</h3>
                       <div style={{ marginBottom: 12 }}>
                         <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Ticket Number or Title</label>
-                        <input type="text" value={linkTicketNumber} onChange={(e) => setLinkTicketNumber(e.target.value)} placeholder="e.g. TKT-42 or search by title..." style={{ width: '100%', padding: '9px 12px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, boxSizing: 'border-box' }} />
+                        <input type="text" value={linkTicketNumber} onChange={(e) => setLinkTicketNumber(e.target.value)} placeholder="e.g. SR-42 or search by title..." style={{ width: '100%', padding: '9px 12px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, boxSizing: 'border-box' }} />
                       </div>
                       <div style={{ marginBottom: 16 }}>
                         <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Link Type</label>
@@ -1183,7 +1184,7 @@ export default function TicketDetailPage() {
                       </p>
                       <div style={{ marginBottom: 16 }}>
                         <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Source Ticket Numbers (comma-separated)</label>
-                        <input type="text" value={mergeTicketNumbers} onChange={(e) => setMergeTicketNumbers(e.target.value)} placeholder="e.g. TKT-10, TKT-15" style={{ width: '100%', padding: '9px 12px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, boxSizing: 'border-box' }} />
+                        <input type="text" value={mergeTicketNumbers} onChange={(e) => setMergeTicketNumbers(e.target.value)} placeholder="e.g. SR-10, SR-15" style={{ width: '100%', padding: '9px 12px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, boxSizing: 'border-box' }} />
                       </div>
                       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                         <button onClick={() => { setShowMergeModal(false); setMergeTicketNumbers(''); }} style={{ padding: '8px 16px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}>Cancel</button>
@@ -1446,7 +1447,7 @@ export default function TicketDetailPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {similarData.map(t => (
                   <Link key={t.id} href={`/dashboard/tickets/${t.id}`} style={{ textDecoration: 'none', fontSize: 13 }}>
-                    <span style={{ color: 'var(--accent-primary)', fontWeight: 500 }}>TKT-{t.ticketNumber}</span>
+                    <span style={{ color: 'var(--accent-primary)', fontWeight: 500 }}>{formatTicketNumber(t.ticketNumber)}</span>
                     {' '}
                     <span style={{ color: 'var(--text-secondary)' }}>{t.title}</span>
                   </Link>

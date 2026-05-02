@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '@meridian/db';
+import { formatTicketNumber } from '@meridian/core';
 
 /**
  * Ticket Merge REST API routes.
@@ -63,7 +64,7 @@ export async function ticketMergeRoutes(fastify: FastifyInstance): Promise<void>
     const alreadyMerged = sources.filter(s => s.mergedIntoId);
     if (alreadyMerged.length > 0) {
       return reply.status(400).send({
-        error: `Tickets already merged: ${alreadyMerged.map(t => `TKT-${t.ticketNumber}`).join(', ')}`,
+        error: `Tickets already merged: ${alreadyMerged.map(t => `${formatTicketNumber(t.ticketNumber)}`).join(', ')}`,
       });
     }
 
@@ -123,7 +124,7 @@ export async function ticketMergeRoutes(fastify: FastifyInstance): Promise<void>
             status: 'CLOSED',
             closedAt: new Date(),
             mergedIntoId: targetId,
-            resolution: `Merged into TKT-${target.ticketNumber}`,
+            resolution: `Merged into ${formatTicketNumber(target.ticketNumber)}`,
           },
         });
 

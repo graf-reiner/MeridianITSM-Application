@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiCheckDecagram, mdiCheck, mdiClose, mdiTicketOutline } from '@mdi/js';
+import { formatTicketNumber } from '@meridian/core';
 
 interface PendingApproval {
   id: string;
@@ -107,8 +108,7 @@ export default function MyApprovalsPage() {
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                      <Link href={`/dashboard/tickets/${approval.ticket.id}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}>
-                        TKT-{approval.ticket.ticketNumber}
+                      <Link href={`/dashboard/tickets/${approval.ticket.id}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}>{formatTicketNumber(approval.ticket.ticketNumber)}
                       </Link>
                       <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 500, backgroundColor: priStyle.bg, color: priStyle.text }}>
                         {approval.ticket.priority}

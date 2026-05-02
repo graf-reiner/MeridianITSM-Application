@@ -1,5 +1,6 @@
 import { prisma } from '@meridian/db';
 import { notifyUser } from './notification.service.js';
+import { formatChangeNumber } from '@meridian/core';
 
 // ─── State Machine ────────────────────────────────────────────────────────────
 
@@ -229,7 +230,7 @@ export async function createChange(
               tenantId,
               userId: approverId,
               type: 'CHANGE_APPROVAL',
-              title: `EMERGENCY: Change CHG-${createdChange.changeNumber} requires your approval`,
+              title: `EMERGENCY: Change ${formatChangeNumber(createdChange.changeNumber)} requires your approval`,
               body: createdChange.title,
               resourceId: createdChange.id,
               resource: 'change',
@@ -249,7 +250,7 @@ export async function createChange(
             tenantId,
             userId: data.assignedToId!,
             type: 'CHANGE_UPDATED',
-            title: `Change CHG-${createdChange.changeNumber} assigned to you`,
+            title: `Change ${formatChangeNumber(createdChange.changeNumber)} assigned to you`,
             body: createdChange.title,
             resourceId: createdChange.id,
             resource: 'change',
@@ -552,7 +553,7 @@ export async function updateChange(
             tenantId,
             userId: data.assignedToId!,
             type: 'CHANGE_UPDATED',
-            title: `Change CHG-${updatedChange.changeNumber} assigned to you`,
+            title: `Change ${formatChangeNumber(updatedChange.changeNumber)} assigned to you`,
             body: updatedChange.title,
             resourceId: updatedChange.id,
             resource: 'change',
@@ -659,7 +660,7 @@ export async function transitionStatus(
             tenantId,
             userId: notifyUserId,
             type: 'CHANGE_UPDATED',
-            title: `Change CHG-${updatedChange.changeNumber} status changed to ${newStatus}`,
+            title: `Change ${formatChangeNumber(updatedChange.changeNumber)} status changed to ${newStatus}`,
             body: updatedChange.title,
             resourceId: updatedChange.id,
             resource: 'change',
@@ -759,7 +760,7 @@ export async function recallChange(
             tenantId,
             userId: nid,
             type: 'CHANGE_UPDATED',
-            title: `Change CHG-${updated.changeNumber} recalled to ASSESSMENT`,
+            title: `Change ${formatChangeNumber(updated.changeNumber)} recalled to ASSESSMENT`,
             body: `Reason: ${reason.trim()}`,
             resourceId: updated.id,
             resource: 'change',
@@ -923,7 +924,7 @@ export async function addApprover(
         tenantId,
         userId: approverId,
         type: 'CHANGE_APPROVAL',
-        title: `Change CHG-${change.changeNumber} requires your approval`,
+        title: `Change ${formatChangeNumber(change.changeNumber)} requires your approval`,
         body: change.title,
         resourceId: changeId,
         resource: 'change',
@@ -1083,7 +1084,7 @@ export async function recordApproval(
               tenantId,
               userId: nextApprover.approverId,
               type: 'CHANGE_APPROVAL',
-              title: `Change CHG-${change.changeNumber} requires your approval`,
+              title: `Change ${formatChangeNumber(change.changeNumber)} requires your approval`,
               body: change.title,
               resourceId: changeId,
               resource: 'change',

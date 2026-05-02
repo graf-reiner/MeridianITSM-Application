@@ -6,6 +6,7 @@ import { useForm, Controller } from 'react-hook-form';
 import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiCheckCircle, mdiChevronLeft, mdiAlertCircleOutline } from '@mdi/js';
+import { formatTicketNumber } from '@meridian/core';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -495,7 +496,7 @@ export default function FormSubmitPage() {
             Request Submitted Successfully
           </h2>
           <p style={{ fontSize: 15, color: 'var(--text-secondary)', margin: '0 0 24px' }}>
-            Your ticket number is <strong>TKT-{result.ticketNumber}</strong>
+            Your ticket number is <strong>{formatTicketNumber(result.ticketNumber)}</strong>
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link

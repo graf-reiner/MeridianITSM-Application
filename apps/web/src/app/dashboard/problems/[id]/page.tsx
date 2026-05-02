@@ -7,6 +7,7 @@ import Link from 'next/link';
 import DOMPurify from 'dompurify';
 import Icon from '@mdi/react';
 import Breadcrumb from '@/components/Breadcrumb';
+import { formatTicketNumber, formatProblemNumber } from '@meridian/core';
 import {
   mdiAlertDecagramOutline,
   mdiLinkVariant,
@@ -171,12 +172,12 @@ export default function ProblemDetailPage() {
       {/* Breadcrumb + Header */}
       <Breadcrumb items={[
         { label: 'Problems', href: '/dashboard/problems' },
-        { label: `PRB-${String(problem.ticketNumber).padStart(5, '0')}` },
+        { label: `${formatProblemNumber(problem.ticketNumber)}` },
       ]} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
         <Icon path={mdiAlertDecagramOutline} size={1} color="var(--accent-primary)" />
         <span style={{ fontFamily: 'monospace', fontSize: 13, color: 'var(--text-muted)' }}>
-          PRB-{String(problem.ticketNumber).padStart(5, '0')}
+          {formatProblemNumber(problem.ticketNumber)}
         </span>
         <span style={{ padding: '2px 8px', borderRadius: 12, backgroundColor: sc.bg, color: sc.text, fontSize: 11, fontWeight: 600 }}>
           {problem.status.replace(/_/g, ' ')}
@@ -281,7 +282,7 @@ export default function ProblemDetailPage() {
                 return (
                   <div key={inc.id} style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid var(--bg-tertiary)', gap: 12 }}>
                     <Link href={`/dashboard/tickets/${inc.id}`} style={{ flex: 1, textDecoration: 'none' }}>
-                      <span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-muted)' }}>TKT-{String(inc.ticketNumber).padStart(5, '0')}</span>
+                      <span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-muted)' }}>{formatTicketNumber(inc.ticketNumber)}</span>
                       <span style={{ marginLeft: 8, fontSize: 14, color: 'var(--accent-primary)', fontWeight: 500 }}>{inc.title}</span>
                     </Link>
                     <span style={{ padding: '2px 8px', borderRadius: 10, backgroundColor: isc.bg, color: isc.text, fontSize: 11, fontWeight: 600 }}>{inc.status.replace(/_/g, ' ')}</span>

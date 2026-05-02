@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
 import { CITimeline } from '@/components/cmdb/ci-timeline';
 import Icon from '@mdi/react';
+import { formatChangeNumber } from '@meridian/core';
 import {
   mdiDatabase,
   mdiServer,
@@ -1440,7 +1441,7 @@ export default function CMDBDetailPage() {
                       <tr key={link.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
                         <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
                           <Link href={`/dashboard/changes/${link.change.id}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}>
-                            CHG-{link.change.changeNumber}
+                            {formatChangeNumber(link.change.changeNumber)}
                           </Link>
                         </td>
                         <td style={tdStyle}>
