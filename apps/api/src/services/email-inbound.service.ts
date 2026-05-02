@@ -2,7 +2,7 @@ import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
 import { randomUUID } from 'node:crypto';
 import { prisma, PrismaClient } from '@meridian/db';
-import { decrypt, uploadFile } from '@meridian/core';
+import { decrypt, uploadFile, formatTicketNumber, TICKET_NUMBER_SUBJECT_REGEX } from '@meridian/core';
 import { redis } from '../lib/redis.js';
 import { createTicket, addComment } from './ticket.service.js';
 import { logEmailActivity } from './email-activity.service.js';
@@ -75,13 +75,13 @@ export async function findTicketByHeaders(
 }
 
 /**
- * Attempts to find an existing ticket by matching TKT-XXXXX pattern in subject line.
+ * Attempts to find an existing ticket by matching SR-XXXXX (or legacy TKT-XXXXX) pattern in subject line.
  */
 export async function findTicketBySubject(
   tenantId: string,
   subject: string,
 ): Promise<{ id: string; ticketNumber: number } | null> {
-  const match = /TKT-(\d{5})/i.exec(subject);
+  const match = subject.match(TICKET_NUMBER_SUBJECT_REGEX);
   if (!match) return null;
 
   const ticketNumber = parseInt(match[1], 10);
@@ -204,7 +204,7 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
             ? [parsed.references]
             : undefined;
 
-          // Attempt reply threading: MIME headers first, subject TKT-XXXXX fallback
+          // Attempt reply threading: MIME headers first, subject SR-XXXXX (or legacy TKT-XXXXX) fallback
           const existingTicket =
             (await findTicketByHeaders(account.tenantId, references, inReplyTo)) ??
             (await findTicketBySubject(account.tenantId, parsed.subject ?? ''));
@@ -222,7 +222,7 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
             await markProcessed(account.tenantId, messageId);
             comments++;
             logEmailActivity({ tenantId: account.tenantId, emailAccountId: account.id, direction: 'INBOUND', status: 'RECEIVED', subject: parsed.subject ?? undefined, fromAddress: parsed.from?.value?.[0]?.address, messageId, ticketId: existingTicket.id });
-            console.log(`[email-inbound] Threaded comment on TKT-${existingTicket.ticketNumber} from uid ${uid}`);
+            console.log(`[email-inbound] Threaded comment on ${formatTicketNumber(existingTicket.ticketNumber)} from uid ${uid}`);
           } else {
             const fromEmail = parsed.from?.value?.[0]?.address;
             const requestedById = await lookupUserByEmail(account.tenantId, fromEmail);

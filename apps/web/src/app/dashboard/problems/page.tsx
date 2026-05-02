@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
 import { SkeletonTable } from '@/components/Skeleton';
+import { formatProblemNumber } from '@meridian/core';
 import {
   mdiAlertDecagramOutline,
   mdiPlus,
@@ -157,8 +158,7 @@ export default function ProblemsPage() {
                   const sc = STATUS_COLORS[p.status] ?? STATUS_COLORS.NEW;
                   return (
                     <tr key={p.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
-                      <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: 12 }}>
-                        PRB-{String(p.ticketNumber).padStart(5, '0')}
+                      <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: 12 }}>{formatProblemNumber(String(p.ticketNumber).padStart(5, '0'))}
                       </td>
                       <td style={{ padding: '10px 14px' }}>
                         <Link href={`/dashboard/problems/${p.id}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 500 }}>

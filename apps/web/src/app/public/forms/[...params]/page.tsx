@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import Icon from '@mdi/react';
 import { mdiCheckCircle, mdiAlertCircleOutline } from '@mdi/js';
+import { formatTicketNumber } from '@meridian/core';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -510,7 +511,7 @@ export default function PublicFormPage() {
             Request Submitted Successfully
           </h2>
           <p style={{ fontSize: 15, color: 'var(--text-secondary)', margin: '0 0 24px' }}>
-            Your request has been submitted. Your reference number is <strong>TKT-{result.ticketNumber}</strong>.
+            Your request has been submitted. Your reference number is <strong>{formatTicketNumber(result.ticketNumber)}</strong>.
           </p>
           <button
             type="button"

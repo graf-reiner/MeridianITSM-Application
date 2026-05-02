@@ -8,6 +8,7 @@ import crypto from 'node:crypto';
 import { prisma } from '@meridian/db';
 import { redis } from './redis.js';
 import { renderTemplate, type EventContext } from './conditions.js';
+import { formatTicketNumber } from '@meridian/core';
 
 // ─── Cross-system dedupe net ────────────────────────────────────────────────
 // Prevents the same (tenant, ticket, trigger, channel, recipient) from being
@@ -410,7 +411,7 @@ async function executeDiscord(
     embeds: context.ticket
       ? [
           {
-            title: `${context.ticket.ticketNumber ? `TKT-${String(context.ticket.ticketNumber).padStart(5, '0')}: ` : ''}${context.ticket.title ?? ''}`,
+            title: `${context.ticket.ticketNumber ? `${formatTicketNumber(context.ticket.ticketNumber)}: ` : ''}${context.ticket.title ?? ''}`,
             color: 0x5865f2, // Discord blurple
           },
         ]

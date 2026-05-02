@@ -11,6 +11,7 @@
 import { Queue, Worker, type Job } from 'bullmq';
 import { prisma } from '@meridian/db';
 import { redis } from '../lib/redis.js';
+import { formatTicketNumber } from '@meridian/core';
 
 const QUEUE_NAME = 'auto-close';
 const DEFAULT_AUTO_CLOSE_DAYS = 3;
@@ -111,7 +112,7 @@ export const autoCloseWorker = new Worker(
           ]);
           closed++;
         } catch (err) {
-          console.error(`[auto-close] Failed to close ticket TKT-${ticket.ticketNumber}:`, err);
+          console.error(`[auto-close] Failed to close ticket ${formatTicketNumber(ticket.ticketNumber)}:`, err);
         }
       }
     }

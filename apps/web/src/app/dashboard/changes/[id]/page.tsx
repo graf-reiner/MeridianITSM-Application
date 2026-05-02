@@ -17,6 +17,7 @@ import {
 import RichTextField from '@/components/RichTextField';
 import Breadcrumb from '@/components/Breadcrumb';
 import { useSession } from '@/hooks/useSession';
+import { formatChangeNumber } from '@meridian/core';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -615,7 +616,7 @@ export default function ChangeDetailPage() {
       {/* ── Breadcrumb + Header ──────────────────────────────────────────────── */}
       <Breadcrumb items={[
         { label: 'Changes', href: '/dashboard/changes' },
-        { label: `CHG-${change.changeNumber}` },
+        { label: `${formatChangeNumber(change.changeNumber)}` },
       ]} />
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
@@ -625,7 +626,7 @@ export default function ChangeDetailPage() {
               {change.title}
             </h1>
             <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>CHG-{change.changeNumber}</span>
+              <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>{formatChangeNumber(change.changeNumber)}</span>
               {isEmergency && (
                 <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 13, fontWeight: 700, backgroundColor: 'var(--badge-red-bg)', color: '#991b1b' }}>
                   EMERGENCY
@@ -724,7 +725,7 @@ export default function ChangeDetailPage() {
               Recall change to Assessment
             </h3>
             <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-              This pulls CHG-{change.changeNumber} back to <strong>ASSESSMENT</strong>. Existing approval decisions are
+              This pulls {formatChangeNumber(change.changeNumber)} back to <strong>ASSESSMENT</strong>. Existing approval decisions are
               cleared so the corrected change must be re-approved. A reason is required and logged in the audit trail.
             </p>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>

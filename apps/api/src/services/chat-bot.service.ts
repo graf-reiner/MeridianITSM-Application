@@ -1,6 +1,7 @@
 import { prisma } from '@meridian/db';
 import { createTicket } from './ticket.service.js';
 import { findOrCreateAnonymousUser } from './anonymous-user.service.js';
+import { formatTicketNumber } from '@meridian/core';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -131,7 +132,7 @@ async function handleTicketNew(
       source: platform.toUpperCase(),
     }, userId);
 
-    const ticketNum = `TKT-${String(ticket.ticketNumber).padStart(5, '0')}`;
+    const ticketNum = `${formatTicketNumber(ticket.ticketNumber)}`;
     return {
       text: `✅ Ticket created: *${ticketNum}*\n📝 ${title}\n\nAn agent will be assigned shortly.`,
       buttons: [
@@ -146,11 +147,11 @@ async function handleTicketNew(
 // ─── Ticket Status Lookup ────────────────────────────────────────────────────
 
 async function handleTicketStatus(tenantId: string, args: string): Promise<BotCommandResult> {
-  const numStr = args.replace(/^TKT-/i, '').replace(/^0+/, '');
+  const numStr = args.replace(/^(SR|TKT)-/i, '').replace(/^0+/, '');
   const ticketNumber = Number(numStr);
 
   if (!ticketNumber || isNaN(ticketNumber)) {
-    return { text: 'Please provide a ticket number. Example: /ticket_status 42 or /ticket_status TKT-00042' };
+    return { text: 'Please provide a ticket number. Example: /ticket_status 42 or /ticket_status SR-00042' };
   }
 
   const ticket = await prisma.ticket.findFirst({
@@ -176,7 +177,7 @@ async function handleTicketStatus(tenantId: string, args: string): Promise<BotCo
 
   return {
     text: [
-      `📋 TKT-${String(ticket.ticketNumber).padStart(5, '0')}`,
+      `📋 ${formatTicketNumber(ticket.ticketNumber)}`,
       `📝 ${ticket.title}`,
       `📊 Status: ${ticket.status.replace(/_/g, ' ')}`,
       `🔥 Priority: ${ticket.priority}`,
@@ -466,7 +467,7 @@ async function submitFormFromChat(
       source: platform.toUpperCase(),
     }, userId);
 
-    const ticketNum = `TKT-${String(ticket.ticketNumber).padStart(5, '0')}`;
+    const ticketNum = `${formatTicketNumber(ticket.ticketNumber)}`;
     return {
       text: `✅ Form submitted successfully!\n\n📋 Ticket: ${ticketNum}\n📝 ${title}\n\nYou'll receive updates when the ticket is processed.`,
     };

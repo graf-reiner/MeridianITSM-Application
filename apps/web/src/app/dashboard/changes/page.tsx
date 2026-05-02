@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import Icon from '@mdi/react';
 import { mdiSwapHorizontal, mdiPlus, mdiCalendar, mdiMagnify, mdiFilter, mdiArrowUp, mdiArrowDown, mdiUnfoldMoreHorizontal } from '@mdi/js';
+import { formatChangeNumber } from '@meridian/core';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -312,8 +313,7 @@ export default function ChangesPage() {
                       <Link
                         href={`/dashboard/changes/${change.id}`}
                         style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}
-                      >
-                        CHG-{change.changeNumber}
+                      >{formatChangeNumber(change.changeNumber)}
                       </Link>
                     </td>
                     <td style={{ padding: '10px 14px' }}>

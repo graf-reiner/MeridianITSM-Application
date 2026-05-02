@@ -15,7 +15,7 @@ interface BreadcrumbProps {
 
 /**
  * Reusable breadcrumb navigation.
- * Usage: <Breadcrumb items={[{ label: 'Tickets', href: '/dashboard/tickets' }, { label: 'TKT-00001' }]} />
+ * Usage: <Breadcrumb items={[{ label: 'Tickets', href: '/dashboard/tickets' }, { label: 'SR-00001' }]} />
  */
 export default function Breadcrumb({ items }: BreadcrumbProps) {
   return (

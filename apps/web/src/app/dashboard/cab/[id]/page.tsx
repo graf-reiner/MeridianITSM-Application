@@ -18,6 +18,7 @@ import {
   mdiAccountPlus,
 } from '@mdi/js';
 import Breadcrumb from '@/components/Breadcrumb';
+import { formatChangeNumber } from '@meridian/core';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -428,7 +429,7 @@ export default function CABMeetingDetailPage() {
                               href={`/dashboard/changes/${item.change.id}`}
                               style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent-primary)', textDecoration: 'none' }}
                             >
-                              CHG-{item.change.changeNumber}
+                              {formatChangeNumber(item.change.changeNumber)}
                             </Link>
                             <span style={{ fontSize: 14, color: 'var(--text-primary)', marginLeft: 6 }}>{item.change.title}</span>
                           </div>

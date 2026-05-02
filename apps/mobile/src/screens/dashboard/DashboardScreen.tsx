@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { useDashboard } from '../../api/dashboard';
 import { useAuthStore } from '../../stores/auth.store';
+import { formatTicketNumber } from '../../utils/record-numbers';
 
 const PRIORITY_COLORS: Record<string, { bg: string; text: string; label: string }> = {
   P1: { bg: '#fee2e2', text: '#991b1b', label: 'Critical (P1)' },
@@ -88,7 +89,7 @@ export function DashboardScreen() {
             {data.slaDueSoon.map((item) => (
               <View key={item.id} style={styles.slaItem}>
                 <View style={styles.slaItemHeader}>
-                  <Text style={styles.slaTicketNumber}>TKT-{item.number}</Text>
+                  <Text style={styles.slaTicketNumber}>{formatTicketNumber(item.number)}</Text>
                   <Text
                     style={[
                       styles.slaPercent,

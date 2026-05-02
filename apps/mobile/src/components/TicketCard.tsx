@@ -5,6 +5,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { Ticket } from '../api/tickets';
 import { TicketsStackParamList } from '../navigation/types';
 import { TicketStatusBadge, PriorityBadge } from './StatusBadge';
+import { formatTicketNumber } from '../utils/record-numbers';
 
 type TicketsNavProp = StackNavigationProp<TicketsStackParamList, 'TicketList'>;
 
@@ -29,7 +30,7 @@ export function TicketCard({ ticket }: TicketCardProps) {
       activeOpacity={0.7}
     >
       <View style={styles.header}>
-        <Text style={styles.ticketNumber}>TKT-{ticket.number}</Text>
+        <Text style={styles.ticketNumber}>{formatTicketNumber(ticket.number)}</Text>
         <Text style={styles.timestamp}>
           {new Date(ticket.createdAt).toLocaleDateString()}
         </Text>

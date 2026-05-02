@@ -18,6 +18,12 @@ export {
   type OAuthCredentials,
 } from './utils/oauth-credentials.js';
 export { uploadFile, getFileUrl, deleteFile, buildStoragePath } from './utils/storage.js';
+export {
+  formatTicketNumber,
+  formatChangeNumber,
+  formatProblemNumber,
+  TICKET_NUMBER_SUBJECT_REGEX,
+} from './utils/record-numbers.js';
 export { TenantService } from './services/tenant.service.js';
 export {
   type PlanResource,

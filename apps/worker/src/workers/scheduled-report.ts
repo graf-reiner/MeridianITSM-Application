@@ -1,7 +1,7 @@
 import { Worker } from 'bullmq';
 import nodemailer from 'nodemailer';
 import { prisma } from '@meridian/db';
-import { decrypt } from '@meridian/core';
+import { decrypt, formatTicketNumber, formatChangeNumber } from '@meridian/core';
 import { Cron } from 'croner';
 import { stringify } from 'csv-stringify/sync';
 import { bullmqConnection } from '../queues/connection.js';
@@ -40,7 +40,7 @@ async function generateTicketCsv(
   });
 
   const rows = tickets.map((t) => [
-    `TKT-${String(t.ticketNumber).padStart(5, '0')}`,
+    `${formatTicketNumber(t.ticketNumber)}`,
     t.title,
     t.status,
     t.priority,
@@ -93,7 +93,7 @@ async function generateSlaCsv(
   });
 
   const rows = tickets.map((t) => [
-    `TKT-${String(t.ticketNumber).padStart(5, '0')}`,
+    `${formatTicketNumber(t.ticketNumber)}`,
     t.title,
     t.priority,
     t.createdAt.toISOString(),
@@ -143,7 +143,7 @@ async function generateChangesCsv(
   });
 
   const rows = changes.map((c) => [
-    `CHG-${String(c.changeNumber).padStart(5, '0')}`,
+    `${formatChangeNumber(c.changeNumber)}`,
     c.title,
     c.type,
     c.status,

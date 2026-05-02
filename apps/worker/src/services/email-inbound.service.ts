@@ -8,7 +8,7 @@ import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
 import { randomUUID } from 'node:crypto';
 import { prisma, PrismaClient } from '@meridian/db';
-import { decrypt, encrypt, uploadFile, getFreshAccessToken, getOAuthCredentials } from '@meridian/core';
+import { decrypt, encrypt, uploadFile, getFreshAccessToken, getOAuthCredentials, TICKET_NUMBER_SUBJECT_REGEX } from '@meridian/core';
 import { Redis } from 'ioredis';
 import { logEmailActivity } from './email-activity.service.js';
 import { markTestReceived, CONNECTOR_TEST_SUBJECT_REGEX } from './connector-test.service.js';
@@ -72,7 +72,7 @@ export async function findTicketBySubject(
   tenantId: string,
   subject: string,
 ): Promise<{ id: string; ticketNumber: number } | null> {
-  const match = /TKT-(\d{5})/i.exec(subject);
+  const match = subject.match(TICKET_NUMBER_SUBJECT_REGEX);
   if (!match) return null;
   const ticketNumber = parseInt(match[1], 10);
   return prisma.ticket.findFirst({

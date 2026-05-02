@@ -2,6 +2,7 @@ import ical from 'ical-generator';
 import { prisma } from '@meridian/db';
 import { notifyUser } from './notification.service.js';
 import { transitionStatus } from './change.service.js';
+import { formatChangeNumber } from '@meridian/core';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -326,7 +327,7 @@ export async function recordOutcome(
           tenantId,
           userId: change.requestedById,
           type: 'CHANGE_UPDATED',
-          title: `CAB outcome for Change CHG-${change.changeNumber}: ${outcome}`,
+          title: `CAB outcome for Change ${formatChangeNumber(change.changeNumber)}: ${outcome}`,
           body: change.title,
           resourceId: changeId,
           resource: 'change',

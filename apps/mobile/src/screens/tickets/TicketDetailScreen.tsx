@@ -14,6 +14,7 @@ import { useTicket, useUpdateTicket } from '../../api/tickets';
 import { CommentThread } from '../../components/CommentThread';
 import { TicketStatusBadge, PriorityBadge } from '../../components/StatusBadge';
 import { useAuthStore } from '../../stores/auth.store';
+import { formatTicketNumber } from '../../utils/record-numbers';
 
 type Props = StackScreenProps<TicketsStackParamList, 'TicketDetail'>;
 
@@ -65,7 +66,7 @@ export function TicketDetailScreen({ route }: Props) {
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.ticketNumber}>TKT-{ticket.number}</Text>
+          <Text style={styles.ticketNumber}>{formatTicketNumber(ticket.number)}</Text>
           <Text style={styles.title}>{ticket.title}</Text>
         </View>
 
