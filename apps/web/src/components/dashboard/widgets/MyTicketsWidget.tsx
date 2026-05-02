@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
+import { formatTicketNumber } from '@meridian/core/record-numbers';
 import WidgetWrapper from '../WidgetWrapper';
 import type { WidgetProps } from '../types';
 
@@ -99,7 +100,7 @@ export default function MyTicketsWidget({ widgetId, config, isEditing, onConfigC
               onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
             >
               <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace', flexShrink: 0, width: 60 }}>
-                {t.ticketNumber}
+                {formatTicketNumber(t.ticketNumber)}
               </span>
               <span style={{ flex: 1, fontSize: 12, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {t.title}

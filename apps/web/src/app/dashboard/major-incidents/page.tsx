@@ -10,6 +10,7 @@ import {
   mdiMagnify,
   mdiLinkVariant,
 } from '@mdi/js';
+import { formatTicketNumber } from '@meridian/core/record-numbers';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -197,7 +198,7 @@ export default function MajorIncidentsPage() {
                   <tr key={inc.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
                     <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
                       <Link href={`/dashboard/tickets/${inc.id}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 500, fontSize: 13 }}>
-                        #{inc.ticketNumber}
+                        {formatTicketNumber(inc.ticketNumber)}
                       </Link>
                     </td>
                     <td style={{ padding: '10px 14px' }}>

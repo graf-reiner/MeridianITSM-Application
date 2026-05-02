@@ -613,7 +613,7 @@ export default function TicketDetailPage() {
       {/* ── Breadcrumb ──────────────────────────────────────────────────────── */}
       <Breadcrumb items={[
         { label: 'Tickets', href: '/dashboard/tickets' },
-        { label: ticket.ticketNumber },
+        { label: formatTicketNumber(ticket.ticketNumber) },
       ]} />
 
       {/* ── Major Incident proactive banner ──────────────────────────────── */}
@@ -649,7 +649,7 @@ export default function TicketDetailPage() {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-placeholder)' }}>{ticket.ticketNumber}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-placeholder)' }}>{formatTicketNumber(ticket.ticketNumber)}</span>
               <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 12, fontWeight: 500, backgroundColor: statusStyle.bg, color: statusStyle.text }}>
                 {ticket.status.replace(/_/g, ' ')}
               </span>

@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
 import { CITimeline } from '@/components/cmdb/ci-timeline';
 import Icon from '@mdi/react';
-import { formatChangeNumber } from '@meridian/core/record-numbers';
+import { formatChangeNumber, formatTicketNumber } from '@meridian/core/record-numbers';
 import {
   mdiDatabase,
   mdiServer,
@@ -1485,7 +1485,7 @@ export default function CMDBDetailPage() {
                       <tr key={link.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
                         <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
                           <Link href={`/dashboard/tickets/${link.ticket.id}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}>
-                            #{link.ticket.ticketNumber}
+                            {formatTicketNumber(link.ticket.ticketNumber)}
                           </Link>
                         </td>
                         <td style={tdStyle}>
@@ -1529,7 +1529,7 @@ export default function CMDBDetailPage() {
                       <tr key={link.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
                         <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
                           <Link href={`/dashboard/tickets/${link.ticket.id}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}>
-                            #{link.ticket.ticketNumber}
+                            {formatTicketNumber(link.ticket.ticketNumber)}
                           </Link>
                         </td>
                         <td style={tdStyle}>
@@ -1570,7 +1570,7 @@ export default function CMDBDetailPage() {
                       <tr key={link.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
                         <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
                           <Link href={`/dashboard/tickets/${link.ticket.id}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}>
-                            #{link.ticket.ticketNumber}
+                            {formatTicketNumber(link.ticket.ticketNumber)}
                           </Link>
                         </td>
                         <td style={tdStyle}>

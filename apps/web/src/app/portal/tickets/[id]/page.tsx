@@ -13,6 +13,7 @@ import {
   mdiInformationOutline,
   mdiDownload,
 } from '@mdi/js';
+import { formatTicketNumber } from '@meridian/core/record-numbers';
 import RichTextField from '@/components/RichTextField';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -288,7 +289,7 @@ export default function PortalTicketDetailPage({
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
           <div>
             <p style={{ margin: '0 0 4px', fontSize: 12, color: 'var(--text-placeholder)', fontFamily: 'monospace' }}>
-              {ticket.ticketNumber}
+              {formatTicketNumber(ticket.ticketNumber)}
             </p>
             <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3 }}>
               {ticket.title}
