@@ -1,6 +1,6 @@
 import { registerNode } from '../../node-registry.js';
 import type { ExecutionContext, NodeResult } from '../../types.js';
-import { executeActions } from '../../../notification-rules-actions.js';
+import { executeActions } from '../../../actions.js';
 
 registerNode({
   type: 'action_escalate',

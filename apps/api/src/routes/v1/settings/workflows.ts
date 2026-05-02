@@ -1,7 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '@meridian/db';
-import { getAllNodeDefinitionDTOs, invalidateWorkflowCache } from '../../../services/workflow-engine/index.js';
-import { convertRuleToWorkflowGraph } from '../../../services/workflow-engine/migration.js';
+import {
+  getAllNodeDefinitionDTOs,
+  invalidateWorkflowCache,
+  convertRuleToWorkflowGraph,
+} from '@meridian/notifications';
 
 /**
  * Workflow Automation Designer REST API routes.
@@ -447,7 +450,7 @@ export async function workflowRoutes(fastify: FastifyInstance): Promise<void> {
       ...(body.eventContext ?? {}),
     };
 
-    const { executeWorkflow } = await import('../../../services/workflow-engine/index.js');
+    const { executeWorkflow } = await import('@meridian/notifications');
     await executeWorkflow(user.tenantId, workflow.id, currentVersion.id, workflow.trigger, eventContext as any, true);
 
     // Load the execution that was just created

@@ -1,6 +1,6 @@
 import { registerNode } from '../../node-registry.js';
 import type { ExecutionContext, NodeResult } from '../../types.js';
-import { evaluateCondition, resolveFieldValue } from '../../../notification-rules-conditions.js';
+import { evaluateCondition, resolveFieldValue } from '../../../conditions.js';
 
 registerNode({
   type: 'condition_field',

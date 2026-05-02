@@ -3,6 +3,7 @@ import { redis } from './redis.js';
 import { evaluateConditionGroups, type ConditionGroup, type EventContext } from './conditions.js';
 import { executeActions, type ActionConfig } from './actions.js';
 import type { NotificationTrigger } from './types.js';
+import { dispatchWorkflows } from './workflows/dispatch.js';
 
 const CACHE_TTL_SECONDS = 60;
 
@@ -74,13 +75,8 @@ export interface DispatchOptions {
 
 /**
  * Evaluate notification rules for an event and execute matching actions.
+ * Also fires user-built workflows for the trigger.
  * NEVER throws — all errors are caught and logged.
- *
- * NOTE: This shared dispatcher only fires NotificationRule actions. The
- * workflow engine still lives in apps/api/src/services/workflow-engine and
- * is fired by callers BEFORE delegating here. A future task (Phase 1.5)
- * will move workflow dispatch into this package so worker-originated events
- * also fire user-built workflows.
  */
 export async function dispatchNotificationEvent(
   tenantId: string,
@@ -89,6 +85,12 @@ export async function dispatchNotificationEvent(
   options?: DispatchOptions,
 ): Promise<void> {
   eventContext.trigger = trigger as string;
+
+  // Fire workflows alongside notification rules. Independent path: workflows
+  // run regardless of whether any rules exist or match. dispatchWorkflows
+  // never throws, but wrap defensively anyway.
+  try { await dispatchWorkflows(tenantId, trigger as string, eventContext); }
+  catch (err) { console.error('[notifications] workflow dispatch failed:', err); }
 
   try {
     const rules = await loadRules(tenantId, trigger as string);

@@ -1,6 +1,6 @@
 // ─── Workflow Engine Type Definitions ──────────────────────────────────────────
 
-import type { EventContext } from '../notification-rules-conditions.js';
+import type { EventContext } from '../conditions.js';
 
 // ─── Graph Structure (React Flow compatible) ────────────────────────────────
 

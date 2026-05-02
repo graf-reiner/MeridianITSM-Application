@@ -1,7 +1,7 @@
 import { registerNode } from '../../node-registry.js';
 import type { ExecutionContext, NodeResult } from '../../types.js';
 import { prisma } from '@meridian/db';
-import { renderTemplate as renderNotificationTemplate } from '../../../notification-rules-conditions.js';
+import { renderTemplate as renderNotificationTemplate } from '../../../conditions.js';
 
 registerNode({
   type: 'action_add_comment',

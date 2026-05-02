@@ -4,10 +4,10 @@
 // steps for observability.
 
 import { prisma } from '@meridian/db';
-import { redis } from '../../lib/redis.js';
+import { redis } from '../redis.js';
 import { getNodeDefinition } from './node-registry.js';
 import type { WorkflowGraph, WorkflowNode, WorkflowEdge, ExecutionContext, NodeResult } from './types.js';
-import type { EventContext } from '../notification-rules-conditions.js';
+import type { EventContext } from '../conditions.js';
 
 const MAX_RECURSION_DEPTH = 3;
 const MAX_NODES_PER_EXECUTION = 50; // Safety limit
@@ -41,6 +41,7 @@ export async function executeWorkflow(
       versionId,
       trigger,
       status: 'RUNNING',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       eventPayload: eventContext as any,
       isSimulation,
     },
@@ -182,6 +183,7 @@ async function executeNode(
       nodeId: node.id,
       nodeType: node.type ?? 'unknown',
       status: 'RUNNING',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       inputData: node.data?.config as any,
       startedAt: new Date(),
     },
@@ -210,6 +212,7 @@ async function executeNode(
       where: { id: step.id },
       data: {
         status: result.success ? 'COMPLETED' : 'FAILED',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         outputData: result.output as any ?? null,
         error: result.error ?? null,
         completedAt: new Date(),
