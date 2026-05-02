@@ -10,18 +10,23 @@ const PREFIX_TICKET = 'SR';
 const PREFIX_CHANGE = 'CR';
 const PREFIX_PROBLEM = 'PRB';
 
-export function formatTicketNumber(ticketNumber: number | null | undefined): string {
-  if (ticketNumber == null) return '';
+// Accept number or string — Prisma `Int` columns surface as `number`, but JSON
+// payloads (web client, API responses cast through `as any`) sometimes round-trip
+// the value as a string. Either is fine to pad.
+type RecordNumber = number | string | null | undefined;
+
+export function formatTicketNumber(ticketNumber: RecordNumber): string {
+  if (ticketNumber == null || ticketNumber === '') return '';
   return `${PREFIX_TICKET}-${String(ticketNumber).padStart(PAD_WIDTH, '0')}`;
 }
 
-export function formatChangeNumber(changeNumber: number | null | undefined): string {
-  if (changeNumber == null) return '';
+export function formatChangeNumber(changeNumber: RecordNumber): string {
+  if (changeNumber == null || changeNumber === '') return '';
   return `${PREFIX_CHANGE}-${String(changeNumber).padStart(PAD_WIDTH, '0')}`;
 }
 
-export function formatProblemNumber(ticketNumber: number | null | undefined): string {
-  if (ticketNumber == null) return '';
+export function formatProblemNumber(ticketNumber: RecordNumber): string {
+  if (ticketNumber == null || ticketNumber === '') return '';
   return `${PREFIX_PROBLEM}-${String(ticketNumber).padStart(PAD_WIDTH, '0')}`;
 }
 
