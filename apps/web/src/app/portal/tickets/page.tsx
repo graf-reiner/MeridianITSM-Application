@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiTicketOutline, mdiPlus, mdiClockOutline } from '@mdi/js';
+import { formatTicketNumber } from '@meridian/core/record-numbers';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -257,7 +258,7 @@ export default function PortalTicketsPage() {
                       {ticket.title}
                     </p>
                     <p style={{ margin: 0, fontSize: 12, color: 'var(--text-placeholder)' }}>
-                      {ticket.ticketNumber}
+                      {formatTicketNumber(ticket.ticketNumber)}
                     </p>
                   </div>
 

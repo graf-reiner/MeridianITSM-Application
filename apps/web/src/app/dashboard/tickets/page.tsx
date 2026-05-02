@@ -9,6 +9,7 @@ import {
   mdiClose, mdiChevronDown, mdiStar, mdiStarOutline, mdiPencilOutline, mdiTrashCanOutline,
   mdiDownload, mdiUpload, mdiEarth, mdiAccountMultiple, mdiAccount,
 } from '@mdi/js';
+import { formatTicketNumber } from '@meridian/core/record-numbers';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -111,7 +112,7 @@ function SlaDot({ pct }: { pct?: number }) {
 const COLUMN_DEFS: Record<string, { label: string; render: (t: Ticket) => React.ReactNode; style?: React.CSSProperties }> = {
   ticketNumber: {
     label: 'Number',
-    render: (t) => <Link href={`/dashboard/tickets/${t.id}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 500, fontSize: 13 }}>{t.ticketNumber}</Link>,
+    render: (t) => <Link href={`/dashboard/tickets/${t.id}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 500, fontSize: 13 }}>{formatTicketNumber(t.ticketNumber)}</Link>,
     style: { whiteSpace: 'nowrap' },
   },
   title: {
