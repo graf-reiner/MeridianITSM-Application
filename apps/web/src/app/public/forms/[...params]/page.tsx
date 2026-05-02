@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import Icon from '@mdi/react';
 import { mdiCheckCircle, mdiAlertCircleOutline } from '@mdi/js';
-import { formatTicketNumber } from '@meridian/core';
+import { formatTicketNumber } from '@meridian/core/record-numbers';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

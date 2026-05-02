@@ -7,7 +7,7 @@ import Link from 'next/link';
 import DOMPurify from 'dompurify';
 import Icon from '@mdi/react';
 import Breadcrumb from '@/components/Breadcrumb';
-import { formatTicketNumber, formatProblemNumber } from '@meridian/core';
+import { formatTicketNumber, formatProblemNumber } from '@meridian/core/record-numbers';
 import {
   mdiAlertDecagramOutline,
   mdiLinkVariant,

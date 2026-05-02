@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import Icon from '@mdi/react';
 import { mdiSwapHorizontal, mdiPlus, mdiCalendar, mdiMagnify, mdiFilter, mdiArrowUp, mdiArrowDown, mdiUnfoldMoreHorizontal } from '@mdi/js';
-import { formatChangeNumber } from '@meridian/core';
+import { formatChangeNumber } from '@meridian/core/record-numbers';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

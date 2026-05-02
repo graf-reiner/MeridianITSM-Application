@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiCheckDecagram, mdiCheck, mdiClose, mdiTicketOutline } from '@mdi/js';
-import { formatTicketNumber } from '@meridian/core';
+import { formatTicketNumber } from '@meridian/core/record-numbers';
 
 interface PendingApproval {
   id: string;

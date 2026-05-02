@@ -17,7 +17,7 @@ import {
 import RichTextField from '@/components/RichTextField';
 import Breadcrumb from '@/components/Breadcrumb';
 import { useSession } from '@/hooks/useSession';
-import { formatChangeNumber } from '@meridian/core';
+import { formatChangeNumber } from '@meridian/core/record-numbers';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

@@ -6,7 +6,7 @@ import { useForm, Controller } from 'react-hook-form';
 import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiCheckCircle, mdiChevronLeft, mdiAlertCircleOutline } from '@mdi/js';
-import { formatTicketNumber } from '@meridian/core';
+import { formatTicketNumber } from '@meridian/core/record-numbers';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

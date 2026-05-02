@@ -18,7 +18,7 @@ import {
   mdiAccountPlus,
 } from '@mdi/js';
 import Breadcrumb from '@/components/Breadcrumb';
-import { formatChangeNumber } from '@meridian/core';
+import { formatChangeNumber } from '@meridian/core/record-numbers';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

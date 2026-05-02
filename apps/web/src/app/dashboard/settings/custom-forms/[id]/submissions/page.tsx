@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Icon from '@mdi/react';
-import { formatTicketNumber } from '@meridian/core';
+import { formatTicketNumber } from '@meridian/core/record-numbers';
 import {
   mdiArrowLeft,
   mdiHistory,

@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
 import { CITimeline } from '@/components/cmdb/ci-timeline';
 import Icon from '@mdi/react';
-import { formatChangeNumber } from '@meridian/core';
+import { formatChangeNumber } from '@meridian/core/record-numbers';
 import {
   mdiDatabase,
   mdiServer,
