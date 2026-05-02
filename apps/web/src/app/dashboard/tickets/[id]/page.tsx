@@ -14,7 +14,7 @@ import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import { UnsavedChangesToast } from '@/components/UnsavedChangesToast';
 import { useSession } from '@/hooks/useSession';
 import { PromoteMajorIncidentModal, DeescalateMajorIncidentModal } from '@/components/PromoteMajorIncidentModal';
-import { formatTicketNumber } from '@meridian/core';
+import { formatTicketNumber } from '@meridian/core/record-numbers';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

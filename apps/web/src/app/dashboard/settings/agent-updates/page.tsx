@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Icon from '@mdi/react';
 import { mdiArrowLeft, mdiCloudUpload, mdiChevronRight } from '@mdi/js';
 import { useQuery } from '@tanstack/react-query';
-import { formatChangeNumber } from '@meridian/core';
+import { formatChangeNumber } from '@meridian/core/record-numbers';
 
 interface DeploymentRow {
   id: string;

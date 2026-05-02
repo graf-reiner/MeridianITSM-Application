@@ -13,6 +13,10 @@
     "./template": {
       "types": "./dist/template/index.d.ts",
       "import": "./dist/template/index.js"
+    },
+    "./record-numbers": {
+      "types": "./dist/utils/record-numbers.d.ts",
+      "import": "./dist/utils/record-numbers.js"
     }
   },
   "scripts": {

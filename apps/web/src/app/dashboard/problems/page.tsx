@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
 import { SkeletonTable } from '@/components/Skeleton';
-import { formatProblemNumber } from '@meridian/core';
+import { formatProblemNumber } from '@meridian/core/record-numbers';
 import {
   mdiAlertDecagramOutline,
   mdiPlus,
