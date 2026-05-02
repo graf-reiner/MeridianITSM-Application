@@ -303,6 +303,10 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
     status: 'POLL_STARTED',
   });
 
+  // Hoisted to function scope so the per-poll persistence block at the bottom
+  // can read it regardless of which inner try-block exited.
+  let highestUid = account.lastProcessedUid ?? 0;
+
   try {
     await client.connect();
     const lock = await client.getMailboxLock('INBOX');
@@ -312,31 +316,38 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
       const status = await client.status('INBOX', { messages: true, unseen: true });
       console.log(`[email-inbound] Account ${account.id}: INBOX has ${status.messages} total, ${status.unseen} unseen`);
 
-      // Bound the fetch by date AND by per-cycle count, then process newest-first.
+      // UID-based fetch — track lastProcessedUid per account so we never
+      // miss a message that was marked \Seen by something other than us
+      // (Outlook Web reading pane, mail rules, mobile clients).
       //
-      // Reasoning:
-      // - On a long-lived mailbox the unseen count can be 60k+. A single wide
-      //   FETCH on that range makes M365 IMAP return "Command failed".
-      // - First poll on a new account: look back FIRST_POLL_LOOKBACK_MS so we
-      //   catch messages that arrived in the gap between account creation and
-      //   the first scheduled poll (notably connector-test messages). We do
-      //   NOT use `new Date()` as the cutoff — that excludes everything,
-      //   including the message the user just sent to validate the connector.
-      // - Newest-first: ensures recent messages (tickets, replies, connector-test
-      //   roundtrips) get processed even if there's an old backlog.
-      // - Per-cycle cap: leftover backlog drains across subsequent polls.
+      // - First poll (lastProcessedUid=0): baseline at current UIDNEXT-1 so we
+      //   don't reprocess the entire historical mailbox. The user's first real
+      //   message will be uid > baseline and get picked up next cycle.
+      // - Subsequent polls: search uid > lastProcessedUid.
+      // - Per-cycle cap (MAX_MESSAGES_PER_CYCLE): leftover backlog drains across
+      //   later polls without slamming M365 with one huge FETCH.
       const MAX_MESSAGES_PER_CYCLE = 100;
-      const FIRST_POLL_LOOKBACK_MS = 30 * 60 * 1000; // 30 min
-      const sinceDate = account.lastPolledAt ?? new Date(Date.now() - FIRST_POLL_LOOKBACK_MS);
-      const searchResult = await client.search({ seen: false, since: sinceDate }, { uid: true });
+      const lastProcessedUid = highestUid;
+
+      if (lastProcessedUid === 0) {
+        const baseline = client.mailbox && typeof client.mailbox === 'object' && 'uidNext' in client.mailbox
+          ? Math.max(0, ((client.mailbox as { uidNext?: number }).uidNext ?? 1) - 1)
+          : 0;
+        highestUid = baseline;
+        console.log(`[email-inbound] First poll for ${account.id}, baseline uid=${baseline}`);
+      }
+
+      const uidRange = `${highestUid + 1}:*`;
+      const searchResult = await client.search({ uid: uidRange }, { uid: true });
       // imapflow returns `number[]` on success or `false` on no-match / error.
       const matchingUids: number[] = Array.isArray(searchResult) ? searchResult : [];
       const uidsNewestFirst = matchingUids
+        .filter(uid => uid > highestUid)
         .sort((a, b) => b - a) // descending — IMAP UIDs are monotonically increasing per mailbox
         .slice(0, MAX_MESSAGES_PER_CYCLE);
 
       if (matchingUids.length > MAX_MESSAGES_PER_CYCLE) {
-        console.log(`[email-inbound] Account ${account.id}: ${matchingUids.length} matching unseen messages, processing newest ${MAX_MESSAGES_PER_CYCLE} this cycle`);
+        console.log(`[email-inbound] Account ${account.id}: ${matchingUids.length} matching messages newer than uid=${lastProcessedUid}, processing newest ${MAX_MESSAGES_PER_CYCLE} this cycle`);
       }
 
       const messages = uidsNewestFirst.length === 0
@@ -352,6 +363,9 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
       const uidsToMarkSeen: number[] = [];
 
       for await (const message of messages) {
+        // Advance the UID watermark for EVERY fetched message — even ones we
+        // skip — so the next poll cycle picks up where this one left off.
+        highestUid = Math.max(highestUid, message.uid);
         try {
           if (!message.source) {
             console.warn(`[email-inbound] No source in message for account ${account.id}, skipping`);
@@ -560,10 +574,13 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
           }
 
           uidsToMarkSeen.push(message.uid);
+          highestUid = Math.max(highestUid, message.uid);
         } catch (msgErr) {
           console.error(
             `[email-inbound] Error processing message in account ${account.id}: ${msgErr instanceof Error ? msgErr.message : String(msgErr)}`,
           );
+          // Advance UID anyway so we don't get stuck retrying a poisonous message forever.
+          highestUid = Math.max(highestUid, message.uid);
         }
       }
 
@@ -671,7 +688,7 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
     try {
       await prisma.emailAccount.update({
         where: { id: account.id },
-        data: { lastPolledAt: new Date() },
+        data: { lastPolledAt: new Date(), lastProcessedUid: highestUid },
       });
     } catch { /* non-critical */ }
     throw err;
@@ -679,7 +696,7 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
 
   await prisma.emailAccount.update({
     where: { id: account.id },
-    data: { lastPolledAt: new Date() },
+    data: { lastPolledAt: new Date(), lastProcessedUid: highestUid },
   });
 
   await logEmailActivity({
