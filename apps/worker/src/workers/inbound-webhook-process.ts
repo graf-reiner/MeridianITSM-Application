@@ -211,7 +211,7 @@ async function createTicketFromWebhook(
       }
     }
 
-    return tx.ticket.create({
+    const ticket = await tx.ticket.create({
       data: {
         tenantId,
         ticketNumber,
@@ -226,7 +226,26 @@ async function createTicketFromWebhook(
         source: 'WEBHOOK' as never,
         customFields: (data.customFields ?? null) as never,
       },
-      select: { id: true, ticketNumber: true, assignedToId: true },
+      select: { id: true, ticketNumber: true, assignedToId: true, title: true, type: true, priority: true },
     });
+
+    // Mirror the API's ticket.service.ts CREATED activity write so the per-ticket
+    // Activity tab is populated for webhook-originated tickets.
+    await tx.ticketActivity.create({
+      data: {
+        tenantId,
+        ticketId: ticket.id,
+        actorId: data.requestedById ?? null,
+        activityType: 'CREATED',
+        metadata: {
+          title: ticket.title,
+          type: ticket.type,
+          priority: ticket.priority,
+          source: 'WEBHOOK',
+        },
+      },
+    });
+
+    return { id: ticket.id, ticketNumber: ticket.ticketNumber, assignedToId: ticket.assignedToId };
   });
 }
