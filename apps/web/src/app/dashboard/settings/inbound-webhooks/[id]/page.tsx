@@ -4,7 +4,7 @@ import { useState, use, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiContentCopy, mdiCheck, mdiPlay, mdiKeyChange, mdiTune, mdiHelpCircleOutline, mdiBroom } from '@mdi/js';
+import { mdiArrowLeft, mdiContentCopy, mdiCheck, mdiPlay, mdiKeyChange, mdiTune, mdiHelpCircleOutline, mdiBroom, mdiClose } from '@mdi/js';
 import { formatTicketNumber } from '@meridian/core/record-numbers';
 
 interface DeliveryRow {
@@ -273,6 +273,8 @@ function MappingEditor({ webhook, webhookUrl, onSaved }: { webhook: WebhookDetai
   const { data: queues = [] } = useQueueOptions();
   const { data: categories = [] } = useCategoryOptions();
   const [curlCopied, setCurlCopied] = useState(false);
+  const [previewCopied, setPreviewCopied] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [mapping, setMapping] = useState<Record<string, string>>(() => normalizeMapping(webhook.mapping));
   const [samplePayload, setSamplePayload] = useState<string>(() => {
     // Pre-fill with the most recent delivery body if any.
@@ -326,6 +328,10 @@ function MappingEditor({ webhook, webhookUrl, onSaved }: { webhook: WebhookDetai
     mutationFn: async () => {
       let parsed: unknown;
       try { parsed = JSON.parse(samplePayload); } catch { throw new Error('Sample payload is not valid JSON'); }
+      // Pretty-print the textarea so the user sees clean JSON after preview.
+      // The Sample cURL block reads from samplePayload state, so it auto-updates
+      // to the formatted version too.
+      setSamplePayload(JSON.stringify(parsed, null, 2));
       const res = await fetch(`/api/v1/inbound-webhooks/${webhook.id}/preview-mapping`, {
         method: 'POST',
         credentials: 'include',
@@ -397,13 +403,14 @@ function MappingEditor({ webhook, webhookUrl, onSaved }: { webhook: WebhookDetai
             <button onClick={() => saveMut.mutate()} disabled={saveMut.isPending || clearMut.isPending} style={btnPrimary}>
               {saveMut.isPending ? 'Saving…' : 'Save Mapping'}
             </button>
-            <span
-              title="Save Mapping persists every non-empty field above to this webhook. From then on, every POST to this webhook URL is rendered through these template strings before a ticket is created. Fields you leave empty fall back to the built-in defaults ({{json.title}}, {{json.description}}, {{json.priority}}, {{json.type}}, {{json.requesterEmail}}) so plain curl works without any configuration. Templates like {{json.field}} pull values from the inbound JSON; plain text (e.g. HIGH) becomes a literal that every ticket inherits regardless of payload."
-              style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--text-muted)', cursor: 'help' }}
+            <button
+              type="button"
+              onClick={() => setHelpOpen(true)}
+              style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--accent-primary)', cursor: 'pointer', background: 'none', border: 'none', padding: 2, textDecoration: 'underline' }}
               aria-label="What does Save Mapping do?"
             >
-              <Icon path={mdiHelpCircleOutline} size={0.8} />
-            </span>
+              <Icon path={mdiHelpCircleOutline} size={0.9} />
+            </button>
             <button
               onClick={() => clearMut.mutate()}
               disabled={saveMut.isPending || clearMut.isPending}
@@ -472,6 +479,7 @@ function MappingEditor({ webhook, webhookUrl, onSaved }: { webhook: WebhookDetai
             const categoryId = typeof m.categoryId === 'string' ? m.categoryId : null;
             const queueName = queueId ? queues.find((q) => q.id === queueId)?.name ?? '?' : null;
             const categoryName = categoryId ? categories.find((c) => c.id === categoryId)?.name ?? '?' : null;
+            const previewJson = JSON.stringify(previewResult, null, 2);
             return (
               <>
                 {(queueName || categoryName) && (
@@ -479,14 +487,78 @@ function MappingEditor({ webhook, webhookUrl, onSaved }: { webhook: WebhookDetai
                     Resolved: {queueName && <strong>Queue → {queueName}</strong>}{queueName && categoryName && ' · '}{categoryName && <strong>Category → {categoryName}</strong>}
                   </div>
                 )}
-                <pre style={{ marginTop: 8, padding: 10, background: 'var(--bg-tertiary)', borderRadius: 6, fontSize: 11, maxHeight: 200, overflow: 'auto' }}>
-                  {JSON.stringify(previewResult, null, 2)}
+                <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <label style={{ ...fieldLabel, marginBottom: 0 }}>Mapped Result (what the ticket will become)</label>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(previewJson);
+                      setPreviewCopied(true);
+                      setTimeout(() => setPreviewCopied(false), 1500);
+                    }}
+                    style={{ ...btnSecondary, padding: '4px 8px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                  >
+                    <Icon path={previewCopied ? mdiCheck : mdiContentCopy} size={0.6} />
+                    {previewCopied ? 'Copied' : 'Copy'}
+                  </button>
+                </div>
+                <pre style={{ margin: 0, padding: 10, background: 'var(--bg-tertiary)', borderRadius: 6, fontSize: 11, maxHeight: 200, overflow: 'auto' }}>
+                  {previewJson}
                 </pre>
               </>
             );
           })()}
         </div>
       </div>
+
+      {helpOpen && (
+        <div
+          onClick={() => setHelpOpen(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: '90%', maxWidth: 560, background: 'var(--bg-primary)', borderRadius: 12, padding: 24, boxShadow: '0 20px 50px rgba(0,0,0,0.2)' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <h2 style={{ margin: 0, fontSize: 18 }}>About Save Mapping</h2>
+              <button
+                onClick={() => setHelpOpen(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--text-muted)' }}
+                aria-label="Close"
+              >
+                <Icon path={mdiClose} size={0.9} />
+              </button>
+            </div>
+            <p style={{ marginTop: 0, fontSize: 13, lineHeight: 1.55 }}>
+              <strong>Save Mapping</strong> persists every non-empty field above to this webhook. From then on,
+              every POST to this webhook URL is rendered through these template strings before a ticket is created.
+            </p>
+            <p style={{ fontSize: 13, lineHeight: 1.55 }}>
+              <strong>Templates</strong> like <code style={inlineCode}>{'{{json.title}}'}</code> or <code style={inlineCode}>{'{{json.alert.severity}}'}</code> pull
+              values from the inbound JSON — every ticket gets whatever the sender put in its payload at that path.
+            </p>
+            <p style={{ fontSize: 13, lineHeight: 1.55 }}>
+              <strong>Plain text</strong> (e.g. just <code style={inlineCode}>HIGH</code> in the Priority field) becomes a literal —
+              every ticket inherits exactly that string regardless of payload. Useful when one webhook should always
+              produce, say, <code style={inlineCode}>CRITICAL</code> tickets.
+            </p>
+            <p style={{ fontSize: 13, lineHeight: 1.55 }}>
+              <strong>Empty</strong> fields fall back to the built-in defaults: <code style={inlineCode}>{'{{json.title}}'}</code>,
+              <code style={inlineCode}>{'{{json.description}}'}</code>, <code style={inlineCode}>{'{{json.priority}}'}</code>,
+              <code style={inlineCode}>{'{{json.type}}'}</code>, <code style={inlineCode}>{'{{json.requesterEmail}}'}</code> — so plain curl works
+              without any configuration.
+            </p>
+            <p style={{ fontSize: 13, lineHeight: 1.55 }}>
+              The <strong>picker</strong> on each constrained field shows valid values so you can copy them into the JSON
+              your sender posts (avoiding typos like <code style={inlineCode}>INNCIDENT</code>). Picking a value inserts it
+              as a literal into the input — clear it again if you wanted a template.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+              <button onClick={() => setHelpOpen(false)} style={btnPrimary}>Got it</button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
