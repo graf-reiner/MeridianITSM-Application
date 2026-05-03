@@ -9,6 +9,8 @@ import { trialExpiryWorker } from './workers/trial-expiry.js';
 import { scheduledReportWorker } from './workers/scheduled-report.js';
 import { webhookDeliveryWorker } from './workers/webhook-delivery.js';
 import { webhookCleanupWorker } from './workers/webhook-cleanup.js';
+import { inboundWebhookProcessWorker } from './workers/inbound-webhook-process.js';
+import { inboundWebhookCleanupWorker } from './workers/inbound-webhook-cleanup.js';
 import { pushNotificationWorker } from './workers/push-notification.js';
 import { chatCleanupWorker } from './workers/chat-cleanup.js';
 import { problemDetectionWorker } from './workers/problem-detection.js';
@@ -31,6 +33,7 @@ import {
   certExpiryMonitorQueue,
   inventoryRetentionQueue,
   inventoryDiffBackfillQueue,
+  inboundWebhookCleanupQueue,
 } from './queues/definitions.js';
 import { redisConnection } from './queues/connection.js';
 
@@ -45,6 +48,8 @@ const workers = [
   { name: 'scheduled-report', worker: scheduledReportWorker },
   { name: 'webhook-delivery', worker: webhookDeliveryWorker },
   { name: 'webhook-cleanup', worker: webhookCleanupWorker },
+  { name: 'inbound-webhook-process', worker: inboundWebhookProcessWorker },
+  { name: 'inbound-webhook-cleanup', worker: inboundWebhookCleanupWorker },
   { name: 'push-notification', worker: pushNotificationWorker },
   { name: 'chat-cleanup', worker: chatCleanupWorker },
   { name: 'problem-detection', worker: problemDetectionWorker },
@@ -114,6 +119,17 @@ void webhookCleanupQueue.add(
   {
     repeat: { pattern: '0 3 * * *' },
     jobId: 'webhook-cleanup-repeatable',
+  },
+);
+
+// Schedule inbound webhook delivery history cleanup daily at 4:00 AM UTC
+// (one hour after the outbound cleanup so they don't compete on disk I/O).
+void inboundWebhookCleanupQueue.add(
+  'cleanup',
+  {},
+  {
+    repeat: { pattern: '0 4 * * *' },
+    jobId: 'inbound-webhook-cleanup-repeatable',
   },
 );
 

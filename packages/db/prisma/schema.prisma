@@ -474,6 +474,8 @@ model Tenant {
   scheduledReports             ScheduledReport[]
   webhooks                     Webhook[]
   webhookDeliveries            WebhookDelivery[]
+  inboundWebhooks              InboundWebhook[]
+  inboundWebhookDeliveries     InboundWebhookDelivery[]
   passwordResetTokens          PasswordResetToken[]
   userGroupMembers             UserGroupMember[]
   subscription                 TenantSubscription?
@@ -606,6 +608,7 @@ model User {
   notificationTemplatesCreated NotificationTemplate[]  @relation("NotificationTemplateCreatedBy")
   triggeredAgentDeployments    AgentUpdateDeployment[] @relation("UserTriggeredAgentDeployments")
   knowledgeArticlesAuthored    KnowledgeArticle[]      @relation("KnowledgeArticleAuthor")
+  inboundWebhookRequester      InboundWebhook[]        @relation("InboundWebhookRequester")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -806,6 +809,7 @@ model Ticket {
   customFormSubmissions    CustomFormSubmission[]
   incidentProblems         IncidentProblemLink[]    @relation("IncidentProblems") // When this ticket is an incident linked to problems
   problemIncidents         IncidentProblemLink[]    @relation("ProblemIncidents") // When this ticket is a problem with linked incidents
+  inboundWebhookDeliveries InboundWebhookDelivery[] @relation("InboundWebhookTicket")
 
   @@unique([tenantId, ticketNumber])
   @@index([tenantId])
@@ -962,6 +966,7 @@ model Queue {
   notificationRules NotificationRule[]
   recurringTickets  RecurringTicket[]
   workflows         Workflow[]         @relation("WorkflowQueue")
+  inboundWebhooks   InboundWebhook[]   @relation("InboundWebhookQueue")
 
   @@index([tenantId])
   @@map("queues")
@@ -1038,6 +1043,7 @@ model Category {
   userGroup        UserGroup?        @relation(fields: [userGroupId], references: [id])
   tickets          Ticket[]
   recurringTickets RecurringTicket[]
+  inboundWebhooks  InboundWebhook[]  @relation("InboundWebhookCategory")
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -3396,6 +3402,81 @@ model WebhookDelivery {
   @@index([tenantId, webhookId])
   @@index([tenantId, createdAt])
   @@map("webhook_deliveries")
+}
+
+// Model 61.5: InboundWebhook — third-party tools POST here to create tickets.
+// Each integration (PagerDuty, Datadog, GitHub, curl, …) gets its own URL+token
+// so admins can revoke one source without affecting others. The token in the URL
+// IS the tenant resolver — tokenHash is unique across all tenants.
+model InboundWebhook {
+  id                  String          @id @default(uuid()) @db.Uuid
+  tenantId            String          @db.Uuid
+  name                String
+  description         String?
+  tokenHash           String          @unique
+  defaultQueueId      String?         @db.Uuid
+  defaultCategoryId   String?         @db.Uuid
+  defaultPriority     TicketPriority?
+  defaultType         TicketType?
+  defaultRequesterId  String?         @db.Uuid
+  mapping             Json            @default("{}")
+  isActive            Boolean         @default(true)
+  expiresAt           DateTime?
+  lastUsedAt          DateTime?
+  consecutiveFailures Int             @default(0)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  tenant     Tenant                   @relation(fields: [tenantId], references: [id])
+  queue      Queue?                   @relation("InboundWebhookQueue", fields: [defaultQueueId], references: [id])
+  category   Category?                @relation("InboundWebhookCategory", fields: [defaultCategoryId], references: [id])
+  requester  User?                    @relation("InboundWebhookRequester", fields: [defaultRequesterId], references: [id])
+  deliveries InboundWebhookDelivery[]
+
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+  @@map("inbound_webhooks")
+}
+
+enum InboundWebhookDeliveryStatus {
+  PENDING
+  PROCESSED
+  REJECTED_AUTH
+  REJECTED_VALIDATION
+  REJECTED_TEMPLATE
+  DUPLICATE_IDEMPOTENT
+  ERROR
+}
+
+// Model 61.6: InboundWebhookDelivery — one row per inbound POST attempt.
+// Doubles as audit log + queued payload (worker reads requestBody from here).
+model InboundWebhookDelivery {
+  id                String                       @id @default(uuid()) @db.Uuid
+  tenantId          String                       @db.Uuid
+  inboundWebhookId  String                       @db.Uuid
+  receivedAt        DateTime                     @default(now())
+  status            InboundWebhookDeliveryStatus @default(PENDING)
+  httpResponseCode  Int
+  requestHeaders    Json
+  requestBody       Json?
+  requestBodySize   Int
+  mappedFields      Json?
+  createdTicketId   String?                      @db.Uuid
+  errorMessage      String?
+  idempotencyKey    String?
+  sourceIp          String?
+  completedAt       DateTime?
+  createdAt         DateTime                     @default(now())
+  updatedAt         DateTime                     @updatedAt
+
+  tenant         Tenant         @relation(fields: [tenantId], references: [id])
+  inboundWebhook InboundWebhook @relation(fields: [inboundWebhookId], references: [id], onDelete: Cascade)
+  ticket         Ticket?        @relation("InboundWebhookTicket", fields: [createdTicketId], references: [id])
+
+  @@index([tenantId, receivedAt])
+  @@index([inboundWebhookId, receivedAt])
+  @@index([createdAt])
+  @@map("inbound_webhook_deliveries")
 }
 
 // Model 62: PasswordResetToken

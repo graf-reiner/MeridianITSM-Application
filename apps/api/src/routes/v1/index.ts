@@ -19,6 +19,7 @@ import { settingsRoutes } from './settings/index.js';
 import { slaRoutes } from './sla/index.js';
 import { ticketRoutes } from './tickets/index.js';
 import { webhookRoutes } from './webhooks/index.js';
+import { inboundWebhookRoutes } from './inbound-webhooks/index.js';
 import { preferencesRoutes } from './preferences.js';
 import { aiChatRoutes } from './ai-chat/index.js';
 import { portalAiChatRoutes } from './portal-ai-chat/index.js';
@@ -103,6 +104,9 @@ export async function v1Routes(app: FastifyInstance): Promise<void> {
 
   // Webhook management — CRUD, test delivery endpoint (INTG-03, INTG-04, INTG-05)
   await app.register(webhookRoutes);
+
+  // Inbound webhook management — token-in-URL endpoints for third-party tools
+  await app.register(inboundWebhookRoutes);
 
   // User preferences — theme, notification settings
   await app.register(preferencesRoutes);

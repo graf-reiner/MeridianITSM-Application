@@ -19,6 +19,8 @@ export const QUEUE_NAMES = {
   CERT_EXPIRY_MONITOR: 'cert-expiry-monitor',
   INVENTORY_RETENTION: 'inventory-retention',
   INVENTORY_DIFF_BACKFILL: 'inventory-diff-backfill',
+  INBOUND_WEBHOOK_PROCESS: 'inbound-webhook-process',
+  INBOUND_WEBHOOK_CLEANUP: 'inbound-webhook-cleanup',
 } as const;
 
 export interface TenantJobData {
@@ -55,3 +57,5 @@ export const majorIncidentDetectionQueue = new Queue(QUEUE_NAMES.MAJOR_INCIDENT_
 export const certExpiryMonitorQueue = new Queue(QUEUE_NAMES.CERT_EXPIRY_MONITOR, { connection: bullmqConnection });
 export const inventoryRetentionQueue = new Queue(QUEUE_NAMES.INVENTORY_RETENTION, { connection: bullmqConnection });
 export const inventoryDiffBackfillQueue = new Queue(QUEUE_NAMES.INVENTORY_DIFF_BACKFILL, { connection: bullmqConnection });
+export const inboundWebhookProcessQueue = new Queue(QUEUE_NAMES.INBOUND_WEBHOOK_PROCESS, { connection: bullmqConnection });
+export const inboundWebhookCleanupQueue = new Queue(QUEUE_NAMES.INBOUND_WEBHOOK_CLEANUP, { connection: bullmqConnection });
