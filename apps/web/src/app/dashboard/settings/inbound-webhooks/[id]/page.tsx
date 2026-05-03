@@ -4,7 +4,7 @@ import { useState, use, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiContentCopy, mdiCheck, mdiPlay, mdiKeyChange, mdiTune } from '@mdi/js';
+import { mdiArrowLeft, mdiContentCopy, mdiCheck, mdiPlay, mdiKeyChange, mdiTune, mdiHelpCircleOutline, mdiBroom } from '@mdi/js';
 import { formatTicketNumber } from '@meridian/core/record-numbers';
 
 interface DeliveryRow {
@@ -301,6 +301,27 @@ function MappingEditor({ webhook, webhookUrl, onSaved }: { webhook: WebhookDetai
     onSuccess: () => onSaved(),
   });
 
+  const clearMut = useMutation<unknown, Error>({
+    mutationFn: async () => {
+      if (!confirm('Clear all field mappings? Built-in defaults ({{json.title}}, {{json.description}}, etc.) will take over so plain curl works again.')) {
+        throw new Error('cancelled');
+      }
+      const res = await fetch(`/api/v1/inbound-webhooks/${webhook.id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mapping: {} }),
+      });
+      if (!res.ok) throw new Error('Clear failed');
+      return res.json();
+    },
+    onSuccess: () => {
+      // Reset local form state so the inputs go empty alongside the saved value.
+      setMapping({});
+      onSaved();
+    },
+  });
+
   const previewMut = useMutation<{ ok: boolean; mapped?: unknown; error?: string }, Error>({
     mutationFn: async () => {
       let parsed: unknown;
@@ -372,9 +393,26 @@ function MappingEditor({ webhook, webhookUrl, onSaved }: { webhook: WebhookDetai
               </div>
             );
           })}
-          <button onClick={() => saveMut.mutate()} disabled={saveMut.isPending} style={{ ...btnPrimary, marginTop: 8 }}>
-            {saveMut.isPending ? 'Saving…' : 'Save Mapping'}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+            <button onClick={() => saveMut.mutate()} disabled={saveMut.isPending || clearMut.isPending} style={btnPrimary}>
+              {saveMut.isPending ? 'Saving…' : 'Save Mapping'}
+            </button>
+            <span
+              title="Save Mapping persists every non-empty field above to this webhook. From then on, every POST to this webhook URL is rendered through these template strings before a ticket is created. Fields you leave empty fall back to the built-in defaults ({{json.title}}, {{json.description}}, {{json.priority}}, {{json.type}}, {{json.requesterEmail}}) so plain curl works without any configuration. Templates like {{json.field}} pull values from the inbound JSON; plain text (e.g. HIGH) becomes a literal that every ticket inherits regardless of payload."
+              style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--text-muted)', cursor: 'help' }}
+              aria-label="What does Save Mapping do?"
+            >
+              <Icon path={mdiHelpCircleOutline} size={0.8} />
+            </span>
+            <button
+              onClick={() => clearMut.mutate()}
+              disabled={saveMut.isPending || clearMut.isPending}
+              style={{ ...btnSecondary, display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}
+            >
+              <Icon path={mdiBroom} size={0.7} />
+              {clearMut.isPending ? 'Clearing…' : 'Clear Mapping'}
+            </button>
+          </div>
 
           {(() => {
             const url = webhookUrl ?? `${PUBLIC_BASE}/api/v1/external/inbound/<your-webhook-token>`;
