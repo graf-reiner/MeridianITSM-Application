@@ -177,6 +177,7 @@ function TicketDefaultsSection({ webhook, onSaved }: { webhook: WebhookDetail; o
   const [defaultCategoryId, setDefaultCategoryId] = useState(webhook.defaultCategoryId ?? '');
   const [defaultPriority, setDefaultPriority] = useState(webhook.defaultPriority ?? '');
   const [defaultType, setDefaultType] = useState(webhook.defaultType ?? '');
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const dirty =
     (webhook.defaultQueueId ?? '') !== defaultQueueId ||
@@ -260,9 +261,70 @@ function TicketDefaultsSection({ webhook, onSaved }: { webhook: WebhookDetail; o
         >
           {saveMut.isPending ? 'Saving…' : 'Save Defaults'}
         </button>
+        <button
+          type="button"
+          onClick={() => setHelpOpen(true)}
+          style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--accent-primary)', cursor: 'pointer', background: 'none', border: 'none', padding: 2, textDecoration: 'underline' }}
+          aria-label="What does Save Defaults do?"
+        >
+          <Icon path={mdiHelpCircleOutline} size={0.9} />
+        </button>
         {saveMut.isError && <span style={{ color: 'var(--accent-danger)', fontSize: 12 }}>{saveMut.error.message}</span>}
         {saveMut.isSuccess && !dirty && <span style={{ color: 'var(--accent-success)', fontSize: 12 }}>Saved</span>}
       </div>
+
+      {helpOpen && (
+        <div
+          onClick={() => setHelpOpen(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: '90%', maxWidth: 560, background: 'var(--bg-primary)', borderRadius: 12, padding: 24, boxShadow: '0 20px 50px rgba(0,0,0,0.2)' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <h2 style={{ margin: 0, fontSize: 18 }}>About Save Defaults</h2>
+              <button
+                onClick={() => setHelpOpen(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--text-muted)' }}
+                aria-label="Close"
+              >
+                <Icon path={mdiClose} size={0.9} />
+              </button>
+            </div>
+            <p style={{ marginTop: 0, fontSize: 13, lineHeight: 1.55 }}>
+              <strong>Save Defaults</strong> persists the four ticket settings above (Default Queue, Default Category,
+              Default Priority, Default Type) to this webhook. Going forward, every ticket created from a POST to this
+              webhook URL inherits these values <em>unless</em> the Field Mapping below overrides them.
+            </p>
+            <p style={{ fontSize: 13, lineHeight: 1.55 }}>
+              <strong>Defaults vs. mapping precedence:</strong> if a mapping template (e.g.
+              <code style={inlineCode}>queueIdTemplate</code>) renders to a valid value for a given POST, that wins.
+              If the template is empty or renders to nothing, the default here takes over. This lets you have a
+              fallback queue while still letting some senders override per-payload.
+            </p>
+            <p style={{ fontSize: 13, lineHeight: 1.55 }}>
+              <strong>Default Queue / Category</strong> store UUIDs from your tenant's queue and category lists.
+              Pick <code style={inlineCode}>— None —</code> to skip — the ticket will land with no queue or category
+              set, which is fine if your mapping resolves them or you want manual triage.
+            </p>
+            <p style={{ fontSize: 13, lineHeight: 1.55 }}>
+              <strong>Default Priority / Type</strong> store enum values
+              (<code style={inlineCode}>LOW / MEDIUM / HIGH / CRITICAL</code> and
+              <code style={inlineCode}>INCIDENT / SERVICE_REQUEST / PROBLEM / CHANGE_REQUEST / TASK / MAJOR_INCIDENT</code>).
+              When unset, tickets default to <code style={inlineCode}>MEDIUM</code> priority and
+              <code style={inlineCode}>INCIDENT</code> type — the standard ticket-creation defaults.
+            </p>
+            <p style={{ fontSize: 13, lineHeight: 1.55 }}>
+              The Save button is greyed out when no fields have changed since the last save, so you'll only re-PATCH
+              when something is actually different.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+              <button onClick={() => setHelpOpen(false)} style={btnPrimary}>Got it</button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -423,14 +485,10 @@ function MappingEditor({ webhook, webhookUrl, onSaved }: { webhook: WebhookDetai
 
           {(() => {
             const url = webhookUrl ?? `${PUBLIC_BASE}/api/v1/external/inbound/<your-webhook-token>`;
-            // Single-line JSON for the curl -d flag. Fall back to the raw textarea
-            // contents if the user is mid-edit and the JSON doesn't parse yet.
-            let bodyArg: string;
-            try {
-              bodyArg = JSON.stringify(JSON.parse(samplePayload));
-            } catch {
-              bodyArg = samplePayload.replace(/\s+/g, ' ').trim();
-            }
+            // Mirror the textarea verbatim — when Preview Mapping pretty-prints
+            // the Sample Payload, the curl reformats alongside it. bash single
+            // quotes preserve newlines, so the multi-line body is valid.
+            const bodyArg = samplePayload;
             const curlCmd = `curl -X POST "${url}" \\\n  -H 'Content-Type: application/json' \\\n  -d '${bodyArg.replace(/'/g, "'\\''")}'`;
             return (
               <div style={{ marginTop: 16 }}>
