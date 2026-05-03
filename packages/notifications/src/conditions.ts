@@ -66,6 +66,12 @@ export interface EventContext {
   slaPolicy?: string;
   breachType?: string;
   source?: string;
+  /** Tenant identity — populated by dispatchNotificationEvent for URL templating. */
+  tenantName?: string;
+  tenantSubdomain?: string | null;
+  tenantCustomDomain?: string | null;
+  /** Pre-resolved tenant base URL (no trailing slash). Set by the dispatcher. */
+  tenantBaseUrl?: string;
   [key: string]: unknown;
 }
 
@@ -239,7 +245,7 @@ export function evaluateConditionGroups(
 
 // ─── Template Renderer ───────────────────────────────────────────────────────
 
-import { renderTemplate as renderSharedTemplate, formatTicketNumber } from "@meridian/core";
+import { renderTemplate as renderSharedTemplate, formatTicketNumber, buildTenantUrls } from "@meridian/core";
 
 /**
  * Renders a notification-rule template using the shared `@meridian/core`
@@ -267,6 +273,7 @@ export function renderTemplate(template: string, context: EventContext): string 
   // Templates rarely want the raw integer; if you do, use ticket.numericId.
   const ticketNumberRaw = typeof t.ticketNumber === 'number' ? t.ticketNumber : null;
   const ticketNumber = ticketNumberRaw != null ? formatTicketNumber(ticketNumberRaw) : '';
+  const ticketId = typeof t.id === 'string' ? t.id : '';
   const title = typeof t.title === 'string' ? t.title : '';
   const priority = typeof t.priority === 'string' ? t.priority : '';
   const status = typeof t.status === 'string' ? t.status : '';
@@ -275,6 +282,22 @@ export function renderTemplate(template: string, context: EventContext): string 
   const queueName = typeof t.queueName === 'string' ? t.queueName : '';
   const categoryName = typeof t.categoryName === 'string' ? t.categoryName : '';
   const tenantName = typeof context.tenantName === 'string' ? context.tenantName : '';
+
+  // Tenant URLs — prefer the dispatcher-resolved value if provided, else
+  // resolve on the fly from whatever tenant identity was passed. Both fall
+  // back gracefully when the dispatcher hasn't been wired (older callers).
+  const urls = context.tenantBaseUrl
+    ? {
+        base: context.tenantBaseUrl,
+        dashboardTickets: `${context.tenantBaseUrl}/dashboard/tickets`,
+        portalTickets: `${context.tenantBaseUrl}/portal/tickets`,
+      }
+    : buildTenantUrls({
+        customDomain: context.tenantCustomDomain ?? null,
+        subdomain: context.tenantSubdomain ?? null,
+      });
+  const dashboardTicketUrl = ticketId ? `${urls.dashboardTickets}/${ticketId}` : urls.dashboardTickets;
+  const portalTicketUrl = ticketId ? `${urls.portalTickets}/${ticketId}` : urls.portalTickets;
 
   // Dual-shape context: flat legacy keys AND nested paths.
   const ctx: Record<string, unknown> = {
@@ -291,6 +314,7 @@ export function renderTemplate(template: string, context: EventContext): string 
     timestamp: now.toISOString(),
     // nested (picker registry paths)
     ticket: {
+      id: ticketId,
       number: ticketNumber,
       numericId: ticketNumberRaw ?? '',
       title,
@@ -298,10 +322,17 @@ export function renderTemplate(template: string, context: EventContext): string 
       status,
       category: categoryName,
       queue: queueName,
+      dashboardUrl: dashboardTicketUrl,
+      portalUrl: portalTicketUrl,
     },
     requester: { displayName: requesterName },
     assignee: { displayName: assigneeName },
-    tenant: { name: tenantName },
+    tenant: {
+      name: tenantName,
+      url: urls.base,
+      dashboardUrlBase: urls.dashboardTickets,
+      portalUrlBase: urls.portalTickets,
+    },
     now: {
       iso: now.toISOString(),
       date: now.toISOString().slice(0, 10),

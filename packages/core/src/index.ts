@@ -19,6 +19,12 @@ export {
 } from './utils/oauth-credentials.js';
 export { uploadFile, getFileUrl, deleteFile, buildStoragePath } from './utils/storage.js';
 export {
+  resolveTenantBaseUrl,
+  buildTenantUrls,
+  type TenantBaseUrlInput,
+  type TenantUrls,
+} from './utils/tenant-url.js';
+export {
   formatTicketNumber,
   formatChangeNumber,
   formatProblemNumber,

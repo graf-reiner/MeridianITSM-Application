@@ -378,6 +378,7 @@ model Tenant {
   status         TenantStatus         @default(ACTIVE)
   subdomain      String?              @unique
   backendUrl     String?
+  customDomain   String?              @unique // Vanity FQDN (e.g. "support.acme.com") — used to render ticket links in emails. Falls back to subdomain.MERIDIAN_ROOT_DOMAIN, then APP_URL env.
   settings       Json?
   plan           SubscriptionPlanTier @default(STARTER)
   planLimitsJson Json?
