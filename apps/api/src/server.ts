@@ -17,6 +17,7 @@ import { v1Routes } from './routes/v1/index.js';
 import { externalRoutes } from './routes/external/index.js';
 import { agentRoutes } from './routes/v1/agents/index.js';
 import { publicFormRoutes } from './routes/public/custom-forms.js';
+import { inboundWebhookPublicRoutes } from './routes/public/inbound-webhooks.js';
 import { botDiscordRoutes } from './routes/public/bot-discord.js';
 import { botTelegramRoutes } from './routes/public/bot-telegram.js';
 
@@ -45,6 +46,7 @@ export async function buildApp() {
   await app.register(authRoutes);
   await app.register(billingRoutes); // Stripe webhooks use signature verification, not JWT
   await app.register(publicFormRoutes); // Anonymous custom form viewing + submission
+  await app.register(inboundWebhookPublicRoutes); // Anonymous inbound webhooks (token-in-URL auth)
   await app.register(botDiscordRoutes); // Discord bot interaction webhook
   await app.register(botTelegramRoutes); // Telegram bot update webhook
 

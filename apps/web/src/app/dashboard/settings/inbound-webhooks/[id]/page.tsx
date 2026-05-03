@@ -1,0 +1,303 @@
+'use client';
+
+import { useState, use, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import Link from 'next/link';
+import Icon from '@mdi/react';
+import { mdiArrowLeft, mdiContentCopy, mdiCheck, mdiPlay, mdiKeyChange } from '@mdi/js';
+import { formatTicketNumber } from '@meridian/core/record-numbers';
+
+interface DeliveryRow {
+  id: string;
+  receivedAt: string;
+  status: string;
+  httpResponseCode: number;
+  requestBodySize: number;
+  mappedFields: Record<string, unknown> | null;
+  createdTicketId: string | null;
+  errorMessage: string | null;
+  sourceIp: string | null;
+  completedAt: string | null;
+}
+
+interface WebhookDetail {
+  id: string;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  consecutiveFailures: number;
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+  defaultQueueId: string | null;
+  defaultCategoryId: string | null;
+  defaultPriority: string | null;
+  defaultType: string | null;
+  defaultRequesterId: string | null;
+  mapping: Record<string, unknown>;
+  createdAt: string;
+  deliveries: DeliveryRow[];
+}
+
+const PUBLIC_BASE = (typeof window !== 'undefined' && window.location.origin) || '';
+
+export default function InboundWebhookDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const qc = useQueryClient();
+
+  const { data, isLoading } = useQuery<WebhookDetail>({
+    queryKey: ['inbound-webhook', id],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/inbound-webhooks/${id}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load');
+      return res.json();
+    },
+  });
+
+  if (isLoading || !data) return <div style={{ padding: 32 }}>Loading…</div>;
+
+  return (
+    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 32px' }}>
+      <Link href="/dashboard/settings/inbound-webhooks" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', textDecoration: 'none', marginBottom: 12 }}>
+        <Icon path={mdiArrowLeft} size={0.7} />
+        <span style={{ fontSize: 13 }}>Inbound Webhooks</span>
+      </Link>
+
+      <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>{data.name}</h1>
+      {data.description && <p style={{ color: 'var(--text-muted)', marginTop: 4 }}>{data.description}</p>}
+
+      <RotateTokenSection webhookId={id} />
+
+      <MappingEditor webhook={data} onSaved={() => qc.invalidateQueries({ queryKey: ['inbound-webhook', id] })} />
+
+      <DeliveriesTable deliveries={data.deliveries} />
+    </div>
+  );
+}
+
+// ─── Rotate token ───────────────────────────────────────────────────────────
+
+function RotateTokenSection({ webhookId }: { webhookId: string }) {
+  const [revealed, setRevealed] = useState<{ token: string; url: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const rotateMut = useMutation<{ token: string; url: string }, Error>({
+    mutationFn: async () => {
+      if (!confirm('Generate a new token? The old one will stop working immediately.')) {
+        throw new Error('cancelled');
+      }
+      const res = await fetch(`/api/v1/inbound-webhooks/${webhookId}/rotate-token`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? 'Rotate failed');
+      return res.json();
+    },
+    onSuccess: (data) => setRevealed(data),
+  });
+
+  return (
+    <section style={sectionStyle}>
+      <h2 style={sectionTitle}>Webhook URL</h2>
+      {revealed ? (
+        <>
+          <p style={{ color: 'var(--accent-warning)', fontSize: 13, marginBottom: 12 }}>
+            ⚠ Save this URL now — the token won&apos;t be shown again.
+          </p>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+            <textarea readOnly value={revealed.url.startsWith('http') ? revealed.url : `${PUBLIC_BASE}${revealed.url}`} style={{ ...inputStyle, fontFamily: 'monospace', fontSize: 12, minHeight: 60 }} />
+            <button onClick={() => { navigator.clipboard.writeText(revealed.url); setCopied(true); setTimeout(() => setCopied(false), 1500); }} style={btnSecondary}>
+              <Icon path={copied ? mdiCheck : mdiContentCopy} size={0.7} />
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          </div>
+        </>
+      ) : (
+        <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+          The token is hashed in the database and only shown once at creation. To get a new working URL, rotate the token below — the old one stops working immediately.
+        </p>
+      )}
+      <button onClick={() => rotateMut.mutate()} disabled={rotateMut.isPending} style={{ ...btnSecondary, marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <Icon path={mdiKeyChange} size={0.7} />
+        {rotateMut.isPending ? 'Rotating…' : 'Rotate Token'}
+      </button>
+    </section>
+  );
+}
+
+// ─── Mapping editor + preview ───────────────────────────────────────────────
+
+function MappingEditor({ webhook, onSaved }: { webhook: WebhookDetail; onSaved: () => void }) {
+  const [mapping, setMapping] = useState<Record<string, string>>(() => normalizeMapping(webhook.mapping));
+  const [samplePayload, setSamplePayload] = useState<string>(() => {
+    // Pre-fill with the most recent delivery body if any.
+    const latest = webhook.deliveries[0];
+    if (latest?.mappedFields) {
+      try { return JSON.stringify({ title: 'sample', description: 'sample body', priority: 'HIGH' }, null, 2); } catch { /* fall through */ }
+    }
+    return JSON.stringify({ title: 'Disk usage at 95%', description: 'node-prod-04', priority: 'HIGH' }, null, 2);
+  });
+  const [previewResult, setPreviewResult] = useState<unknown>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+
+  const saveMut = useMutation<unknown, Error>({
+    mutationFn: async () => {
+      const filtered: Record<string, string> = {};
+      for (const [k, v] of Object.entries(mapping)) if (v.trim()) filtered[k] = v;
+      const res = await fetch(`/api/v1/inbound-webhooks/${webhook.id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mapping: filtered }),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      return res.json();
+    },
+    onSuccess: () => onSaved(),
+  });
+
+  const previewMut = useMutation<{ ok: boolean; mapped?: unknown; error?: string }, Error>({
+    mutationFn: async () => {
+      let parsed: unknown;
+      try { parsed = JSON.parse(samplePayload); } catch { throw new Error('Sample payload is not valid JSON'); }
+      const res = await fetch(`/api/v1/inbound-webhooks/${webhook.id}/preview-mapping`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ samplePayload: parsed, mappingOverride: mapping }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error ?? 'Preview failed');
+      return json;
+    },
+    onSuccess: (data) => { setPreviewResult(data.mapped); setPreviewError(null); },
+    onError: (err) => { setPreviewResult(null); setPreviewError(err.message); },
+  });
+
+  return (
+    <section style={sectionStyle}>
+      <h2 style={sectionTitle}>Field Mapping</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 0 }}>
+        Use <code style={inlineCode}>{'{{json.path.to.value}}'}</code> to pull from the inbound payload.
+        Empty fields fall back to <code style={inlineCode}>{'{{json.title}}'}</code>, <code style={inlineCode}>{'{{json.description}}'}</code>, etc. so plain curl works.
+      </p>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div>
+          {MAPPING_FIELDS.map((f) => (
+            <div key={f.key} style={{ marginBottom: 10 }}>
+              <label style={fieldLabel}>{f.label}</label>
+              <input
+                value={mapping[f.key] ?? ''}
+                onChange={(e) => setMapping((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                placeholder={f.placeholder}
+                style={{ ...inputStyle, fontFamily: 'monospace', fontSize: 12 }}
+              />
+            </div>
+          ))}
+          <button onClick={() => saveMut.mutate()} disabled={saveMut.isPending} style={{ ...btnPrimary, marginTop: 8 }}>
+            {saveMut.isPending ? 'Saving…' : 'Save Mapping'}
+          </button>
+        </div>
+
+        <div>
+          <label style={fieldLabel}>Sample Payload (JSON)</label>
+          <textarea
+            value={samplePayload}
+            onChange={(e) => setSamplePayload(e.target.value)}
+            style={{ ...inputStyle, minHeight: 220, fontFamily: 'monospace', fontSize: 12, resize: 'vertical' }}
+          />
+          <button onClick={() => previewMut.mutate()} disabled={previewMut.isPending} style={{ ...btnSecondary, marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <Icon path={mdiPlay} size={0.7} />
+            {previewMut.isPending ? 'Rendering…' : 'Preview Mapping'}
+          </button>
+          {previewError && <div style={{ color: 'var(--accent-danger)', fontSize: 12, marginTop: 8 }}>{previewError}</div>}
+          {previewResult !== null && (
+            <pre style={{ marginTop: 12, padding: 10, background: 'var(--bg-tertiary)', borderRadius: 6, fontSize: 11, maxHeight: 200, overflow: 'auto' }}>
+              {JSON.stringify(previewResult, null, 2)}
+            </pre>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const MAPPING_FIELDS: Array<{ key: string; label: string; placeholder: string }> = [
+  { key: 'titleTemplate', label: 'Title', placeholder: '{{json.title}} (default)' },
+  { key: 'descriptionTemplate', label: 'Description', placeholder: '{{json.description}} (default)' },
+  { key: 'priorityTemplate', label: 'Priority (LOW|MEDIUM|HIGH|CRITICAL)', placeholder: '{{json.priority}} (default)' },
+  { key: 'typeTemplate', label: 'Type (INCIDENT|SERVICE_REQUEST|...)', placeholder: '{{json.type}} (default)' },
+  { key: 'requesterEmailTemplate', label: 'Requester Email', placeholder: '{{json.requesterEmail}} (default)' },
+];
+
+function normalizeMapping(raw: Record<string, unknown>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const f of MAPPING_FIELDS) {
+    const v = raw?.[f.key];
+    if (typeof v === 'string') out[f.key] = v;
+  }
+  return out;
+}
+
+// ─── Deliveries table ───────────────────────────────────────────────────────
+
+function DeliveriesTable({ deliveries }: { deliveries: DeliveryRow[] }) {
+  const sorted = useMemo(() => [...deliveries].sort((a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime()), [deliveries]);
+  return (
+    <section style={sectionStyle}>
+      <h2 style={sectionTitle}>Recent Deliveries</h2>
+      {sorted.length === 0 ? (
+        <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No deliveries yet. POST to the URL above to see one here.</p>
+      ) : (
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--border-secondary)' }}>
+              <th style={thStyle}>Status</th>
+              <th style={thStyle}>Received</th>
+              <th style={thStyle}>Source IP</th>
+              <th style={thStyle}>Ticket</th>
+              <th style={thStyle}>Body</th>
+              <th style={thStyle}>Error</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((d) => (
+              <tr key={d.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                <td style={tdStyle}><DeliveryBadge status={d.status} /></td>
+                <td style={tdStyle}>{new Date(d.receivedAt).toLocaleString()}</td>
+                <td style={{ ...tdStyle, fontFamily: 'monospace', fontSize: 11, color: 'var(--text-muted)' }}>{d.sourceIp ?? '—'}</td>
+                <td style={tdStyle}>
+                  {d.createdTicketId ? (
+                    <Link href={`/dashboard/tickets/${d.createdTicketId}`} style={{ color: 'var(--accent-primary)' }}>
+                      View
+                    </Link>
+                  ) : '—'}
+                </td>
+                <td style={{ ...tdStyle, fontSize: 11, color: 'var(--text-muted)' }}>{d.requestBodySize} B</td>
+                <td style={{ ...tdStyle, fontSize: 12, color: 'var(--accent-danger)' }}>{d.errorMessage ?? ''}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+  );
+}
+
+function DeliveryBadge({ status }: { status: string }) {
+  const style: React.CSSProperties = { display: 'inline-block', padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600 };
+  if (status === 'PROCESSED') return <span style={{ ...style, background: 'var(--bg-success-subtle)', color: 'var(--accent-success)' }}>Processed</span>;
+  if (status === 'PENDING') return <span style={{ ...style, background: 'var(--bg-info-subtle)', color: 'var(--accent-info)' }}>Pending</span>;
+  if (status === 'DUPLICATE_IDEMPOTENT') return <span style={{ ...style, background: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}>Duplicate</span>;
+  return <span style={{ ...style, background: 'var(--bg-danger-subtle)', color: 'var(--accent-danger)' }}>{status}</span>;
+}
+
+const sectionStyle: React.CSSProperties = { marginTop: 24, padding: 20, background: 'var(--bg-primary)', borderRadius: 12, border: '1px solid var(--border-secondary)' };
+const sectionTitle: React.CSSProperties = { margin: '0 0 12px', fontSize: 16, fontWeight: 700 };
+const thStyle: React.CSSProperties = { textAlign: 'left', padding: '8px 10px', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' };
+const tdStyle: React.CSSProperties = { padding: '10px', fontSize: 13, color: 'var(--text-primary)' };
+const fieldLabel: React.CSSProperties = { display: 'block', marginBottom: 4, fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' };
+const inputStyle: React.CSSProperties = { width: '100%', padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' };
+const inlineCode: React.CSSProperties = { padding: '1px 4px', background: 'var(--bg-tertiary)', borderRadius: 3, fontFamily: 'monospace', fontSize: 12 };
+const btnPrimary: React.CSSProperties = { padding: '8px 14px', background: 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer' };
+const btnSecondary: React.CSSProperties = { padding: '8px 14px', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-secondary)', borderRadius: 6, fontSize: 13, cursor: 'pointer' };

@@ -279,6 +279,13 @@ const SETTINGS_GROUPS: SettingsGroup[] = [
         color: '#059669',
       },
       {
+        href: '/dashboard/settings/inbound-webhooks',
+        label: 'Inbound Webhooks',
+        description: 'Per-source URLs that third-party tools POST to in order to create tickets',
+        icon: mdiWebhook,
+        color: '#0d9488',
+      },
+      {
         href: '/dashboard/settings/ai',
         label: 'AI Assistant',
         description: 'Configure your OpenAI API key and model for the AI chatbot',
