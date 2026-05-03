@@ -15,6 +15,7 @@ import type { VariableContextKey, VariableDefinition } from './types.js';
 
 export const TICKET_VARIABLES: VariableDefinition[] = [
   { key: 'ticket.number', label: 'Ticket Number', description: 'Sequential ticket number (e.g. T-1234).', example: 'T-1234', category: 'Ticket' },
+  { key: 'ticket.id', label: 'Ticket GUID', description: 'Internal UUID of the ticket — useful for building deep links.', example: 'c7ca6993-9e2e-4c1f-8d52-1c03de2bd03b', category: 'Ticket' },
   { key: 'ticket.title', label: 'Ticket Title', description: 'The short title of the ticket.', example: 'Cannot print from accounting PC', category: 'Ticket' },
   { key: 'ticket.description', label: 'Ticket Description', description: 'Full description text of the ticket.', example: 'Printer shows offline...', category: 'Ticket' },
   { key: 'ticket.status', label: 'Ticket Status', description: 'Current status (NEW, OPEN, IN_PROGRESS, ...).', example: 'IN_PROGRESS', category: 'Ticket' },
@@ -25,6 +26,8 @@ export const TICKET_VARIABLES: VariableDefinition[] = [
   { key: 'ticket.tags', label: 'Ticket Tags', description: 'Comma-separated list of tags.', example: 'printer, urgent', category: 'Ticket' },
   { key: 'ticket.createdAt', label: 'Created At', description: 'ISO timestamp when the ticket was created.', example: '2026-04-10T14:30:00Z', category: 'Ticket' },
   { key: 'ticket.resolvedAt', label: 'Resolved At', description: 'ISO timestamp when the ticket was resolved.', example: '2026-04-11T09:15:00Z', category: 'Ticket' },
+  { key: 'ticket.dashboardUrl', label: 'Staff Dashboard URL', description: "Full clickable link to the ticket in the staff dashboard. Honors the tenant's vanity FQDN.", example: 'https://acme.meridianitsm.com/dashboard/tickets/c7ca6993-9e2e-4c1f-8d52-1c03de2bd03b', category: 'Ticket' },
+  { key: 'ticket.portalUrl', label: 'End-User Portal URL', description: "Full clickable link to the ticket in the end-user portal. Honors the tenant's vanity FQDN.", example: 'https://acme.meridianitsm.com/portal/tickets/c7ca6993-9e2e-4c1f-8d52-1c03de2bd03b', category: 'Ticket' },
 ];
 
 export const REQUESTER_VARIABLES: VariableDefinition[] = [
@@ -45,6 +48,9 @@ export const ASSIGNEE_VARIABLES: VariableDefinition[] = [
 export const TENANT_VARIABLES: VariableDefinition[] = [
   { key: 'tenant.name', label: 'Organization Name', description: 'The tenant / organization name.', example: 'Acme Corp', category: 'Organization' },
   { key: 'tenant.subdomain', label: 'Organization Subdomain', description: 'Tenant subdomain on the service portal.', example: 'acme', category: 'Organization' },
+  { key: 'tenant.url', label: 'Tenant Base URL', description: 'Canonical https://… root for this tenant. Honors vanity FQDN, then subdomain, then platform fallback.', example: 'https://acme.meridianitsm.com', category: 'Organization' },
+  { key: 'tenant.dashboardUrlBase', label: 'Dashboard Tickets URL Prefix', description: 'Use with {{ticket.id}} to build a custom link, e.g. {{tenant.dashboardUrlBase}}/{{ticket.id}}. (No trailing slash.)', example: 'https://acme.meridianitsm.com/dashboard/tickets', category: 'Organization' },
+  { key: 'tenant.portalUrlBase', label: 'Portal Tickets URL Prefix', description: 'Use with {{ticket.id}} to build a custom portal link. (No trailing slash.)', example: 'https://acme.meridianitsm.com/portal/tickets', category: 'Organization' },
 ];
 
 export const FORM_META_VARIABLES: VariableDefinition[] = [
