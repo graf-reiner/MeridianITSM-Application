@@ -4,7 +4,7 @@ import { useState, use, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiContentCopy, mdiCheck, mdiPlay, mdiKeyChange } from '@mdi/js';
+import { mdiArrowLeft, mdiContentCopy, mdiCheck, mdiPlay, mdiKeyChange, mdiTune } from '@mdi/js';
 import { formatTicketNumber } from '@meridian/core/record-numbers';
 
 interface DeliveryRow {
@@ -67,6 +67,8 @@ export default function InboundWebhookDetailPage({ params }: { params: Promise<{
 
       <RotateTokenSection webhookId={id} />
 
+      <TicketDefaultsSection webhook={data} onSaved={() => qc.invalidateQueries({ queryKey: ['inbound-webhook', id] })} />
+
       <MappingEditor webhook={data} onSaved={() => qc.invalidateQueries({ queryKey: ['inbound-webhook', id] })} />
 
       <DeliveriesTable deliveries={data.deliveries} />
@@ -124,9 +126,145 @@ function RotateTokenSection({ webhookId }: { webhookId: string }) {
   );
 }
 
+// ─── Ticket Defaults (queue / category / priority / type) ──────────────────
+// These set what every ticket created by this webhook gets when the inbound
+// payload doesn't override via a mapping template. Saved via the same PATCH
+// route the mapping editor uses.
+
+interface OptionRow { id: string; name: string }
+
+const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
+const TYPE_OPTIONS = ['INCIDENT', 'SERVICE_REQUEST', 'PROBLEM', 'CHANGE_REQUEST', 'TASK', 'MAJOR_INCIDENT'] as const;
+
+function useQueueOptions() {
+  return useQuery<OptionRow[]>({
+    queryKey: ['settings', 'queues'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/settings/queues', { credentials: 'include' });
+      if (!res.ok) return [];
+      const json = await res.json();
+      return Array.isArray(json) ? json : json.queues ?? [];
+    },
+    staleTime: 60_000,
+  });
+}
+
+function useCategoryOptions() {
+  return useQuery<OptionRow[]>({
+    queryKey: ['settings', 'categories'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/settings/categories', { credentials: 'include' });
+      if (!res.ok) return [];
+      const json = await res.json();
+      return Array.isArray(json) ? json : json.categories ?? [];
+    },
+    staleTime: 60_000,
+  });
+}
+
+function TicketDefaultsSection({ webhook, onSaved }: { webhook: WebhookDetail; onSaved: () => void }) {
+  const { data: queues = [] } = useQueueOptions();
+  const { data: categories = [] } = useCategoryOptions();
+
+  const [defaultQueueId, setDefaultQueueId] = useState(webhook.defaultQueueId ?? '');
+  const [defaultCategoryId, setDefaultCategoryId] = useState(webhook.defaultCategoryId ?? '');
+  const [defaultPriority, setDefaultPriority] = useState(webhook.defaultPriority ?? '');
+  const [defaultType, setDefaultType] = useState(webhook.defaultType ?? '');
+
+  const dirty =
+    (webhook.defaultQueueId ?? '') !== defaultQueueId ||
+    (webhook.defaultCategoryId ?? '') !== defaultCategoryId ||
+    (webhook.defaultPriority ?? '') !== defaultPriority ||
+    (webhook.defaultType ?? '') !== defaultType;
+
+  const saveMut = useMutation<unknown, Error>({
+    mutationFn: async () => {
+      const res = await fetch(`/api/v1/inbound-webhooks/${webhook.id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          defaultQueueId: defaultQueueId || null,
+          defaultCategoryId: defaultCategoryId || null,
+          defaultPriority: defaultPriority || null,
+          defaultType: defaultType || null,
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? 'Save failed');
+      return res.json();
+    },
+    onSuccess: () => onSaved(),
+  });
+
+  return (
+    <section style={sectionStyle}>
+      <h2 style={{ ...sectionTitle, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Icon path={mdiTune} size={0.8} />
+        Ticket Defaults
+      </h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 0 }}>
+        Applied to every ticket created from this webhook unless the mapping templates below override them.
+      </p>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div>
+          <label style={fieldLabel}>Default Queue</label>
+          <select value={defaultQueueId} onChange={(e) => setDefaultQueueId(e.target.value)} style={inputStyle}>
+            <option value="">— None —</option>
+            {queues.map((q) => (
+              <option key={q.id} value={q.id}>{q.name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label style={fieldLabel}>Default Category</label>
+          <select value={defaultCategoryId} onChange={(e) => setDefaultCategoryId(e.target.value)} style={inputStyle}>
+            <option value="">— None —</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label style={fieldLabel}>Default Priority</label>
+          <select value={defaultPriority} onChange={(e) => setDefaultPriority(e.target.value)} style={inputStyle}>
+            <option value="">— None —</option>
+            {PRIORITY_OPTIONS.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label style={fieldLabel}>Default Type</label>
+          <select value={defaultType} onChange={(e) => setDefaultType(e.target.value)} style={inputStyle}>
+            <option value="">— None —</option>
+            {TYPE_OPTIONS.map((t) => (
+              <option key={t} value={t}>{t.replace('_', ' ')}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button
+          onClick={() => saveMut.mutate()}
+          disabled={!dirty || saveMut.isPending}
+          style={{ ...btnPrimary, opacity: !dirty || saveMut.isPending ? 0.5 : 1 }}
+        >
+          {saveMut.isPending ? 'Saving…' : 'Save Defaults'}
+        </button>
+        {saveMut.isError && <span style={{ color: 'var(--accent-danger)', fontSize: 12 }}>{saveMut.error.message}</span>}
+        {saveMut.isSuccess && !dirty && <span style={{ color: 'var(--accent-success)', fontSize: 12 }}>Saved</span>}
+      </div>
+    </section>
+  );
+}
+
 // ─── Mapping editor + preview ───────────────────────────────────────────────
 
 function MappingEditor({ webhook, onSaved }: { webhook: WebhookDetail; onSaved: () => void }) {
+  const { data: queues = [] } = useQueueOptions();
+  const { data: categories = [] } = useCategoryOptions();
   const [mapping, setMapping] = useState<Record<string, string>>(() => normalizeMapping(webhook.mapping));
   const [samplePayload, setSamplePayload] = useState<string>(() => {
     // Pre-fill with the most recent delivery body if any.
@@ -211,11 +349,25 @@ function MappingEditor({ webhook, onSaved }: { webhook: WebhookDetail; onSaved: 
             {previewMut.isPending ? 'Rendering…' : 'Preview Mapping'}
           </button>
           {previewError && <div style={{ color: 'var(--accent-danger)', fontSize: 12, marginTop: 8 }}>{previewError}</div>}
-          {previewResult !== null && (
-            <pre style={{ marginTop: 12, padding: 10, background: 'var(--bg-tertiary)', borderRadius: 6, fontSize: 11, maxHeight: 200, overflow: 'auto' }}>
-              {JSON.stringify(previewResult, null, 2)}
-            </pre>
-          )}
+          {previewResult !== null && (() => {
+            const m = previewResult as Record<string, unknown>;
+            const queueId = typeof m.queueId === 'string' ? m.queueId : null;
+            const categoryId = typeof m.categoryId === 'string' ? m.categoryId : null;
+            const queueName = queueId ? queues.find((q) => q.id === queueId)?.name ?? '?' : null;
+            const categoryName = categoryId ? categories.find((c) => c.id === categoryId)?.name ?? '?' : null;
+            return (
+              <>
+                {(queueName || categoryName) && (
+                  <div style={{ marginTop: 12, padding: '8px 10px', background: 'var(--bg-success-subtle)', color: 'var(--accent-success)', borderRadius: 6, fontSize: 12 }}>
+                    Resolved: {queueName && <strong>Queue → {queueName}</strong>}{queueName && categoryName && ' · '}{categoryName && <strong>Category → {categoryName}</strong>}
+                  </div>
+                )}
+                <pre style={{ marginTop: 8, padding: 10, background: 'var(--bg-tertiary)', borderRadius: 6, fontSize: 11, maxHeight: 200, overflow: 'auto' }}>
+                  {JSON.stringify(previewResult, null, 2)}
+                </pre>
+              </>
+            );
+          })()}
         </div>
       </div>
     </section>
@@ -228,6 +380,8 @@ const MAPPING_FIELDS: Array<{ key: string; label: string; placeholder: string }>
   { key: 'priorityTemplate', label: 'Priority (LOW|MEDIUM|HIGH|CRITICAL)', placeholder: '{{json.priority}} (default)' },
   { key: 'typeTemplate', label: 'Type (INCIDENT|SERVICE_REQUEST|...)', placeholder: '{{json.type}} (default)' },
   { key: 'requesterEmailTemplate', label: 'Requester Email', placeholder: '{{json.requesterEmail}} (default)' },
+  { key: 'queueIdTemplate', label: 'Queue ID — overrides default (advanced)', placeholder: 'e.g. {{json.queueId}} — must resolve to a UUID' },
+  { key: 'categoryIdTemplate', label: 'Category ID — overrides default (advanced)', placeholder: 'e.g. {{json.categoryId}} — must resolve to a UUID' },
 ];
 
 function normalizeMapping(raw: Record<string, unknown>): Record<string, string> {
