@@ -147,13 +147,29 @@ async function resolveRecipients(
 /**
  * Resolve dynamic recipient tokens to email addresses.
  */
+// Normalize the `emails` config field. The workflow node UI saves it as a
+// comma-separated string (configSchema declares type:'text', placeholder:
+// 'comma-separated'), but legacy callers and notification rules pass arrays.
+// Without this guard, a string falls through `as string[]` and gets spread
+// character-by-character by Set construction, producing one BullMQ job per
+// character of the address.
+function normalizeStaticEmails(raw: unknown): string[] {
+  if (Array.isArray(raw)) {
+    return raw.filter((s): s is string => typeof s === 'string' && s.trim().length > 0).map((s) => s.trim());
+  }
+  if (typeof raw === 'string') {
+    return raw.split(/[,;\n]+/).map((s) => s.trim()).filter((s) => s.length > 0);
+  }
+  return [];
+}
+
 async function resolveEmailAddresses(
   config: ActionConfig,
   context: EventContext,
   tenantId: string,
 ): Promise<string[]> {
   const userIds = await resolveRecipients(config, context, tenantId);
-  const staticEmails = (config.emails ?? []) as string[];
+  const staticEmails = normalizeStaticEmails(config.emails);
 
   if (userIds.length === 0 && staticEmails.length === 0) return staticEmails;
 
