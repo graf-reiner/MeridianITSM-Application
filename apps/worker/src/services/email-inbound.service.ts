@@ -12,6 +12,7 @@ import { decrypt, encrypt, uploadFile, getFreshAccessToken, getOAuthCredentials,
 import { Redis } from 'ioredis';
 import { logEmailActivity } from './email-activity.service.js';
 import { markTestReceived, CONNECTOR_TEST_SUBJECT_REGEX } from './connector-test.service.js';
+import { findOrCreateAnonymousUser } from './anonymous-user.service.js';
 import { dispatchNotificationEvent, type EventContext } from '@meridian/notifications';
 
 // Derive EmailAccount type from PrismaClient to avoid direct @prisma/client import
@@ -123,7 +124,7 @@ async function createTicketFromEmail(
       }
     }
 
-    return tx.ticket.create({
+    const ticket = await tx.ticket.create({
       data: {
         tenantId,
         ticketNumber,
@@ -137,22 +138,63 @@ async function createTicketFromEmail(
         assignedToId,
         source: 'EMAIL',
       },
-      select: { id: true, assignedToId: true },
+      select: { id: true, assignedToId: true, title: true, type: true, priority: true },
     });
+
+    // Mirror the API's ticket.service.ts CREATED activity write so the per-ticket
+    // Activity tab is populated for email-originated tickets.
+    await tx.ticketActivity.create({
+      data: {
+        tenantId,
+        ticketId: ticket.id,
+        actorId: data.requestedById ?? null,
+        activityType: 'CREATED',
+        metadata: {
+          title: ticket.title,
+          type: ticket.type,
+          priority: ticket.priority,
+          source: 'EMAIL',
+        },
+      },
+    });
+
+    return { id: ticket.id, assignedToId: ticket.assignedToId };
   });
 }
 
-async function addEmailComment(tenantId: string, ticketId: string, content: string): Promise<string> {
+async function addEmailComment(
+  tenantId: string,
+  ticketId: string,
+  authorId: string,
+  content: string,
+): Promise<string> {
   const created = await prisma.ticketComment.create({
     data: {
       tenantId,
       ticketId,
-      authorId: null as unknown as string,
+      authorId,
       content,
       visibility: 'PUBLIC',
     },
     select: { id: true },
   });
+
+  // Mirror the API's ticket.service.ts COMMENT_ADDED activity write so the
+  // per-ticket Activity tab shows the email-originated reply.
+  await prisma.ticketActivity.create({
+    data: {
+      tenantId,
+      ticketId,
+      actorId: authorId,
+      activityType: 'COMMENT_ADDED',
+      metadata: {
+        commentId: created.id,
+        visibility: 'PUBLIC',
+        source: 'EMAIL',
+      },
+    },
+  });
+
   return created.id;
 }
 
@@ -424,23 +466,47 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
           const textContent: string = parsed.text ?? htmlContent ?? '(No content)';
 
           if (existingTicket) {
-            const commentId = await addEmailComment(account.tenantId, existingTicket.id, textContent);
-            comments++;
+            // Resolve the comment author. We must NOT pass null — TicketComment.authorId
+            // is a required FK. Strategy: if the sender's email already maps to a User
+            // in this tenant, attribute the comment to that user; otherwise create a
+            // no-login "anonymous" User (same pattern inbound webhooks use for
+            // unrecognized requesters) so external repliers still get a stable
+            // identity and the comment threads correctly.
+            const fromEmail = parsed.from?.value?.[0]?.address;
+            const fromDisplayName = parsed.from?.value?.[0]?.name ?? '';
+            const spaceIdx = fromDisplayName.indexOf(' ');
+            const fromFirst = spaceIdx === -1 ? (fromDisplayName || 'External') : fromDisplayName.slice(0, spaceIdx);
+            const fromLast = spaceIdx === -1 ? (fromDisplayName ? '' : 'Email') : fromDisplayName.slice(spaceIdx + 1);
+
+            if (!fromEmail) {
+              throw new Error('Inbound email reply has no sender address — cannot create comment');
+            }
+            const authorId = await findOrCreateAnonymousUser(
+              account.tenantId,
+              fromEmail,
+              fromFirst,
+              fromLast,
+            );
+
+            // Audit the receipt BEFORE the comment-create so the row exists even
+            // if anything downstream throws.
             await logEmailActivity({
               tenantId: account.tenantId,
               emailAccountId: account.id,
               direction: 'INBOUND',
               status: 'RECEIVED',
               subject: parsed.subject ?? undefined,
-              fromAddress: parsed.from?.value?.[0]?.address ?? undefined,
+              fromAddress: fromEmail,
               messageId: messageId,
               ticketId: existingTicket.id,
               rawMeta: { kind: 'comment-on-existing' },
             });
 
-            // Fires NotificationRule actions only. User-built Workflow dispatch
-            // requires the workflow engine in apps/api and is not reachable from
-            // the worker process. See Phase 1.5 for planned resolution.
+            const commentId = await addEmailComment(account.tenantId, existingTicket.id, authorId, textContent);
+            comments++;
+
+            // dispatchNotificationEvent now fires both seed NotificationRules AND
+            // user-built Workflows (since @meridian/notifications consolidation).
             // Wrapped in try/catch so a dispatch failure doesn't abort the poll cycle.
             try {
               const fullTicket = await prisma.ticket.findUnique({
@@ -455,8 +521,8 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
               if (fullTicket) {
                 await dispatchNotificationEvent(account.tenantId, 'TICKET_COMMENTED', {
                   ticket: fullTicket as unknown as EventContext['ticket'],
-                  comment: { id: commentId, visibility: 'PUBLIC', content: textContent, fromEmail: parsed.from?.value?.[0]?.address ?? null },
-                  actorId: undefined,
+                  comment: { id: commentId, visibility: 'PUBLIC', content: textContent, fromEmail: fromEmail ?? null },
+                  actorId: authorId,
                   trigger: 'TICKET_COMMENTED',
                 });
               }
@@ -469,6 +535,20 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
             const fromEmail = parsed.from?.value?.[0]?.address;
             const requestedById = await lookupUserByEmail(account.tenantId, fromEmail);
 
+            // Audit the receipt BEFORE the ticket-create so the row exists even
+            // if creation throws.
+            await logEmailActivity({
+              tenantId: account.tenantId,
+              emailAccountId: account.id,
+              direction: 'INBOUND',
+              status: 'RECEIVED',
+              subject: parsed.subject ?? undefined,
+              fromAddress: fromEmail ?? undefined,
+              messageId: messageId,
+              ticketId: undefined, // not yet created
+              rawMeta: { kind: 'new-ticket' },
+            });
+
             const ticket = await createTicketFromEmail(account.tenantId, {
               title: parsed.subject ?? 'No Subject',
               description: textContent,
@@ -478,17 +558,6 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
             });
 
             newTickets++;
-            await logEmailActivity({
-              tenantId: account.tenantId,
-              emailAccountId: account.id,
-              direction: 'INBOUND',
-              status: 'RECEIVED',
-              subject: parsed.subject ?? undefined,
-              fromAddress: fromEmail ?? undefined,
-              messageId: messageId,
-              ticketId: ticket.id,
-              rawMeta: { kind: 'new-ticket' },
-            });
 
             await prisma.ticket.update({
               where: { id: ticket.id },
@@ -544,9 +613,8 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
               }
             }
 
-            // Fires NotificationRule actions only. User-built Workflow dispatch
-            // requires the workflow engine in apps/api and is not reachable from
-            // the worker process. See Phase 1.5 for planned resolution.
+            // dispatchNotificationEvent now fires both seed NotificationRules AND
+            // user-built Workflows (since @meridian/notifications consolidation).
             // Re-fetch the ticket with relations the rules engine reads.
             // Wrapped in try/catch so a dispatch failure doesn't abort the poll cycle.
             try {
@@ -576,9 +644,23 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
           uidsToMarkSeen.push(message.uid);
           highestUid = Math.max(highestUid, message.uid);
         } catch (msgErr) {
+          const errMsg = msgErr instanceof Error ? msgErr.message : String(msgErr);
           console.error(
-            `[email-inbound] Error processing message in account ${account.id}: ${msgErr instanceof Error ? msgErr.message : String(msgErr)}`,
+            `[email-inbound] Error processing message in account ${account.id}: ${errMsg}`,
           );
+          // Audit the failure so the operator sees it in the email log
+          // alongside the per-message envelope. Best-effort — never let a
+          // logging failure mask the original error.
+          try {
+            await logEmailActivity({
+              tenantId: account.tenantId,
+              emailAccountId: account.id,
+              direction: 'INBOUND',
+              status: 'RECEIVED',
+              errorMessage: errMsg.slice(0, 500),
+              rawMeta: { kind: 'processing-failed', uid: message.uid },
+            });
+          } catch { /* non-critical */ }
           // Advance UID anyway so we don't get stuck retrying a poisonous message forever.
           highestUid = Math.max(highestUid, message.uid);
         }
