@@ -43,6 +43,9 @@ const PUBLIC_BASE = (typeof window !== 'undefined' && window.location.origin) ||
 export default function InboundWebhookDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const qc = useQueryClient();
+  // Token never persists — only available in-session right after rotation.
+  // Lifted here so MappingEditor's sample-curl block can prefill the URL.
+  const [revealedUrl, setRevealedUrl] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery<WebhookDetail>({
     queryKey: ['inbound-webhook', id],
@@ -65,11 +68,11 @@ export default function InboundWebhookDetailPage({ params }: { params: Promise<{
       <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>{data.name}</h1>
       {data.description && <p style={{ color: 'var(--text-muted)', marginTop: 4 }}>{data.description}</p>}
 
-      <RotateTokenSection webhookId={id} />
+      <RotateTokenSection webhookId={id} onTokenRevealed={setRevealedUrl} />
 
       <TicketDefaultsSection webhook={data} onSaved={() => qc.invalidateQueries({ queryKey: ['inbound-webhook', id] })} />
 
-      <MappingEditor webhook={data} onSaved={() => qc.invalidateQueries({ queryKey: ['inbound-webhook', id] })} />
+      <MappingEditor webhook={data} webhookUrl={revealedUrl} onSaved={() => qc.invalidateQueries({ queryKey: ['inbound-webhook', id] })} />
 
       <DeliveriesTable deliveries={data.deliveries} />
     </div>
@@ -78,7 +81,7 @@ export default function InboundWebhookDetailPage({ params }: { params: Promise<{
 
 // ─── Rotate token ───────────────────────────────────────────────────────────
 
-function RotateTokenSection({ webhookId }: { webhookId: string }) {
+function RotateTokenSection({ webhookId, onTokenRevealed }: { webhookId: string; onTokenRevealed?: (url: string) => void }) {
   const [revealed, setRevealed] = useState<{ token: string; url: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -94,7 +97,11 @@ function RotateTokenSection({ webhookId }: { webhookId: string }) {
       if (!res.ok) throw new Error((await res.json()).error ?? 'Rotate failed');
       return res.json();
     },
-    onSuccess: (data) => setRevealed(data),
+    onSuccess: (data) => {
+      setRevealed(data);
+      const fullUrl = data.url.startsWith('http') ? data.url : `${PUBLIC_BASE}${data.url}`;
+      onTokenRevealed?.(fullUrl);
+    },
   });
 
   return (
@@ -262,9 +269,10 @@ function TicketDefaultsSection({ webhook, onSaved }: { webhook: WebhookDetail; o
 
 // ─── Mapping editor + preview ───────────────────────────────────────────────
 
-function MappingEditor({ webhook, onSaved }: { webhook: WebhookDetail; onSaved: () => void }) {
+function MappingEditor({ webhook, webhookUrl, onSaved }: { webhook: WebhookDetail; webhookUrl?: string | null; onSaved: () => void }) {
   const { data: queues = [] } = useQueueOptions();
   const { data: categories = [] } = useCategoryOptions();
+  const [curlCopied, setCurlCopied] = useState(false);
   const [mapping, setMapping] = useState<Record<string, string>>(() => normalizeMapping(webhook.mapping));
   const [samplePayload, setSamplePayload] = useState<string>(() => {
     // Pre-fill with the most recent delivery body if any.
@@ -335,6 +343,45 @@ function MappingEditor({ webhook, onSaved }: { webhook: WebhookDetail; onSaved: 
           <button onClick={() => saveMut.mutate()} disabled={saveMut.isPending} style={{ ...btnPrimary, marginTop: 8 }}>
             {saveMut.isPending ? 'Saving…' : 'Save Mapping'}
           </button>
+
+          {(() => {
+            const url = webhookUrl ?? `${PUBLIC_BASE}/api/v1/external/inbound/<your-webhook-token>`;
+            // Single-line JSON for the curl -d flag. Fall back to the raw textarea
+            // contents if the user is mid-edit and the JSON doesn't parse yet.
+            let bodyArg: string;
+            try {
+              bodyArg = JSON.stringify(JSON.parse(samplePayload));
+            } catch {
+              bodyArg = samplePayload.replace(/\s+/g, ' ').trim();
+            }
+            const curlCmd = `curl -X POST "${url}" \\\n  -H 'Content-Type: application/json' \\\n  -d '${bodyArg.replace(/'/g, "'\\''")}'`;
+            return (
+              <div style={{ marginTop: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <label style={{ ...fieldLabel, marginBottom: 0 }}>Sample cURL</label>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(curlCmd);
+                      setCurlCopied(true);
+                      setTimeout(() => setCurlCopied(false), 1500);
+                    }}
+                    style={{ ...btnSecondary, padding: '4px 8px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                  >
+                    <Icon path={curlCopied ? mdiCheck : mdiContentCopy} size={0.6} />
+                    {curlCopied ? 'Copied' : 'Copy'}
+                  </button>
+                </div>
+                <pre style={{ margin: 0, padding: 10, background: 'var(--bg-tertiary)', borderRadius: 6, fontSize: 11, fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                  {curlCmd}
+                </pre>
+                {!webhookUrl && (
+                  <p style={{ marginTop: 6, color: 'var(--text-muted)', fontSize: 11 }}>
+                    Replace <code style={inlineCode}>&lt;your-webhook-token&gt;</code> with the token from the URL panel above (visible only right after creation or rotation).
+                  </p>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         <div>
