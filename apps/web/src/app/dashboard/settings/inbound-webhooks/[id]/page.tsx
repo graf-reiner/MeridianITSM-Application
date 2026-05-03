@@ -323,23 +323,55 @@ function MappingEditor({ webhook, webhookUrl, onSaved }: { webhook: WebhookDetai
     <section style={sectionStyle}>
       <h2 style={sectionTitle}>Field Mapping</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 0 }}>
-        Use <code style={inlineCode}>{'{{json.path.to.value}}'}</code> to pull from the inbound payload.
-        Empty fields fall back to <code style={inlineCode}>{'{{json.title}}'}</code>, <code style={inlineCode}>{'{{json.description}}'}</code>, etc. so plain curl works.
+        Use <code style={inlineCode}>{'{{json.path.to.value}}'}</code> to pull from the inbound payload — every ticket gets the value the sender put in its JSON.
+        Type a plain string instead (e.g. <code style={inlineCode}>HIGH</code>) and every ticket will get exactly that string, regardless of payload.
+        Empty fields fall back to <code style={inlineCode}>{'{{json.title}}'}</code>, <code style={inlineCode}>{'{{json.description}}'}</code>, etc. so plain curl works out of the box.
+        The picker on the right lists valid values so you can copy them into the JSON your sender posts (avoiding typos like <code style={inlineCode}>INNCIDENT</code>).
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <div>
-          {MAPPING_FIELDS.map((f) => (
-            <div key={f.key} style={{ marginBottom: 10 }}>
-              <label style={fieldLabel}>{f.label}</label>
-              <input
-                value={mapping[f.key] ?? ''}
-                onChange={(e) => setMapping((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                placeholder={f.placeholder}
-                style={{ ...inputStyle, fontFamily: 'monospace', fontSize: 12 }}
-              />
-            </div>
-          ))}
+          {MAPPING_FIELDS.map((f) => {
+            const opts = f.pickerKind ? pickerOptions(f.pickerKind, queues, categories) : [];
+            return (
+              <div key={f.key} style={{ marginBottom: 10 }}>
+                <label style={fieldLabel}>{f.label}</label>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input
+                    value={mapping[f.key] ?? ''}
+                    onChange={(e) => setMapping((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                    placeholder={f.placeholder}
+                    style={{ ...inputStyle, flex: 1, fontFamily: 'monospace', fontSize: 12 }}
+                  />
+                  {f.pickerKind && (
+                    <select
+                      // Always reset to the placeholder option — the picker is a
+                      // one-shot insert, not a bound value. The actual value lives
+                      // in the input so the user can edit it after.
+                      value=""
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (v) setMapping((prev) => ({ ...prev, [f.key]: v }));
+                        e.target.value = '';
+                      }}
+                      title="Pick a valid value"
+                      style={{ ...inputStyle, width: 130, fontSize: 11, padding: '8px 6px' }}
+                    >
+                      <option value="">Pick value…</option>
+                      {opts.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                {f.pickerKind === 'queue' || f.pickerKind === 'category' ? (
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                    Picks insert the UUID — that's what your sender's JSON should contain.
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
           <button onClick={() => saveMut.mutate()} disabled={saveMut.isPending} style={{ ...btnPrimary, marginTop: 8 }}>
             {saveMut.isPending ? 'Saving…' : 'Save Mapping'}
           </button>
@@ -421,15 +453,46 @@ function MappingEditor({ webhook, webhookUrl, onSaved }: { webhook: WebhookDetai
   );
 }
 
-const MAPPING_FIELDS: Array<{ key: string; label: string; placeholder: string }> = [
+type PickerKind = 'priority' | 'type' | 'queue' | 'category';
+
+interface MappingFieldDef {
+  key: string;
+  label: string;
+  placeholder: string;
+  // When set, the row shows a side dropdown of valid literal values for this
+  // field — pure reference / typo-avoidance, not setting the value behind the
+  // scenes. Picking a value overwrites the input with that literal so the user
+  // can either save it as the literal or copy it into the system that will be
+  // POSTing to the webhook.
+  pickerKind?: PickerKind;
+}
+
+const MAPPING_FIELDS: MappingFieldDef[] = [
   { key: 'titleTemplate', label: 'Title', placeholder: '{{json.title}} (default)' },
   { key: 'descriptionTemplate', label: 'Description', placeholder: '{{json.description}} (default)' },
-  { key: 'priorityTemplate', label: 'Priority (LOW|MEDIUM|HIGH|CRITICAL)', placeholder: '{{json.priority}} (default)' },
-  { key: 'typeTemplate', label: 'Type (INCIDENT|SERVICE_REQUEST|...)', placeholder: '{{json.type}} (default)' },
+  { key: 'priorityTemplate', label: 'Priority', placeholder: '{{json.priority}} (default)', pickerKind: 'priority' },
+  { key: 'typeTemplate', label: 'Type', placeholder: '{{json.type}} (default)', pickerKind: 'type' },
   { key: 'requesterEmailTemplate', label: 'Requester Email', placeholder: '{{json.requesterEmail}} (default)' },
-  { key: 'queueIdTemplate', label: 'Queue ID — overrides default (advanced)', placeholder: 'e.g. {{json.queueId}} — must resolve to a UUID' },
-  { key: 'categoryIdTemplate', label: 'Category ID — overrides default (advanced)', placeholder: 'e.g. {{json.categoryId}} — must resolve to a UUID' },
+  { key: 'queueIdTemplate', label: 'Queue ID — overrides default (advanced)', placeholder: '{{json.queueId}} or paste a UUID', pickerKind: 'queue' },
+  { key: 'categoryIdTemplate', label: 'Category ID — overrides default (advanced)', placeholder: '{{json.categoryId}} or paste a UUID', pickerKind: 'category' },
 ];
+
+function pickerOptions(
+  kind: PickerKind,
+  queues: OptionRow[],
+  categories: OptionRow[],
+): Array<{ label: string; value: string }> {
+  switch (kind) {
+    case 'priority':
+      return PRIORITY_OPTIONS.map((p) => ({ label: p, value: p }));
+    case 'type':
+      return TYPE_OPTIONS.map((t) => ({ label: t.replace('_', ' '), value: t }));
+    case 'queue':
+      return queues.map((q) => ({ label: q.name, value: q.id }));
+    case 'category':
+      return categories.map((c) => ({ label: c.name, value: c.id }));
+  }
+}
 
 function normalizeMapping(raw: Record<string, unknown>): Record<string, string> {
   const out: Record<string, string> = {};
