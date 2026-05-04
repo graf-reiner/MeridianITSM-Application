@@ -84,15 +84,6 @@ export async function findTicketBySubject(
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-async function lookupUserByEmail(tenantId: string, email?: string): Promise<string | null> {
-  if (!email) return null;
-  const user = await prisma.user.findFirst({
-    where: { tenantId, email: email.toLowerCase() },
-    select: { id: true },
-  });
-  return user?.id ?? null;
-}
-
 async function createTicketFromEmail(
   tenantId: string,
   data: {
@@ -533,7 +524,25 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
             }
           } else {
             const fromEmail = parsed.from?.value?.[0]?.address;
-            const requestedById = await lookupUserByEmail(account.tenantId, fromEmail);
+            // Resolve a requester even when the sender isn't in the User table.
+            // Without this, the ticket lands with requestedById=null and any
+            // workflow targeting "requester" finds nobody to email back.
+            // findOrCreateAnonymousUser is idempotent (returns the existing
+            // user if one already exists) so registered users still get
+            // attributed correctly.
+            let requestedById: string | null = null;
+            if (fromEmail) {
+              const fromDisplayName = parsed.from?.value?.[0]?.name ?? '';
+              const spaceIdx = fromDisplayName.indexOf(' ');
+              const fromFirst = spaceIdx === -1 ? (fromDisplayName || 'External') : fromDisplayName.slice(0, spaceIdx);
+              const fromLast = spaceIdx === -1 ? (fromDisplayName ? '' : 'Email') : fromDisplayName.slice(spaceIdx + 1);
+              requestedById = await findOrCreateAnonymousUser(
+                account.tenantId,
+                fromEmail,
+                fromFirst,
+                fromLast,
+              );
+            }
 
             // Audit the receipt BEFORE the ticket-create so the row exists even
             // if creation throws.
