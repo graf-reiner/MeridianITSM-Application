@@ -1,34 +1,11 @@
 import { Queue } from 'bullmq';
 import { prisma } from '@meridian/db';
-import { formatTicketNumber } from '@meridian/core';
-
-// ─── BullMQ Connection helper ─────────────────────────────────────────────────
-function makeRedisConnection() {
-  return {
-    host: (() => {
-      try {
-        return new URL(process.env.REDIS_URL ?? 'redis://localhost:6379').hostname;
-      } catch {
-        return 'localhost';
-      }
-    })(),
-    port: (() => {
-      try {
-        return Number(new URL(process.env.REDIS_URL ?? 'redis://localhost:6379').port) || 6379;
-      } catch {
-        return 6379;
-      }
-    })(),
-    maxRetriesPerRequest: null as null,
-    enableReadyCheck: false,
-  };
-}
+import { formatTicketNumber, bullmqConnection } from '@meridian/core';
 
 // ─── BullMQ Queue (email-notification) ───────────────────────────────────────
-// Uses the same host/port extraction pattern as apps/worker/src/queues/connection.ts
 
 const emailNotificationQueue = new Queue('email-notification', {
-  connection: makeRedisConnection(),
+  connection: bullmqConnection,
 });
 
 // ─── BullMQ Queue (push-notification) ────────────────────────────────────────
@@ -36,7 +13,7 @@ const emailNotificationQueue = new Queue('email-notification', {
 // the same ticket into a single push within a 60-second window.
 
 const pushNotificationQueue = new Queue('push-notification', {
-  connection: makeRedisConnection(),
+  connection: bullmqConnection,
 });
 
 // ─── Types ────────────────────────────────────────────────────────────────────

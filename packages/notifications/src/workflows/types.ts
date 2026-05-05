@@ -1,6 +1,7 @@
 // ─── Workflow Engine Type Definitions ──────────────────────────────────────────
 
 import type { EventContext } from '../conditions.js';
+import type { NotificationTrigger } from '../types.js';
 
 // ─── Graph Structure (React Flow compatible) ────────────────────────────────
 
@@ -40,6 +41,20 @@ export interface NodeDefinition {
   inputs: PortDefinition[];       // Input handles
   outputs: PortDefinition[];      // Output handles
   configSchema: FieldSchema[];    // Configuration form schema
+  /**
+   * For trigger nodes: the dispatcher trigger literal this node listens for.
+   * Drives the create-workflow dropdown so the editor only offers triggers
+   * that have a registered node. Required on category='trigger'; ignored
+   * elsewhere.
+   */
+  notificationTrigger?: NotificationTrigger;
+  /**
+   * True when the node mutates ticket/change state when executed (assignment,
+   * field updates, comments, escalations, webhook-wait response mapping).
+   * The editor surfaces a warning so authors know the workflow can react to
+   * its own updates if conditions are not scoped properly.
+   */
+  mutates?: boolean;
   execute?: (config: Record<string, unknown>, context: ExecutionContext) => Promise<NodeResult>;
 }
 
@@ -101,6 +116,21 @@ export interface ExecutionContext {
   variables: Record<string, unknown>;   // Accumulated node outputs
   isSimulation: boolean;
   recursionDepth: number;
+  /**
+   * The id of the node currently executing. Set by the executor immediately
+   * before calling `execute()`. Used by mutation nodes to build a stable
+   * idempotency fingerprint that distinguishes one node from another in the
+   * same workflow execution.
+   */
+  currentNodeId?: string;
+  /**
+   * BullMQ job id, when the workflow runs queue-backed (Phase 3). Written
+   * once on the first step's outputData for traceability — lets operators
+   * jump from a workflow step to the originating queue job.
+   */
+  queueJobId?: string;
+  /** BullMQ attempt number (1 = first attempt, 2+ = retry). Same scope as queueJobId. */
+  retryCount?: number;
 }
 
 export interface NodeResult {
@@ -122,4 +152,6 @@ export interface NodeDefinitionDTO {
   inputs: PortDefinition[];
   outputs: PortDefinition[];
   configSchema: FieldSchema[];
+  notificationTrigger?: NotificationTrigger;
+  mutates?: boolean;
 }

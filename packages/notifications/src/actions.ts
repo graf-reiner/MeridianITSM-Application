@@ -8,13 +8,50 @@ import crypto from 'node:crypto';
 import { prisma } from '@meridian/db';
 import { redis } from './redis.js';
 import { renderTemplate, type EventContext } from './conditions.js';
-import { formatTicketNumber } from '@meridian/core';
+import {
+  formatTicketNumber,
+  bullmqConnection,
+  buildIdempotencyKey,
+  sha256Fingerprint,
+  checkIdempotencyKey,
+  DEFAULT_IDEMPOTENCY_TTL_SECONDS,
+} from '@meridian/core';
 
 // ─── Cross-system dedupe net ────────────────────────────────────────────────
 // Prevents the same (tenant, ticket, trigger, channel, recipient) from being
 // notified twice within DEDUPE_TTL_SECONDS — for any reason (overlapping
 // notification rule + workflow, dispatch retries, etc.).
 const DEDUPE_TTL_SECONDS = 60;
+
+/**
+ * Idempotency guard for state-mutating rule actions (`escalate`, `update_field`,
+ * `webhook_wait`). Returns true when the caller should proceed; returns false
+ * when the same logical mutation has already fired in the TTL window.
+ *
+ * Fingerprint includes actorId + slaPercentage so repeated SLA-warning events
+ * at different percentages remain distinct mutations.
+ */
+async function shouldRunRuleMutation(
+  actionType: string,
+  tenantId: string,
+  context: EventContext,
+  actionInputs: Array<string | number | undefined | null>,
+  ttlSeconds: number = DEFAULT_IDEMPOTENCY_TTL_SECONDS,
+): Promise<boolean> {
+  const fingerprint = sha256Fingerprint([
+    context.actorId,
+    context.slaPercentage,
+    ...actionInputs,
+  ]);
+  const key = buildIdempotencyKey({
+    tenantId,
+    resourceId: context.ticket?.id ?? context.change?.id,
+    trigger: context.trigger as string | undefined,
+    actionType,
+    fingerprint,
+  });
+  return checkIdempotencyKey(redis, key, ttlSeconds);
+}
 
 async function alreadyFired(
   tenantId: string,
@@ -35,34 +72,12 @@ async function alreadyFired(
   }
 }
 
-// ─── BullMQ Connection helper (matches notification.service.ts pattern) ──────
-function makeRedisConnection() {
-  return {
-    host: (() => {
-      try {
-        return new URL(process.env.REDIS_URL ?? 'redis://localhost:6379').hostname;
-      } catch {
-        return 'localhost';
-      }
-    })(),
-    port: (() => {
-      try {
-        return Number(new URL(process.env.REDIS_URL ?? 'redis://localhost:6379').port) || 6379;
-      } catch {
-        return 6379;
-      }
-    })(),
-    maxRetriesPerRequest: null as null,
-    enableReadyCheck: false,
-  };
-}
-
 const emailNotificationQueue = new Queue('email-notification', {
-  connection: makeRedisConnection(),
+  connection: bullmqConnection,
 });
 
 const pushNotificationQueue = new Queue('push-notification', {
-  connection: makeRedisConnection(),
+  connection: bullmqConnection,
 });
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -617,6 +632,15 @@ async function executeEscalate(
     return { type: 'escalate', success: false, error: 'No escalation target configured' };
   }
 
+  const proceed = await shouldRunRuleMutation('rule_escalate', tenantId, context, [
+    config.queueId as string | undefined,
+    config.assignedGroupId as string | undefined,
+    config.assignedToId as string | undefined,
+  ]);
+  if (!proceed) {
+    return { type: 'escalate', success: true, detail: 'Skipped — duplicate within idempotency window' };
+  }
+
   await prisma.ticket.update({
     where: { id: ticketId },
     data: updateData,
@@ -654,6 +678,11 @@ async function executeUpdateField(
     return { type: 'update_field', success: false, error: 'No field specified' };
   }
 
+  const proceed = await shouldRunRuleMutation('rule_update_field', tenantId, context, [field, String(value ?? '')]);
+  if (!proceed) {
+    return { type: 'update_field', success: true, detail: 'Skipped — duplicate within idempotency window' };
+  }
+
   await prisma.ticket.update({
     where: { id: ticketId },
     data: { [field]: value },
@@ -682,6 +711,11 @@ async function executeWebhookWait(
   const url = config.url as string | undefined;
   if (!url) {
     return { type: 'webhook_wait', success: false, error: 'No URL configured' };
+  }
+
+  const proceed = await shouldRunRuleMutation('rule_webhook_wait', tenantId, context, [url]);
+  if (!proceed) {
+    return { type: 'webhook_wait', success: true, detail: 'Skipped — duplicate within idempotency window' };
   }
 
   const ticketId = context.ticket?.id;

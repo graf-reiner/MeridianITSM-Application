@@ -22,7 +22,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import dagre from '@dagrejs/dagre';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiContentSave, mdiCheckCircle, mdiRocketLaunch, mdiPlay, mdiMagnify, mdiAutoFix, mdiClose } from '@mdi/js';
+import { mdiArrowLeft, mdiContentSave, mdiCheckCircle, mdiRocketLaunch, mdiPlay, mdiMagnify, mdiAutoFix, mdiClose, mdiAlertOutline } from '@mdi/js';
 import { VariableInput, VariableTextarea } from '@/components/variable-picker';
 import type { VariableContextKey } from '@meridian/core/template';
 import Link from 'next/link';
@@ -76,6 +76,8 @@ interface NodeDef {
     templateChannel?: TemplateChannel;
     hidesKeys?: string[];
   }>;
+  notificationTrigger?: string;
+  mutates?: boolean;
 }
 
 interface WorkflowData {
@@ -126,6 +128,16 @@ const FIELD_VALUE_OPTIONS: Record<string, Array<{ label: string; value: string }
   type: [{ label: 'Incident', value: 'INCIDENT' }, { label: 'Service Request', value: 'SERVICE_REQUEST' }, { label: 'Problem', value: 'PROBLEM' }],
   source: [{ label: 'Portal', value: 'PORTAL' }, { label: 'Email', value: 'EMAIL' }, { label: 'Agent', value: 'AGENT' }, { label: 'API', value: 'API' }, { label: 'Recurring', value: 'RECURRING' }],
   slaStatus: [{ label: 'OK', value: 'OK' }, { label: 'Warning', value: 'WARNING' }, { label: 'Critical', value: 'CRITICAL' }, { label: 'Breached', value: 'BREACHED' }],
+  'origin.type': [
+    { label: 'User', value: 'user' },
+    { label: 'API', value: 'api' },
+    { label: 'Email', value: 'email' },
+    { label: 'Webhook', value: 'webhook' },
+    { label: 'Workflow', value: 'workflow' },
+    { label: 'Rule', value: 'rule' },
+    { label: 'System', value: 'system' },
+    { label: 'Agent', value: 'agent' },
+  ],
 };
 
 // Text-type fields that should show a textarea instead of a single-line input
@@ -327,10 +339,10 @@ export default function WorkflowBuilderPage() {
     const knownTypes = [
       'trigger_ticket_created', 'trigger_ticket_updated', 'trigger_ticket_assigned',
       'trigger_ticket_commented', 'trigger_ticket_resolved', 'trigger_sla_warning',
-      'trigger_sla_breach', 'trigger_ticket_status_changed',
+      'trigger_sla_breach', 'trigger_major_incident_declared', 'trigger_cert_expiry_warning',
       'condition_field', 'condition_form_field', 'condition_group',
       'action_send_email', 'action_send_in_app', 'action_send_slack', 'action_send_teams',
-      'action_send_webhook', 'action_send_push', 'action_escalate', 'action_update_field',
+      'action_send_webhook', 'action_webhook_wait', 'action_send_push', 'action_escalate', 'action_update_field',
       'action_change_status', 'action_change_priority', 'action_assign_ticket', 'action_add_comment',
     ];
     for (const t of knownTypes) {
@@ -706,6 +718,31 @@ export default function WorkflowBuilderPage() {
               <button onClick={handleDeleteNode} style={{ fontSize: 12, color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer' }}>Delete</button>
             </div>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 16px' }}>{selectedNodeDef.description}</p>
+
+            {selectedNodeDef.mutates && (
+              <div
+                role="note"
+                style={{
+                  display: 'flex',
+                  gap: 8,
+                  alignItems: 'flex-start',
+                  padding: '10px 12px',
+                  marginBottom: 16,
+                  borderRadius: 8,
+                  backgroundColor: '#fef3c7',
+                  border: '1px solid #fcd34d',
+                  color: '#92400e',
+                  fontSize: 12,
+                  lineHeight: 1.4,
+                }}
+              >
+                <Icon path={mdiAlertOutline} size={0.7} color="currentColor" />
+                <span>
+                  <strong>Mutates ticket state.</strong> Workflows triggered by ticket updates
+                  can react to their own changes — make sure conditions filter out workflow-driven events.
+                </span>
+              </div>
+            )}
 
             {/* Config form from schema.
                * When a `template_ref` field has a value selected, hide the inline

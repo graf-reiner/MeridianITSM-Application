@@ -3,6 +3,7 @@ import { registerNode } from '../../node-registry.js';
 registerNode({
   type: 'trigger_sla_warning',
   category: 'trigger',
+  notificationTrigger: 'SLA_WARNING',
   label: 'SLA Warning',
   description: 'Fires when SLA reaches warning threshold (75%+)',
   icon: 'mdiClockAlert',

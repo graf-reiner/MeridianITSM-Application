@@ -9,7 +9,8 @@ import './triggers/ticket-commented.js';
 import './triggers/ticket-resolved.js';
 import './triggers/sla-warning.js';
 import './triggers/sla-breach.js';
-import './triggers/ticket-status-changed.js';
+import './triggers/major-incident-declared.js';
+import './triggers/cert-expiry-warning.js';
 
 // Conditions
 import './conditions/field-condition.js';
@@ -22,6 +23,7 @@ import './actions/send-in-app.js';
 import './actions/send-slack.js';
 import './actions/send-teams.js';
 import './actions/send-webhook.js';
+import './actions/webhook-wait.js';
 import './actions/send-discord.js';
 import './actions/send-telegram.js';
 import './actions/send-push.js';
