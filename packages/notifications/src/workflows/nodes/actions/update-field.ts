@@ -1,10 +1,12 @@
 import { registerNode } from '../../node-registry.js';
 import type { ExecutionContext, NodeResult } from '../../types.js';
 import { executeActions } from '../../../actions.js';
+import { guardMutation } from '../../node-idempotency.js';
 
 registerNode({
   type: 'action_update_field',
   category: 'action',
+  mutates: true,
   label: 'Update Field',
   description: 'Update a field on the ticket',
   icon: 'mdiPencilBox',
@@ -50,6 +52,9 @@ registerNode({
     const field = config.field as string;
     let value = config.value as string;
     const mode = (config.mode as string) ?? 'replace';
+
+    const dup = await guardMutation('action_update_field', context, [field, value, mode]);
+    if (dup) return dup;
 
     // Handle append mode for text fields
     if (mode === 'append' && ['description', 'resolution', 'title'].includes(field)) {

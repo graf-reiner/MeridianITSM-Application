@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
@@ -24,16 +24,12 @@ const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   DISABLED: { bg: 'var(--bg-tertiary)', text: '#6b7280' },
 };
 
-const TRIGGER_LABELS: Record<string, string> = {
-  TICKET_CREATED: 'Ticket Created',
-  TICKET_UPDATED: 'Ticket Updated',
-  TICKET_ASSIGNED: 'Ticket Assigned',
-  TICKET_COMMENTED: 'Comment Added',
-  TICKET_RESOLVED: 'Ticket Resolved',
-  SLA_WARNING: 'SLA Warning',
-  SLA_BREACH: 'SLA Breach',
-  TICKET_APPROVAL_REQUESTED: 'Approval Requested',
-};
+interface NodeDefinitionDTO {
+  type: string;
+  category: string;
+  label: string;
+  notificationTrigger?: string;
+}
 
 export default function WorkflowsSettingsPage() {
   const qc = useQueryClient();
@@ -43,6 +39,33 @@ export default function WorkflowsSettingsPage() {
   const [newName, setNewName] = useState('');
   const [newTrigger, setNewTrigger] = useState('TICKET_CREATED');
   const [creating, setCreating] = useState(false);
+
+  // Triggers are derived from the workflow node registry — only triggers that
+  // have a registered node appear here, so the editor cannot create dead workflows
+  // (workflows whose trigger string is never dispatched or has no graph entry).
+  const { data: nodeDefinitions = [] } = useQuery<NodeDefinitionDTO[]>({
+    queryKey: ['workflow-node-definitions'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/settings/workflows/node-definitions', { credentials: 'include' });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const triggerOptions = useMemo(
+    () =>
+      nodeDefinitions
+        .filter(n => n.category === 'trigger' && n.notificationTrigger)
+        .map(n => ({ value: n.notificationTrigger!, label: n.label })),
+    [nodeDefinitions],
+  );
+
+  const triggerLabelByValue = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const t of triggerOptions) map[t.value] = t.label;
+    return map;
+  }, [triggerOptions]);
 
   const { data: workflows = [], isLoading } = useQuery<Workflow[]>({
     queryKey: ['settings-workflows', statusFilter, triggerFilter],
@@ -170,7 +193,7 @@ export default function WorkflowsSettingsPage() {
         </select>
         <select value={triggerFilter} onChange={e => setTriggerFilter(e.target.value)} style={{ padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}>
           <option value="">All Triggers</option>
-          {Object.entries(TRIGGER_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          {triggerOptions.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
       </div>
 
@@ -208,7 +231,7 @@ export default function WorkflowsSettingsPage() {
                     </td>
                     <td style={{ padding: '10px 14px' }}>
                       <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 12, fontWeight: 500, backgroundColor: 'var(--badge-blue-bg)', color: '#1e40af' }}>
-                        {TRIGGER_LABELS[wf.trigger] ?? wf.trigger}
+                        {triggerLabelByValue[wf.trigger] ?? wf.trigger}
                       </span>
                     </td>
                     <td style={{ padding: '10px 14px' }}>
@@ -259,7 +282,7 @@ export default function WorkflowsSettingsPage() {
             <div style={{ marginBottom: 20 }}>
               <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Trigger Event *</label>
               <select value={newTrigger} onChange={e => setNewTrigger(e.target.value)} style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 7, fontSize: 14, boxSizing: 'border-box' }}>
-                {Object.entries(TRIGGER_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                {triggerOptions.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>

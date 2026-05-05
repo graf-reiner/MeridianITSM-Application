@@ -1,10 +1,12 @@
 import { registerNode } from '../../node-registry.js';
 import type { ExecutionContext, NodeResult } from '../../types.js';
 import { executeActions } from '../../../actions.js';
+import { guardMutation } from '../../node-idempotency.js';
 
 registerNode({
   type: 'action_escalate',
   category: 'action',
+  mutates: true,
   label: 'Escalate Ticket',
   description: 'Escalate a ticket to a different queue, group, or user',
   icon: 'mdiArrowUpBold',
@@ -20,6 +22,13 @@ registerNode({
     if (context.isSimulation) {
       return { success: true, output: { simulated: true, action: 'escalate', config } };
     }
+
+    const dup = await guardMutation('action_escalate', context, [
+      config.queueId as string | undefined,
+      config.assignedGroupId as string | undefined,
+      config.assignedToId as string | undefined,
+    ]);
+    if (dup) return dup;
 
     const actionConfig = {
       type: 'escalate' as const,

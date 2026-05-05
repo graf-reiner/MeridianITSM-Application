@@ -16,6 +16,31 @@ export interface ConditionGroup {
   conditions: Condition[];
 }
 
+/**
+ * Where this event originated. Optional but strongly recommended on every
+ * `dispatchNotificationEvent` call — lets workflows filter out their own
+ * follow-up updates (`origin.type != 'workflow'`) and gives the action-level
+ * idempotency fingerprint enough distinguishing data.
+ */
+export type EventOriginType =
+  | 'user'      // authenticated UI action
+  | 'api'       // external API call (API key auth)
+  | 'email'     // inbound email
+  | 'webhook'   // inbound webhook
+  | 'workflow'  // a workflow mutation node
+  | 'rule'      // a notification rule action
+  | 'system'    // scheduled / background workers
+  | 'agent';    // inventory agent
+
+export interface EventOrigin {
+  type: EventOriginType;
+  workflowId?: string;
+  workflowExecutionId?: string;
+  workflowNodeId?: string;
+  ruleId?: string;
+  actorId?: string;
+}
+
 export interface EventContext {
   ticket?: {
     id: string;
@@ -72,6 +97,8 @@ export interface EventContext {
   tenantCustomDomain?: string | null;
   /** Pre-resolved tenant base URL (no trailing slash). Set by the dispatcher. */
   tenantBaseUrl?: string;
+  /** Provenance of this event — see `EventOrigin`. Recommended on every dispatch. */
+  origin?: EventOrigin;
   [key: string]: unknown;
 }
 
@@ -89,6 +116,14 @@ export function resolveFieldValue(field: string, context: EventContext): unknown
     const key = field.slice("cert.".length);
     return context.certExpiry
       ? (context.certExpiry as Record<string, unknown>)[key]
+      : undefined;
+  }
+
+  // Origin fields: "origin.type" etc. — lets conditions branch on event provenance
+  if (field.startsWith("origin.")) {
+    const key = field.slice("origin.".length);
+    return context.origin
+      ? (context.origin as unknown as Record<string, unknown>)[key]
       : undefined;
   }
 

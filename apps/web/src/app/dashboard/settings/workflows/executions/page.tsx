@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import Icon from '@mdi/react';
@@ -39,15 +39,12 @@ const STATUS_CONFIG: Record<string, { icon: string; color: string; label: string
   SKIPPED: { icon: mdiSkipNext, color: '#6b7280', label: 'Skipped' },
 };
 
-const TRIGGER_LABELS: Record<string, string> = {
-  TICKET_CREATED: 'Ticket Created',
-  TICKET_UPDATED: 'Ticket Updated',
-  TICKET_ASSIGNED: 'Ticket Assigned',
-  TICKET_COMMENTED: 'Comment Added',
-  TICKET_RESOLVED: 'Ticket Resolved',
-  SLA_WARNING: 'SLA Warning',
-  SLA_BREACH: 'SLA Breach',
-};
+interface NodeDefinitionDTO {
+  type: string;
+  category: string;
+  label: string;
+  notificationTrigger?: string;
+}
 
 function formatDuration(start: string, end: string | null): string {
   if (!end) return 'running...';
@@ -66,6 +63,30 @@ export default function GlobalExecutionsPage() {
   const [triggerFilter, setTriggerFilter] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+
+  const { data: nodeDefinitions = [] } = useQuery<NodeDefinitionDTO[]>({
+    queryKey: ['workflow-node-definitions'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/settings/workflows/node-definitions', { credentials: 'include' });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const triggerOptions = useMemo(
+    () =>
+      nodeDefinitions
+        .filter(n => n.category === 'trigger' && n.notificationTrigger)
+        .map(n => ({ value: n.notificationTrigger!, label: n.label })),
+    [nodeDefinitions],
+  );
+
+  const triggerLabelByValue = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const t of triggerOptions) map[t.value] = t.label;
+    return map;
+  }, [triggerOptions]);
 
   const { data, isLoading } = useQuery<{ executions: Execution[]; total: number }>({
     queryKey: ['global-workflow-executions', statusFilter, triggerFilter, page],
@@ -106,7 +127,7 @@ export default function GlobalExecutionsPage() {
         </select>
         <select value={triggerFilter} onChange={e => { setTriggerFilter(e.target.value); setPage(1); }} style={{ padding: '8px 10px', border: '1px solid var(--border-secondary)', borderRadius: 8, fontSize: 14, cursor: 'pointer', backgroundColor: 'var(--bg-primary)' }}>
           <option value="">All Triggers</option>
-          {Object.entries(TRIGGER_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          {triggerOptions.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
       </div>
 
@@ -136,7 +157,7 @@ export default function GlobalExecutionsPage() {
                       </Link>
                       <span style={{ padding: '1px 8px', borderRadius: 10, fontSize: 11, fontWeight: 600, backgroundColor: `${sc.color}18`, color: sc.color }}>{sc.label}</span>
                       <span style={{ padding: '1px 8px', borderRadius: 10, fontSize: 11, fontWeight: 500, backgroundColor: 'var(--badge-blue-bg)', color: '#1e40af' }}>
-                        {TRIGGER_LABELS[exec.trigger] ?? exec.trigger}
+                        {triggerLabelByValue[exec.trigger] ?? exec.trigger}
                       </span>
                       {exec.isSimulation && <span style={{ padding: '1px 8px', borderRadius: 10, fontSize: 11, fontWeight: 600, backgroundColor: '#dbeafe', color: '#1e40af' }}>Simulation</span>}
                     </div>

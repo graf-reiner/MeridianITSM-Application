@@ -3,6 +3,7 @@ import { registerNode } from '../../node-registry.js';
 registerNode({
   type: 'trigger_sla_breach',
   category: 'trigger',
+  notificationTrigger: 'SLA_BREACH',
   label: 'SLA Breached',
   description: 'Fires when SLA is breached (100%+)',
   icon: 'mdiClockAlert',

@@ -229,6 +229,7 @@ export const slaMonitorWorker = new Worker(
               slaPolicy: ticket.sla?.name ?? 'Unknown',
               breachType: 'RESOLUTION',
               actorId: 'system',
+              origin: { type: 'system' },
             });
             await markAlertSent(ticket.id, 'RESOLUTION_BREACH');
             breaches++;
@@ -258,6 +259,7 @@ export const slaMonitorWorker = new Worker(
               slaPolicy: ticket.sla?.name ?? 'Unknown',
               breachType: 'RESOLUTION',
               actorId: 'system',
+              origin: { type: 'system' },
             });
             await markAlertSent(ticket.id, 'RESOLUTION_WARNING');
             warnings++;

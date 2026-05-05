@@ -1,10 +1,12 @@
 import { registerNode } from '../../node-registry.js';
 import type { ExecutionContext, NodeResult } from '../../types.js';
 import { prisma } from '@meridian/db';
+import { guardMutation } from '../../node-idempotency.js';
 
 registerNode({
   type: 'action_change_status',
   category: 'action',
+  mutates: true,
   label: 'Change Ticket Status',
   description: 'Change the status of the current ticket',
   icon: 'mdiSwapHorizontal',
@@ -40,6 +42,9 @@ registerNode({
 
     const newStatus = config.status as string;
     const oldStatus = context.eventContext.ticket?.status;
+
+    const dup = await guardMutation('action_change_status', context, [newStatus]);
+    if (dup) return dup;
 
     await prisma.ticket.update({
       where: { id: ticketId },

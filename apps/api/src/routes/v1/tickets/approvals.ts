@@ -189,6 +189,7 @@ export async function ticketApprovalRoutes(fastify: FastifyInstance): Promise<vo
         ticket: { id: ticket.id, ticketNumber: ticket.ticketNumber, title: ticket.title, type: ticket.type, priority: ticket.priority, status: 'PENDING_APPROVAL' },
         actorId: user.userId,
         newAssignedToId: record.approverId,
+        origin: { type: 'user', actorId: user.userId },
       }).catch(() => {});
     }
 

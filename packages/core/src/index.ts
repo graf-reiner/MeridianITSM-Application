@@ -18,6 +18,16 @@ export {
   type OAuthCredentials,
 } from './utils/oauth-credentials.js';
 export { uploadFile, getFileUrl, deleteFile, buildStoragePath } from './utils/storage.js';
+export { bullmqConnection, type BullMQConnection } from './utils/bullmq-connection.js';
+export { MASKED, isSensitiveKey, maskHeaders, maskObject } from './utils/mask-secrets.js';
+export {
+  DEFAULT_IDEMPOTENCY_TTL_SECONDS,
+  buildIdempotencyKey,
+  sha256Fingerprint,
+  checkIdempotencyKey,
+  type IdempotencyKeyParts,
+  type RedisLikeClient,
+} from './utils/idempotency.js';
 export {
   resolveTenantBaseUrl,
   buildTenantUrls,

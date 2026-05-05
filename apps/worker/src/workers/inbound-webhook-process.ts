@@ -94,6 +94,7 @@ export const inboundWebhookProcessWorker = new Worker<ProcessJobData>(
             ticket: fullTicket as unknown as EventContext['ticket'],
             actorId: mapping.data.requestedById ?? undefined,
             trigger: 'TICKET_CREATED',
+            origin: { type: 'webhook', actorId: mapping.data.requestedById ?? undefined },
           });
         }
       } catch (dispatchErr) {

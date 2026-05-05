@@ -3,6 +3,7 @@ import { registerNode } from '../../node-registry.js';
 registerNode({
   type: 'trigger_ticket_assigned',
   category: 'trigger',
+  notificationTrigger: 'TICKET_ASSIGNED',
   label: 'Ticket Assigned',
   description: 'Fires when a ticket is assigned or reassigned',
   icon: 'mdiTicketOutline',
