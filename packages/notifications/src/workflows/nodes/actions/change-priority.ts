@@ -1,10 +1,12 @@
 import { registerNode } from '../../node-registry.js';
 import type { ExecutionContext, NodeResult } from '../../types.js';
 import { prisma } from '@meridian/db';
+import { guardMutation } from '../../node-idempotency.js';
 
 registerNode({
   type: 'action_change_priority',
   category: 'action',
+  mutates: true,
   label: 'Change Priority',
   description: 'Change the priority of the current ticket',
   icon: 'mdiAlertCircle',
@@ -37,6 +39,9 @@ registerNode({
 
     const newPriority = config.priority as string;
     const oldPriority = context.eventContext.ticket?.priority;
+
+    const dup = await guardMutation('action_change_priority', context, [newPriority]);
+    if (dup) return dup;
 
     await prisma.ticket.update({
       where: { id: ticketId },

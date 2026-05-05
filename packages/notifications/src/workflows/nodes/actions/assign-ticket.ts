@@ -1,10 +1,12 @@
 import { registerNode } from '../../node-registry.js';
 import type { ExecutionContext, NodeResult } from '../../types.js';
 import { prisma } from '@meridian/db';
+import { guardMutation } from '../../node-idempotency.js';
 
 registerNode({
   type: 'action_assign_ticket',
   category: 'action',
+  mutates: true,
   label: 'Assign Ticket',
   description: 'Assign the ticket to a user or move to a queue',
   icon: 'mdiAccountArrowRight',
@@ -54,6 +56,9 @@ registerNode({
     if (Object.keys(updateData).length === 0) {
       return { success: false, error: 'No assignedToId or queueId provided' };
     }
+
+    const dup = await guardMutation('action_assign_ticket', context, [assignedToId, queueId]);
+    if (dup) return dup;
 
     await prisma.ticket.update({
       where: { id: ticketId },

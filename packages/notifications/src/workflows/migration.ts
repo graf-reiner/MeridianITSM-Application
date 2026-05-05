@@ -38,7 +38,7 @@ const ACTION_TYPE_MAP: Record<string, string> = {
   escalate: 'action_escalate',
   update_field: 'action_update_field',
   sms: 'action_send_in_app', // SMS fallback to in-app
-  webhook_wait: 'action_send_webhook', // webhook_wait fallback to regular webhook
+  webhook_wait: 'action_webhook_wait',
 };
 
 const TRIGGER_TYPE_MAP: Record<string, string> = {
