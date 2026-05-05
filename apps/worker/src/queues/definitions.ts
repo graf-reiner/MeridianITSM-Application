@@ -21,6 +21,7 @@ export const QUEUE_NAMES = {
   INVENTORY_DIFF_BACKFILL: 'inventory-diff-backfill',
   INBOUND_WEBHOOK_PROCESS: 'inbound-webhook-process',
   INBOUND_WEBHOOK_CLEANUP: 'inbound-webhook-cleanup',
+  WORKFLOW_EXECUTION: 'workflow-execution',
 } as const;
 
 export interface TenantJobData {
@@ -59,3 +60,14 @@ export const inventoryRetentionQueue = new Queue(QUEUE_NAMES.INVENTORY_RETENTION
 export const inventoryDiffBackfillQueue = new Queue(QUEUE_NAMES.INVENTORY_DIFF_BACKFILL, { connection: bullmqConnection });
 export const inboundWebhookProcessQueue = new Queue(QUEUE_NAMES.INBOUND_WEBHOOK_PROCESS, { connection: bullmqConnection });
 export const inboundWebhookCleanupQueue = new Queue(QUEUE_NAMES.INBOUND_WEBHOOK_CLEANUP, { connection: bullmqConnection });
+export const workflowExecutionQueue = new Queue(QUEUE_NAMES.WORKFLOW_EXECUTION, {
+  connection: bullmqConnection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 5000 },
+    // Keep recent completions briefly (audit trail lives in WorkflowExecution table).
+    removeOnComplete: { age: 60 * 60, count: 500 },
+    // Retain failures longer for diagnosis — 7 days, no count cap.
+    removeOnFail: { age: 7 * 24 * 60 * 60 },
+  },
+});

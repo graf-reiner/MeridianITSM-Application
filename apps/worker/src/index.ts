@@ -18,6 +18,7 @@ import { majorIncidentDetectionWorker } from './workers/major-incident-detection
 import { certExpiryMonitorWorker } from './workers/cert-expiry-monitor.js';
 import { inventoryRetentionWorker, inventoryDiffBackfillWorker } from './workers/inventory-retention.worker.js';
 import { emailActivityCleanupWorker, EMAIL_ACTIVITY_CLEANUP_QUEUE_NAME } from './workers/email-activity-cleanup.js';
+import { workflowExecutionWorker } from './workers/workflow-execution.worker.js';
 import { Queue } from 'bullmq';
 import { bullmqConnection } from './queues/connection.js';
 import {
@@ -58,6 +59,7 @@ const workers = [
   { name: 'inventory-retention', worker: inventoryRetentionWorker },
   { name: 'inventory-diff-backfill', worker: inventoryDiffBackfillWorker },
   { name: 'email-activity-cleanup', worker: emailActivityCleanupWorker },
+  { name: 'workflow-execution', worker: workflowExecutionWorker },
 ];
 
 const emailActivityCleanupQueue = new Queue(EMAIL_ACTIVITY_CLEANUP_QUEUE_NAME, { connection: bullmqConnection });
