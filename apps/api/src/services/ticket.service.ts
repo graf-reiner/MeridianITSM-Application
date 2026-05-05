@@ -312,6 +312,7 @@ export async function createTicket(
       try {
         await dispatchNotificationEvent(tenantId, 'TICKET_CREATED', {
           ticket: createdTicket, actorId,
+          origin: { type: 'user', actorId },
         });
       } catch (err) {
         console.error('[ticket.service] notifyTicketCreated failed:', err);
@@ -503,12 +504,13 @@ export async function updateTicket(
 
     void (async () => {
       try {
+        const userOrigin = { type: 'user' as const, actorId };
         if (newStatus === 'RESOLVED') {
-          await dispatchNotificationEvent(tenantId, 'TICKET_RESOLVED', { ticket: updatedTicket, actorId });
+          await dispatchNotificationEvent(tenantId, 'TICKET_RESOLVED', { ticket: updatedTicket, actorId, origin: userOrigin });
         } else if (newAssignedToId && newAssignedToId !== existing.assignedToId) {
-          await dispatchNotificationEvent(tenantId, 'TICKET_ASSIGNED', { ticket: updatedTicket, actorId, newAssignedToId });
+          await dispatchNotificationEvent(tenantId, 'TICKET_ASSIGNED', { ticket: updatedTicket, actorId, newAssignedToId, origin: userOrigin });
         } else if (otherChangedFields.length > 0) {
-          await dispatchNotificationEvent(tenantId, 'TICKET_UPDATED', { ticket: updatedTicket, actorId, changedFields: otherChangedFields });
+          await dispatchNotificationEvent(tenantId, 'TICKET_UPDATED', { ticket: updatedTicket, actorId, changedFields: otherChangedFields, origin: userOrigin });
         }
       } catch (err) {
         console.error('[ticket.service] update notification failed:', err);
@@ -596,6 +598,7 @@ export async function addComment(
       try {
         await dispatchNotificationEvent(tenantId, 'TICKET_COMMENTED', {
           ticket: ticketForNotify, comment, actorId,
+          origin: { type: 'user', actorId },
         });
       } catch (err) {
         console.error('[ticket.service] notifyTicketCommented failed:', err);
@@ -727,6 +730,7 @@ export async function assignTicket(
       try {
         await dispatchNotificationEvent(tenantId, 'TICKET_ASSIGNED', {
           ticket: assignedTicket, actorId, newAssignedToId: assignedToId,
+          origin: { type: 'user', actorId },
         });
       } catch (err) {
         console.error('[ticket.service] notifyTicketAssigned failed:', err);
@@ -952,6 +956,7 @@ export async function promoteToMajorIncident(
         ticket: updatedTicket as any,
         actorId,
         coordinatorId: data.coordinatorId,
+        origin: { type: 'user', actorId },
       });
     } catch (err) {
       console.error('[ticket.service] promoteToMajorIncident notification failed:', err);

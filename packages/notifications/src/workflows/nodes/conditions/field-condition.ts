@@ -31,6 +31,7 @@ registerNode({
         { label: 'Source', value: 'source' },
         { label: 'SLA Status', value: 'slaStatus' },
         { label: 'SLA Percentage', value: 'slaPercentage' },
+        { label: 'Event Origin Type', value: 'origin.type' },
       ],
     },
     {

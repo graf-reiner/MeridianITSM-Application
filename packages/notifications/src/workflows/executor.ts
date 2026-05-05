@@ -4,6 +4,7 @@
 // steps for observability.
 
 import { prisma } from '@meridian/db';
+import { maskObject } from '@meridian/core';
 import { redis } from '../redis.js';
 import { getNodeDefinition } from './node-registry.js';
 import type { WorkflowGraph, WorkflowNode, WorkflowEdge, ExecutionContext, NodeResult } from './types.js';
@@ -24,6 +25,7 @@ export async function executeWorkflow(
   trigger: string,
   eventContext: EventContext,
   isSimulation = false,
+  queueContext?: { jobId?: string; attemptsMade?: number },
 ): Promise<void> {
   // Check recursion depth
   const depthKey = `wf-depth:${tenantId}:${eventContext.ticket?.id ?? 'none'}`;
@@ -100,6 +102,8 @@ export async function executeWorkflow(
       variables: {},
       isSimulation,
       recursionDepth: currentDepth + 1,
+      queueJobId: queueContext?.jobId,
+      retryCount: queueContext?.attemptsMade,
     };
 
     // Walk the graph starting from the trigger node
@@ -140,7 +144,7 @@ async function walkGraph(
     nodesExecuted++;
 
     // Execute the node
-    const result = await executeNode(currentNode, context, executionId);
+    const result = await executeNode(currentNode, context, executionId, nodesExecuted === 1);
 
     // Find the next node to execute
     const outgoingEdges = edgeMap.get(currentNode.id) ?? [];
@@ -176,7 +180,13 @@ async function executeNode(
   node: WorkflowNode,
   context: ExecutionContext,
   executionId: string,
+  isFirstStep: boolean,
 ): Promise<NodeResult> {
+  const startedAt = new Date();
+  // Sanitize config before persisting — the webhook nodes carry an HMAC `secret`
+  // field that must NOT land in the database in plaintext. maskObject is a
+  // shallow-only masker (matches keys like /secret|token|password|apikey/i).
+  const sanitizedConfig = node.data?.config ? maskObject(node.data.config) : null;
   const step = await prisma.workflowExecutionStep.create({
     data: {
       executionId,
@@ -184,23 +194,47 @@ async function executeNode(
       nodeType: node.type ?? 'unknown',
       status: 'RUNNING',
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      inputData: node.data?.config as any,
-      startedAt: new Date(),
+      inputData: sanitizedConfig as any,
+      startedAt,
     },
   });
+
+  // Compose the structured "_meta" envelope written into outputData on every
+  // step. Surfaces durationMs / branchTaken / dedupeSkipped for the executions
+  // UI without a schema change. queueJobId + retryCount are written once on
+  // the first step so they aren't repeated on every node row.
+  const buildOutputData = (raw: Record<string, unknown> | undefined, completedAt: Date, nextPort?: string) => {
+    const meta: Record<string, unknown> = {
+      durationMs: completedAt.getTime() - startedAt.getTime(),
+    };
+    if (nextPort) meta.branchTaken = nextPort;
+    if (raw?.deduped === true) meta.dedupeSkipped = true;
+    if (isFirstStep) {
+      if (context.queueJobId) meta.queueJobId = context.queueJobId;
+      if (typeof context.retryCount === 'number') meta.retryCount = context.retryCount;
+    }
+    return { ...(raw ?? {}), _meta: meta };
+  };
 
   try {
     const definition = getNodeDefinition(node.type ?? '');
 
     if (!definition?.execute) {
       // Trigger nodes and unrecognized types pass through
+      const completedAt = new Date();
       await prisma.workflowExecutionStep.update({
         where: { id: step.id },
-        data: { status: 'COMPLETED', completedAt: new Date() },
+        data: {
+          status: 'COMPLETED',
+          completedAt,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          outputData: buildOutputData(undefined, completedAt) as any,
+        },
       });
       return { success: true };
     }
 
+    context.currentNodeId = node.id;
     const result = await definition.execute(node.data?.config ?? {}, context);
 
     // Store output in context variables for downstream nodes
@@ -208,23 +242,31 @@ async function executeNode(
       context.variables[node.id] = result.output;
     }
 
+    const completedAt = new Date();
     await prisma.workflowExecutionStep.update({
       where: { id: step.id },
       data: {
         status: result.success ? 'COMPLETED' : 'FAILED',
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        outputData: result.output as any ?? null,
+        outputData: buildOutputData(result.output, completedAt, result.nextPort) as any,
         error: result.error ?? null,
-        completedAt: new Date(),
+        completedAt,
       },
     });
 
     return result;
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
+    const completedAt = new Date();
     await prisma.workflowExecutionStep.update({
       where: { id: step.id },
-      data: { status: 'FAILED', error: errorMsg, completedAt: new Date() },
+      data: {
+        status: 'FAILED',
+        error: errorMsg,
+        completedAt,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        outputData: buildOutputData(undefined, completedAt) as any,
+      },
     });
     return { success: false, error: errorMsg };
   }

@@ -515,6 +515,7 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
                   comment: { id: commentId, visibility: 'PUBLIC', content: textContent, fromEmail: fromEmail ?? null },
                   actorId: authorId,
                   trigger: 'TICKET_COMMENTED',
+                  origin: { type: 'email', actorId: authorId },
                 });
               }
             } catch (dispatchErr) {
@@ -641,6 +642,7 @@ export async function pollMailbox(account: EmailAccount): Promise<{ newTickets: 
                   ticket: fullTicket as unknown as EventContext['ticket'],
                   actorId: requestedById ?? undefined,
                   trigger: 'TICKET_CREATED',
+                  origin: { type: 'email', actorId: requestedById ?? undefined },
                 });
               }
             } catch (dispatchErr) {
