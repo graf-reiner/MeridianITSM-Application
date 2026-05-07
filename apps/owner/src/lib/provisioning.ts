@@ -363,6 +363,14 @@ export async function provisionTenant(input: ProvisionTenantInput): Promise<Prov
       },
       user: { id: user.id, email: user.email },
     };
+  }, {
+    // Provisioning seeds Tenant + Subscription + roles + SLAs + categories +
+    // notification templates + the full CMDB reference vocabulary + admin user.
+    // Default Prisma timeout (5s) is too tight when the DB is over the network
+    // (e.g. dev box → 10.1.200.78). 30s gives comfortable headroom while still
+    // failing reasonably if the DB stalls.
+    timeout: 30_000,
+    maxWait: 10_000,
   });
 
   // Welcome email would be enqueued here — deferred to Phase 3+
