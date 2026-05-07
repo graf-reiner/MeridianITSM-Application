@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { ownerFetch } from '../../../lib/api';
 import SmtpSettings from '../../../components/SmtpSettings';
 import BackupsSection from '../../../components/BackupsSection';
+import CloudflareSettings from '../../../components/CloudflareSettings';
 
 interface OwnerUser {
   id: string;
@@ -466,6 +467,9 @@ export default function SettingsPage() {
 
       {/* ── Backup Configuration ──────────────────────────────────────────── */}
       <BackupsSection />
+
+      {/* ── Cloudflare Integration ─────────────────────────────────────────── */}
+      <CloudflareSettings />
     </div>
   );
 }

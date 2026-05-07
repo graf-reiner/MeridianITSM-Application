@@ -12,11 +12,23 @@ export interface ProvisionTenantInput {
   adminPassword: string;
   planTier?: SubscriptionPlanTier;
   stripeCustomerId?: string;
+  /**
+   * If set, the tenant is bound to this CloudflareDomain row and gets
+   * cfRouteStatus = PENDING. The route handler is responsible for enqueueing
+   * the provisioning job after this function returns successfully.
+   */
+  cloudflareDomainId?: string;
 }
 
 export interface ProvisionTenantResult {
-  tenant: { id: string; name: string; slug: string };
+  tenant: { id: string; name: string; slug: string; subdomain: string | null; cloudflareDomainId: string | null };
   user: { id: string; email: string };
+  /**
+   * Set when the tenant was bound to a Cloudflare domain. The route handler
+   * uses this to enqueue the tunnel-provision job (which lives outside the
+   * DB transaction so a Cloudflare hiccup never rolls back the tenant row).
+   */
+  cloudflareJob?: { hostname: string; cloudflareDomainId: string } | null;
 }
 
 const DEFAULT_ROLES = [
@@ -161,9 +173,26 @@ const DEFAULT_NOTIFICATION_TEMPLATES: Array<{
  * - Initial admin user
  */
 export async function provisionTenant(input: ProvisionTenantInput): Promise<ProvisionTenantResult> {
-  const { name, slug, subdomain, adminEmail, adminPassword, planTier = 'STARTER', stripeCustomerId } = input;
+  const { name, slug, subdomain, adminEmail, adminPassword, planTier = 'STARTER', stripeCustomerId, cloudflareDomainId } = input;
 
   const passwordHash = hashSync(adminPassword, 10);
+
+  // Validate the Cloudflare domain (if any) BEFORE opening the transaction so
+  // a stale id doesn't waste a CMDB seed cycle.
+  let cloudflareDomain: { id: string; apex: string } | null = null;
+  if (cloudflareDomainId) {
+    const found = await prisma.cloudflareDomain.findUnique({
+      where: { id: cloudflareDomainId },
+      select: { id: true, apex: true, isEnabled: true },
+    });
+    if (!found || !found.isEnabled) {
+      throw new Error(`Cloudflare domain '${cloudflareDomainId}' not found or disabled`);
+    }
+    if (!subdomain) {
+      throw new Error('Subdomain is required when binding a tenant to a Cloudflare domain');
+    }
+    cloudflareDomain = { id: found.id, apex: found.apex };
+  }
 
   const result = await prisma.$transaction(async (tx) => {
     // 1. Create tenant
@@ -175,6 +204,8 @@ export async function provisionTenant(input: ProvisionTenantInput): Promise<Prov
         type: 'MSP',
         status: 'ACTIVE',
         plan: planTier,
+        cloudflareDomainId: cloudflareDomain?.id ?? null,
+        cfRouteStatus: cloudflareDomain ? 'PENDING' : 'NONE',
       },
     });
 
@@ -289,7 +320,13 @@ export async function provisionTenant(input: ProvisionTenantInput): Promise<Prov
     }
 
     return {
-      tenant: { id: tenant.id, name: tenant.name, slug: tenant.slug },
+      tenant: {
+        id: tenant.id,
+        name: tenant.name,
+        slug: tenant.slug,
+        subdomain: tenant.subdomain,
+        cloudflareDomainId: tenant.cloudflareDomainId,
+      },
       user: { id: user.id, email: user.email },
     };
   });
@@ -297,5 +334,13 @@ export async function provisionTenant(input: ProvisionTenantInput): Promise<Prov
   // Welcome email would be enqueued here — deferred to Phase 3+
   console.log(`[provisioning] Tenant '${result.tenant.name}' provisioned. Admin: ${result.user.email}`);
 
-  return result;
+  const cloudflareJob =
+    cloudflareDomain && result.tenant.subdomain
+      ? {
+          hostname: `${result.tenant.subdomain}.${cloudflareDomain.apex}`,
+          cloudflareDomainId: cloudflareDomain.id,
+        }
+      : null;
+
+  return { ...result, cloudflareJob };
 }

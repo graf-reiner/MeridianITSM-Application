@@ -22,6 +22,7 @@ import { backupWorker } from './workers/backup.worker.js';
 import { prisma } from '@meridian/db';
 import { DEFAULT_BACKUP_CONFIG } from '@meridian/backup';
 import { workflowExecutionWorker } from './workers/workflow-execution.worker.js';
+import { tenantCfProvisionWorker } from './workers/tenant-cf-provision.worker.js';
 import { Queue } from 'bullmq';
 import { bullmqConnection } from './queues/connection.js';
 import {
@@ -65,6 +66,7 @@ const workers = [
   { name: 'email-activity-cleanup', worker: emailActivityCleanupWorker },
   { name: 'backup-create + backup-prune', worker: backupWorker },
   { name: 'workflow-execution', worker: workflowExecutionWorker },
+  { name: 'tenant-cf-provision', worker: tenantCfProvisionWorker },
 ];
 
 const emailActivityCleanupQueue = new Queue(EMAIL_ACTIVITY_CLEANUP_QUEUE_NAME, { connection: bullmqConnection });

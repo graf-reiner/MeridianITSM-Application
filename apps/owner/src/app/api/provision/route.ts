@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@meridian/db';
 import { provisionTenant } from '../../../lib/provisioning';
+import { enqueueTenantCfProvision } from '../../../lib/cloudflare-queue';
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -10,13 +11,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { name, slug, subdomain, adminEmail, adminPassword, planTier } = body as {
+  const { name, slug, subdomain, adminEmail, adminPassword, planTier, cloudflareDomainId } = body as {
     name?: string;
     slug?: string;
     subdomain?: string;
     adminEmail?: string;
     adminPassword?: string;
     planTier?: string;
+    cloudflareDomainId?: string;
   };
 
   // Validation
@@ -62,6 +64,24 @@ export async function POST(request: Request) {
     }
   }
 
+  // If a Cloudflare domain was selected, both the row must exist and the
+  // tenant must have a subdomain (otherwise there's nothing to publish).
+  if (cloudflareDomainId) {
+    const cfDomain = await prisma.cloudflareDomain.findUnique({
+      where: { id: cloudflareDomainId },
+      select: { isEnabled: true, apex: true },
+    });
+    if (!cfDomain || !cfDomain.isEnabled) {
+      return NextResponse.json({ error: 'Selected Cloudflare domain is not available' }, { status: 400 });
+    }
+    if (!subdomain) {
+      return NextResponse.json(
+        { error: 'A subdomain is required when binding a tenant to a Cloudflare domain' },
+        { status: 400 },
+      );
+    }
+  }
+
   try {
     const result = await provisionTenant({
       name,
@@ -70,7 +90,28 @@ export async function POST(request: Request) {
       adminEmail,
       adminPassword,
       planTier: resolvedPlanTier,
+      cloudflareDomainId: cloudflareDomainId || undefined,
     });
+
+    // Enqueue Cloudflare provisioning AFTER the DB transaction has committed.
+    // Failure here does NOT roll back the tenant — the operator can retry from
+    // the tenant detail page.
+    if (result.cloudflareJob) {
+      try {
+        await enqueueTenantCfProvision({
+          tenantId: result.tenant.id,
+          hostname: result.cloudflareJob.hostname,
+          cloudflareDomainId: result.cloudflareJob.cloudflareDomainId,
+        });
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to enqueue Cloudflare provisioning';
+        console.error('[provision] Failed to enqueue Cloudflare provisioning job:', err);
+        await prisma.tenant.update({
+          where: { id: result.tenant.id },
+          data: { cfRouteStatus: 'FAILED', cfRouteError: errorMessage },
+        });
+      }
+    }
 
     return NextResponse.json(result, { status: 201 });
   } catch (err) {

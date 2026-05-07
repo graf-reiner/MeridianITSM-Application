@@ -403,6 +403,16 @@ model Tenant {
   snapshotRetentionCount      Int @default(30)
   inventoryMinIntervalMinutes Int @default(30)
 
+  // Cloudflare-managed routing — chosen at provision time. The bound apex (via
+  // CloudflareDomain) plus `subdomain` produces the public FQDN. Lifecycle
+  // status is reconciled by the `tenant-cf-provision` worker.
+  cloudflareDomainId   String?               @db.Uuid
+  cloudflareDomain     CloudflareDomain?     @relation(fields: [cloudflareDomainId], references: [id], onDelete: SetNull)
+  cfRouteStatus        CloudflareRouteStatus @default(NONE)
+  cfRouteError         String?
+  cfDnsRecordId        String?
+  cfRouteProvisionedAt DateTime?
+
   // Relations
   users                        User[]
   customerOrganizations        CustomerOrganization[]
@@ -3086,6 +3096,58 @@ model OwnerOAuthIntegration {
   @@map("owner_oauth_integrations")
 }
 
+// Model 50d: CloudflareConfig (GLOBAL singleton)
+// Holds the platform's Cloudflare API token + tunnel identifier so tenant
+// provisioning can publish DNS + tunnel ingress entries automatically. The
+// `singleton` column is a unique sentinel — only one row may exist.
+enum CloudflareRouteStatus {
+  NONE
+  PENDING
+  PROVISIONING
+  ACTIVE
+  FAILED
+}
+
+model CloudflareConfig {
+  id             String    @id @default(uuid()) @db.Uuid
+  singleton      Boolean   @unique @default(true)
+  accountId      String
+  tunnelId       String
+  tunnelCname    String
+  apiTokenEnc    String // encrypted via @meridian/core encrypt()
+  defaultOrigin  String    @default("http://localhost:3000")
+  isEnabled      Boolean   @default(true)
+  lastVerifiedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  domains CloudflareDomain[]
+
+  @@map("cloudflare_config")
+}
+
+// Model 50e: CloudflareDomain (GLOBAL)
+// One row per apex domain that the platform serves tenants on. The zoneId is
+// auto-discovered via /zones?name= and cached here. Exactly one row should be
+// flagged isDefault — enforced in the API transaction layer (Prisma cannot
+// portably express a partial unique constraint).
+model CloudflareDomain {
+  id        String   @id @default(uuid()) @db.Uuid
+  configId  String   @db.Uuid
+  apex      String   @unique
+  zoneId    String
+  isDefault Boolean  @default(false)
+  isEnabled Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  config  CloudflareConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+  tenants Tenant[]
+
+  @@index([configId])
+  @@map("cloudflare_domains")
+}
+
 // ─── Supporting ───────────────────────────────────────────────────────────────
 
 // Model 51: Vendor
@@ -3454,23 +3516,23 @@ enum InboundWebhookDeliveryStatus {
 // Model 61.6: InboundWebhookDelivery — one row per inbound POST attempt.
 // Doubles as audit log + queued payload (worker reads requestBody from here).
 model InboundWebhookDelivery {
-  id                String                       @id @default(uuid()) @db.Uuid
-  tenantId          String                       @db.Uuid
-  inboundWebhookId  String                       @db.Uuid
-  receivedAt        DateTime                     @default(now())
-  status            InboundWebhookDeliveryStatus @default(PENDING)
-  httpResponseCode  Int
-  requestHeaders    Json
-  requestBody       Json?
-  requestBodySize   Int
-  mappedFields      Json?
-  createdTicketId   String?                      @db.Uuid
-  errorMessage      String?
-  idempotencyKey    String?
-  sourceIp          String?
-  completedAt       DateTime?
-  createdAt         DateTime                     @default(now())
-  updatedAt         DateTime                     @updatedAt
+  id               String                       @id @default(uuid()) @db.Uuid
+  tenantId         String                       @db.Uuid
+  inboundWebhookId String                       @db.Uuid
+  receivedAt       DateTime                     @default(now())
+  status           InboundWebhookDeliveryStatus @default(PENDING)
+  httpResponseCode Int
+  requestHeaders   Json
+  requestBody      Json?
+  requestBodySize  Int
+  mappedFields     Json?
+  createdTicketId  String?                      @db.Uuid
+  errorMessage     String?
+  idempotencyKey   String?
+  sourceIp         String?
+  completedAt      DateTime?
+  createdAt        DateTime                     @default(now())
+  updatedAt        DateTime                     @updatedAt
 
   tenant         Tenant         @relation(fields: [tenantId], references: [id])
   inboundWebhook InboundWebhook @relation(fields: [inboundWebhookId], references: [id], onDelete: Cascade)

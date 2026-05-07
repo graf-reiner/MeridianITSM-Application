@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 
 const PLAN_TIERS = [
@@ -11,8 +10,21 @@ const PLAN_TIERS = [
   { value: 'ENTERPRISE', label: 'Enterprise', desc: 'Unlimited users, SSO, webhooks' },
 ];
 
+interface CloudflareDomainOption {
+  id: string;
+  apex: string;
+  isDefault: boolean;
+}
+
+type CfRouteStatus = 'NONE' | 'PENDING' | 'PROVISIONING' | 'ACTIVE' | 'FAILED';
+
+interface ProvisionSuccess {
+  tenant: { id: string; name: string; slug: string; subdomain: string | null; cloudflareDomainId: string | null };
+  user: { id: string; email: string };
+  cloudflareJob?: { hostname: string; cloudflareDomainId: string } | null;
+}
+
 export default function ProvisionTenantPage() {
-  const router = useRouter();
   const [form, setForm] = useState({
     name: '',
     slug: '',
@@ -20,10 +32,41 @@ export default function ProvisionTenantPage() {
     adminEmail: '',
     adminPassword: '',
     planTier: 'STARTER',
+    cloudflareDomainId: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState<{ tenant: { id: string; name: string; slug: string }; user: { id: string; email: string } } | null>(null);
+  const [success, setSuccess] = useState<ProvisionSuccess | null>(null);
+  const [domains, setDomains] = useState<CloudflareDomainOption[]>([]);
+  const [routeStatus, setRouteStatus] = useState<{ status: CfRouteStatus; error: string | null } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadDomains() {
+      try {
+        const token = localStorage.getItem('owner_token');
+        const res = await fetch('/api/cloudflare/domains', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as { domains: CloudflareDomainOption[] };
+        if (cancelled) return;
+        setDomains(data.domains);
+        const def = data.domains.find((d) => d.isDefault);
+        if (def) {
+          setForm((f) => ({ ...f, cloudflareDomainId: def.id }));
+        }
+      } catch {
+        // Domains list isn't critical — operator can still provision without CF.
+      }
+    }
+    void loadDomains();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const selectedApex = domains.find((d) => d.id === form.cloudflareDomainId)?.apex ?? null;
 
   function handleNameChange(name: string) {
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -57,13 +100,47 @@ export default function ProvisionTenantPage() {
         return;
       }
 
-      setSuccess(data);
+      setSuccess(data as ProvisionSuccess);
+      if ((data as ProvisionSuccess).cloudflareJob) {
+        setRouteStatus({ status: 'PENDING', error: null });
+      }
     } catch {
       setError('Unable to connect to server');
     } finally {
       setLoading(false);
     }
   }
+
+  const pollRouteStatus = useCallback(async (tenantId: string) => {
+    const token = localStorage.getItem('owner_token');
+    const res = await fetch(`/api/tenants/${tenantId}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { tenant: { cfRouteStatus: CfRouteStatus; cfRouteError: string | null } };
+    return { status: json.tenant.cfRouteStatus, error: json.tenant.cfRouteError };
+  }, []);
+
+  useEffect(() => {
+    if (!success?.cloudflareJob || !routeStatus) return;
+    if (routeStatus.status === 'ACTIVE' || routeStatus.status === 'FAILED' || routeStatus.status === 'NONE') return;
+
+    const tenantId = success.tenant.id;
+    let stopped = false;
+    const startedAt = Date.now();
+    const interval = setInterval(async () => {
+      if (stopped || Date.now() - startedAt > 60_000) {
+        clearInterval(interval);
+        return;
+      }
+      const next = await pollRouteStatus(tenantId);
+      if (next && !stopped) setRouteStatus(next);
+    }, 2000);
+    return () => {
+      stopped = true;
+      clearInterval(interval);
+    };
+  }, [success, routeStatus, pollRouteStatus]);
 
   const inputStyle = {
     width: '100%',
@@ -120,6 +197,45 @@ export default function ProvisionTenantPage() {
             </div>
           </div>
 
+          {success.cloudflareJob && routeStatus && (
+            <div
+              style={{
+                backgroundColor: '#fff',
+                border: '1px solid #d1d5db',
+                borderRadius: 8,
+                padding: 20,
+                textAlign: 'left',
+                marginBottom: 24,
+              }}
+            >
+              <h3 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: '#111827' }}>Routing</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px 12px', fontSize: 13 }}>
+                <span style={{ color: '#6b7280' }}>Hostname:</span>
+                <span style={{ color: '#111827', fontFamily: 'monospace' }}>{success.cloudflareJob.hostname}</span>
+                <span style={{ color: '#6b7280' }}>Status:</span>
+                <span>
+                  {routeStatus.status === 'PENDING' && (
+                    <span style={{ padding: '2px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, backgroundColor: '#fef9c3', color: '#854d0e' }}>QUEUED</span>
+                  )}
+                  {routeStatus.status === 'PROVISIONING' && (
+                    <span style={{ padding: '2px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, backgroundColor: '#dbeafe', color: '#1e40af' }}>PROVISIONING…</span>
+                  )}
+                  {routeStatus.status === 'ACTIVE' && (
+                    <span style={{ padding: '2px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, backgroundColor: '#dcfce7', color: '#166534' }}>ACTIVE</span>
+                  )}
+                  {routeStatus.status === 'FAILED' && (
+                    <span style={{ padding: '2px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, backgroundColor: '#fee2e2', color: '#991b1b' }}>FAILED</span>
+                  )}
+                </span>
+              </div>
+              {routeStatus.error && (
+                <div style={{ marginTop: 10, padding: '8px 12px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, fontSize: 12, color: '#991b1b' }}>
+                  {routeStatus.error}
+                </div>
+              )}
+            </div>
+          )}
+
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
             <Link
               href={`/tenants/${success.tenant.id}`}
@@ -136,7 +252,20 @@ export default function ProvisionTenantPage() {
               View Tenant
             </Link>
             <button
-              onClick={() => { setSuccess(null); setForm({ name: '', slug: '', subdomain: '', adminEmail: '', adminPassword: '', planTier: 'STARTER' }); }}
+              onClick={() => {
+                setSuccess(null);
+                setRouteStatus(null);
+                const def = domains.find((d) => d.isDefault);
+                setForm({
+                  name: '',
+                  slug: '',
+                  subdomain: '',
+                  adminEmail: '',
+                  adminPassword: '',
+                  planTier: 'STARTER',
+                  cloudflareDomainId: def?.id ?? '',
+                });
+              }}
               style={{
                 padding: '9px 18px',
                 backgroundColor: '#fff',
@@ -231,9 +360,31 @@ export default function ProvisionTenantPage() {
               placeholder="acme"
             />
             <p style={{ margin: '4px 0 0', fontSize: 12, color: '#9ca3af' }}>
-              Optional. Used for tenant-specific URLs like <strong>{form.subdomain || 'acme'}.meridianitsm.com</strong>
+              Optional. Used for tenant-specific URLs like <strong>{form.subdomain || 'acme'}.{selectedApex ?? 'meridianitsm.com'}</strong>
             </p>
           </div>
+
+          {domains.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>Domain</label>
+              <select
+                value={form.cloudflareDomainId}
+                onChange={(e) => setForm((f) => ({ ...f, cloudflareDomainId: e.target.value }))}
+                style={inputStyle}
+              >
+                <option value="">No automated DNS (skip Cloudflare)</option>
+                {domains.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.apex}
+                    {d.isDefault ? '  (default)' : ''}
+                  </option>
+                ))}
+              </select>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#9ca3af' }}>
+                A Cloudflare Tunnel route + DNS record will be created automatically when set.
+              </p>
+            </div>
+          )}
 
           <div>
             <label style={labelStyle}>Plan Tier</label>

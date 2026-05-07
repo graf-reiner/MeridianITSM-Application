@@ -12,24 +12,12 @@
 
 import { prisma } from '@meridian/db';
 import { encrypt } from '@meridian/core';
-import { verifyOwnerToken } from '../../../lib/owner-auth';
+import { authenticateRequest } from '../../../lib/owner-auth';
 import { NextResponse } from 'next/server';
 
 type Provider = 'MICROSOFT' | 'GOOGLE';
 const PROVIDERS: Provider[] = ['MICROSOFT', 'GOOGLE'];
 const SECRET_MASK = '********';
-
-async function authenticate(request: Request) {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) return null;
-  try {
-    const payload = await verifyOwnerToken(authHeader.slice(7));
-    if (payload.type !== 'access') return null;
-    return payload;
-  } catch {
-    return null;
-  }
-}
 
 interface IntegrationStatus {
   provider: Provider;
@@ -59,7 +47,7 @@ function envClientId(provider: Provider): string | null {
 }
 
 export async function GET(request: Request) {
-  if (!(await authenticate(request))) {
+  if (!(await authenticateRequest(request))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -114,7 +102,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (!(await authenticate(request))) {
+  if (!(await authenticateRequest(request))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

@@ -4,10 +4,13 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { ownerFetch } from '../../../../lib/api';
 
+type CfRouteStatus = 'NONE' | 'PENDING' | 'PROVISIONING' | 'ACTIVE' | 'FAILED';
+
 interface TenantDetail {
   id: string;
   name: string;
   slug: string;
+  subdomain: string | null;
   type: string;
   status: string;
   plan: string;
@@ -17,6 +20,12 @@ interface TenantDetail {
   createdAt: string;
   suspendedAt?: string | null;
   trialEndsAt?: string | null;
+  cloudflareDomainId: string | null;
+  cloudflareDomain?: { id: string; apex: string } | null;
+  cfRouteStatus: CfRouteStatus;
+  cfRouteError: string | null;
+  cfDnsRecordId: string | null;
+  cfRouteProvisionedAt: string | null;
 }
 
 interface Subscription {
@@ -185,6 +194,25 @@ export default function TenantDetailPage() {
     }
   };
 
+  const handleCfRetry = async () => {
+    if (!data?.tenant) return;
+    setActionLoading(true);
+    setMessage(null);
+    try {
+      const r = await ownerFetch(`/api/tenants/${data.tenant.id}/cloudflare/retry`, { method: 'POST' });
+      if (!r.ok) {
+        const err = (await r.json()) as { error?: string };
+        throw new Error(err.error ?? 'Retry failed');
+      }
+      setMessage({ type: 'success', text: 'Cloudflare provisioning re-queued. Refreshing status…' });
+      void fetchData();
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Retry failed' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleImpersonate = async () => {
     try {
       const r = await ownerFetch(`/api/tenants/${id}/impersonate`, {
@@ -277,6 +305,65 @@ export default function TenantDetailPage() {
         <Field label="Users" value={`${data.userCount} registered`} />
         <Field label="Notes" value={`${data.noteCount} internal notes`} />
       </Section>
+
+      {/* Routing & Domain */}
+      {tenant.cfRouteStatus !== 'NONE' && (
+        <Section title="Routing & Domain">
+          <Field
+            label="Hostname"
+            value={
+              tenant.subdomain && tenant.cloudflareDomain
+                ? <span style={{ fontFamily: 'monospace' }}>{tenant.subdomain}.{tenant.cloudflareDomain.apex}</span>
+                : '—'
+            }
+          />
+          <Field
+            label="Status"
+            value={
+              <span
+                style={{
+                  display: 'inline-block',
+                  padding: '2px 10px',
+                  borderRadius: 9999,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  ...(tenant.cfRouteStatus === 'ACTIVE'
+                    ? { backgroundColor: '#dcfce7', color: '#166534' }
+                    : tenant.cfRouteStatus === 'FAILED'
+                      ? { backgroundColor: '#fee2e2', color: '#991b1b' }
+                      : tenant.cfRouteStatus === 'PROVISIONING'
+                        ? { backgroundColor: '#dbeafe', color: '#1e40af' }
+                        : { backgroundColor: '#fef9c3', color: '#854d0e' }),
+                }}
+              >
+                {tenant.cfRouteStatus}
+              </span>
+            }
+          />
+          {tenant.cfRouteProvisionedAt && (
+            <Field label="Provisioned" value={new Date(tenant.cfRouteProvisionedAt).toLocaleString()} />
+          )}
+          {tenant.cfDnsRecordId && (
+            <Field label="DNS record" value={<span style={{ fontFamily: 'monospace', fontSize: 12 }}>{tenant.cfDnsRecordId}</span>} />
+          )}
+          {tenant.cfRouteError && (
+            <div style={{ marginTop: 10, padding: '10px 12px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, fontSize: 13, color: '#991b1b' }}>
+              {tenant.cfRouteError}
+            </div>
+          )}
+          {tenant.cfRouteStatus === 'FAILED' && (
+            <div style={{ marginTop: 12 }}>
+              <button
+                onClick={() => void handleCfRetry()}
+                disabled={actionLoading}
+                style={{ ...btnBase, backgroundColor: '#4f46e5', color: '#fff' }}
+              >
+                {actionLoading ? 'Retrying…' : 'Retry provisioning'}
+              </button>
+            </div>
+          )}
+        </Section>
+      )}
 
       {/* Subscription */}
       {subscription && (

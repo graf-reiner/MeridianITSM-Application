@@ -16,6 +16,9 @@ export async function GET(
           plan: true,
         },
       },
+      cloudflareDomain: {
+        select: { id: true, apex: true },
+      },
     },
   });
 

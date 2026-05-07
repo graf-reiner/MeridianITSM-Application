@@ -6,8 +6,8 @@ import { executeActions, type ActionConfig } from './actions.js';
 import type { NotificationTrigger } from './types.js';
 import { dispatchWorkflows } from './workflows/dispatch.js';
 
-// Cache tenant identity (name/subdomain/customDomain) per process. These rarely
-// change and the dispatcher is hot — avoid a DB hit every event.
+// Cache tenant identity (name/subdomain/customDomain/cf-apex) per process.
+// These rarely change and the dispatcher is hot — avoid a DB hit every event.
 const TENANT_CACHE_TTL_MS = 5 * 60 * 1000;
 const tenantIdentityCache = new Map<string, { value: { name: string; subdomain: string | null; customDomain: string | null; baseUrl: string }; expiresAt: number }>();
 
@@ -23,14 +23,23 @@ async function loadTenantIdentity(tenantId: string): Promise<{
   try {
     const tenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { name: true, subdomain: true, customDomain: true },
+      select: {
+        name: true,
+        subdomain: true,
+        customDomain: true,
+        cloudflareDomain: { select: { apex: true } },
+      },
     });
     if (!tenant) return null;
     const value = {
       name: tenant.name,
       subdomain: tenant.subdomain,
       customDomain: tenant.customDomain,
-      baseUrl: resolveTenantBaseUrl({ subdomain: tenant.subdomain, customDomain: tenant.customDomain }),
+      baseUrl: resolveTenantBaseUrl({
+        subdomain: tenant.subdomain,
+        customDomain: tenant.customDomain,
+        cloudflareDomain: tenant.cloudflareDomain,
+      }),
     };
     tenantIdentityCache.set(tenantId, { value, expiresAt: Date.now() + TENANT_CACHE_TTL_MS });
     return value;
