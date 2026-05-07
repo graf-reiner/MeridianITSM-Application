@@ -11,14 +11,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { name, slug, subdomain, adminEmail, adminPassword, planTier, cloudflareDomainId } = body as {
+  const {
+    name,
+    slug,
+    subdomain,
+    adminEmail,
+    adminPassword,
+    planTier,
+    cloudflareDomainApex,
+    cloudflareDomainZoneId,
+    cfOriginOverride,
+  } = body as {
     name?: string;
     slug?: string;
     subdomain?: string;
     adminEmail?: string;
     adminPassword?: string;
     planTier?: string;
-    cloudflareDomainId?: string;
+    cloudflareDomainApex?: string;
+    cloudflareDomainZoneId?: string;
+    cfOriginOverride?: string;
   };
 
   // Validation
@@ -64,21 +76,36 @@ export async function POST(request: Request) {
     }
   }
 
-  // If a Cloudflare domain was selected, both the row must exist and the
-  // tenant must have a subdomain (otherwise there's nothing to publish).
-  if (cloudflareDomainId) {
-    const cfDomain = await prisma.cloudflareDomain.findUnique({
-      where: { id: cloudflareDomainId },
-      select: { isEnabled: true, apex: true },
-    });
-    if (!cfDomain || !cfDomain.isEnabled) {
-      return NextResponse.json({ error: 'Selected Cloudflare domain is not available' }, { status: 400 });
-    }
-    if (!subdomain) {
-      return NextResponse.json(
-        { error: 'A subdomain is required when binding a tenant to a Cloudflare domain' },
-        { status: 400 },
-      );
+  // Validate the Cloudflare binding shape. The dropdown is sourced live from
+  // Cloudflare's /zones API — both apex and zoneId are needed for the upsert.
+  const apex = cloudflareDomainApex?.trim().toLowerCase();
+  const zoneId = cloudflareDomainZoneId?.trim();
+  if ((apex && !zoneId) || (!apex && zoneId)) {
+    return NextResponse.json(
+      { error: 'cloudflareDomainApex and cloudflareDomainZoneId must be supplied together' },
+      { status: 400 },
+    );
+  }
+  if (apex && !subdomain) {
+    return NextResponse.json(
+      { error: 'A subdomain is required when binding a tenant to a Cloudflare domain' },
+      { status: 400 },
+    );
+  }
+
+  // Optional per-tenant origin override — must be a parseable http/https URL.
+  const trimmedOverride = cfOriginOverride?.trim();
+  if (trimmedOverride) {
+    try {
+      const u = new URL(trimmedOverride);
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+        return NextResponse.json(
+          { error: 'cfOriginOverride must use http:// or https://' },
+          { status: 400 },
+        );
+      }
+    } catch {
+      return NextResponse.json({ error: 'cfOriginOverride must be a valid URL' }, { status: 400 });
     }
   }
 
@@ -90,7 +117,9 @@ export async function POST(request: Request) {
       adminEmail,
       adminPassword,
       planTier: resolvedPlanTier,
-      cloudflareDomainId: cloudflareDomainId || undefined,
+      cloudflareDomainApex: apex,
+      cloudflareDomainZoneId: zoneId,
+      cfOriginOverride: trimmedOverride || undefined,
     });
 
     // Enqueue Cloudflare provisioning AFTER the DB transaction has committed.

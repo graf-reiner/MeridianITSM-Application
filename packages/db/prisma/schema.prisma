@@ -412,6 +412,10 @@ model Tenant {
   cfRouteError         String?
   cfDnsRecordId        String?
   cfRouteProvisionedAt DateTime?
+  // Per-tenant origin override (full URL like "http://10.1.200.218:3000"). When null,
+  // the worker uses CloudflareConfig.defaultOrigin. Lets the operator point an
+  // individual tenant at a different origin from the platform default.
+  cfOriginOverride     String?
 
   // Relations
   users                        User[]

@@ -10,13 +10,25 @@ const PLAN_TIERS = [
   { value: 'ENTERPRISE', label: 'Enterprise', desc: 'Unlimited users, SSO, webhooks' },
 ];
 
-interface CloudflareDomainOption {
+interface CloudflareZone {
   id: string;
-  apex: string;
-  isDefault: boolean;
+  name: string;
+}
+
+interface CloudflareConfigStatus {
+  configured: boolean;
+  defaultOrigin: string;
 }
 
 type CfRouteStatus = 'NONE' | 'PENDING' | 'PROVISIONING' | 'ACTIVE' | 'FAILED';
+
+function splitOrigin(url: string | null | undefined): { type: 'http' | 'https'; hostport: string } {
+  if (!url) return { type: 'http', hostport: '' };
+  const trimmed = url.trim();
+  const match = /^(https?):\/\/(.+)$/.exec(trimmed);
+  if (!match) return { type: 'http', hostport: trimmed };
+  return { type: match[1] === 'https' ? 'https' : 'http', hostport: match[2].replace(/\/+$/, '') };
+}
 
 interface ProvisionSuccess {
   tenant: { id: string; name: string; slug: string; subdomain: string | null; cloudflareDomainId: string | null };
@@ -32,41 +44,68 @@ export default function ProvisionTenantPage() {
     adminEmail: '',
     adminPassword: '',
     planTier: 'STARTER',
-    cloudflareDomainId: '',
+    cloudflareApex: '',
+    cloudflareZoneId: '',
+    originType: 'http' as 'http' | 'https',
+    originHostPort: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<ProvisionSuccess | null>(null);
-  const [domains, setDomains] = useState<CloudflareDomainOption[]>([]);
+  const [zones, setZones] = useState<CloudflareZone[]>([]);
+  const [zonesError, setZonesError] = useState<string | null>(null);
+  const [defaultOrigin, setDefaultOrigin] = useState<{ type: 'http' | 'https'; hostport: string } | null>(null);
   const [routeStatus, setRouteStatus] = useState<{ status: CfRouteStatus; error: string | null } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    async function loadDomains() {
+    const token = localStorage.getItem('owner_token');
+    const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
+    async function loadZones() {
       try {
-        const token = localStorage.getItem('owner_token');
-        const res = await fetch('/api/cloudflare/domains', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        if (!res.ok) return;
-        const data = (await res.json()) as { domains: CloudflareDomainOption[] };
-        if (cancelled) return;
-        setDomains(data.domains);
-        const def = data.domains.find((d) => d.isDefault);
-        if (def) {
-          setForm((f) => ({ ...f, cloudflareDomainId: def.id }));
+        const res = await fetch('/api/cloudflare/zones', { headers });
+        if (!res.ok) {
+          const err = (await res.json().catch(() => ({}))) as { error?: string };
+          if (!cancelled) setZonesError(err.error ?? `HTTP ${res.status}`);
+          return;
         }
+        const data = (await res.json()) as { zones: CloudflareZone[] };
+        if (!cancelled) setZones(data.zones);
       } catch {
-        // Domains list isn't critical — operator can still provision without CF.
+        if (!cancelled) setZonesError('Network error fetching zones');
       }
     }
-    void loadDomains();
+
+    async function loadConfig() {
+      try {
+        const res = await fetch('/api/cloudflare/config', { headers });
+        if (!res.ok) return;
+        const data = (await res.json()) as { config: CloudflareConfigStatus };
+        if (cancelled || !data.config.configured) return;
+        const split = splitOrigin(data.config.defaultOrigin);
+        setDefaultOrigin(split);
+        setForm((f) => ({
+          ...f,
+          originType: split.type,
+          originHostPort: f.originHostPort || split.hostport,
+        }));
+      } catch {
+        // Config isn't critical for the form to render.
+      }
+    }
+
+    void loadZones();
+    void loadConfig();
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const selectedApex = domains.find((d) => d.id === form.cloudflareDomainId)?.apex ?? null;
+  const selectedApex = form.cloudflareApex || null;
+  const originIsOverride =
+    !!defaultOrigin &&
+    (form.originType !== defaultOrigin.type || form.originHostPort.trim() !== defaultOrigin.hostport);
 
   function handleNameChange(name: string) {
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -84,6 +123,19 @@ export default function ProvisionTenantPage() {
     setLoading(true);
 
     const token = localStorage.getItem('owner_token');
+    const payload = {
+      name: form.name,
+      slug: form.slug,
+      subdomain: form.subdomain,
+      adminEmail: form.adminEmail,
+      adminPassword: form.adminPassword,
+      planTier: form.planTier,
+      cloudflareDomainApex: form.cloudflareApex || undefined,
+      cloudflareDomainZoneId: form.cloudflareZoneId || undefined,
+      cfOriginOverride: originIsOverride
+        ? `${form.originType}://${form.originHostPort.trim()}`
+        : undefined,
+    };
     try {
       const res = await fetch('/api/provision', {
         method: 'POST',
@@ -91,7 +143,7 @@ export default function ProvisionTenantPage() {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -255,7 +307,6 @@ export default function ProvisionTenantPage() {
               onClick={() => {
                 setSuccess(null);
                 setRouteStatus(null);
-                const def = domains.find((d) => d.isDefault);
                 setForm({
                   name: '',
                   slug: '',
@@ -263,7 +314,10 @@ export default function ProvisionTenantPage() {
                   adminEmail: '',
                   adminPassword: '',
                   planTier: 'STARTER',
-                  cloudflareDomainId: def?.id ?? '',
+                  cloudflareApex: '',
+                  cloudflareZoneId: '',
+                  originType: defaultOrigin?.type ?? 'http',
+                  originHostPort: defaultOrigin?.hostport ?? '',
                 });
               }}
               style={{
@@ -364,24 +418,74 @@ export default function ProvisionTenantPage() {
             </p>
           </div>
 
-          {domains.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>Domain</label>
-              <select
-                value={form.cloudflareDomainId}
-                onChange={(e) => setForm((f) => ({ ...f, cloudflareDomainId: e.target.value }))}
-                style={inputStyle}
-              >
-                <option value="">No automated DNS (skip Cloudflare)</option>
-                {domains.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.apex}
-                    {d.isDefault ? '  (default)' : ''}
-                  </option>
-                ))}
-              </select>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>Domain</label>
+            <select
+              value={form.cloudflareZoneId}
+              onChange={(e) => {
+                const zoneId = e.target.value;
+                const zone = zones.find((z) => z.id === zoneId);
+                setForm((f) => ({
+                  ...f,
+                  cloudflareZoneId: zoneId,
+                  cloudflareApex: zone?.name ?? '',
+                }));
+              }}
+              style={inputStyle}
+              disabled={zones.length === 0}
+            >
+              <option value="">No automated DNS (skip Cloudflare)</option>
+              {zones.map((z) => (
+                <option key={z.id} value={z.id}>
+                  {z.name}
+                </option>
+              ))}
+            </select>
+            {zonesError ? (
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#dc2626' }}>
+                Could not load zones: {zonesError}. Save Cloudflare credentials in Settings.
+              </p>
+            ) : zones.length === 0 ? (
               <p style={{ margin: '4px 0 0', fontSize: 12, color: '#9ca3af' }}>
-                A Cloudflare Tunnel route + DNS record will be created automatically when set.
+                Loading zones from Cloudflare…
+              </p>
+            ) : (
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#9ca3af' }}>
+                Pulled live from Cloudflare. A tunnel route + proxied CNAME are created automatically when set.
+              </p>
+            )}
+          </div>
+
+          {form.cloudflareZoneId && (
+            <div style={{ marginBottom: 16, padding: 12, backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8 }}>
+              <label style={{ ...labelStyle, marginBottom: 8 }}>Service (origin behind the tunnel)</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: 10, alignItems: 'start' }}>
+                <select
+                  value={form.originType}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, originType: e.target.value as 'http' | 'https' }))
+                  }
+                  style={{ ...inputStyle, fontFamily: 'monospace' }}
+                >
+                  <option value="http">http</option>
+                  <option value="https">https</option>
+                </select>
+                <input
+                  type="text"
+                  value={form.originHostPort}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, originHostPort: e.target.value.trim() }))
+                  }
+                  placeholder={defaultOrigin?.hostport || 'localhost:3000'}
+                  style={{ ...inputStyle, fontFamily: 'monospace' }}
+                />
+              </div>
+              <p style={{ margin: '6px 0 0', fontSize: 12, color: '#9ca3af' }}>
+                {defaultOrigin
+                  ? originIsOverride
+                    ? <>Overriding the platform default <code>{defaultOrigin.type}://{defaultOrigin.hostport}</code> for this tenant.</>
+                    : <>Prefilled from Settings · <code>{defaultOrigin.type}://{defaultOrigin.hostport}</code></>
+                  : 'Set a default origin in Settings → Cloudflare to prefill.'}
               </p>
             </div>
           )}

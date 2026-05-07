@@ -111,6 +111,31 @@ export class CloudflareClient {
     return result?.[0] ?? null;
   }
 
+  /**
+   * GET /zones — returns every zone the API token has access to (active only),
+   * paginated. Used by the owner-admin Provision form to populate the Domain
+   * dropdown live from the operator's Cloudflare account.
+   */
+  async listZones(): Promise<ZoneSummary[]> {
+    const all: ZoneSummary[] = [];
+    let page = 1;
+    const perPage = 50;
+    while (true) {
+      const batch = await this.request<ZoneSummary[]>(
+        'GET',
+        `/zones?status=active&per_page=${perPage}&page=${page}`,
+      );
+      if (!batch || batch.length === 0) break;
+      all.push(...batch);
+      if (batch.length < perPage) break;
+      page += 1;
+      // Safety cap — Cloudflare accounts >500 zones are uncommon and the
+      // dropdown experience would be unusable anyway.
+      if (page > 10) break;
+    }
+    return all;
+  }
+
   // ── Tunnel configuration ────────────────────────────────────────────────
 
   /** GET /accounts/:account/cfd_tunnel/:tunnel/configurations */

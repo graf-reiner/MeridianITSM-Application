@@ -13,11 +13,20 @@ export interface ProvisionTenantInput {
   planTier?: SubscriptionPlanTier;
   stripeCustomerId?: string;
   /**
-   * If set, the tenant is bound to this CloudflareDomain row and gets
-   * cfRouteStatus = PENDING. The route handler is responsible for enqueueing
-   * the provisioning job after this function returns successfully.
+   * Cloudflare zone selected from the live dropdown on the provision form.
+   * When apex+zoneId are both provided, a CloudflareDomain row is upserted
+   * by apex (so existing tenants/operator-curated entries are reused) and
+   * the new Tenant is bound to it with cfRouteStatus = PENDING. The route
+   * handler is responsible for enqueueing the provisioning job after this
+   * function returns successfully.
    */
-  cloudflareDomainId?: string;
+  cloudflareDomainApex?: string;
+  cloudflareDomainZoneId?: string;
+  /**
+   * Per-tenant origin override (full URL like "http://10.1.200.218:3000").
+   * When null/omitted the worker uses CloudflareConfig.defaultOrigin.
+   */
+  cfOriginOverride?: string;
 }
 
 export interface ProvisionTenantResult {
@@ -173,25 +182,49 @@ const DEFAULT_NOTIFICATION_TEMPLATES: Array<{
  * - Initial admin user
  */
 export async function provisionTenant(input: ProvisionTenantInput): Promise<ProvisionTenantResult> {
-  const { name, slug, subdomain, adminEmail, adminPassword, planTier = 'STARTER', stripeCustomerId, cloudflareDomainId } = input;
+  const {
+    name,
+    slug,
+    subdomain,
+    adminEmail,
+    adminPassword,
+    planTier = 'STARTER',
+    stripeCustomerId,
+    cloudflareDomainApex,
+    cloudflareDomainZoneId,
+    cfOriginOverride,
+  } = input;
 
   const passwordHash = hashSync(adminPassword, 10);
 
-  // Validate the Cloudflare domain (if any) BEFORE opening the transaction so
-  // a stale id doesn't waste a CMDB seed cycle.
+  // Resolve / upsert the CloudflareDomain row BEFORE opening the transaction.
+  // The dropdown source on the provision form is now Cloudflare's live
+  // /zones list — operators pick a zone and we either reuse the existing
+  // cloudflare_domains row (if pre-curated) or create one on the fly.
   let cloudflareDomain: { id: string; apex: string } | null = null;
-  if (cloudflareDomainId) {
-    const found = await prisma.cloudflareDomain.findUnique({
-      where: { id: cloudflareDomainId },
-      select: { id: true, apex: true, isEnabled: true },
-    });
-    if (!found || !found.isEnabled) {
-      throw new Error(`Cloudflare domain '${cloudflareDomainId}' not found or disabled`);
-    }
+  if (cloudflareDomainApex && cloudflareDomainZoneId) {
     if (!subdomain) {
       throw new Error('Subdomain is required when binding a tenant to a Cloudflare domain');
     }
-    cloudflareDomain = { id: found.id, apex: found.apex };
+    const config = await prisma.cloudflareConfig.findUnique({ where: { singleton: true } });
+    if (!config) {
+      throw new Error('Save Cloudflare credentials before provisioning with a domain');
+    }
+    const upserted = await prisma.cloudflareDomain.upsert({
+      where: { apex: cloudflareDomainApex },
+      create: {
+        configId: config.id,
+        apex: cloudflareDomainApex,
+        zoneId: cloudflareDomainZoneId,
+        isEnabled: true,
+      },
+      update: {
+        zoneId: cloudflareDomainZoneId,
+        configId: config.id,
+        isEnabled: true,
+      },
+    });
+    cloudflareDomain = { id: upserted.id, apex: upserted.apex };
   }
 
   const result = await prisma.$transaction(async (tx) => {
@@ -206,6 +239,7 @@ export async function provisionTenant(input: ProvisionTenantInput): Promise<Prov
         plan: planTier,
         cloudflareDomainId: cloudflareDomain?.id ?? null,
         cfRouteStatus: cloudflareDomain ? 'PENDING' : 'NONE',
+        cfOriginOverride: cfOriginOverride?.trim() || null,
       },
     });
 

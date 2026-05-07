@@ -15,9 +15,10 @@ async function process(job: Job<TenantCfProvisionJobData>): Promise<void> {
   const { tenantId, hostname, cloudflareDomainId } = job.data;
 
   // Mark in-progress so the UI sees PROVISIONING (not just PENDING).
-  await prisma.tenant.update({
+  const tenant = await prisma.tenant.update({
     where: { id: tenantId },
     data: { cfRouteStatus: 'PROVISIONING' },
+    select: { cfOriginOverride: true },
   });
 
   const config = await prisma.cloudflareConfig.findUnique({ where: { singleton: true } });
@@ -32,12 +33,13 @@ async function process(job: Job<TenantCfProvisionJobData>): Promise<void> {
   const apiToken = decrypt(config.apiTokenEnc);
   const client = new CloudflareClient({ apiToken, accountId: config.accountId });
 
+  const originService = tenant.cfOriginOverride?.trim() || config.defaultOrigin;
   const result = await provisionCloudflareRoute(client, {
     hostname,
     zoneId: domain.zoneId,
     tunnelId: config.tunnelId,
     tunnelCname: config.tunnelCname,
-    originService: config.defaultOrigin,
+    originService,
   });
 
   await prisma.tenant.update({
