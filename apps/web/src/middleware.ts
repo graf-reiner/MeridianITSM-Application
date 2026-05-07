@@ -57,19 +57,38 @@ const RESERVED_SUBDOMAINS = new Set(['app-dev', 'app', 'www', 'api', 'admin', 'o
 
 /**
  * Extract tenant subdomain from the Host header.
- * e.g., "default.meridianitsm.com" with APP_DOMAIN="meridianitsm.com" → "default"
- * Returns null for the base domain, reserved subdomains, or multi-level subdomains.
+ *
+ * Two-stage extraction so multi-apex deployments work alongside the legacy
+ * single-APP_DOMAIN setup:
+ *   1. If APP_DOMAIN is set and host strictly ends with it, strip it (tight
+ *      validation — original behaviour).
+ *   2. Otherwise generically take the leftmost label as the subdomain so any
+ *      apex registered via the Cloudflare Integration settings flows through.
+ *      The resolve-subdomain API rejects unknown labels, so loosening the
+ *      host check here is safe.
  */
 function extractSubdomain(host: string): string | null {
-  if (!APP_DOMAIN) return null;
   const hostWithoutPort = host.split(':')[0];
-  const domainWithoutPort = APP_DOMAIN.split(':')[0];
-  if (hostWithoutPort === domainWithoutPort) return null;
-  if (!hostWithoutPort.endsWith(`.${domainWithoutPort}`)) return null;
-  const subdomain = hostWithoutPort.slice(0, -(domainWithoutPort.length + 1));
-  if (!subdomain || subdomain.includes('.')) return null;
-  if (RESERVED_SUBDOMAINS.has(subdomain)) return null;
-  return subdomain;
+  if (!hostWithoutPort.includes('.')) return null;
+
+  if (APP_DOMAIN) {
+    const domainWithoutPort = APP_DOMAIN.split(':')[0];
+    if (hostWithoutPort === domainWithoutPort) return null;
+    if (hostWithoutPort.endsWith(`.${domainWithoutPort}`)) {
+      const sub = hostWithoutPort.slice(0, -(domainWithoutPort.length + 1));
+      if (!sub || sub.includes('.')) return null;
+      if (RESERVED_SUBDOMAINS.has(sub)) return null;
+      return sub;
+    }
+  }
+
+  // Generic fallback — accept "<sub>.<apex>.<tld>" for any registered apex.
+  const firstDot = hostWithoutPort.indexOf('.');
+  const sub = hostWithoutPort.slice(0, firstDot);
+  const remainder = hostWithoutPort.slice(firstDot + 1);
+  if (!sub || !remainder.includes('.')) return null;
+  if (RESERVED_SUBDOMAINS.has(sub)) return null;
+  return sub;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

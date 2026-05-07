@@ -5,9 +5,12 @@
  *
  * Resolution priority (first match wins):
  *   1. tenant.customDomain — vanity FQDN ("support.acme.com")
- *   2. tenant.subdomain + MERIDIAN_ROOT_DOMAIN env — "acme.meridianitsm.com"
- *   3. APP_URL env — platform-wide fallback ("https://app-dev.meridianitsm.com")
- *   4. http://localhost:3000 — last-resort dev default
+ *   2. tenant.subdomain + tenant.cloudflareDomain.apex — per-tenant apex
+ *      bound at provision time ("acme.meridianitsm.com")
+ *   3. tenant.subdomain + MERIDIAN_ROOT_DOMAIN env — legacy fallback for
+ *      tenants provisioned before the Cloudflare integration shipped
+ *   4. APP_URL env — platform-wide fallback ("https://app-dev.meridianitsm.com")
+ *   5. http://localhost:3000 — last-resort dev default
  *
  * Always returns a URL with no trailing slash, suitable for concatenation
  * (e.g. `${baseUrl}/dashboard/tickets/${id}`).
@@ -16,6 +19,7 @@
 export interface TenantBaseUrlInput {
   customDomain?: string | null;
   subdomain?: string | null;
+  cloudflareDomain?: { apex: string } | null;
 }
 
 export function resolveTenantBaseUrl(
@@ -24,6 +28,11 @@ export function resolveTenantBaseUrl(
 ): string {
   const fromCustom = normalizeUrl(tenant.customDomain);
   if (fromCustom) return fromCustom;
+
+  if (tenant.subdomain && tenant.cloudflareDomain?.apex) {
+    const apex = tenant.cloudflareDomain.apex.trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+    if (apex) return `https://${tenant.subdomain}.${apex}`;
+  }
 
   const root = env.MERIDIAN_ROOT_DOMAIN?.trim();
   if (tenant.subdomain && root) {

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ownerFetch } from '../../../lib/api';
 import SmtpSettings from '../../../components/SmtpSettings';
+import CloudflareSettings from '../../../components/CloudflareSettings';
 
 interface OwnerUser {
   id: string;
@@ -462,6 +463,9 @@ export default function SettingsPage() {
 
       {/* ── SMTP Email Configuration ───────────────────────────────────────── */}
       <SmtpSettings />
+
+      {/* ── Cloudflare Integration ─────────────────────────────────────────── */}
+      <CloudflareSettings />
     </div>
   );
 }

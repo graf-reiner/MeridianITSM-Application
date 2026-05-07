@@ -19,6 +19,7 @@ import { certExpiryMonitorWorker } from './workers/cert-expiry-monitor.js';
 import { inventoryRetentionWorker, inventoryDiffBackfillWorker } from './workers/inventory-retention.worker.js';
 import { emailActivityCleanupWorker, EMAIL_ACTIVITY_CLEANUP_QUEUE_NAME } from './workers/email-activity-cleanup.js';
 import { workflowExecutionWorker } from './workers/workflow-execution.worker.js';
+import { tenantCfProvisionWorker } from './workers/tenant-cf-provision.worker.js';
 import { Queue } from 'bullmq';
 import { bullmqConnection } from './queues/connection.js';
 import {
@@ -60,6 +61,7 @@ const workers = [
   { name: 'inventory-diff-backfill', worker: inventoryDiffBackfillWorker },
   { name: 'email-activity-cleanup', worker: emailActivityCleanupWorker },
   { name: 'workflow-execution', worker: workflowExecutionWorker },
+  { name: 'tenant-cf-provision', worker: tenantCfProvisionWorker },
 ];
 
 const emailActivityCleanupQueue = new Queue(EMAIL_ACTIVITY_CLEANUP_QUEUE_NAME, { connection: bullmqConnection });

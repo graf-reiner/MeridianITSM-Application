@@ -40,6 +40,24 @@ export {
   formatProblemNumber,
   TICKET_NUMBER_SUBJECT_REGEX,
 } from './utils/record-numbers.js';
+export {
+  CloudflareClient,
+  CloudflareApiError,
+  provisionCloudflareRoute,
+  deprovisionCloudflareRoute,
+  type CloudflareClientOptions,
+  type ProvisionRouteInput,
+  type ProvisionRouteResult,
+  type DeprovisionRouteInput,
+  type ZoneSummary,
+  type IngressEntry,
+  type TunnelConfiguration,
+  type TunnelConfigurationEnvelope,
+  type DnsRecordSummary,
+  type CreateDnsRecordInput,
+  type VerifyTokenResult,
+  type TunnelInfo,
+} from './cloudflare/index.js';
 export { TenantService } from './services/tenant.service.js';
 export {
   type PlanResource,

@@ -22,6 +22,7 @@ export const QUEUE_NAMES = {
   INBOUND_WEBHOOK_PROCESS: 'inbound-webhook-process',
   INBOUND_WEBHOOK_CLEANUP: 'inbound-webhook-cleanup',
   WORKFLOW_EXECUTION: 'workflow-execution',
+  TENANT_CF_PROVISION: 'tenant-cf-provision',
 } as const;
 
 export interface TenantJobData {
@@ -68,6 +69,16 @@ export const workflowExecutionQueue = new Queue(QUEUE_NAMES.WORKFLOW_EXECUTION, 
     // Keep recent completions briefly (audit trail lives in WorkflowExecution table).
     removeOnComplete: { age: 60 * 60, count: 500 },
     // Retain failures longer for diagnosis — 7 days, no count cap.
+    removeOnFail: { age: 7 * 24 * 60 * 60 },
+  },
+});
+
+export const tenantCfProvisionQueue = new Queue(QUEUE_NAMES.TENANT_CF_PROVISION, {
+  connection: bullmqConnection,
+  defaultJobOptions: {
+    attempts: 5,
+    backoff: { type: 'exponential', delay: 10_000 },
+    removeOnComplete: { age: 24 * 60 * 60, count: 200 },
     removeOnFail: { age: 7 * 24 * 60 * 60 },
   },
 });
