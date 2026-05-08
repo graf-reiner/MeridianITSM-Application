@@ -81,7 +81,26 @@ export async function POST(request: Request) {
   }
 
   const tunnelCname = body.tunnelCname?.trim() || `${tunnelId}.cfargotunnel.com`;
-  const defaultOrigin = body.defaultOrigin?.trim() || 'http://localhost:3000';
+
+  // Cloudflare's tunnel ingress requires the `service` to be a valid URL with
+  // a scheme — bare "host:port" is rejected with code 1056. Auto-prefix http://
+  // when the operator forgets, then validate the result is a real URL.
+  const rawOrigin = body.defaultOrigin?.trim() || 'http://localhost:3000';
+  const defaultOrigin = /^https?:\/\//.test(rawOrigin) ? rawOrigin : `http://${rawOrigin}`;
+  try {
+    const u = new URL(defaultOrigin);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+      return NextResponse.json(
+        { error: 'defaultOrigin must use http:// or https://' },
+        { status: 400 },
+      );
+    }
+  } catch {
+    return NextResponse.json(
+      { error: `defaultOrigin "${rawOrigin}" is not a valid URL (e.g. http://10.1.200.220:3000)` },
+      { status: 400 },
+    );
+  }
 
   const existing = await prisma.cloudflareConfig.findUnique({ where: { singleton: true } });
   const incomingToken = body.apiToken?.trim();
