@@ -24,6 +24,30 @@ export default function LoginPage() {
   const [error, setError] = useState(errorParam);
   const [loading, setLoading] = useState(false);
   const [ssoConnections, setSsoConnections] = useState<SsoConnectionInfo[]>([]);
+  const [customLogoUrl, setCustomLogoUrl] = useState<string | null>(null);
+
+  // Per-tenant custom logo: when the request hit a tenant subdomain, the
+  // middleware sets `meridian_subdomain`. Probe the public branding endpoint
+  // and swap the default Meridian logo for the tenant's uploaded image when
+  // present. 404 → keep default. Sized via object-fit: contain so any X/Y
+  // scales into the same area.
+  useEffect(() => {
+    const sub = readSubdomain();
+    if (!sub) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const url = `/api/v1/public/branding/by-subdomain/${encodeURIComponent(sub)}`;
+        const res = await fetch(url, { method: 'HEAD' });
+        if (!cancelled && res.ok) setCustomLogoUrl(url);
+      } catch {
+        // ignore — keep default branding
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Fetch SSO connections for the current tenant
   useEffect(() => {
@@ -102,11 +126,24 @@ export default function LoginPage() {
       <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.35)', zIndex: 1 }} />
 
       <div style={{ position: 'relative', zIndex: 2, width: '100%', maxWidth: 400, padding: '0 16px' }}>
-        {/* Logo + brand */}
+        {/* Logo + brand. Tenant logo replaces the icon + brand text when
+            uploaded; preserves aspect ratio via object-fit: contain inside
+            a fixed-height area so any X/Y scales to fit. */}
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <img src="/images/meridian-logo.svg" alt="Meridian ITSM" width={56} height={56} style={{ marginBottom: 12 }} />
-          <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '-0.5px' }}>Meridian ITSM</h1>
-          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', margin: '4px 0 0' }}>IT Service Management</p>
+          {customLogoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={customLogoUrl}
+              alt="Tenant logo"
+              style={{ maxWidth: '100%', maxHeight: 96, objectFit: 'contain' }}
+            />
+          ) : (
+            <>
+              <img src="/images/meridian-logo.svg" alt="Meridian ITSM" width={56} height={56} style={{ marginBottom: 12 }} />
+              <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '-0.5px' }}>Meridian ITSM</h1>
+              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', margin: '4px 0 0' }}>IT Service Management</p>
+            </>
+          )}
         </div>
 
         {/* Login card */}
@@ -240,4 +277,10 @@ export default function LoginPage() {
     </div>
     </ThemeProvider>
   );
+}
+
+function readSubdomain(): string | null {
+  if (typeof document === 'undefined') return null;
+  const m = document.cookie.match(/(?:^|;\s*)meridian_subdomain=([^;]*)/);
+  return m ? decodeURIComponent(m[1]) : null;
 }

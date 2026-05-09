@@ -37,6 +37,7 @@ import {
   mdiFormSelect,
   mdiWeb,
   mdiMapMarkerOutline,
+  mdiPaletteOutline,
 } from '@mdi/js';
 
 // ─── Settings Hub ─────────────────────────────────────────────────────────────
@@ -85,6 +86,13 @@ const SETTINGS_GROUPS: SettingsGroup[] = [
         description: 'Manage physical sites, addresses, and contacts',
         icon: mdiMapMarkerOutline,
         color: '#0d9488',
+      },
+      {
+        href: '/dashboard/settings/branding',
+        label: 'Branding',
+        description: 'Upload a custom logo for your tenant’s login page',
+        icon: mdiPaletteOutline,
+        color: '#db2777',
       },
       {
         href: '/dashboard/settings/queues',
