@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import multipart from '@fastify/multipart';
 import { prisma } from '@meridian/db';
 import { requirePermission } from '../../../plugins/rbac.js';
 import { uploadFile, getFileSignedUrl } from '../../../services/storage.service.js';
@@ -11,6 +12,17 @@ import { uploadFile, getFileSignedUrl } from '../../../services/storage.service.
  * POST  /api/v1/settings/branding/logo   — Upload logo image (multipart)
  */
 export async function brandingSettingsRoutes(fastify: FastifyInstance): Promise<void> {
+  // Scoped multipart registration for the logo upload route. Mirrors the
+  // pattern in tickets/index.ts — keeps JSON routes globally untouched and
+  // avoids "Content type parser already present" conflicts when other
+  // plugins also need multipart.
+  await fastify.register(multipart, {
+    limits: {
+      fileSize: 2 * 1024 * 1024, // 2 MB matches the per-route validation
+      files: 1,
+    },
+  });
+
   // GET /api/v1/settings/branding — Return tenant.settings branding JSON
   fastify.get(
     '/api/v1/settings/branding',
