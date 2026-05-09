@@ -262,6 +262,10 @@ export default function LoginPage() {
             </>
           )}
         </form>
+
+        <p style={{ textAlign: 'center', marginTop: 16, fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>
+          Powered by Meridian ITSM
+        </p>
       </div>
 
       <style>{`
