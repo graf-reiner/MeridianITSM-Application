@@ -13,6 +13,7 @@
 import { prisma } from '@meridian/db';
 import { encrypt } from '@meridian/core';
 import { authenticateRequest } from '../../../lib/owner-auth';
+import { getPlatformAppUrl } from '../../../lib/platform-settings';
 import { NextResponse } from 'next/server';
 
 type Provider = 'MICROSOFT' | 'GOOGLE';
@@ -94,9 +95,11 @@ export async function GET(request: Request) {
   });
 
   // Surface the API's redirect URI so the wizard can show a copy-pasteable value.
-  // We use process.env.APP_URL on the owner-admin host as the source of truth — in
-  // a typical deployment owner and api share the same APP_URL.
-  const redirectUri = `${process.env.APP_URL ?? ''}/api/v1/email-accounts/oauth/callback`;
+  // Source of truth is owner_settings (operator-editable in Settings → Platform);
+  // falls back to the APP_URL env so fresh installs without a saved value still
+  // produce a usable URL.
+  const appUrl = await getPlatformAppUrl();
+  const redirectUri = `${appUrl}/api/v1/email-accounts/oauth/callback`;
 
   return NextResponse.json({ integrations: statuses, redirectUri });
 }

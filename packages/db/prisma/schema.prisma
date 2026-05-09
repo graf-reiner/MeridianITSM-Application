@@ -2956,8 +2956,9 @@ model OwnerUser {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  sessions OwnerSession[]
-  notes    OwnerNote[]
+  sessions         OwnerSession[]
+  notes            OwnerNote[]
+  settingsUpdated  OwnerSetting[]
 
   @@map("owner_users")
 }
@@ -3108,6 +3109,21 @@ enum CloudflareRouteStatus {
   PROVISIONING
   ACTIVE
   FAILED
+}
+
+// Generic key/value store for platform-level settings the operator can edit
+// from the owner-admin UI without touching .env files. Keys are namespaced
+// dot.path strings (e.g. "platform.appUrl"). Values are stored as text;
+// callers parse them as needed. Audit trail via updatedBy + updatedAt.
+model OwnerSetting {
+  key         String   @id
+  value       String
+  updatedAt   DateTime @updatedAt
+  updatedById String?  @db.Uuid
+
+  updatedBy OwnerUser? @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("owner_settings")
 }
 
 model CloudflareConfig {

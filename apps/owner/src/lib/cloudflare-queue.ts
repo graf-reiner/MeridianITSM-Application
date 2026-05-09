@@ -35,9 +35,19 @@ export async function enqueueTenantCfProvision(data: TenantCfProvisionJobData): 
     },
   });
   try {
-    // Use tenantId as deterministic jobId so a duplicate enqueue while a job
-    // is still queued/active is a no-op. After a job completes/fails BullMQ
-    // releases the id, so retries from the operator UI can re-enqueue.
+    // Deterministic jobId = tenantId means a duplicate enqueue while a job is
+    // still queued/active is a no-op. BUT terminal-failed jobs are KEPT in
+    // Redis for 7 days (for diagnosis) and they hold the id, so a retry from
+    // the operator UI would be silently dropped. Drop any prior job for this
+    // tenantId first so the retry actually re-enqueues.
+    if (data.retry) {
+      const existing = await queue.getJob(data.tenantId);
+      if (existing) {
+        await existing.remove().catch(() => {
+          // Active jobs can't be removed; that's fine — they'll re-process.
+        });
+      }
+    }
     await queue.add('provision', data, { jobId: data.tenantId });
   } finally {
     await queue.close();

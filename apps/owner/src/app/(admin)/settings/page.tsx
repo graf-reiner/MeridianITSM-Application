@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { ownerFetch } from '../../../lib/api';
+import PlatformSettings from '../../../components/PlatformSettings';
 import SmtpSettings from '../../../components/SmtpSettings';
 import CloudflareSettings from '../../../components/CloudflareSettings';
 
@@ -460,6 +461,9 @@ export default function SettingsPage() {
           </table>
         )}
       </div>
+
+      {/* ── Platform Settings (operator-editable global) ──────────────────── */}
+      <PlatformSettings />
 
       {/* ── SMTP Email Configuration ───────────────────────────────────────── */}
       <SmtpSettings />
