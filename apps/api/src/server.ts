@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import fastifyJwt from '@fastify/jwt';
 import fastifyCookie from '@fastify/cookie';
+import fastifyMultipart from '@fastify/multipart';
 import { registerCors } from './plugins/cors.js';
 import { registerSwagger } from './plugins/swagger.js';
 import { registerRateLimit } from './plugins/rate-limit.js';
@@ -39,7 +40,17 @@ export async function buildApp() {
   // Layer 4: Cookie support (for form-based login)
   await app.register(fastifyCookie);
 
-  // Layer 5: Rate limiting with Redis backing
+  // Layer 5: Multipart form support (file uploads — branding logo, etc.).
+  // Without this, Fastify rejects multipart/form-data with 415 before any
+  // route runs.
+  await app.register(fastifyMultipart, {
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5 MB hard cap (per-route limits validate further)
+      files: 1,
+    },
+  });
+
+  // Layer 6: Rate limiting with Redis backing
   await registerRateLimit(app);
 
   // Public routes — no authentication required
